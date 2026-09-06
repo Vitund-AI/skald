@@ -52,6 +52,8 @@ repository to migrate; story files are unchanged.
   configured author or git identity.
 - `check` returns warnings as well as problems and gains `--hook`.
 - `ls` hides every terminal column, not just `done`.
+- The web server skips the reverse DNS lookup on bind, so `skald serve` and
+  `skald server start` come up instantly on macOS and offline machines.
 
 ### Removed
 - The vendored `.skald/skald.py` and the `git config alias.skald` shim.

@@ -251,3 +251,12 @@ stories would turn the graph into a grid of unrelated boxes.
 `.claude/skills/skald/` is auto-invoked when backlog work comes up, and the
 root `CLAUDE.md`/`AGENTS.md` pointer is the step people forget, so `init`
 appends it idempotently and creates `AGENTS.md` when neither file exists.
+
+### D39. The server binds without a reverse DNS lookup
+`http.server.HTTPServer.server_bind` calls `socket.getfqdn()` on the bound
+host. On macOS CI runners (and laptops on captive or misconfigured networks)
+that lookup stalls for 30 seconds or more, which made the in-process test
+server slow and the background daemon miss its start timeout with an empty
+log. Skald only binds loopback or an explicit host, so `SkaldServer`
+overrides `server_bind` to use the address as given. Nothing reads
+`server_name` except the base class.

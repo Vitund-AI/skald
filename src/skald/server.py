@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import signal
+import socketserver
 import subprocess
 import sys
 import threading
@@ -43,6 +44,15 @@ class SkaldServer(ThreadingHTTPServer):
         self._html: Optional[str] = None
         self._snapshots: dict = {}
         self._snap_lock = threading.Lock()
+
+    def server_bind(self):
+        # HTTPServer.server_bind resolves the bound host with socket.getfqdn(), a reverse DNS lookup
+        # that can stall for 30s+ (macOS runners, laptops on captive networks). We only ever bind
+        # loopback or an explicit host, so use the address as given.
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        self.server_name = host
+        self.server_port = port
 
     def snapshot(self, store: Store, ref: str):
         """A read-only snapshot of ``store`` at ``ref``, cached by the commit it resolves to."""
