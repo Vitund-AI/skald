@@ -20,6 +20,31 @@ package.
 Stories are committed with the code they describe, so the board travels with
 the branch and shows up in pull request diffs.
 
+## Is Skald the right tool?
+
+Several projects keep a tracker inside the repository. They make different
+trade-offs, so this table is about focus rather than ranking. Checked against
+each project's README in September 2026; follow the links for current detail.
+
+| | [Skald](https://github.com/Vitund-AI/skald) | [Backlog.md](https://github.com/MrLesk/Backlog.md) | [Beads](https://github.com/steveyegge/beads) | [git-bug](https://github.com/git-bug/git-bug) | [git-issue](https://github.com/dspinellis/git-issue) |
+|---|---|---|---|---|---|
+| Data lives in | Markdown files under `.skald/`, committed | Markdown files under `backlog/`, committed | Dolt database under `.beads/`, with a JSONL export | Git objects, not files in the worktree | Text files under `.issues/`, committed |
+| Unit of work | Story: column, rank, dependencies, tags, dated notes | Task: status, acceptance criteria, dependencies, labels, milestones | Issue: status, priority, assignee, dependencies, labels, hierarchy | Issue with comments, labels, status | Issue with comments, tags, assignee, milestone, due date |
+| Built for | Coding agents first, humans reviewing on a board | Humans and agents together | Agents, with memory decay of closed work | Humans, distributed and offline-first | Humans, git-native |
+| Agent interface | CLI, MCP server, Claude Code hooks and skill, `AGENTS.md` | CLI, MCP server, `AGENTS.md` | CLI with JSON output, MCP server, `AGENTS.md` | CLI | CLI |
+| Human interface | Local web board across all projects on the machine | Terminal board and local web board | CLI | CLI, TUI, web UI | CLI |
+| More than one repository | Yes: one board, `project:id` references | One project per workspace | Separate repos with routing and sync | Per repository, pushed to remotes | Per repository |
+| Committed snapshot | `skald render` writes Markdown or HTML with a dependency graph | `backlog board export` writes a Markdown report | No | No | No |
+| Sync with hosted trackers | No | No | No | Bridges to GitHub and GitLab | Import and export with GitHub and GitLab |
+| Runtime | Python, standard library only | TypeScript on Bun or Node | Go | Go | Shell, `jq`, `curl` |
+
+Skald is a good fit when agents do most of the work, a human wants to see
+that work on one board across repositories, and the backlog should read well
+in a pull request diff. Reach for something else when you want threaded
+discussion on issues (git-bug, or the hosted tracker you already use), a long
+history that needs summarising to save context (Beads), or two-way sync with
+GitHub issues (git-bug, git-issue).
+
 ## Install
 
 ```sh

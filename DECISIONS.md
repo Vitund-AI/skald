@@ -260,3 +260,10 @@ server slow and the background daemon miss its start timeout with an empty
 log. Skald only binds loopback or an explicit host, so `SkaldServer`
 overrides `server_bind` to use the address as given. Nothing reads
 `server_name` except the base class.
+
+### D40. The README compares neighbours by focus, not by feature count
+A checklist of features reads as a scoreboard and goes stale the moment a
+neighbour ships. The comparison table instead describes design choices:
+where data lives, who the tool is built for, how agents and humans reach it.
+It links every project, states the month it was checked, and names the cases
+where another tool is the better choice.

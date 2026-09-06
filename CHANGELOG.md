@@ -48,6 +48,8 @@ repository to migrate; story files are unchanged.
 - CI on Python 3.9 to 3.13, macOS and Windows; PyPI trusted publishing on tags.
 
 ### Changed
+- README opens with a comparison of repository-native trackers so readers
+  can tell whether Skald's focus matches theirs.
 - Notes from the CLI default to author `agent`; notes from the board use the
   configured author or git identity.
 - `check` returns warnings as well as problems and gains `--hook`.
