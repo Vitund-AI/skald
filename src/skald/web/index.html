@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skald</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<style>
+  .card.dragging { opacity: .4; }
+  .placeholder { height: 0.5rem; border-radius: .25rem; background: #93c5fd; margin: .25rem 0; }
+  .col-list { min-height: 4rem; }
+  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .md h1, .md h2, .md h3 { font-weight: 600; margin: 1em 0 .4em; }
+  .md h1 { font-size: 1.25rem; } .md h2 { font-size: 1.05rem; } .md h3 { font-size: 1rem; }
+  .md p { margin: .5em 0; } .md ul, .md ol { padding-left: 1.4em; margin: .5em 0; }
+  .md ul { list-style: disc; } .md ol { list-style: decimal; }
+  .md code { background: #f1f5f9; padding: .1em .3em; border-radius: .2em; font-size: .9em; }
+  .md pre { background: #f1f5f9; padding: .6em; border-radius: .3em; overflow-x: auto; }
+  .md pre code { background: none; padding: 0; }
+  .md a { color: #2563eb; text-decoration: underline; }
+  .md blockquote { border-left: 3px solid #cbd5e1; padding-left: .8em; color: #475569; }
+  .md input[type=checkbox] { margin-right: .4em; }
+  .tab.active { border-bottom: 2px solid #2563eb; color: #1e293b; }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col">
+
+<header class="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 flex-wrap">
+  <h1 class="text-lg font-semibold tracking-tight">Skald</h1>
+  <select id="project" class="rounded border border-slate-300 px-2 py-1 text-sm bg-white"></select>
+  <span id="branch" class="text-xs font-mono text-slate-500 hidden"></span>
+  <input id="search" type="search" placeholder="Filter (title, id, tag, assignee)  /" class="flex-1 min-w-[12rem] max-w-md rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+  <span id="conn" class="text-xs text-slate-400"></span>
+  <span id="identity" class="text-xs text-slate-500" title="Notes and commits from the board use this name. Change it with: skald config author NAME"></span>
+  <div class="relative">
+    <button id="git-btn" class="hidden rounded border border-amber-400 bg-amber-50 text-amber-800 px-3 py-1.5 text-sm hover:bg-amber-100"></button>
+    <div id="git-pop" class="hidden absolute right-0 mt-1 w-96 bg-white border border-slate-200 rounded shadow-lg p-3 z-30 text-sm">
+      <div id="git-files" class="max-h-40 overflow-y-auto font-mono text-xs text-slate-600 mb-2"></div>
+      <input id="git-msg" class="w-full rounded border border-slate-300 px-2 py-1 mb-2" placeholder="Commit message">
+      <div class="flex gap-2">
+        <button id="git-commit" class="rounded bg-slate-800 text-white px-3 py-1.5 hover:bg-slate-900">Commit</button>
+        <button id="git-commit-push" class="hidden rounded bg-blue-600 text-white px-3 py-1.5 hover:bg-blue-700">Commit &amp; push</button>
+        <button id="git-cancel" class="ml-auto text-slate-500 hover:text-slate-800">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <button id="new-btn" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700" title="New story (n)">New story</button>
+</header>
+
+<main id="board" class="flex-1 flex gap-3 p-3 overflow-x-auto"></main>
+<main id="ready-view" class="hidden flex-1 overflow-y-auto p-4"></main>
+
+<div id="toasts" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
+
+<div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-40">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-full overflow-y-auto">
+    <div class="flex items-center gap-3 px-5 py-3 border-b border-slate-200">
+      <span id="m-id" class="font-mono text-xs text-slate-400"></span>
+      <span id="m-meta" class="text-xs text-slate-400"></span>
+      <div class="ml-auto flex gap-3 text-sm text-slate-500">
+        <button class="tab active py-1" data-tab="edit">Edit</button>
+        <button id="tab-history" class="tab py-1" data-tab="history">History</button>
+      </div>
+      <button id="m-close" class="text-slate-400 hover:text-slate-700 text-xl leading-none" title="Close (Esc)">&times;</button>
+    </div>
+
+    <div id="pane-edit" class="px-5 py-4 grid gap-4">
+      <label class="grid gap-1 text-sm">
+        <span class="text-slate-500">Title</span>
+        <input id="m-title" class="rounded border border-slate-300 px-2 py-1.5 text-base font-medium">
+      </label>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+        <label class="grid gap-1"><span class="text-slate-500">Status</span>
+          <select id="m-status" class="rounded border border-slate-300 px-2 py-1.5"></select></label>
+        <label class="grid gap-1"><span class="text-slate-500">Assignee</span>
+          <input id="m-assignee" class="rounded border border-slate-300 px-2 py-1.5"></label>
+        <label class="grid gap-1"><span class="text-slate-500">Tags</span>
+          <input id="m-tags" class="rounded border border-slate-300 px-2 py-1.5" placeholder="a, b"></label>
+        <label class="grid gap-1"><span class="text-slate-500">Blocked by</span>
+          <input id="m-blockers" class="rounded border border-slate-300 px-2 py-1.5 font-mono" placeholder="id, project:id"></label>
+      </div>
+      <div id="m-deps" class="text-xs hidden flex flex-wrap gap-2"></div>
+      <div class="grid gap-1 text-sm">
+        <div class="flex items-center gap-3">
+          <span class="text-slate-500">Body (Markdown)</span>
+          <button id="m-preview-btn" class="text-xs text-blue-600 hover:underline">Preview</button>
+        </div>
+        <textarea id="m-body" rows="14" class="rounded border border-slate-300 px-2 py-1.5 text-sm"></textarea>
+        <div id="m-preview" class="md hidden rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm max-h-96 overflow-y-auto"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="m-save" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Save</button>
+        <button id="m-reload" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Reload</button>
+        <button id="m-claim" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50" title="Assign to you and start it">Claim</button>
+        <span id="m-dirty" class="text-xs text-amber-600"></span>
+        <button id="m-delete" class="ml-auto rounded px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">Delete</button>
+      </div>
+      <div id="m-note-wrap" class="grid gap-2 border-t border-slate-200 pt-4 text-sm">
+        <span class="text-slate-500">Add a note</span>
+        <textarea id="m-note" rows="3" class="rounded border border-slate-300 px-2 py-1.5 text-sm" placeholder="Appended to the bottom of the story with a timestamp and your name"></textarea>
+        <div><button id="m-note-btn" class="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Append note</button></div>
+      </div>
+    </div>
+
+    <div id="pane-history" class="hidden px-5 py-4 text-sm">
+      <div id="m-history" class="grid gap-1 font-mono text-xs"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const state = {
+    projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false,
+  };
+  const board = $('board'), readyView = $('ready-view'), modal = $('modal');
+  const ALL = '__all__';
+
+  // ---- API -------------------------------------------------------------
+  async function api(method, path, body) {
+    const opts = { method, headers: {} };
+    if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+    const res = await fetch(path, opts);
+    if (res.status === 204) return null;
+    let data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (!res.ok) { const err = new Error((data && data.error) || res.statusText); err.status = res.status; throw err; }
+    return data;
+  }
+  const P = () => `/api/projects/${encodeURIComponent(state.project)}`;
+
+  // ---- Toasts ----------------------------------------------------------
+  function toast(msg, kind) {
+    const el = document.createElement('div');
+    const colour = kind === 'error' ? 'bg-red-600' : kind === 'warn' ? 'bg-amber-500' : 'bg-slate-800';
+    el.className = `${colour} text-white text-sm rounded px-3 py-2 shadow-lg max-w-sm whitespace-pre-wrap`;
+    el.textContent = msg;
+    $('toasts').appendChild(el);
+    setTimeout(() => el.remove(), 6000);
+  }
+  function showWarnings(ws) { (ws || []).forEach(w => toast(w, 'warn')); }
+  function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function ago(iso) {
+    if (!iso) return '';
+    const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    return `${Math.floor(s / 86400)}d ago`;
+  }
+
+  // ---- Projects --------------------------------------------------------
+  async function loadProjects() {
+    const data = await api('GET', '/api/projects');
+    state.projects = data.projects; state.settings = data.settings;
+    const sel = $('project');
+    sel.innerHTML = state.projects.map(p => `<option value="${esc(p.name)}" ${p.exists ? '' : 'disabled'}>${esc(p.name)}${p.exists ? '' : ' (missing)'}</option>`).join('')
+      + `<option value="${ALL}">All projects: ready work</option>`;
+    if (!state.projects.length) {
+      sel.innerHTML = '<option value="">no projects registered</option>';
+      board.innerHTML = '<div class="p-6 text-slate-500">No projects yet. Run <code>skald init</code> inside a repository.</div>';
+      return;
+    }
+    const fromUrl = new URLSearchParams(location.search).get('project');
+    let saved = null; try { saved = localStorage.getItem('skald.project'); } catch (e) {}
+    const wanted = fromUrl || saved;
+    const ok = (n) => n === ALL || state.projects.some(p => p.name === n && p.exists);
+    state.project = ok(wanted) ? wanted : (state.projects.find(p => p.exists) || {}).name;
+    sel.value = state.project;
+    applyProject();
+  }
+  function applyProject() {
+    state.allView = state.project === ALL;
+    try { localStorage.setItem('skald.project', state.project); } catch (e) {}
+    const url = new URL(location.href); url.searchParams.set('project', state.project); history.replaceState(null, '', url);
+    board.classList.toggle('hidden', state.allView);
+    readyView.classList.toggle('hidden', !state.allView);
+    $('new-btn').classList.toggle('hidden', state.allView);
+    $('git-btn').classList.add('hidden');
+    $('branch').classList.add('hidden');
+    state.version = null;
+    refresh(true);
+  }
+  async function switchProject(name, then) {
+    if (name !== state.project) { state.project = name; $('project').value = name; applyProject(); }
+    if (then) then();
+  }
+
+  // ---- Board -----------------------------------------------------------
+  function matches(story) {
+    const f = state.filter;
+    if (!f) return true;
+    return story.title.toLowerCase().includes(f) || story.id.startsWith(f) || story.tags.some(t => t.includes(f)) || (story.assignee || '').toLowerCase().includes(f);
+  }
+  function depTitle(story) {
+    return story.deps.map(d => `${d.ref}: ${d.state}${d.satisfied ? '' : ' (unmet)'}`).join('\n');
+  }
+  function cardEl(story) {
+    const el = document.createElement('div');
+    const border = story.blocked ? 'border-l-4 border-l-red-500' : story.stale ? 'border-l-4 border-l-amber-400' : '';
+    el.className = `card bg-white rounded shadow-sm border border-slate-200 p-2.5 cursor-grab hover:shadow ${border}`;
+    el.dataset.id = story.id;
+    el.draggable = true;
+    const tags = story.tags.map(t => `<span class="inline-block rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px]">${esc(t)}</span>`).join(' ');
+    const lock = story.blocked ? `<span class="text-red-500 text-sm" title="${esc(depTitle(story))}">&#128274;</span>` : '';
+    const stale = story.stale ? `<span class="text-[10px] uppercase tracking-wide text-amber-600" title="No update for ${state.settings.stale_days} days">stale</span>` : '';
+    const cl = story.checklist && story.checklist.total ? `<span class="text-[11px] text-slate-500" title="Checklist">${story.checklist.done}/${story.checklist.total}</span>
+      <span class="inline-block h-1.5 w-12 rounded bg-slate-200 overflow-hidden align-middle"><span class="block h-full bg-emerald-500" style="width:${Math.round(100 * story.checklist.done / story.checklist.total)}%"></span></span>` : '';
+    const who = story.assignee ? `<span class="text-slate-500" title="Assignee">@${esc(story.assignee)}</span>` : '';
+    el.innerHTML = `
+      <div class="flex items-start gap-1.5">
+        <div class="text-sm font-medium leading-snug flex-1">${esc(story.title)}</div>${lock}
+      </div>
+      <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}</div>
+      <div class="mt-1.5 flex justify-between gap-2 text-[11px] text-slate-400 font-mono">
+        <span>${story.id}</span>${who}<span class="font-sans ml-auto">${ago(story.updated_at)}</span>
+      </div>`;
+    el.addEventListener('click', () => openModal(story.id));
+    el.addEventListener('dragstart', (e) => {
+      state.dragging = story.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', story.id);
+      setTimeout(() => el.classList.add('dragging'), 0);
+    });
+    el.addEventListener('dragend', () => { state.dragging = null; removePlaceholder(); render(); });
+    return el;
+  }
+
+  function render() {
+    if (state.allView) return renderReady();
+    board.innerHTML = '';
+    const known = new Set(state.columns.map(c => c.key));
+    const cols = state.columns.slice();
+    const orphans = state.stories.filter(s => !known.has(s.status));
+    if (orphans.length) cols.push({ key: null, label: 'Unknown status', role: 'unknown' });
+    for (const col of cols) {
+      const section = document.createElement('section');
+      section.className = 'flex flex-col w-72 shrink-0 bg-slate-200/70 rounded-lg';
+      const items = col.key === null ? orphans : state.stories.filter(s => s.status === col.key);
+      const shown = items.filter(matches);
+      const over = col.limit && items.length > col.limit;
+      const count = col.limit ? `${items.length}/${col.limit}` : `${items.length}`;
+      section.innerHTML = `<div class="flex items-center justify-between px-3 py-2 text-sm font-semibold text-slate-600" title="role: ${esc(col.role)}">
+        <span>${esc(col.label)}</span><span class="text-xs font-normal ${over ? 'text-red-600 font-semibold' : 'text-slate-400'}">${count}</span></div>`;
+      const list = document.createElement('div');
+      list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 overflow-y-auto';
+      if (col.key !== null) { list.dataset.status = col.key; list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop); }
+      shown.forEach(s => list.appendChild(cardEl(s)));
+      section.appendChild(list);
+      board.appendChild(section);
+    }
+  }
+
+  async function renderReady() {
+    let data;
+    try { data = await api('GET', '/api/ready'); } catch (err) { readyView.innerHTML = `<div class="text-red-600">${esc(err.message)}</div>`; return; }
+    showWarnings(data.warnings);
+    const rows = data.stories.filter(matches);
+    if (!rows.length) { readyView.innerHTML = '<div class="text-slate-500">No ready, unblocked stories in any project.</div>'; return; }
+    const byProject = {};
+    rows.forEach(s => (byProject[s.project] = byProject[s.project] || []).push(s));
+    readyView.innerHTML = Object.keys(byProject).sort().map(p => `
+      <h2 class="text-sm font-semibold text-slate-600 mt-4 mb-2">${esc(p)} <span class="font-normal text-slate-400">${byProject[p].length}</span></h2>
+      <div class="grid gap-2">${byProject[p].map(s => `
+        <div class="ready-row bg-white rounded border border-slate-200 px-3 py-2 flex items-center gap-3 cursor-pointer hover:shadow" data-project="${esc(s.project)}" data-id="${s.id}">
+          <span class="font-mono text-xs text-slate-400">${s.id}</span>
+          <span class="text-sm font-medium flex-1">${esc(s.title)}</span>
+          ${s.tags.map(t => `<span class="rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px]">${esc(t)}</span>`).join(' ')}
+          <span class="text-xs text-slate-400">${ago(s.updated_at)}</span>
+        </div>`).join('')}</div>`).join('');
+    readyView.querySelectorAll('.ready-row').forEach(row => row.addEventListener('click', () => {
+      switchProject(row.dataset.project, () => setTimeout(() => openModal(row.dataset.id), 200));
+    }));
+  }
+
+  // ---- Drag and drop ---------------------------------------------------
+  let placeholder = null;
+  function removePlaceholder() { if (placeholder) { placeholder.remove(); placeholder = null; } }
+  function onDragOver(e) {
+    if (!state.dragging) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const list = e.currentTarget;
+    if (!placeholder) { placeholder = document.createElement('div'); placeholder.className = 'placeholder'; }
+    const cards = [...list.querySelectorAll('.card')].filter(c => c.dataset.id !== state.dragging);
+    let before = null;
+    for (const c of cards) {
+      const r = c.getBoundingClientRect();
+      if (e.clientY < r.top + r.height / 2) { before = c; break; }
+    }
+    if (before) list.insertBefore(placeholder, before); else list.appendChild(placeholder);
+  }
+  async function onDrop(e) {
+    e.preventDefault();
+    const list = e.currentTarget;
+    const id = state.dragging;
+    if (!id || !placeholder) return;
+    const status = list.dataset.status;
+    const order = [];
+    for (const child of list.children) {
+      if (child === placeholder) order.push(id);
+      else if (child.dataset.id && child.dataset.id !== id) order.push(child.dataset.id);
+    }
+    const hidden = state.stories.filter(s => s.status === status && !matches(s) && s.id !== id).map(s => s.id);
+    removePlaceholder();
+    state.dragging = null;
+    try {
+      const res = await api('PATCH', `${P()}/stories/${id}`, { status, order: order.concat(hidden) });
+      showWarnings(res.warnings);
+    } catch (err) { toast(err.message, 'error'); }
+    await refresh(true);
+  }
+
+  // ---- Git -------------------------------------------------------------
+  function renderGit() {
+    const btn = $('git-btn');
+    const n = (state.git.changes || []).length;
+    if (!state.git.available || !n) { btn.classList.add('hidden'); $('git-pop').classList.add('hidden'); return; }
+    btn.textContent = `Commit ${n} change${n === 1 ? '' : 's'}`;
+    btn.classList.remove('hidden');
+    $('git-commit-push').classList.toggle('hidden', !state.settings.push);
+  }
+  function openGit() {
+    $('git-files').innerHTML = state.git.changes.map(c => `<div>${esc(c.status)} ${esc(c.path)}</div>`).join('');
+    $('git-msg').value = `skald: update ${state.git.changes.length} story file(s)`;
+    $('git-pop').classList.remove('hidden');
+    $('git-msg').focus();
+  }
+  async function commit(push) {
+    try {
+      const res = await api('POST', `${P()}/git/commit`, { message: $('git-msg').value, push });
+      toast(`Committed ${res.sha}${res.pushed ? ' and pushed' : ''}`);
+      $('git-pop').classList.add('hidden');
+      await refresh(true);
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  // ---- Modal -----------------------------------------------------------
+  function fillStatusSelect(current) {
+    const opts = state.columns.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`);
+    if (current && !state.columns.some(c => c.key === current)) opts.push(`<option value="${esc(current)}">${esc(current)} (unknown)</option>`);
+    $('m-status').innerHTML = opts.join('');
+  }
+  function showTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    $('pane-edit').classList.toggle('hidden', name !== 'edit');
+    $('pane-history').classList.toggle('hidden', name !== 'history');
+    if (name === 'history') loadHistory();
+  }
+  function showModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); showTab('edit'); }
+  function hideModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); state.modal = null; state.loaded = null; refresh(true); }
+  function sanitize(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('script, iframe, object, embed, style, link').forEach(n => n.remove());
+    doc.querySelectorAll('*').forEach(el => {
+      [...el.attributes].forEach(a => {
+        if (/^on/i.test(a.name) || (['href', 'src'].includes(a.name) && /^\s*javascript:/i.test(a.value))) el.removeAttribute(a.name);
+      });
+    });
+    return doc.body.innerHTML;
+  }
+  function renderPreview() {
+    const el = $('m-preview');
+    const text = $('m-body').value;
+    if (window.marked) el.innerHTML = sanitize(marked.parse(text, { gfm: true, breaks: false }));
+    else el.innerHTML = `<pre class="whitespace-pre-wrap">${esc(text)}</pre>`;
+  }
+  function renderDeps(s) {
+    const box = $('m-deps');
+    if (!s.deps || !s.deps.length) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    box.innerHTML = s.deps.map(d => {
+      const colour = d.satisfied ? (d.closed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-red-100 text-red-800';
+      const cross = d.ref.includes(':');
+      return `<button class="dep rounded px-2 py-0.5 ${colour} font-mono" data-ref="${esc(d.ref)}" ${d.state === 'unavailable' || d.state === 'missing' ? 'disabled' : ''} title="Open">${esc(d.ref)} · ${esc(d.state)}${cross ? '' : ''}</button>`;
+    }).join('');
+    box.querySelectorAll('.dep').forEach(b => b.addEventListener('click', () => {
+      const [proj, id] = b.dataset.ref.includes(':') ? b.dataset.ref.split(':') : [state.project, b.dataset.ref];
+      if (proj === state.project) openModal(id); else switchProject(proj, () => setTimeout(() => openModal(id), 200));
+    }));
+  }
+
+  async function openModal(id) {
+    if (id === null) {
+      fillStatusSelect(null);
+      state.modal = 'new'; state.loaded = null;
+      $('m-id').textContent = 'new story'; $('m-meta').textContent = '';
+      $('m-title').value = ''; $('m-status').value = (state.columns.find(c => c.role === 'backlog') || state.columns[0] || {}).key;
+      $('m-tags').value = ''; $('m-blockers').value = ''; $('m-assignee').value = '';
+      $('m-body').value = ''; $('m-deps').classList.add('hidden'); $('m-dirty').textContent = '';
+      $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden');
+      ['m-note-wrap', 'm-delete', 'm-reload', 'm-claim', 'tab-history'].forEach(i => $(i).classList.add('hidden'));
+      showModal(); $('m-title').focus();
+      return;
+    }
+    try {
+      const s = await api('GET', `${P()}/stories/${id}`);
+      fillStatusSelect(s.status);
+      state.modal = s.id; state.loaded = s;
+      $('m-id').textContent = `${s.project}:${s.id}  ${s.filename}`;
+      $('m-meta').textContent = `created ${s.created_at} · updated ${s.updated_at}${s.archived ? ' · archived' : ''}`;
+      $('m-title').value = s.title; $('m-status').value = s.status; $('m-assignee').value = s.assignee || '';
+      $('m-tags').value = s.tags.join(', '); $('m-blockers').value = s.blocked_by.join(', ');
+      $('m-body').value = s.body; $('m-dirty').textContent = '';
+      renderDeps(s);
+      if (!$('m-preview').classList.contains('hidden')) renderPreview();
+      $('m-note').value = '';
+      ['m-note-wrap', 'm-delete', 'm-reload', 'm-claim', 'tab-history'].forEach(i => $(i).classList.remove('hidden'));
+      if (!modal.classList.contains('flex')) showModal();
+    } catch (err) { toast(err.message, 'error'); }
+  }
+  async function loadHistory() {
+    if (!state.modal || state.modal === 'new') return;
+    const box = $('m-history');
+    box.innerHTML = '<div class="text-slate-400">loading…</div>';
+    try {
+      const data = await api('GET', `${P()}/stories/${state.modal}/history`);
+      if (!data.history.length) { box.innerHTML = '<div class="text-slate-400 font-sans">No commits yet. Story changes are committed with the code they describe.</div>'; return; }
+      box.innerHTML = data.history.map(h => `<div class="flex gap-3"><span class="text-slate-400">${esc(h.sha)}</span><span class="text-slate-500 w-32 shrink-0">${esc(h.date.slice(0, 16).replace('T', ' '))}</span><span class="text-slate-500 w-28 shrink-0 truncate">${esc(h.author)}</span><span class="font-sans">${esc(h.subject)}</span></div>`).join('');
+    } catch (err) { box.innerHTML = `<div class="text-red-600 font-sans">${esc(err.message)}</div>`; }
+  }
+  function splitList(v) { return v.split(',').map(x => x.trim()).filter(Boolean); }
+
+  async function saveModal() {
+    const title = $('m-title').value, status = $('m-status').value, assignee = $('m-assignee').value.trim();
+    const tags = splitList($('m-tags').value), blocked_by = splitList($('m-blockers').value), body = $('m-body').value;
+    try {
+      if (state.modal === 'new') {
+        const res = await api('POST', `${P()}/stories`, { title, status, tags, blocked_by, body, assignee });
+        showWarnings(res.warnings); toast(`Created ${res.story.id}`);
+        hideModal();
+        return;
+      }
+      const s = state.loaded;
+      const patch = {};
+      if (title !== s.title) patch.title = title;
+      if (status !== s.status) patch.status = status;
+      if (assignee !== (s.assignee || '')) patch.assignee = assignee;
+      if (tags.join(',') !== s.tags.join(',')) patch.tags = tags;
+      if (blocked_by.join(',') !== s.blocked_by.join(',')) patch.blocked_by = blocked_by;
+      if (Object.keys(patch).length) { const res = await api('PATCH', `${P()}/stories/${s.id}`, patch); showWarnings(res.warnings); }
+      if (body !== s.body) {
+        try { await api('PUT', `${P()}/stories/${s.id}/body`, { body, base_sha256: s.body_sha256 }); }
+        catch (err) {
+          if (err.status === 409) { $('m-dirty').textContent = 'The body changed on disk while you were editing. Copy your text, then Reload.'; toast(err.message, 'error'); return; }
+          throw err;
+        }
+      }
+      toast('Saved');
+      await openModal(s.id);
+    } catch (err) { toast(err.message, 'error'); }
+  }
+  async function addNote() {
+    const text = $('m-note').value.trim();
+    if (!text || state.modal === 'new') return;
+    try {
+      await api('POST', `${P()}/stories/${state.modal}/notes`, { text });
+      $('m-note').value = '';
+      await openModal(state.modal);
+    } catch (err) { toast(err.message, 'error'); }
+  }
+  async function claimStory() {
+    if (!state.modal || state.modal === 'new') return;
+    try {
+      const res = await api('POST', `${P()}/stories/${state.modal}/claim`, {});
+      showWarnings(res.warnings);
+      await openModal(state.modal);
+    } catch (err) { toast(err.message, 'error'); }
+  }
+  async function deleteStory() {
+    const id = state.modal;
+    if (!id || id === 'new') return;
+    if (!confirm(`Delete story ${id}? This removes the file.`)) return;
+    try { await api('DELETE', `${P()}/stories/${id}`); }
+    catch (err) {
+      if (err.status === 409 && confirm(err.message + '\n\nDelete anyway?')) {
+        try { await api('DELETE', `${P()}/stories/${id}?force=1`); } catch (e2) { toast(e2.message, 'error'); return; }
+      } else { toast(err.message, 'error'); return; }
+    }
+    toast(`Deleted ${id}`);
+    hideModal();
+  }
+
+  // ---- Refresh ---------------------------------------------------------
+  async function refresh(force) {
+    if (!state.project) return;
+    if (state.modal || state.dragging) return;
+    if (state.allView) { render(); $('conn').textContent = ''; return; }
+    try {
+      if (!force && state.version) {
+        const v = await api('GET', `${P()}/version`);
+        if (v.version === state.version) { $('conn').textContent = ''; return; }
+      }
+      const data = await api('GET', `${P()}/board`);
+      state.columns = data.columns; state.stories = data.stories; state.settings = data.settings;
+      state.identity = data.identity; state.git = data.git; state.version = data.version;
+      $('identity').textContent = data.identity;
+      const br = $('branch');
+      if (data.git && data.git.branch) { br.textContent = data.git.branch; br.classList.remove('hidden'); } else br.classList.add('hidden');
+      $('conn').textContent = data.warnings.length ? `${data.warnings.length} notice(s), see terminal` : '';
+      renderGit();
+      render();
+    } catch (err) { $('conn').textContent = 'disconnected'; }
+  }
+
+  // ---- Wiring ----------------------------------------------------------
+  $('project').addEventListener('change', (e) => switchProject(e.target.value));
+  $('search').addEventListener('input', (e) => { state.filter = e.target.value.trim().toLowerCase(); render(); });
+  $('new-btn').addEventListener('click', () => openModal(null));
+  $('git-btn').addEventListener('click', openGit);
+  $('git-cancel').addEventListener('click', () => $('git-pop').classList.add('hidden'));
+  $('git-commit').addEventListener('click', () => commit(false));
+  $('git-commit-push').addEventListener('click', () => commit(true));
+  $('m-close').addEventListener('click', hideModal);
+  $('m-save').addEventListener('click', saveModal);
+  $('m-reload').addEventListener('click', () => state.modal && state.modal !== 'new' && openModal(state.modal));
+  $('m-note-btn').addEventListener('click', addNote);
+  $('m-claim').addEventListener('click', claimStory);
+  $('m-delete').addEventListener('click', deleteStory);
+  $('m-preview-btn').addEventListener('click', () => {
+    const pv = $('m-preview'), showing = !pv.classList.contains('hidden');
+    pv.classList.toggle('hidden', showing); $('m-body').classList.toggle('hidden', !showing);
+    $('m-preview-btn').textContent = showing ? 'Preview' : 'Edit';
+    if (!showing) renderPreview();
+  });
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+  modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
+  document.addEventListener('keydown', (e) => {
+    const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+    if (e.key === 'Escape') { if (state.modal) hideModal(); else $('git-pop').classList.add('hidden'); return; }
+    if (typing || state.modal) return;
+    if (e.key === 'n' && !state.allView) { e.preventDefault(); openModal(null); }
+    if (e.key === '/') { e.preventDefault(); $('search').focus(); }
+  });
+  setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, 1500);
+  loadProjects().catch(err => { $('conn').textContent = 'disconnected'; toast(err.message, 'error'); });
+})();
+</script>
+</body>
+</html>

@@ -4,53 +4,59 @@ Kanban lite for coding agents.
 
 Skald is a backlog tracker that lives inside your repository as Markdown
 files. AI coding agents drive it from a small CLI. Humans drive it from a
-local web board. There is no database, no service, and no dependency beyond
-Python 3.9. The whole tool is one file.
+local web board that can show every project on the machine. There is no
+database and no service to run; the whole thing is one dependency-free Python
+package.
 
 ```
 .skald/
-├── skald.py     # the tool: CLI, web board, agent contract
-├── AGENTS.md    # what an agent needs to know, written by `init`
-└── stories/     # one Markdown file per story
-    └── a3f9c2-implement-wireguard-overlay.md
+├── config.json   # project name, story format version, columns  (committed)
+├── AGENTS.md     # what an agent needs to know, written by `init` (committed)
+├── stories/      # one Markdown file per story                   (committed)
+│   └── a3f9c2-implement-wireguard-overlay.md
+└── archive/      # done stories moved out of the way by `skald archive`
 ```
 
-Stories are committed with the code they describe, so the board travels
-with the branch and shows up in pull request diffs.
+Stories are committed with the code they describe, so the board travels with
+the branch and shows up in pull request diffs.
 
 ## Install
 
 ```sh
-mkdir -p .skald
-curl -sSL https://raw.githubusercontent.com/vitund-ai/skald/main/skald.py -o .skald/skald.py
-python3 .skald/skald.py init
+pip install skald-kanban        # or: pipx install skald-kanban / uv tool install skald-kanban
+cd your-repo
+skald init
 ```
 
-`init` creates `.skald/stories/`, writes `.skald/AGENTS.md`, and sets a local
-git alias so `git skald ...` works in that clone. It is safe to run again.
+`init` creates `.skald/`, writes `AGENTS.md`, and registers the project in
+your machine-local index so the board can find it. It is safe to run again,
+and it never touches existing stories. Because the package installs a
+`git-skald` command, `git skald ...` works everywhere `skald ...` does.
+
 Then add one line to your repository's `CLAUDE.md` or `AGENTS.md`:
 
 > This repository tracks work with Skald. Read `.skald/AGENTS.md` before
 > starting any task.
 
+**Joining a repository someone else set up:** just clone it and run any
+`skald` command inside it. The backlog is already there; the first command
+registers the project on your machine.
+
 ## Quick start
 
 ```sh
-git skald new "Implement WireGuard overlay" --tags infra --body "Configure wg0 on every node."
-git skald new "Write the network docs" --status ready --blocked-by a3f9c2
-git skald ls
-git skald serve --open
+skald new "Implement WireGuard overlay" --tags infra --body "Configure wg0 on every node."
+skald new "Write the network docs" --status ready --blocked-by a3f9c2
+skald ls
+skald open            # starts the board server if needed and opens this project
 ```
-
-If you would rather not use the alias, every command also works as
-`python3 .skald/skald.py <command>` from any directory in the repository.
 
 An agent's session looks like this:
 
 ```sh
-skald next --json          # the first ready, unblocked story
-skald mv a3f9c2 in_progress
-skald note a3f9c2 "Claimed. Plan: ..."
+skald next --json                 # first ready, unblocked, unassigned story
+skald claim a3f9c2 --as claude    # assign it and move it to in_progress
+skald note a3f9c2 "Plan: ..." --as claude
 # ... write code ...
 skald mv a3f9c2 review
 git add .skald src && git commit
@@ -64,7 +70,8 @@ title: "Implement WireGuard overlay network"
 status: "ready"
 rank: 20
 tags: ["infrastructure", "v1.0"]
-blocked_by: ["7b21e0"]
+blocked_by: ["7b21e0", "api-server:c4d811"]
+assignee: "claude"
 created_at: "2026-09-05T10:00:00Z"
 updated_at: "2026-09-06T08:12:41Z"
 ---
@@ -72,89 +79,218 @@ updated_at: "2026-09-06T08:12:41Z"
 
 Configure the wg0 interface on every node...
 
-## [agent] 2026-09-06 08:12 UTC
-Claimed. Plan:
-- [ ] write wg0.conf template
+- [x] write wg0.conf template
+- [ ] systemd unit
+
+## [claude] 2026-09-06 08:12 UTC
+Claimed. Template done, unit next.
 ```
 
 - The **frontmatter** is owned by Skald. Every value is a JSON literal, one
-  field per line. Change it with the CLI or the board, never by hand.
-- The **body** is free-form Markdown owned by people and agents. Edit it
-  however you like. `skald note` appends a timestamped section.
+  field per line. Change it with the CLI or the board, never by hand. Unknown
+  fields are preserved, so you can add your own.
+- The **body** is free-form Markdown owned by people and agents. `skald note`
+  appends a timestamped section. Task-list items show as progress on cards.
 - The **filename** carries the id: six hex characters plus a cosmetic slug.
-- `status` is one of `backlog`, `ready`, `in_progress`, `review`, `done`.
+- `status` must be one of the project's column keys.
 - `rank` orders cards within a column. Lower sorts first.
 - `blocked_by` is advisory. Moving a blocked story forward prints a warning
-  and still succeeds.
+  and still succeeds. An entry written as `project:id` points at a story in
+  another repository registered on this machine.
+- `assignee` is free text. `skald next` skips stories assigned to someone else.
 
-Unknown frontmatter fields are preserved, so you can add your own.
+## Columns
 
-## CLI
+Each project defines its own columns in `.skald/config.json`. A column has a
+key, a label, a role, and an optional WIP limit:
 
-Any `<id>` may be a unique prefix. Every command that prints stories takes
-`--json`. Exit codes: 0 success (warnings on stderr), 1 usage error or story
-not found, 2 corrupt story file.
+```json
+{
+  "format": 1,
+  "name": "api-server",
+  "columns": [
+    {"key": "backlog",     "label": "Backlog",     "role": "backlog"},
+    {"key": "ready",       "label": "Ready",       "role": "ready"},
+    {"key": "in_progress", "label": "In progress", "role": "active", "limit": 3},
+    {"key": "qa",          "label": "QA",          "role": "active"},
+    {"key": "done",        "label": "Done",        "role": "done"},
+    {"key": "wont_do",     "label": "Won't do",    "role": "closed"}
+  ]
+}
+```
 
-| Command | What it does |
-| --- | --- |
-| `init` | Create the layout, `AGENTS.md`, and the git alias. |
-| `ls [--status S] [--tag T] [--unblocked] [--all]` | List stories. Hides `done` unless `--all`. |
-| `next` | The first `ready`, unblocked story. Exit 1 if none. |
-| `show <id>` | Print the file. `--json` adds `unmet`, `body`, and `body_sha256`. |
-| `new "<title>" [--status S] [--tags a,b] [--blocked-by id,id] [--body TEXT \| -]` | Create a story and print its id. |
-| `mv <id> <status>` | Change status. Warns if dependencies are unmet. |
-| `set <id> title="..." rank=N` | Edit title or rank. |
-| `tag <id> +tag -tag` | Add or remove tags. |
-| `block <id> +id -id` | Add or remove dependencies. Cycles warn. |
-| `note <id> "<text>" \| - [--as LABEL]` | Append a timestamped note. |
-| `rm <id> [--force]` | Delete. Refuses if other stories depend on it. |
-| `check` | Validate every file. Exit 2 on problems. Good as a pre-commit hook. |
-| `serve [--port 8321] [--host 127.0.0.1] [--open]` | Start the web board. |
+Roles give the tool its semantics: `next` picks from `ready` columns, `claim`
+moves into the first `active` column, `done` and `closed` columns are terminal
+(hidden by default, satisfy dependencies, archivable), and moving into
+`ready`, `active`, or `done` warns about unmet dependencies. A story whose
+status matches no column still shows up, in an "Unknown status" column on the
+board and as a problem from `skald check`.
+
+## Projects on one machine
+
+Every `skald` command registers the current project in a machine-local index
+(`~/.config/skald/projects.json`, or `%APPDATA%\skald` on Windows, or
+`$SKALD_HOME`). Nothing in that directory is ever committed.
+
+```sh
+skald projects                    # what is registered here
+skald -p api-server ls            # act on another project from anywhere
+skald ls --all-projects           # everything, ids shown as project:id
+skald next --all-projects
+skald projects rm old-thing       # forget one (files untouched)
+```
+
+The project name in `config.json` is what cross-project references use, so
+it is the same on every clone. A reference to a project that is not
+registered on this machine counts as unmet and is reported as a warning, not
+an error, because you may simply not have cloned that repository yet.
 
 ## Web board
 
-`skald serve` starts a local server and serves a single-page Kanban board.
-Drag cards between columns or reorder them within one. Click a card to edit
-its title, status, tags, and blockers, edit the body, or append a note.
-Blocked cards show a lock. Warnings appear as toasts. The board polls every
-three seconds, so changes an agent makes from the CLI show up on their own.
+```sh
+skald open              # ensure the background server is running, open this project
+skald server start      # or manage it explicitly
+skald server status
+skald server stop
+skald serve             # run in the foreground instead
+```
 
-The board uses Tailwind from a CDN, so it needs internet access for styling.
-The server binds to `127.0.0.1` and has no authentication. Every write
-endpoint changes files, so only expose it on other interfaces deliberately.
+One server shows every registered project; switch with the dropdown or
+choose "All projects" for a single list of ready, unblocked work everywhere.
+Drag cards between and within columns. Click a card to edit it, preview the
+body as Markdown, append a note, claim it, or see its git history. Blocked
+cards show a lock, stale active cards show a marker, and columns over their
+WIP limit turn red. The header shows the current branch and, when story
+files are uncommitted, a button that commits just `.skald/` (and pushes, if
+you enable that).
+
+The board uses Tailwind and marked from CDNs, so styling and Markdown
+preview need internet access. The server binds to `127.0.0.1` and has no
+authentication; every write endpoint changes files, so only expose it on
+other interfaces deliberately.
+
+## User settings
+
+```sh
+skald config                      # show all
+skald config author "Jon"         # name used for notes and claims made from the board
+skald config push true            # let the board's commit button also push
+skald config port 9000
+skald config stale_days 5
+```
+
+Notes made from the CLI are labelled `agent` unless you pass `--as NAME` or
+set `SKALD_AUTHOR`. Notes made from the board use `SKALD_AUTHOR`, then the
+configured `author`, then your git `user.name`.
+
+## CLI
+
+Any `<id>` may be a unique prefix. Commands that print stories take `--json`.
+Exit codes: 0 success (warnings on stderr), 1 usage error or not found, 2
+corrupt story or configuration.
+
+| Command | What it does |
+| --- | --- |
+| `init [--name N]` | Create `.skald/` here, or register an existing one. Removes the 0.1 vendored layout. |
+| `status` | Project, branch, per-column counts, uncommitted story files. |
+| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects]` | List stories. Hides terminal columns unless `--all`. |
+| `next [--as NAME] [--all-projects]` | First ready, unblocked story not assigned to someone else. Exit 1 if none. |
+| `show <id>` | Print the file. `--json` adds derived fields, body, and body hash. |
+| `new "<title>" [--status C] [--tags a,b] [--blocked-by id,proj:id] [--body TEXT \| -] [--template T] [--assignee A]` | Create a story and print its id. |
+| `mv <id> <column>` | Change status. Warns on unmet dependencies and WIP limits. |
+| `claim <id> --as NAME` | Assign and move into the first active column. |
+| `set <id> title="..." rank=N assignee=NAME` | Edit fields. `assignee=` clears it. |
+| `tag <id> +tag -tag` | Add or remove tags. |
+| `block <id> +id -id` | Add or remove dependencies. `proj:id` for another project. Cycles warn. |
+| `note <id> "<text>" \| - [--as NAME]` | Append a timestamped note. |
+| `log <id>` | Git history of the story file. |
+| `archive [--dry-run]`, `unarchive <id>` | Move terminal stories to `.skald/archive/` and back. |
+| `check [--hook]` | Validate every file. Exit 2 on problems. `--hook` also fails on uncommitted story files. |
+| `commit [-m MSG] [--push]` | Commit everything under `.skald/` and nothing else. |
+| `changelog --since REF [--until REF]` | Stories that reached a terminal column between two git refs. |
+| `columns`, `templates`, `projects`, `config` | Inspect configuration. |
+| `hooks claude [--install] [--strict]` | Print or install Claude Code hooks (see below). |
+| `open`, `server start\|stop\|status`, `serve` | The board. |
+
+`-p NAME` before any command targets a registered project instead of the
+current directory.
+
+## Agent hooks
+
+```sh
+skald hooks claude --install
+```
+
+adds two hooks to `.claude/settings.json`: a SessionStart hook that runs
+`skald status && skald ls` so the agent starts every session oriented, and a
+Stop hook that runs `skald check` so it cannot finish with a broken backlog.
+With `--strict` the Stop hook is `skald check --hook`, which also fails while
+story files are uncommitted, enforcing the "commit stories with code" rule.
+
+For CI or a pre-commit hook, `skald check` exits non-zero on corrupt files,
+dangling or self references, unknown statuses, cycles, and conflict markers:
+
+```sh
+# .git/hooks/pre-commit
+#!/bin/sh
+exec skald check
+```
+
+## Templates
+
+Put Markdown files in `.skald/templates/` and create stories from them:
+
+```sh
+skald new "Login crashes on Safari" --template bug
+```
+
+The template becomes the body; any `--body` text is appended after it.
 
 ## HTTP API
 
-All bodies are JSON. Errors are `{"error": "..."}` with a 4xx status.
+All bodies are JSON. Errors are `{"error": "..."}` with a 4xx or 5xx status.
+Project names come from the registry; the API never accepts a path.
 
 | Method and path | Body | Result |
 | --- | --- | --- |
-| `GET /api/board` | | `{statuses, stories, warnings}` |
-| `GET /api/stories/<id>` | | story plus `body` and `body_sha256` |
-| `POST /api/stories` | `{title, status?, tags?, blocked_by?, body?}` | 201, `{story, warnings}` |
-| `PATCH /api/stories/<id>` | any of `{title, status, rank, tags, blocked_by, order}` | `{story, warnings}` |
-| `PUT /api/stories/<id>/body` | `{body, base_sha256}` | story, or 409 if the body changed on disk |
-| `POST /api/stories/<id>/notes` | `{text, author?}` | 201, story with body |
-| `DELETE /api/stories/<id>[?force=1]` | | 204, or 409 if other stories depend on it |
-
-A story object carries the frontmatter fields plus `id`, `filename`,
-`unmet` (blocker ids that are not done), and `blocked`.
+| `GET /api/health` | | `{ok, version, pid}` |
+| `GET /api/projects` | | `{projects, settings}` |
+| `GET /api/ready` | | ready, unblocked stories across all projects |
+| `GET /api/projects/<p>/board` | | `{columns, stories, git, identity, settings, version, warnings}` |
+| `GET /api/projects/<p>/version` | | a hash that changes whenever any story file changes |
+| `POST /api/projects/<p>/stories` | `{title, status?, tags?, blocked_by?, body?, assignee?, template?}` | 201, `{story, warnings}` |
+| `GET /api/projects/<p>/stories/<id>` | | story with `body`, `body_sha256`, and `deps` |
+| `PATCH /api/projects/<p>/stories/<id>` | any of `{title, status, rank, tags, blocked_by, assignee, order}` | `{story, warnings}` |
+| `PUT /api/projects/<p>/stories/<id>/body` | `{body, base_sha256}` | story, or 409 if the body changed on disk |
+| `POST /api/projects/<p>/stories/<id>/notes` | `{text, author?}` | 201, story with body |
+| `POST /api/projects/<p>/stories/<id>/claim` | `{author?}` | `{story, warnings}` |
+| `GET /api/projects/<p>/stories/<id>/history` | | `{history: [{sha, date, author, subject}]}` |
+| `DELETE /api/projects/<p>/stories/<id>[?force=1]` | | 204, or 409 if other stories depend on it |
+| `GET /api/projects/<p>/git` | | `{branch, changes, push_enabled, identity}` |
+| `POST /api/projects/<p>/git/commit` | `{message?, push?}` | `{sha, message, pushed, output}` |
+| `POST /api/projects/<p>/archive` | | `{archived: [ids]}` |
+| `GET /api/projects/<p>/templates` | | `{templates}` |
 
 `order` is the full ordered list of ids for the story's column. Sending
 `status` and `order` together moves and reorders in one request.
 
+## Upgrading from 0.1
+
+Run `skald init` in the repository. It deletes the vendored `.skald/skald.py`,
+removes the old git alias, writes `config.json`, and registers the project.
+Story files are unchanged.
+
 ## Development
 
 ```sh
-python3 -m unittest          # the whole suite, standard library only
-python3 skald.py serve       # run against this repository's own .skald/
+pip install -e .
+python -m unittest          # standard library only
+skald serve                 # run against this repository's own backlog
 ```
 
-The root `skald.py` is the source of truth. `.skald/skald.py` is the
-vendored copy this repository uses for its own backlog, and a test fails if
-the two differ. After changing `skald.py`, copy it over `.skald/skald.py`.
-
-The full design is in [SPEC.md](SPEC.md).
+This repository dogfoods Skald: its own backlog is in `.skald/`. The design is
+in [SPEC.md](SPEC.md) and the reasoning behind non-obvious choices is in
+[DECISIONS.md](DECISIONS.md).
 
 ## License
 

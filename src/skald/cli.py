@@ -1,0 +1,813 @@
+"""The ``skald`` command (also reachable as ``git skald``)."""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Optional
+
+from . import __version__, gitutil
+from .config import ProjectConfig, slugify_name
+from .errors import GitError, NotFoundError, SkaldError
+from .registry import Registry, UserConfig, Workspace, find_skald_dir
+from .store import Store, Story, serialise_story, split_ref
+from .util import read_text
+
+OLD_ALIAS = "!python3 .skald/skald.py"
+
+
+# --------------------------------------------------------------------------
+# Identity
+# --------------------------------------------------------------------------
+
+
+def cli_identity(explicit: Optional[str] = None) -> str:
+    """Who is acting from the command line. Agents are the default caller."""
+    if explicit and explicit.strip():
+        return explicit.strip()
+    env = os.environ.get("SKALD_AUTHOR", "").strip()
+    return env or "agent"
+
+
+def human_identity(user: UserConfig, repo: Optional[Path]) -> str:
+    """Who is acting from the board: env, then user config, then git, then 'human'."""
+    env = os.environ.get("SKALD_AUTHOR", "").strip()
+    if env:
+        return env
+    configured = (user.get("author") or "").strip()
+    if configured:
+        return configured
+    if repo:
+        name = gitutil.user_name(repo)
+        if name:
+            return name
+    return "human"
+
+
+# --------------------------------------------------------------------------
+# Output helpers
+# --------------------------------------------------------------------------
+
+
+def _warn(warnings) -> None:
+    for w in warnings:
+        print(f"WARNING: {w}", file=sys.stderr)
+
+
+def _notice(lines) -> None:
+    for line in lines:
+        print(f"NOTE: {line}", file=sys.stderr)
+
+
+def _print_table(rows: list[list[str]], headers: list[str]) -> None:
+    widths = [len(h) for h in headers]
+    for row in rows:
+        for i, cell in enumerate(row[:-1]):
+            widths[i] = max(widths[i], len(cell))
+    fmt = "  ".join("{:<%d}" % w for w in widths[:-1]) + "  {}"
+    print(fmt.format(*headers))
+    for row in rows:
+        print(fmt.format(*row))
+
+
+def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False) -> list[list[str]]:
+    rows = []
+    for s in stories:
+        unmet = store.unmet(s, idx)
+        sid = f"{store.name}:{s.id}" if qualify else s.id
+        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", s.assignee or "-", ",".join(s.tags) or "-", s.title])
+    return rows
+
+
+STORY_HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "ASSIGNEE", "TAGS", "TITLE"]
+
+
+def _read_text_arg(value: Optional[str]) -> str:
+    if value == "-":
+        return sys.stdin.read()
+    return value or ""
+
+
+def _parse_plus_minus(args: list[str], what: str) -> tuple[list[str], list[str]]:
+    add, remove = [], []
+    for a in args:
+        if a.startswith("+") and len(a) > 1:
+            add.append(a[1:])
+        elif a.startswith("-") and len(a) > 1:
+            remove.append(a[1:])
+        else:
+            raise SkaldError(f"expected +{what} or -{what}, got '{a}'")
+    if not add and not remove:
+        raise SkaldError(f"nothing to do: give at least one +{what} or -{what}")
+    return add, remove
+
+
+def _repo_of(store: Store) -> Optional[Path]:
+    return gitutil.root(store.dir)
+
+
+def _skald_rel(store: Store, repo: Path) -> str:
+    return str(store.dir.relative_to(repo)) if store.dir.is_relative_to(repo) else str(store.dir)
+
+
+# --------------------------------------------------------------------------
+# Parser
+# --------------------------------------------------------------------------
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="skald", description="Kanban lite for coding agents.")
+    p.add_argument("--version", action="version", version=f"skald {__version__}")
+    p.add_argument("-p", "--project", metavar="NAME", help="act on a registered project instead of the current directory")
+    sub = p.add_subparsers(dest="command", metavar="<command>")
+
+    init = sub.add_parser("init", help="create .skald/ here (or register an existing one)")
+    init.add_argument("--name", help="project name (default: the directory name)")
+
+    ls = sub.add_parser("ls", help="list stories")
+    ls.add_argument("--status", metavar="COLUMN")
+    ls.add_argument("--tag")
+    ls.add_argument("--assignee")
+    ls.add_argument("--unblocked", action="store_true", help="only stories with no unmet dependencies")
+    ls.add_argument("--all", action="store_true", help="include done and closed stories")
+    ls.add_argument("--archived", action="store_true", help="include archived stories")
+    ls.add_argument("--all-projects", action="store_true", help="every registered project")
+    ls.add_argument("--json", action="store_true")
+
+    nx = sub.add_parser("next", help="the story to pick up next")
+    nx.add_argument("--as", dest="author", help="skip stories assigned to someone else")
+    nx.add_argument("--all-projects", action="store_true")
+    nx.add_argument("--json", action="store_true")
+
+    sh = sub.add_parser("show", help="print a story file")
+    sh.add_argument("id")
+    sh.add_argument("--json", action="store_true")
+
+    new = sub.add_parser("new", help="create a story")
+    new.add_argument("title")
+    new.add_argument("--status", metavar="COLUMN")
+    new.add_argument("--tags", default="", help="comma-separated")
+    new.add_argument("--blocked-by", default="", help="comma-separated ids, or project:id")
+    new.add_argument("--body", default="", help="requirements text, or - to read stdin")
+    new.add_argument("--template", help="a template from .skald/templates/")
+    new.add_argument("--assignee", default="")
+    new.add_argument("--json", action="store_true")
+
+    mv = sub.add_parser("mv", help="change a story's status")
+    mv.add_argument("id")
+    mv.add_argument("status", metavar="COLUMN")
+
+    cl = sub.add_parser("claim", help="assign a story to yourself and start it")
+    cl.add_argument("id")
+    cl.add_argument("--as", dest="author")
+
+    st = sub.add_parser("set", help="set title=..., rank=N, or assignee=NAME")
+    st.add_argument("id")
+    st.add_argument("assignments", nargs="+", metavar="key=value")
+
+    sub.add_parser("tag", help="tag <id> +tag -tag ...")
+    sub.add_parser("block", help="block <id> +id -id ... (project:id for other projects)")
+
+    note = sub.add_parser("note", help="append a note to a story")
+    note.add_argument("id")
+    note.add_argument("text", help="note text, or - to read stdin")
+    note.add_argument("--as", dest="author", help="author label (default: agent)")
+
+    rm = sub.add_parser("rm", help="delete a story")
+    rm.add_argument("id")
+    rm.add_argument("--force", action="store_true")
+
+    lg = sub.add_parser("log", help="git history of a story")
+    lg.add_argument("id")
+    lg.add_argument("--json", action="store_true")
+
+    ar = sub.add_parser("archive", help="move done and closed stories to .skald/archive/")
+    ar.add_argument("--dry-run", action="store_true")
+    ua = sub.add_parser("unarchive", help="move a story back out of the archive")
+    ua.add_argument("id")
+
+    ck = sub.add_parser("check", help="validate every story file")
+    ck.add_argument("--json", action="store_true")
+    ck.add_argument("--hook", action="store_true", help="also fail on uncommitted story changes (for agent stop hooks)")
+
+    stt = sub.add_parser("status", help="project summary: branch, counts, uncommitted story changes")
+    stt.add_argument("--json", action="store_true")
+
+    cm = sub.add_parser("commit", help="commit everything under .skald/")
+    cm.add_argument("-m", "--message")
+    cm.add_argument("--push", action="store_true")
+
+    chg = sub.add_parser("changelog", help="stories completed between two git refs")
+    chg.add_argument("--since", required=True, metavar="REF")
+    chg.add_argument("--until", default="HEAD", metavar="REF")
+    chg.add_argument("--json", action="store_true")
+
+    sub.add_parser("columns", help="list this project's columns").add_argument("--json", action="store_true")
+    sub.add_parser("templates", help="list story templates in .skald/templates/")
+
+    pr = sub.add_parser("projects", help="list projects registered on this machine")
+    pr.add_argument("--json", action="store_true")
+    prs = pr.add_subparsers(dest="projects_cmd")
+    prm = prs.add_parser("rm", help="forget a project (files are untouched)")
+    prm.add_argument("name")
+
+    cf = sub.add_parser("config", help="get or set a user setting")
+    cf.add_argument("key", nargs="?")
+    cf.add_argument("value", nargs="?")
+    cf.add_argument("--unset", action="store_true")
+
+    hk = sub.add_parser("hooks", help="print or install agent hooks")
+    hk.add_argument("target", choices=["claude"])
+    hk.add_argument("--install", action="store_true", help="merge into .claude/settings.json")
+    hk.add_argument("--strict", action="store_true", help="stop hook also fails on uncommitted story changes")
+
+    sv = sub.add_parser("serve", help="run the board in the foreground")
+    sv.add_argument("--host")
+    sv.add_argument("--port", type=int)
+    sv.add_argument("--open", action="store_true")
+
+    srv = sub.add_parser("server", help="manage the background board server")
+    srvs = srv.add_subparsers(dest="server_cmd")
+    ss = srvs.add_parser("start")
+    ss.add_argument("--host")
+    ss.add_argument("--port", type=int)
+    srvs.add_parser("stop")
+    srvs.add_parser("status")
+
+    sub.add_parser("open", help="start the server if needed and open the board for this project")
+
+    return p
+
+
+# --------------------------------------------------------------------------
+# Commands
+# --------------------------------------------------------------------------
+
+
+def cmd_init(ws: Workspace, args) -> int:
+    cwd = Path.cwd().resolve()
+    repo = gitutil.root(cwd)
+    existing = find_skald_dir(cwd)
+    if existing is not None:
+        skald_dir = existing
+    else:
+        skald_dir = (repo or cwd) / ".skald"
+    created = not (skald_dir / "stories").is_dir()
+    (skald_dir / "stories").mkdir(parents=True, exist_ok=True)
+    keep = skald_dir / "stories" / ".gitkeep"
+    if not keep.exists():
+        keep.write_text("")
+    lines = [f"{'created' if created else 'found'} {skald_dir}"]
+
+    cfg_path = skald_dir / "config.json"
+    if cfg_path.exists():
+        config = ProjectConfig.load(cfg_path)
+        if args.name and args.name != config.name:
+            config.name = slugify_name(args.name)
+            config.save(cfg_path)
+            lines.append(f"renamed project to '{config.name}' in {cfg_path.name}")
+        else:
+            lines.append(f"kept {cfg_path.name} (project '{config.name}')")
+    else:
+        name = slugify_name(args.name) if args.name else slugify_name(skald_dir.parent.name)
+        config = ProjectConfig(name)
+        config.save(cfg_path)
+        lines.append(f"wrote {cfg_path.name} (project '{name}', columns: {config.describe()})")
+
+    agents = skald_dir / "AGENTS.md"
+    if agents.exists():
+        lines.append("kept existing AGENTS.md")
+    else:
+        agents.write_text(agents_template(), encoding="utf-8")
+        lines.append("wrote AGENTS.md")
+
+    legacy = skald_dir / "skald.py"
+    if legacy.exists():
+        legacy.unlink()
+        lines.append("removed vendored skald.py from the 0.1 layout (the package replaces it)")
+    if repo:
+        alias = gitutil.get_alias(repo, "skald")
+        if alias == OLD_ALIAS:
+            gitutil.unset_alias(repo, "skald")
+            lines.append("removed the 0.1 git alias; `git skald` now uses the installed git-skald command")
+
+    notice = ws.registry.register(config.name, skald_dir)
+    lines.append(notice or f"project '{config.name}' already registered")
+    lines.append("")
+    lines.append("Add this line to your repository's CLAUDE.md or AGENTS.md:")
+    lines.append("  This repository tracks work with Skald. Read .skald/AGENTS.md before starting any task.")
+    lines.append("Then commit .skald/ and run `skald open` to see the board.")
+    for line in lines:
+        print(line)
+    return 0
+
+
+def _filtered(store: Store, args, stories, idx):
+    rows = stories
+    if args.status:
+        rows = [s for s in rows if s.status == args.status]
+    elif not args.all:
+        rows = [s for s in rows if not store.config.is_terminal(s.status)]
+    if args.tag:
+        tag = args.tag.strip().lower()
+        rows = [s for s in rows if tag in s.tags]
+    if getattr(args, "assignee", None):
+        rows = [s for s in rows if s.assignee == args.assignee]
+    if args.unblocked:
+        rows = [s for s in rows if not store.unmet(s, idx)]
+    return rows
+
+
+def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
+    if args.all_projects:
+        stores, warnings = ws.open_all()
+        _warn(warnings)
+    else:
+        stores = [store]
+    rows, dicts = [], []
+    for st in stores:
+        stories, load_warnings = st.load_all(include_archived=args.archived)
+        _warn(load_warnings)
+        idx = {s.id: s for s in stories}
+        sel = _filtered(st, args, stories, idx)
+        rows.extend(_story_rows(st, sel, idx, qualify=args.all_projects))
+        dicts.extend(st.story_dict(s, idx, ws.user.get("stale_days")) for s in sel)
+    if args.json:
+        print(json.dumps(dicts, indent=2))
+    else:
+        _print_table(rows, STORY_HEADERS)
+    return 0
+
+
+def cmd_next(ws: Workspace, args, store: Optional[Store]) -> int:
+    author = cli_identity(args.author)
+    stores = ws.open_all()[0] if args.all_projects else [store]
+    for st in stores:
+        s = st.next_story(for_author=author)
+        if s:
+            if args.json:
+                print(json.dumps(st.story_dict(s), indent=2))
+            else:
+                _print_table(_story_rows(st, [s], None, qualify=args.all_projects), STORY_HEADERS)
+            return 0
+    print("no ready, unblocked stories", file=sys.stderr)
+    return 1
+
+
+def cmd_show(ws: Workspace, args, store: Store) -> int:
+    story = store.get(args.id)
+    if args.json:
+        d = store.story_dict(story, None, ws.user.get("stale_days"))
+        d["body"] = story.body
+        d["body_sha256"] = store.body_sha(story)
+        print(json.dumps(d, indent=2))
+    else:
+        sys.stdout.write(serialise_story(story.fields, story.body))
+    return 0
+
+
+def cmd_new(ws: Workspace, args, store: Store) -> int:
+    tags = [t for t in args.tags.split(",") if t.strip()]
+    blockers = [b for b in args.blocked_by.split(",") if b.strip()]
+    body = _read_text_arg(args.body)
+    story, warnings = store.create(args.title, args.status, tags, blockers, body, args.assignee, args.template)
+    _warn(warnings)
+    if args.json:
+        print(json.dumps(store.story_dict(story), indent=2))
+    else:
+        print(story.id)
+    return 0
+
+
+def cmd_tag_block(store: Store, argv: list[str]) -> int:
+    if len(argv) < 2:
+        raise SkaldError(f"usage: skald {argv[0]} <id> +item -item ...")
+    ref, rest = argv[1], argv[2:]
+    story = store.get(ref)
+    if argv[0] == "tag":
+        add, remove = _parse_plus_minus(rest, "tag")
+        from .store import normalise_tags
+
+        tags = set(story.tags) | set(normalise_tags(add))
+        tags -= set(normalise_tags(remove))
+        story, warnings = store.update(story.id, tags=sorted(tags))
+        _warn(warnings)
+        print(f"{story.id} tags: {', '.join(story.tags) or '-'}")
+    else:
+        add, remove = _parse_plus_minus(rest, "id")
+        current = set(story.blocked_by)
+        for r in remove:
+            project, sid = split_ref(r.lower())
+            if project is None or project == store.name:
+                current.discard(store.resolve(sid))
+            else:
+                current.discard(r.lower())
+        story, warnings = store.update(story.id, blocked_by=sorted(current | set(a.lower() for a in add)))
+        _warn(warnings)
+        print(f"{story.id} blocked_by: {', '.join(story.blocked_by) or '-'}")
+    return 0
+
+
+def cmd_set(store: Store, args) -> int:
+    kwargs = {}
+    for a in args.assignments:
+        if "=" not in a:
+            raise SkaldError(f"expected key=value, got '{a}'")
+        key, value = a.split("=", 1)
+        key = key.strip()
+        if key == "title":
+            kwargs["title"] = value
+        elif key == "rank":
+            try:
+                kwargs["rank"] = int(value)
+            except ValueError:
+                raise SkaldError(f"rank must be an integer, got '{value}'") from None
+        elif key == "assignee":
+            kwargs["assignee"] = value
+        else:
+            raise SkaldError(f"cannot set '{key}' (use mv, tag, or block for status, tags, blocked_by)")
+    story, warnings = store.update(args.id, **kwargs)
+    _warn(warnings)
+    print(f"updated {story.id}")
+    return 0
+
+
+def cmd_log(store: Store, args) -> int:
+    story = store.get(args.id)
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    entries = gitutil.log_file(repo, story.path)
+    if args.json:
+        print(json.dumps(entries, indent=2))
+    else:
+        if not entries:
+            print(f"{story.id} has no commits yet")
+        for e in entries:
+            print(f"{e['sha']}  {e['date'][:16].replace('T', ' ')}  {e['author']:<20}  {e['subject']}")
+    return 0
+
+
+def _uncommitted(store: Store) -> tuple[Optional[Path], list[dict]]:
+    repo = _repo_of(store)
+    if repo is None:
+        return None, []
+    try:
+        return repo, gitutil.changes(repo, _skald_rel(store, repo))
+    except GitError:
+        return repo, []
+
+
+def cmd_check(store: Store, args) -> int:
+    problems, warnings = store.check()
+    uncommitted = []
+    if args.hook:
+        _, uncommitted = _uncommitted(store)
+    if args.json:
+        print(json.dumps({"ok": not problems and not uncommitted, "problems": problems, "warnings": warnings,
+                          "uncommitted": [c["path"] for c in uncommitted]}, indent=2))
+    else:
+        for w in warnings:
+            print(f"WARNING: {w}", file=sys.stderr)
+        for pr in problems:
+            print(f"PROBLEM: {pr}")
+        if uncommitted:
+            print(f"PROBLEM: {len(uncommitted)} uncommitted story file(s) under .skald/: "
+                  + ", ".join(c["path"] for c in uncommitted[:5])
+                  + (" ..." if len(uncommitted) > 5 else "")
+                  + ". Commit them together with the code they describe.")
+        if not problems and not uncommitted:
+            print("ok")
+    return 2 if (problems or uncommitted) else 0
+
+
+def cmd_status(ws: Workspace, store: Store, args) -> int:
+    repo, uncommitted = _uncommitted(store)
+    stories, load_warnings = store.load_all()
+    idx = {s.id: s for s in stories}
+    counts = {c.key: 0 for c in store.config.columns}
+    unknown = 0
+    for s in stories:
+        if s.status in counts:
+            counts[s.status] += 1
+        else:
+            unknown += 1
+    ready = [s for s in stories if store.config.role(s.status) == "ready" and not store.unmet(s, idx)]
+    info = {
+        "project": store.name,
+        "path": str(store.dir),
+        "branch": gitutil.branch(repo) if repo else None,
+        "counts": counts,
+        "unknown_status": unknown,
+        "ready_unblocked": len(ready),
+        "uncommitted": [c["path"] for c in uncommitted],
+        "warnings": load_warnings,
+    }
+    if args.json:
+        print(json.dumps(info, indent=2))
+        return 0
+    print(f"project:  {store.name}  ({store.dir})")
+    if info["branch"]:
+        print(f"branch:   {info['branch']}")
+    print("columns:  " + "  ".join(f"{k}={v}" for k, v in counts.items()) + (f"  unknown={unknown}" if unknown else ""))
+    print(f"ready and unblocked: {len(ready)}")
+    if uncommitted:
+        print(f"uncommitted story changes: {len(uncommitted)} file(s) under .skald/")
+    else:
+        print("uncommitted story changes: none")
+    _warn(load_warnings)
+    return 0
+
+
+def cmd_commit(ws: Workspace, store: Store, args) -> int:
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    rel = _skald_rel(store, repo)
+    changes = gitutil.changes(repo, rel)
+    if not changes:
+        print("nothing to commit under .skald/")
+        return 0
+    message = args.message or f"skald: update {len(changes)} story file(s)"
+    sha = gitutil.commit_path(repo, rel, message)
+    print(f"committed {sha}: {message}")
+    if args.push or ws.user.get("push"):
+        out = gitutil.push(repo)
+        print(out or "pushed")
+    return 0
+
+
+def _parse_at(repo: Path, ref: str, rel: str):
+    from .store import parse_story_text
+
+    text = gitutil.show(repo, ref, rel)
+    if text is None:
+        return None
+    try:
+        fields, _ = parse_story_text(text, rel)
+    except SkaldError:
+        return None
+    return fields
+
+
+def cmd_changelog(store: Store, args) -> int:
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    for ref in (args.since, args.until):
+        if gitutil.rev_parse(repo, ref) is None:
+            raise GitError(f"unknown git ref '{ref}'")
+    rel = _skald_rel(store, repo)
+    paths = set(gitutil.ls_tree(repo, args.until, f"{rel}/stories")) | set(gitutil.ls_tree(repo, args.until, f"{rel}/archive"))
+    done = []
+    for path in sorted(paths):
+        now = _parse_at(repo, args.until, path)
+        if not now or not store.config.is_terminal(now["status"]):
+            continue
+        sid = Path(path).name[:6]
+        before = None
+        for candidate in (path, path.replace(f"{rel}/archive/", f"{rel}/stories/"), path.replace(f"{rel}/stories/", f"{rel}/archive/")):
+            before = _parse_at(repo, args.since, candidate)
+            if before:
+                break
+        if before and store.config.is_terminal(before["status"]):
+            continue
+        done.append({"id": sid, "title": now["title"], "status": now["status"], "tags": now.get("tags", [])})
+    if args.json:
+        print(json.dumps(done, indent=2))
+        return 0
+    print(f"## Completed between {args.since} and {args.until}\n")
+    if not done:
+        print("(nothing)")
+    for d in done:
+        tags = f" [{', '.join(d['tags'])}]" if d["tags"] else ""
+        closed = " (closed)" if store.config.is_closed(d["status"]) else ""
+        print(f"- {d['title']} ({d['id']}){tags}{closed}")
+    return 0
+
+
+def cmd_projects(ws: Workspace, args) -> int:
+    if args.projects_cmd == "rm":
+        ws.registry.remove(args.name)
+        print(f"forgot project '{args.name}' (files untouched)")
+        return 0
+    entries = ws.registry.entries()
+    if args.json:
+        print(json.dumps(entries, indent=2))
+        return 0
+    if not entries:
+        print("no projects registered; run `skald init` inside a repository")
+        return 0
+    rows = [[e["name"], "ok" if e["exists"] else "missing", e["path"]] for e in entries]
+    _print_table(rows, ["NAME", "STATE", "PATH"])
+    return 0
+
+
+def cmd_config(ws: Workspace, args) -> int:
+    user = ws.user
+    if args.key is None:
+        for k, v in user.all().items():
+            print(f"{k} = {json.dumps(v)}")
+        print(f"(stored in {user.path})")
+        return 0
+    if args.unset:
+        user.unset(args.key)
+        print(f"unset {args.key}")
+        return 0
+    if args.value is None:
+        print(json.dumps(user.get(args.key)))
+        return 0
+    user.set(args.key, args.value)
+    print(f"{args.key} = {json.dumps(user.get(args.key))}")
+    return 0
+
+
+def cmd_columns(store: Store, args) -> int:
+    if args.json:
+        print(json.dumps([c.to_dict() for c in store.config.columns], indent=2))
+        return 0
+    rows = [[c.key, c.label, c.role, str(c.limit) if c.limit else "-"] for c in store.config.columns]
+    _print_table(rows, ["KEY", "LABEL", "ROLE", "LIMIT"])
+    return 0
+
+
+def claude_hooks(strict: bool) -> dict:
+    stop = "skald check --hook" if strict else "skald check"
+    return {
+        "hooks": {
+            "SessionStart": [{"hooks": [{"type": "command", "command": "skald status && skald ls"}]}],
+            "Stop": [{"hooks": [{"type": "command", "command": stop}]}],
+        }
+    }
+
+
+def cmd_hooks(store: Store, args) -> int:
+    snippet = claude_hooks(args.strict)
+    if not args.install:
+        print(json.dumps(snippet, indent=2))
+        print("\nMerge this into .claude/settings.json, or rerun with --install.", file=sys.stderr)
+        return 0
+    repo = _repo_of(store) or store.dir.parent
+    path = repo / ".claude" / "settings.json"
+    data = {}
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError as e:
+            raise SkaldError(f"{path} is not valid JSON ({e})") from None
+    hooks = data.setdefault("hooks", {})
+    for event, entries in snippet["hooks"].items():
+        existing = hooks.setdefault(event, [])
+        for entry in entries:
+            cmd = entry["hooks"][0]["command"]
+            already = any(h.get("command", "").startswith("skald ") for e in existing for h in e.get("hooks", []))
+            if already:
+                for e in existing:
+                    for h in e.get("hooks", []):
+                        if h.get("command", "").startswith("skald "):
+                            h["command"] = cmd
+            else:
+                existing.append(entry)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    print(f"installed Skald hooks into {path}")
+    return 0
+
+
+# --------------------------------------------------------------------------
+# Dispatch
+# --------------------------------------------------------------------------
+
+PROJECT_COMMANDS = {
+    "ls", "next", "show", "new", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
+    "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
+    "hooks", "open",
+}
+
+
+def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
+    ws = ws or Workspace()
+
+    # `tag` and `block` take +x/-y arguments that argparse would treat as options.
+    if argv and argv[0] in ("tag", "block"):
+        store = ws.current()
+        _notice(ws.notices)
+        return cmd_tag_block(store, argv)
+    if len(argv) >= 3 and argv[0] in ("-p", "--project") and argv[2] in ("tag", "block"):
+        store = ws.current(argv[1])
+        return cmd_tag_block(store, argv[2:])
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if not args.command:
+        parser.print_help()
+        return 1
+
+    if args.command == "init":
+        return cmd_init(ws, args)
+    if args.command == "projects":
+        return cmd_projects(ws, args)
+    if args.command == "config":
+        return cmd_config(ws, args)
+    if args.command in ("serve", "server", "open"):
+        from . import server as srv
+
+        if args.command == "serve":
+            return srv.cmd_serve(ws, args)
+        if args.command == "open":
+            store = ws.current(args.project)
+            _notice(ws.notices)
+            return srv.cmd_open(ws, store)
+        return srv.cmd_server(ws, args)
+
+    store = None
+    if args.command in ("ls", "next") and getattr(args, "all_projects", False):
+        try:
+            store = ws.current(args.project)
+        except NotFoundError:
+            pass
+    elif args.command in PROJECT_COMMANDS:
+        store = ws.current(args.project)
+    _notice(ws.notices)
+
+    if args.command == "ls":
+        return cmd_ls(ws, args, store)
+    if args.command == "next":
+        return cmd_next(ws, args, store)
+    if args.command == "show":
+        return cmd_show(ws, args, store)
+    if args.command == "new":
+        return cmd_new(ws, args, store)
+    if args.command == "mv":
+        story, warnings = store.update(args.id, status=args.status)
+        _warn(warnings)
+        print(f"moved {story.id} to {story.status}")
+        return 0
+    if args.command == "claim":
+        story, warnings = store.claim(args.id, cli_identity(args.author))
+        _warn(warnings)
+        print(f"{story.id} claimed by {story.assignee}, now {story.status}")
+        return 0
+    if args.command == "set":
+        return cmd_set(store, args)
+    if args.command == "note":
+        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author))
+        print(f"noted on {story.id}")
+        return 0
+    if args.command == "rm":
+        story = store.delete(args.id, force=args.force)
+        print(f"deleted {story.id} ({story.path.name})")
+        return 0
+    if args.command == "log":
+        return cmd_log(store, args)
+    if args.command == "archive":
+        moved = store.archive(dry_run=args.dry_run)
+        verb = "would archive" if args.dry_run else "archived"
+        for s in moved:
+            print(f"{verb} {s.id}  {s.title}")
+        if not moved:
+            print("nothing to archive")
+        return 0
+    if args.command == "unarchive":
+        story = store.unarchive(args.id)
+        print(f"unarchived {story.id}")
+        return 0
+    if args.command == "check":
+        return cmd_check(store, args)
+    if args.command == "status":
+        return cmd_status(ws, store, args)
+    if args.command == "commit":
+        return cmd_commit(ws, store, args)
+    if args.command == "changelog":
+        return cmd_changelog(store, args)
+    if args.command == "columns":
+        return cmd_columns(store, args)
+    if args.command == "templates":
+        names = store.templates()
+        print("\n".join(names) if names else f"no templates; add Markdown files to {store.templates_dir}")
+        return 0
+    if args.command == "hooks":
+        return cmd_hooks(store, args)
+    parser.print_help()  # pragma: no cover
+    return 1
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    try:
+        return run(argv)
+    except SkaldError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return e.exit_code
+    except KeyboardInterrupt:
+        return 130
+    except BrokenPipeError:  # pragma: no cover
+        return 0
+
+
+def agents_template() -> str:
+    from importlib import resources
+
+    return resources.files("skald").joinpath("templates/AGENTS.md").read_text(encoding="utf-8")

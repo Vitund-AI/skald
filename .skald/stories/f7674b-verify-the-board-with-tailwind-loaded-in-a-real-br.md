@@ -5,7 +5,7 @@ rank: 10
 tags: ["ui"]
 blocked_by: []
 created_at: "2026-09-06T02:16:15Z"
-updated_at: "2026-09-06T06:02:50Z"
+updated_at: "2026-09-06T07:04:41Z"
 ---
 ## Requirements
 
@@ -22,3 +22,6 @@ All looking good.
 
 ## [human] 2026-09-06 06:02 UTC
 test
+
+## [claude] 2026-09-06 07:04 UTC
+The board changed a lot in 0.2: project switcher, custom columns, commit button, history tab, Markdown preview. It was exercised headlessly again but Tailwind and marked could not load in the sandbox, so please take another look with skald open.
