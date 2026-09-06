@@ -216,7 +216,16 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
 - A story is stale when its role is `active` and `updated_at` is at least
   `stale_days` old.
 
-### 4.5 Archive
+### 4.5 Facets
+
+A tag of the form `key:value` (split at the first colon, both sides
+non-empty) is a facet. `facets(stories, config)` groups stories by key and
+value with `total`, `done` (terminal status), `open`, and `ids`. Epics are
+the `epic` facet by convention; nothing in the format knows about them. The
+board response carries `facets`, and `facets`/`epics` aggregate across
+projects with `--all-projects`.
+
+### 4.5a Archive
 
 `archive` moves every story in a terminal column to `.skald/archive/`.
 Archived stories are excluded from listings unless `--archived`, still
@@ -281,6 +290,7 @@ story or configuration. Commands that print stories take `--json`.
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
 | `commit [-m MSG] [--push]` | `git add -A -- .skald && git commit -- .skald`. Pushes with `--push` or the `push` setting. |
 | `changelog --since REF [--until REF]` | Stories terminal at `until` that were absent or non-terminal at `since`, read from git objects. |
+| `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
 | `columns`, `templates`, `projects [rm NAME]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. |
 | `hooks claude [--install] [--strict]` | Prints or merges into `.claude/settings.json`: SessionStart `skald status && skald ls`; Stop `skald check` (or `skald check --hook` with `--strict`). |
 | `serve [--host H] [--port P] [--open]` | Foreground server. |
@@ -313,6 +323,8 @@ branch, filter, identity, commit button when `.skald/` has uncommitted
 changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
+One filter dropdown per facet key and a swimlane control that splits the
+board by a facet's values with a progress bar per lane.
 A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
 stories that exist only on other branches.

@@ -65,6 +65,7 @@ class TestAPI(ServerTestCase):
 
         status, board = self.call("GET", f"{P}/board")
         self.assertEqual(status, 200)
+        self.assertEqual(board["facets"], {})
         self.assertEqual([c["key"] for c in board["columns"]][0], "backlog")
         self.assertEqual([s["id"] for s in board["stories"]], [a, b])
         self.assertEqual(board["stories"][1]["deps"][0]["state"], "backlog")
@@ -84,8 +85,10 @@ class TestAPI(ServerTestCase):
         self.assertEqual([(s["id"], s["rank"]) for s in board["stories"]], [(a, 10), (b, 20)])
         self.assertNotEqual(board["version"], version)
 
-        status, data = self.call("PATCH", f"{P}/stories/{b}", {"status": "in_progress", "tags": ["y"], "assignee": "me"})
-        self.assertEqual((data["story"]["tags"], data["story"]["assignee"]), (["y"], "me"))
+        status, data = self.call("PATCH", f"{P}/stories/{b}", {"status": "in_progress", "tags": ["y", "epic:one"], "assignee": "me"})
+        self.assertEqual((data["story"]["tags"], data["story"]["assignee"]), (["epic:one", "y"], "me"))
+        status, board = self.call("GET", f"{P}/board")
+        self.assertEqual(board["facets"]["epic"]["one"]["total"], 1)
         self.assertIn("unmet dependencies", data["warnings"][0])
         self.assertEqual(self.call("PATCH", f"{P}/stories/{b}", {"bogus": 1})[0], 400)
         self.assertEqual(self.call("PATCH", f"{P}/stories/{b}", {"status": "bogus"})[0], 400)

@@ -175,3 +175,10 @@ snapshot, and a dependency being satisfied on another branch never unblocks
 a story here. The board shows the difference as a badge and a dropdown, not
 as a merged view, because a merged view would invite acting on state that is
 not actually in the working tree.
+
+### D28. Epics are a tag convention, not a field
+`epic:auth` is an ordinary tag. That means no format change, existing
+filters already work, cross-project epics fall out of `--all-projects`, and
+people can invent other facets (`area`, `milestone`) without asking. The
+cost is that an epic has no body of its own; a story tagged `epic:auth`
+with the epic's description is the workaround if one is wanted.

@@ -53,6 +53,9 @@ tools from `skald mcp` (see the README).
   any tool. Prefer `skald note` for appending.
 - Do not edit `.skald/config.json` unless the human asks you to change the
   project's name or columns.
+- Tags of the form `key:value` are facets. Use `epic:<name>` to group stories
+  into an epic; `skald epics` shows progress and `skald ls --tag epic:<name>`
+  lists one.
 - Any command that takes an id accepts a unique prefix: `skald show a3f`.
 - Prefer `--json` output when you need to parse results.
 - Exit codes: 0 success (warnings on stderr), 1 usage error or not found,

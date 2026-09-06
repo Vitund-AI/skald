@@ -145,6 +145,25 @@ it is the same on every clone. A reference to a project that is not
 registered on this machine counts as unmet and is reported as a warning, not
 an error, because you may simply not have cloned that repository yet.
 
+## Epics and other facets
+
+A tag written as `key:value` is a facet. `epic:auth` makes an epic without
+any schema change, and because tags are plain strings it works across
+projects too:
+
+```sh
+skald new "Login form" --tags epic:auth,area:web
+skald ls --tag epic:auth                  # one epic
+skald ls --all-projects --tag epic:auth   # the same epic across every repo
+skald epics                               # progress per epic (shorthand for: facets epic)
+skald facets                              # every facet key and value with done/open counts
+```
+
+The board shows one filter dropdown per facet key it finds, and a
+"swimlanes by" control that splits the board into one lane per value with a
+progress bar. Tags are lowercased, so `epic:User-Auth` becomes
+`epic:user-auth`.
+
 ## Other branches
 
 Stories live on the branch you have checked out. Skald can read `.skald/`
@@ -229,6 +248,7 @@ corrupt story or configuration.
 | `check [--hook]` | Validate every file. Exit 2 on problems. `--hook` also fails on uncommitted story files. |
 | `commit [-m MSG] [--push]` | Commit everything under `.skald/` and nothing else. |
 | `changelog --since REF [--until REF]` | Stories that reached a terminal column between two git refs. |
+| `facets [KEY] [--all-projects]`, `epics` | `key:value` tags with total, done, open, and progress. |
 | `columns`, `templates`, `projects`, `config` | Inspect configuration. |
 | `hooks claude [--install] [--strict]` | Print or install Claude Code hooks (see below). |
 | `open`, `server start\|stop\|status`, `serve` | The board. |
@@ -295,7 +315,7 @@ Project names come from the registry; the API never accepts a path.
 | `GET /api/health` | | `{ok, version, pid}` |
 | `GET /api/projects` | | `{projects, settings}` |
 | `GET /api/ready` | | ready, unblocked stories across all projects |
-| `GET /api/projects/<p>/board[?ref=REF]` | | `{columns, stories, git, identity, settings, version, warnings}`; with `ref`, a read-only snapshot of that branch |
+| `GET /api/projects/<p>/board[?ref=REF]` | | `{columns, stories, facets, git, identity, settings, version, warnings}`; with `ref`, a read-only snapshot of that branch |
 | `GET /api/projects/<p>/branches` | | `{current, branches: [{name, sha, remote, stories, only_there, only_here, differ}], elsewhere}` |
 | `GET /api/projects/<p>/version` | | a hash that changes whenever any story file changes |
 | `GET /api/projects/<p>/events` | | server-sent events: `hello` on connect, `change` whenever the hash changes |

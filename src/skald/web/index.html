@@ -32,6 +32,8 @@
   <select id="branch" class="hidden rounded border border-slate-300 px-2 py-1 text-xs font-mono bg-white" title="Branch. Other branches are read-only views."></select>
   <span id="elsewhere" class="hidden text-xs rounded-full bg-violet-100 text-violet-800 px-2 py-0.5 cursor-default"></span>
   <input id="search" type="search" placeholder="Filter (title, id, tag, assignee)  /" class="flex-1 min-w-[12rem] max-w-md rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+  <span id="facet-filters" class="flex items-center gap-2"></span>
+  <select id="group-by" class="hidden rounded border border-slate-300 px-2 py-1 text-xs bg-white" title="Group the board into swimlanes by a facet"></select>
   <span id="conn" class="text-xs text-slate-400"></span>
   <span id="identity" class="text-xs text-slate-500" title="Notes and commits from the board use this name. Change it with: skald config author NAME"></span>
   <div class="relative">
@@ -116,7 +118,7 @@
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null,
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, facets: {}, facetFilters: {}, groupBy: '',
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal');
   const ALL = '__all__';
@@ -185,6 +187,7 @@
     $('branch').classList.add('hidden');
     $('elsewhere').classList.add('hidden');
     state.ref = ''; state.readonly = false; state.branches = null;
+    state.facetFilters = {}; state.groupBy = ''; state.facets = {};
     $('ro-banner').classList.add('hidden');
     state.version = null;
     subscribe();
@@ -242,9 +245,32 @@
 
   // ---- Board -----------------------------------------------------------
   function matches(story) {
+    for (const [k, v] of Object.entries(state.facetFilters)) {
+      if (v && !story.tags.includes(`${k}:${v}`)) return false;
+    }
     const f = state.filter;
     if (!f) return true;
     return story.title.toLowerCase().includes(f) || story.id.startsWith(f) || story.tags.some(t => t.includes(f)) || (story.assignee || '').toLowerCase().includes(f);
+  }
+  function facetOf(story, key) {
+    const t = story.tags.find(t => t.startsWith(key + ':'));
+    return t ? t.slice(key.length + 1) : null;
+  }
+  function renderFacetControls() {
+    const keys = Object.keys(state.facets || {});
+    const box = $('facet-filters');
+    box.innerHTML = keys.map(k => {
+      const opts = Object.entries(state.facets[k]).map(([v, b]) => `<option value="${esc(v)}" ${state.facetFilters[k] === v ? 'selected' : ''}>${esc(k)}:${esc(v)} (${b.done}/${b.total})</option>`).join('');
+      return `<select data-facet="${esc(k)}" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white" title="Filter by ${esc(k)}"><option value="">${esc(k)}: all</option>${opts}</select>`;
+    }).join('');
+    box.querySelectorAll('select').forEach(sel => sel.addEventListener('change', (e) => {
+      state.facetFilters[sel.dataset.facet] = e.target.value; render();
+    }));
+    const gb = $('group-by');
+    if (!keys.length) { gb.classList.add('hidden'); state.groupBy = ''; return; }
+    gb.innerHTML = `<option value="">no swimlanes</option>` + keys.map(k => `<option value="${esc(k)}" ${state.groupBy === k ? 'selected' : ''}>swimlanes by ${esc(k)}</option>`).join('');
+    if (!keys.includes(state.groupBy)) state.groupBy = '';
+    gb.classList.remove('hidden');
   }
   function depTitle(story) {
     return story.deps.map(d => `${d.ref}: ${d.state}${d.satisfied ? '' : ' (unmet)'}`).join('\n');
@@ -283,17 +309,42 @@
   function render() {
     if (state.allView) return renderReady();
     board.innerHTML = '';
+    if (state.groupBy) {
+      board.classList.remove('flex'); board.classList.add('grid', 'gap-4', 'content-start');
+      const key = state.groupBy;
+      const values = Object.keys(state.facets[key] || {});
+      const groups = values.map(v => ({ label: `${key}:${v}`, stories: state.stories.filter(s => facetOf(s, key) === v), meta: state.facets[key][v] }));
+      const rest = state.stories.filter(s => facetOf(s, key) === null);
+      if (rest.length) groups.push({ label: `no ${key}`, stories: rest, meta: null });
+      for (const g of groups) {
+        const lane = document.createElement('section');
+        const pct = g.meta && g.meta.total ? Math.round(100 * g.meta.done / g.meta.total) : null;
+        lane.innerHTML = `<div class="flex items-center gap-3 mb-2 text-sm font-semibold text-slate-700">${esc(g.label)}
+          ${pct === null ? '' : `<span class="inline-block h-1.5 w-24 rounded bg-slate-200 overflow-hidden"><span class="block h-full bg-emerald-500" style="width:${pct}%"></span></span><span class="text-xs font-normal text-slate-500">${g.meta.done}/${g.meta.total}</span>`}</div>`;
+        const row = document.createElement('div');
+        row.className = 'flex gap-3 overflow-x-auto';
+        renderColumns(row, g.stories);
+        lane.appendChild(row);
+        board.appendChild(lane);
+      }
+      return;
+    }
+    board.classList.add('flex'); board.classList.remove('grid', 'gap-4', 'content-start');
+    renderColumns(board, state.stories);
+  }
+  function renderColumns(container, stories) {
     const known = new Set(state.columns.map(c => c.key));
     const cols = state.columns.slice();
-    const orphans = state.stories.filter(s => !known.has(s.status));
+    const orphans = stories.filter(s => !known.has(s.status));
     if (orphans.length) cols.push({ key: null, label: 'Unknown status', role: 'unknown' });
     for (const col of cols) {
       const section = document.createElement('section');
       section.className = 'flex flex-col w-72 shrink-0 bg-slate-200/70 rounded-lg';
-      const items = col.key === null ? orphans : state.stories.filter(s => s.status === col.key);
+      const items = col.key === null ? orphans : stories.filter(s => s.status === col.key);
       const shown = items.filter(matches);
-      const over = col.limit && items.length > col.limit;
-      const count = col.limit ? `${items.length}/${col.limit}` : `${items.length}`;
+      const allInColumn = col.key === null ? items.length : state.stories.filter(s => s.status === col.key).length;
+      const over = col.limit && allInColumn > col.limit;
+      const count = col.limit ? `${allInColumn}/${col.limit}` : `${items.length}`;
       section.innerHTML = `<div class="flex items-center justify-between px-3 py-2 text-sm font-semibold text-slate-600" title="role: ${esc(col.role)}">
         <span>${esc(col.label)}</span><span class="text-xs font-normal ${over ? 'text-red-600 font-semibold' : 'text-slate-400'}">${count}</span></div>`;
       const list = document.createElement('div');
@@ -301,7 +352,7 @@
       if (col.key !== null && !state.readonly) { list.dataset.status = col.key; list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop); }
       shown.forEach(s => list.appendChild(cardEl(s)));
       section.appendChild(list);
-      board.appendChild(section);
+      container.appendChild(section);
     }
   }
 
@@ -553,6 +604,8 @@
       const data = await api('GET', `${P()}/board${state.ref ? '?ref=' + encodeURIComponent(state.ref) : ''}`);
       state.columns = data.columns; state.stories = data.stories; state.settings = data.settings;
       state.identity = data.identity; state.git = data.git; state.version = data.version;
+      state.facets = data.facets || {};
+      renderFacetControls();
       $('identity').textContent = data.identity;
       $('conn').textContent = data.warnings.length ? `${data.warnings.length} notice(s), see terminal` : '';
       if (!state.readonly) renderGit();
@@ -563,6 +616,7 @@
   // ---- Wiring ----------------------------------------------------------
   $('project').addEventListener('change', (e) => switchProject(e.target.value));
   $('branch').addEventListener('change', (e) => setRef(e.target.value));
+  $('group-by').addEventListener('change', (e) => { state.groupBy = e.target.value; render(); });
   setInterval(() => { if (document.visibilityState === 'visible' && !state.modal) loadBranches(); }, 30000);
   $('search').addEventListener('input', (e) => { state.filter = e.target.value.trim().toLowerCase(); render(); });
   $('new-btn').addEventListener('click', () => openModal(null));

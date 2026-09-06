@@ -211,6 +211,13 @@ def build_parser() -> argparse.ArgumentParser:
     chg.add_argument("--json", action="store_true")
 
     sub.add_parser("columns", help="list this project's columns").add_argument("--json", action="store_true")
+    fc = sub.add_parser("facets", help="key:value tags with progress, e.g. epic:auth")
+    fc.add_argument("key", nargs="?", help="only this facet key")
+    fc.add_argument("--all-projects", action="store_true")
+    fc.add_argument("--json", action="store_true")
+    ep = sub.add_parser("epics", help="shorthand for: facets epic")
+    ep.add_argument("--all-projects", action="store_true")
+    ep.add_argument("--json", action="store_true")
     sub.add_parser("templates", help="list story templates in .skald/templates/")
 
     pr = sub.add_parser("projects", help="list projects registered on this machine")
@@ -691,6 +698,38 @@ def cmd_config(ws: Workspace, args) -> int:
     return 0
 
 
+def cmd_facets(ws: Workspace, store: Optional[Store], args, key: Optional[str]) -> int:
+    from .store import facets as compute_facets
+
+    stores = ws.open_all()[0] if args.all_projects else [store]
+    merged: dict = {}
+    for st in stores:
+        stories, _ = st.load_all(include_archived=True)
+        for k, values in compute_facets(stories, st.config).items():
+            if key and k != key:
+                continue
+            for v, b in values.items():
+                m = merged.setdefault(k, {}).setdefault(v, {"total": 0, "done": 0, "open": 0, "ids": []})
+                m["total"] += b["total"]
+                m["done"] += b["done"]
+                m["open"] += b["open"]
+                m["ids"].extend(f"{st.name}:{i}" if args.all_projects else i for i in b["ids"])
+    if args.json:
+        print(json.dumps(merged, indent=2))
+        return 0
+    if not merged:
+        print(f"no {key + ' ' if key else ''}facet tags; tag stories like {key or 'epic'}:name to create one")
+        return 0
+    rows = []
+    for k in sorted(merged):
+        for v in sorted(merged[k]):
+            b = merged[k][v]
+            pct = int(round(100 * b["done"] / b["total"])) if b["total"] else 0
+            rows.append([k, v, str(b["total"]), str(b["done"]), str(b["open"]), f"{pct}%"])
+    _print_table(rows, ["KEY", "VALUE", "TOTAL", "DONE", "OPEN", "PROGRESS"])
+    return 0
+
+
 def cmd_columns(store: Store, args) -> int:
     if args.json:
         print(json.dumps([c.to_dict() for c in store.config.columns], indent=2))
@@ -750,7 +789,7 @@ def cmd_hooks(store: Store, args) -> int:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open", "branches",
+    "hooks", "open", "branches", "facets", "epics",
 }
 
 
@@ -794,7 +833,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return srv.cmd_server(ws, args)
 
     store = None
-    if args.command in ("ls", "next") and getattr(args, "all_projects", False):
+    if args.command in ("ls", "next", "facets", "epics") and getattr(args, "all_projects", False):
         try:
             store = ws.current(args.project)
         except NotFoundError:
@@ -861,6 +900,10 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_changelog(store, args)
     if args.command == "columns":
         return cmd_columns(store, args)
+    if args.command == "facets":
+        return cmd_facets(ws, store, args, args.key)
+    if args.command == "epics":
+        return cmd_facets(ws, store, args, "epic")
     if args.command == "templates":
         names = store.templates()
         print("\n".join(names) if names else f"no templates; add Markdown files to {store.templates_dir}")

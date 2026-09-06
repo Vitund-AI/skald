@@ -891,3 +891,38 @@ def _branch_diff(store: "Store", snap: Snapshot) -> dict:
 Store.snapshot = _snapshot_of
 Store.branch_diff = _branch_diff
 Store.readonly = False
+
+
+# --------------------------------------------------------------------------
+# Facets: tags of the form key:value
+# --------------------------------------------------------------------------
+
+
+def split_facet(tag: str) -> Optional[tuple[str, str]]:
+    """``"epic:auth"`` -> ``("epic", "auth")``; a plain tag -> None."""
+    if ":" not in tag:
+        return None
+    key, _, value = tag.partition(":")
+    key, value = key.strip(), value.strip()
+    if not key or not value:
+        return None
+    return key, value
+
+
+def facets(stories: list[Story], config: ProjectConfig) -> dict[str, dict[str, dict]]:
+    """Group stories by ``key:value`` tags: ``{key: {value: {total, done, open, ids}}}``."""
+    out: dict[str, dict[str, dict]] = {}
+    for s in stories:
+        for tag in s.tags:
+            parts = split_facet(tag)
+            if not parts:
+                continue
+            key, value = parts
+            bucket = out.setdefault(key, {}).setdefault(value, {"total": 0, "done": 0, "open": 0, "ids": []})
+            bucket["total"] += 1
+            if config.is_terminal(s.status):
+                bucket["done"] += 1
+            else:
+                bucket["open"] += 1
+            bucket["ids"].append(s.id)
+    return {k: dict(sorted(v.items())) for k, v in sorted(out.items())}

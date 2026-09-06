@@ -20,7 +20,7 @@ from urllib.request import urlopen
 from . import __version__, gitutil
 from .errors import GitError, NotFoundError, SkaldError
 from .registry import Registry, UserConfig, Workspace
-from .store import Store
+from .store import Store, facets as compute_facets
 from .util import sha256_text
 
 SSE_INTERVAL = 0.5  # seconds between change checks on an open event stream
@@ -262,6 +262,7 @@ class Handler(BaseHTTPRequestHandler):
                     "project": store.name, "path": str(store.dir),
                     "columns": [c.to_dict() for c in snap.config.columns],
                     "stories": [snap.story_dict(s, idx) for s in stories],
+                    "facets": compute_facets(stories, snap.config),
                     "warnings": warnings, "git": {"available": True, "branch": ref, "changes": []},
                     "identity": self._identity(ws, store), "settings": ws.user.all(),
                     "version": snap.sha, "readonly": True, "ref": ref, "sha": snap.sha,
@@ -297,6 +298,7 @@ class Handler(BaseHTTPRequestHandler):
                     "path": str(store.dir),
                     "columns": [c.to_dict() for c in store.config.columns],
                     "stories": [store.story_dict(s, idx, ws.user.get("stale_days")) for s in stories],
+                    "facets": compute_facets(stories, store.config),
                     "warnings": warnings + ws.notices,
                     "git": git,
                     "identity": self._identity(ws, store),

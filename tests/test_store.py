@@ -449,3 +449,23 @@ class TestSnapshots(SkaldTestCase):
         self.assertEqual(snap.config.keys, ["backlog", "ready", "doing", "qa", "done", "wont_do"])
         states = {d.ref: d.state for d in snap.dep_states(snap.get(c.id))}
         self.assertEqual(states, {self.b.id: "backlog", "other:abc123": "unavailable"})
+
+
+class TestFacets(SkaldTestCase):
+    def test_facets_group_and_count(self):
+        from skald.store import facets, split_facet
+
+        self.assertEqual(split_facet("epic:auth"), ("epic", "auth"))
+        self.assertEqual(split_facet("epic:a:b"), ("epic", "a:b"))
+        self.assertIsNone(split_facet("plain"))
+        self.assertIsNone(split_facet("epic:"))
+        s = self.store()
+        a, _ = s.create("a", tags=["epic:auth", "area:web"], status="ready")
+        b, _ = s.create("b", tags=["epic:auth"], status="done")
+        c, _ = s.create("c", tags=["epic:billing", "plain"])
+        stories, _ = s.load_all(include_archived=True)
+        f = facets(stories, s.config)
+        self.assertEqual(list(f), ["area", "epic"])
+        self.assertEqual(f["epic"]["auth"], {"total": 2, "done": 1, "open": 1, "ids": [a.id, b.id]})
+        self.assertEqual(f["epic"]["billing"]["total"], 1)
+        self.assertEqual(f["area"]["web"]["ids"], [a.id])

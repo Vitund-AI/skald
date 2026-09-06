@@ -407,3 +407,26 @@ class TestBranchCommands(SkaldTestCase):
         self.assertEqual(code, 1)
         self.assertIn("unknown git ref", err)
         self.assertEqual(git(self.repo, "status", "--porcelain").strip(), "")
+
+
+class TestFacetCommands(SkaldTestCase):
+    def test_facets_epics_and_cross_project(self):
+        code, out, _ = self.run_cli("facets")
+        self.assertIn("no facet tags", out)
+        a = self.new("a", "--tags", "epic:auth,area:web", "--status", "ready")
+        self.new("b", "--tags", "epic:auth", "--status", "done")
+        code, out, _ = self.run_cli("facets")
+        self.assertRegex(out, r"epic\s+auth\s+2\s+1\s+1\s+50%")
+        self.assertIn("area  web", out)
+        code, out, _ = self.run_cli("epics")
+        self.assertNotIn("area", out)
+        code, out, _ = self.run_cli("facets", "area", "--json")
+        self.assertEqual(json.loads(out)["area"]["web"]["ids"], [a])
+        beta = self.make_repo("beta")
+        self.new("c", "--tags", "epic:auth", cwd=beta)
+        code, out, _ = self.run_cli("epics", "--all-projects", "--json", cwd=self.tmp)
+        auth = json.loads(out)["epic"]["auth"]
+        self.assertEqual(auth["total"], 3)
+        self.assertTrue(all(":" in i for i in auth["ids"]))
+        code, out, _ = self.run_cli("ls", "--all-projects", "--tag", "epic:auth", "--all", "--json", cwd=self.tmp)
+        self.assertEqual(len(json.loads(out)), 3)

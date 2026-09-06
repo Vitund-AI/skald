@@ -23,6 +23,8 @@ repository to migrate; story files are unchanged.
 - Board: project switcher, all-projects ready view, per-column limits, stale
   and checklist markers, dependency chips, Markdown preview, history tab,
   claim button, branch display, keyboard shortcuts, change-hash polling.
+- Facet tags: `key:value` tags drive `skald facets`, `skald epics`, per-facet
+  filters and swimlanes on the board, and cross-project epic views.
 - Read-only views of other branches: `skald branches`, `ls --branch`,
   `ls --all-branches`, `show --branch`, a branch dropdown on the board, and
   `?ref=` on the board and story endpoints. Reads git objects only.
