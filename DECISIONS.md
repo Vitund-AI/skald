@@ -197,3 +197,31 @@ GitHub renders a directory's README in place, so anyone browsing into
 they work on GitHub and in local viewers. `--out` moves it elsewhere; when
 the path is outside `.skald/`, `commit` stages it as well so the "stories
 and snapshot travel together" property holds.
+
+### D31. Note kinds live in the heading, not in frontmatter
+A kind is appended to the note heading as ` · handoff`. That keeps the body
+free-form and human-readable, needs no format bump, and lets `resume` find
+the latest handoff or every decision by parsing headings. `handoff`,
+`decision`, and `blocker` are conventions the contract teaches; any short
+lowercase word is accepted.
+
+### D32. The acceptance gate fires on forward moves past the first active column
+Warning on every move would be noise; warning only on `done` would be too
+late for a reviewer. The gate fires when a story moves into a terminal
+column or forward into an active column other than the first, which is the
+"ready for review" moment in every layout tried. It never fires on backward
+moves. It is a warning like everything else.
+
+### D33. `next` skips claims on other branches; `claim` only warns
+Two agents in worktrees cannot see each other's assignments, so `next`
+consults snapshots of other local branches and skips stories that are
+active with another assignee there, printing why. `claim` warns and
+proceeds, because a human may be deliberately reassigning. Remote branches
+are ignored for skipping because they may be stale; they still show in
+`branches`.
+
+### D34. Stale assignments are offered back to `next`
+A story assigned but untouched for `stale_days` is treated as free by
+`next`, with a warning naming the previous assignee. Without this a crashed
+agent's claim hides work forever. `context` lists stale active claims by
+others separately so a human or agent can decide to take them over.

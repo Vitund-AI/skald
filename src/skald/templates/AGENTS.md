@@ -16,21 +16,30 @@ tools from `skald mcp` (see the README).
 
 ## Workflow
 
-1. **Orient.** Run `skald status` and `skald ls` at the start of a session.
-   `skald columns` shows this project's columns and their roles.
-2. **Pick work.** Run `skald next --json`. It prints the first ready,
-   unblocked, unassigned story. If it prints nothing, run `skald ls --json`
-   and either pick an unblocked ready story or ask the human.
+1. **Orient.** Run `skald context --as <your-name>` at the start of a
+   session. It shows what is assigned to you with the last note on each, the
+   next unblocked story, blocked work, claims on other branches, and
+   uncommitted story files. `skald columns` shows this project's columns.
+2. **Pick work.** `skald context` names the next story; `skald next --json
+   --compact` prints it. Stories claimed by another agent on another branch
+   are skipped. If nothing is ready, run `skald ls --json --compact` and
+   either pick an unblocked ready story or ask the human.
 3. **Claim it.** Run `skald claim <id> --as <your-name>`. That assigns the
    story to you and moves it into the first active column. Then run
-   `skald show <id>` and read the whole file, including notes from humans.
+   `skald resume <id>`: it prints the requirements, the checklist and
+   acceptance state, dependencies, decisions, and the latest handoff note,
+   which is everything a previous session left for you. Use `skald show <id>`
+   only when you need the full history.
 4. **Warnings are advisory.** If a command prints a `WARNING:` about unmet
    dependencies, decide whether to stub the missing piece or work the blocker
    first. Record your decision with a note.
 5. **Record progress.** Use `skald note <id> "text" --as <your-name>`, or
-   `skald note <id> - --as <your-name>` with the text on stdin, for progress,
-   decisions, and checklists. Task-list items (`- [ ]` / `- [x]`) in the body
-   show up as progress on the board.
+   `skald note <id> - --as <your-name>` with the text on stdin. Give notes a
+   kind when it fits: `--kind decision` for a choice and why, `--kind blocker`
+   for something you cannot get past. Task-list items (`- [ ]` / `- [x]`) in
+   the body show up as progress on the board. Put acceptance criteria under a
+   `## Acceptance` heading as a checklist and tick them as you verify each;
+   moving to review or done with unchecked items prints a warning.
 6. **Discovered work.** When you find work outside the current story, create
    a story for it with `skald new "title" --body "..."` and link it with
    `--blocked-by <id>` or `skald block <id> +<other>` where a real dependency
@@ -65,8 +74,10 @@ tools from `skald mcp` (see the README).
 
 ```
 skald status                      project, branch, counts, uncommitted story files
-skald ls [--status COL] [--tag T] [--assignee A] [--unblocked] [--all] [--json]
-skald next [--as NAME] [--json]
+skald context --as NAME [--json]     orientation: mine, next, blockers, claims elsewhere
+skald resume <id> [--json]           requirements, checklist, deps, latest handoff
+skald ls [--status COL] [--tag T] [--assignee A] [--unblocked] [--all] [--json] [--compact]
+skald next [--as NAME] [--json] [--compact]
 skald show <id> [--json]
 skald new "<title>" [--status COL] [--tags a,b] [--blocked-by id,proj:id] [--body TEXT | --body -] [--template NAME]
 skald claim <id> --as NAME
@@ -74,7 +85,7 @@ skald mv <id> <column>
 skald set <id> title="..." rank=N assignee=NAME
 skald tag <id> +tag -tag
 skald block <id> +id -id            (use project:id for another repository)
-skald note <id> "<text>" | -  --as NAME
+skald note <id> "<text>" | -  --as NAME [--kind handoff|decision|blocker]
 skald log <id>                      git history of the story
 skald check [--hook]
 skald columns

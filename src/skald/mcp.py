@@ -50,8 +50,13 @@ TOOLS: list[dict] = [
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "status": {"type": "string"}}, ["id", "status"])},
     {"name": "skald_claim", "description": "Assign a story to the caller and move it into the first active column.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP}, ["id"])},
-    {"name": "skald_note", "description": "Append a timestamped note to a story's body.",
-     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"}}, ["id", "text"])},
+    {"name": "skald_note", "description": "Append a timestamped note to a story's body. kind=handoff for end-of-session state, decision, or blocker.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"},
+                             "kind": {"type": "string", "description": "handoff, decision, blocker, or another short word"}}, ["id", "text"])},
+    {"name": "skald_context", "description": "Orientation for the caller: assigned stories with last notes, the next unblocked story, blocked ready stories, claims on other branches, uncommitted story files.",
+     "inputSchema": _schema({**PROJECT_PROP, **AS_PROP})},
+    {"name": "skald_resume", "description": "A story's requirements, checklist and acceptance state, dependencies, decisions, and its latest handoff note.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP}, ["id"])},
     {"name": "skald_set", "description": "Update title, rank, tags, blocked_by, or assignee.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP,
                              "title": {"type": "string"}, "rank": {"type": "integer"},
@@ -140,8 +145,10 @@ class McpServer:
 
     def tool_skald_next(self, args: dict) -> Any:
         store = self._store(args)
-        s = store.next_story(for_author=self._actor(args))
-        return store.story_dict(s) if s else None
+        notes: list[str] = []
+        s = store.next_story(for_author=self._actor(args), stale_days=self._ws().user.get("stale_days"),
+                             elsewhere=store.claims_elsewhere(), warnings=notes)
+        return {"story": store.story_dict(s, compact=True) if s else None, "warnings": notes}
 
     def tool_skald_show(self, args: dict) -> Any:
         store = self._store(args)
@@ -164,11 +171,34 @@ class McpServer:
 
     def tool_skald_claim(self, args: dict) -> Any:
         store = self._store(args)
-        return self._with_warnings(store, *store.claim(args["id"], self._actor(args)))
+        return self._with_warnings(store, *store.claim(args["id"], self._actor(args), self._ws().user.get("stale_days"),
+                                                       store.claims_elsewhere()))
+
+    def tool_skald_context(self, args: dict) -> Any:
+        from .cli import build_context
+
+        store = self._store(args)
+        return build_context(self._ws(), store, self._actor(args))
+
+    def tool_skald_resume(self, args: dict) -> Any:
+        from .store import requirements_of
+
+        store = self._store(args)
+        story = store.get(args["id"])
+        idx = store.index()
+        d = store.story_dict(story, idx, compact=True)
+        notes = story.notes()
+        d["requirements"] = requirements_of(story.body)
+        d["deps"] = [x.to_dict() for x in store.dep_states(story, idx)]
+        d["latest"] = story.last_note("handoff") or (notes[-1] if notes else None)
+        d["decisions"] = [n for n in notes if n["kind"] == "decision"]
+        d["blockers"] = [n for n in notes if n["kind"] == "blocker"]
+        d["note_count"] = len(notes)
+        return d
 
     def tool_skald_note(self, args: dict) -> Any:
         store = self._store(args)
-        story = store.append_note(args["id"], args.get("text", ""), self._actor(args))
+        story = store.append_note(args["id"], args.get("text", ""), self._actor(args), args.get("kind"))
         d = store.story_dict(story)
         d["body"] = story.body
         return d

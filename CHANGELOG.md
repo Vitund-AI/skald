@@ -23,6 +23,10 @@ repository to migrate; story files are unchanged.
 - Board: project switcher, all-projects ready view, per-column limits, stale
   and checklist markers, dependency chips, Markdown preview, history tab,
   claim button, branch display, keyboard shortcuts, change-hash polling.
+- Agent orientation: `skald context`, `skald resume`, note kinds
+  (`--kind handoff|decision|blocker`), `--compact` JSON, an advisory
+  acceptance-criteria gate, and claim awareness across worktrees with stale
+  assignments offered back to `next`.
 - `skald render`: a committed Markdown or HTML snapshot of the board with a
   content hash instead of a timestamp; `check` warns when it is stale;
   `commit` re-renders when enabled. `hooks git` and `hooks github` install a

@@ -196,7 +196,17 @@ updated_at: "2026-09-06T08:12:41Z"
 | `assignee` | string | Omitted from the file when empty. |
 | `created_at`, `updated_at` | string | ISO 8601 UTC with `Z`. `updated_at` set on every write. |
 
-### 4.3 Body
+### 4.3 Body and notes
+
+Notes appended by `note` have the heading
+`## [<author>] <YYYY-MM-DD HH:MM> UTC` followed by ` · <kind>` when a kind
+was given. `parse_notes` recovers `{author, stamp, kind, text}` from the
+body; the text before the first note heading is the requirements.
+`## Acceptance` (or `## Acceptance criteria`) introduces a section whose
+task-list items are the acceptance criteria; `acceptance_progress` counts
+them and `update` warns when a story moves into a terminal column, or forward
+into an active column other than the first, with any unchecked.
+
 
 Created as `## Requirements\n\n<body>`, or from a template in
 `.skald/templates/<name>.md` with any given body appended after a blank line.
@@ -215,6 +225,11 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
   references.
 - A story is stale when its role is `active` and `updated_at` is at least
   `stale_days` old.
+- `next` skips ready stories assigned to someone else unless the assignment
+  is stale, in which case it offers them with a warning; it also skips
+  stories that are active with a different assignee on any other local
+  branch (`claims_elsewhere`, computed from snapshots). `claim` warns in both
+  cases and proceeds.
 
 ### 4.5 Facets
 
@@ -275,7 +290,9 @@ story or configuration. Commands that print stories take `--json`.
 | `init [--name N]` | Section 2.4. Prints what it did and the CLAUDE.md line. |
 | `status [--json]` | Name, path, branch, per-column counts, unknown-status count, ready-and-unblocked count, uncommitted files under `.skald/`. |
 | `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
-| `next [--as N] [--all-projects]` | First ready, unblocked story available to the actor. Exit 1 and a stderr message if none. |
+| `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stale claims by others, claims on other branches, uncommitted files. |
+| `resume <id> [--json]` | Compact story plus requirements, dependency states, decision and blocker notes, latest handoff (else latest note), note count. |
+| `next [--as N] [--all-projects] [--compact]` | First ready, unblocked story available to the actor per section 4.4. Exit 1 and a stderr message if none. |
 | `show <id> [--branch REF]` | Raw file. `--json` adds derived fields, `body`, `body_sha256`. |
 | `branches [--json]` | Every local and remote branch with story count and diff counts against the working tree. |
 | `new "<title>" [--status C] [--tags a,b] [--blocked-by refs] [--body TEXT\|-] [--template T] [--assignee A]` | Create; prints the id. |
@@ -283,7 +300,7 @@ story or configuration. Commands that print stories take `--json`.
 | `claim <id> [--as N]` | Section 5. |
 | `set <id> title=.. rank=N assignee=..` | Field edits. |
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
-| `note <id> "text"\|- [--as N]` | Append a note. |
+| `note <id> "text"\|- [--as N] [--kind K]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. |
 | `rm <id> [--force]` | Delete; refuses while other stories depend on it. |
 | `log <id>` | `git log --follow` on the file. |
 | `archive [--dry-run]`, `unarchive <id>` | Section 4.5. |

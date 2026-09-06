@@ -54,13 +54,33 @@ skald open            # starts the board server if needed and opens this project
 An agent's session looks like this:
 
 ```sh
-skald next --json                 # first ready, unblocked, unassigned story
+skald context --as claude         # mine, next, blockers, claims elsewhere, uncommitted
 skald claim a3f9c2 --as claude    # assign it and move it to in_progress
-skald note a3f9c2 "Plan: ..." --as claude
-# ... write code ...
+skald resume a3f9c2               # requirements, checklist, deps, latest handoff
+skald note a3f9c2 "Why we chose X" --as claude --kind decision
+# ... write code, tick acceptance criteria ...
+skald note a3f9c2 "Done: ... Remaining: ... Next: ..." --as claude --kind handoff
 skald mv a3f9c2 review
 git add .skald src && git commit
 ```
+
+`context` is built for the top of a session and for SessionStart hooks: it
+is one bounded block rather than a listing. `resume` is what a fresh session
+reads instead of the whole story file: the requirements, the checklist and
+acceptance state, dependencies, every `decision` note, and only the latest
+`handoff` note. `--compact` on `ls` and `next` trims the JSON to what an
+agent needs.
+
+Two conventions make this work. Notes carry a kind (`handoff`, `decision`,
+`blocker`, or any short word) in their heading, and a `## Acceptance`
+section holds a checklist of criteria. Moving a story to review or done with
+unchecked criteria prints a warning, which is advisory like every other
+warning.
+
+When agents work in parallel worktrees, `next` skips stories that another
+agent has claimed on another local branch and says so, `claim` warns before
+taking over, and an assignment untouched for `stale_days` is offered to
+`next` again with a warning.
 
 ## Story files
 
@@ -233,7 +253,9 @@ corrupt story or configuration.
 | `init [--name N]` | Create `.skald/` here, or register an existing one. Removes the 0.1 vendored layout. |
 | `status` | Project, branch, per-column counts, uncommitted story files. |
 | `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | List stories. Hides terminal columns unless `--all`. |
-| `next [--as NAME] [--all-projects]` | First ready, unblocked story not assigned to someone else. Exit 1 if none. |
+| `context [--as NAME]` | One orientation block: assigned stories with last notes, next story, blocked ready stories, stale claims, claims on other branches, uncommitted files. |
+| `resume <id>` | Requirements, checklist and acceptance state, dependencies, decisions, latest handoff. |
+| `next [--as NAME] [--all-projects] [--compact]` | First ready, unblocked story available to the caller; skips claims on other branches; offers stale assignments. Exit 1 if none. |
 | `show <id> [--branch REF]` | Print the file. `--json` adds derived fields, body, and body hash. |
 | `branches` | Story counts per branch and how each differs from the working tree. |
 | `new "<title>" [--status C] [--tags a,b] [--blocked-by id,proj:id] [--body TEXT \| -] [--template T] [--assignee A]` | Create a story and print its id. |
@@ -242,7 +264,7 @@ corrupt story or configuration.
 | `set <id> title="..." rank=N assignee=NAME` | Edit fields. `assignee=` clears it. |
 | `tag <id> +tag -tag` | Add or remove tags. |
 | `block <id> +id -id` | Add or remove dependencies. `proj:id` for another project. Cycles warn. |
-| `note <id> "<text>" \| - [--as NAME]` | Append a timestamped note. |
+| `note <id> "<text>" \| - [--as NAME] [--kind K]` | Append a timestamped note; kind `handoff`, `decision`, `blocker`, or any short word. |
 | `log <id>` | Git history of the story file. |
 | `archive [--dry-run]`, `unarchive <id>` | Move terminal stories to `.skald/archive/` and back. |
 | `check [--hook]` | Validate every file. Exit 2 on problems. `--hook` also fails on uncommitted story files. |
@@ -315,8 +337,8 @@ claude mcp add skald -- skald mcp
 
 The server speaks JSON-RPC over stdio and exposes `skald_status`,
 `skald_columns`, `skald_list`, `skald_next`, `skald_show`, `skald_new`,
-`skald_move`, `skald_claim`, `skald_note`, `skald_set`, `skald_tag`,
-`skald_block`, and `skald_check`. Every tool takes an optional `project`
+`skald_move`, `skald_claim`, `skald_note`, `skald_context`, `skald_resume`,
+`skald_set`, `skald_tag`, `skald_block`, and `skald_check`. Every tool takes an optional `project`
 argument; without it the project is the one containing the current
 directory. Results are JSON text, and Skald warnings come back inside the
 result rather than as errors.

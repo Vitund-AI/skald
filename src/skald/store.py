@@ -48,6 +48,49 @@ def normalise_tags(tags) -> list[str]:
     return sorted(out)
 
 
+NOTE_HEADING_RE = re.compile(
+    r"^## \[(?P<author>[^\]\n]+)\] (?P<stamp>\d{4}-\d\d-\d\d \d\d:\d\d UTC)(?: · (?P<kind>[a-z][a-z0-9_-]{0,31}))?\s*$",
+    re.M,
+)
+KIND_RE = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
+
+
+def parse_notes(body: str) -> list[dict]:
+    """Notes appended by ``skald note``, in order: ``[{author, stamp, kind, text}]``."""
+    matches = list(NOTE_HEADING_RE.finditer(body))
+    notes = []
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(body)
+        text = body[m.end():end].strip("\n")
+        notes.append({"author": m.group("author"), "stamp": m.group("stamp"), "kind": m.group("kind") or "note",
+                      "text": text.rstrip()})
+    return notes
+
+
+def requirements_of(body: str) -> str:
+    """The body before the first note heading."""
+    m = NOTE_HEADING_RE.search(body)
+    return (body[:m.start()] if m else body).rstrip("\n")
+
+
+def acceptance_progress(body: str) -> tuple[int, int]:
+    """Checklist progress inside a ``## Acceptance`` section only (0, 0 when absent)."""
+    lines = body.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if re.match(r"^##\s+acceptance(\s+criteria)?\s*$", line.strip(), re.I):
+            start = i + 1
+            break
+    if start is None:
+        return 0, 0
+    section = []
+    for line in lines[start:]:
+        if re.match(r"^#{1,2}\s", line):
+            break
+        section.append(line)
+    return checklist_progress("\n".join(section))
+
+
 # --------------------------------------------------------------------------
 # Story and file format
 # --------------------------------------------------------------------------
@@ -95,14 +138,31 @@ class Story:
     def updated_at(self) -> str:
         return self.fields["updated_at"]
 
-    def to_dict(self) -> dict:
-        d = {"id": self.id, "filename": self.path.name}
+    def to_dict(self, compact: bool = False) -> dict:
+        d = {"id": self.id}
+        if not compact:
+            d["filename"] = self.path.name
         d.update(self.fields)
         d.setdefault("assignee", "")
+        if compact:
+            d.pop("created_at", None)
+            d.pop("rank", None)
         d["archived"] = self.archived
         done, total = checklist_progress(self.body)
         d["checklist"] = {"done": done, "total": total}
+        a_done, a_total = acceptance_progress(self.body)
+        if a_total:
+            d["acceptance"] = {"done": a_done, "total": a_total}
         return d
+
+    def notes(self) -> list[dict]:
+        return parse_notes(self.body)
+
+    def last_note(self, kind: Optional[str] = None) -> Optional[dict]:
+        for n in reversed(self.notes()):
+            if kind is None or n["kind"] == kind:
+                return n
+        return None
 
 
 def validate_fields(fields: dict, where: str) -> dict:
@@ -511,9 +571,15 @@ class Store:
         if status is not None:
             self._check_status(status)
             if status != story.status:
+                old_index = self.config.index(story.status)
                 story.fields["status"] = status
                 story.fields["rank"] = self._bottom_rank(status, stories)
                 status_changed = True
+                a_done, a_total = acceptance_progress(story.body)
+                if a_total and a_done < a_total and self._is_forward_gate(old_index, status):
+                    warnings.append(
+                        f"{story.id} moves to {status} with {a_total - a_done} of {a_total} acceptance criteria unchecked"
+                    )
         if rank is not None:
             if isinstance(rank, bool) or not isinstance(rank, int):
                 raise SkaldError("rank must be an integer")
@@ -551,32 +617,68 @@ class Store:
                 warnings.append(f"column '{column.key}' is over its limit ({count}/{column.limit})")
         return story, warnings
 
-    def claim(self, ref: str, author: str) -> tuple[Story, list[str]]:
+    def _is_forward_gate(self, old_index: int, new_status: str) -> bool:
+        """True for moves into a terminal column, or forward into an active column past the first one."""
+        role = self.config.role(new_status)
+        if role in ("done", "closed"):
+            return True
+        if role == "active":
+            first_active = self.config.first_active_key
+            new_index = self.config.index(new_status)
+            return new_index > old_index and new_status != first_active
+        return False
+
+    def claim(self, ref: str, author: str, stale_days: Optional[int] = None,
+              elsewhere: Optional[dict] = None) -> tuple[Story, list[str]]:
         """Assign the story to ``author`` and move it into the first active column if it is not active yet."""
         story = self.get(ref)
         author = (author or "").strip()
         if not author:
             raise SkaldError("an author is required to claim a story")
+        pre: list[str] = []
+        if story.assignee and story.assignee != author:
+            stale = " (stale)" if _is_stale(story, stale_days) else ""
+            pre.append(f"{story.id} was assigned to {story.assignee}{stale}; now {author}")
+        for c in (elsewhere or {}).get(story.id, []):
+            if c["assignee"] != author:
+                pre.append(f"{story.id} is also claimed by {c['assignee']} on branch {c['branch']} ({c['status']})")
         kwargs: dict = {"assignee": author}
         role = self.config.role(story.status)
         target = self.config.first_active_key
         if role in ("backlog", "ready") and target:
             kwargs["status"] = target
-        return self.update(story.id, **kwargs)
+        updated, warnings = self.update(story.id, **kwargs)
+        return updated, pre + warnings
 
-    def next_story(self, for_author: Optional[str] = None) -> Optional[Story]:
+    def next_story(self, for_author: Optional[str] = None, stale_days: Optional[int] = None,
+                   elsewhere: Optional[dict] = None, warnings: Optional[list] = None) -> Optional[Story]:
+        """First ready, unblocked story available to ``for_author``.
+
+        A story assigned to someone else is skipped unless the assignment is stale
+        (untouched for ``stale_days``), in which case it is offered with a warning.
+        A story claimed by someone else on another branch (``elsewhere``) is skipped
+        with a warning so parallel agents do not duplicate work.
+        """
         stories, _ = self.load_all()
         idx = {s.id: s for s in stories}
         ready = set(self.config.keys_with_role("ready"))
+        notes = warnings if warnings is not None else []
         for s in stories:
             if s.status not in ready:
                 continue
-            if s.assignee and for_author and s.assignee != for_author:
+            if self.unmet(s, idx):
                 continue
-            if s.assignee and not for_author:
+            claims = [c for c in (elsewhere or {}).get(s.id, []) if c["assignee"] != for_author]
+            if claims:
+                c = claims[0]
+                notes.append(f"skipping {s.id}: claimed by {c['assignee']} on branch {c['branch']} ({c['status']})")
                 continue
-            if not self.unmet(s, idx):
-                return s
+            if s.assignee and s.assignee != for_author:
+                if _is_stale(s, stale_days):
+                    notes.append(f"{s.id} was assigned to {s.assignee} but untouched for {stale_days}+ days; offering it")
+                else:
+                    continue
+            return s
         return None
 
     def reorder(self, status: str, ids) -> list[Story]:
@@ -606,17 +708,23 @@ class Store:
                 changed.append(s)
         return changed
 
-    def append_note(self, ref: str, text: str, author: str = "agent") -> Story:
+    def append_note(self, ref: str, text: str, author: str = "agent", kind: Optional[str] = None) -> Story:
         text = (text or "").strip()
         if not text:
             raise SkaldError("note text is required")
         author = (author or "").strip() or "agent"
         if re.search(r"[\[\]\n]", author):
             raise SkaldError("author may not contain brackets or newlines")
+        kind = (kind or "").strip().lower()
+        if kind and not KIND_RE.match(kind):
+            raise SkaldError("note kind must be a short lowercase word, e.g. handoff, decision, blocker")
         story = self.get(ref)
+        if story.archived:
+            raise ConflictError(f"{story.id} is archived; unarchive it first")
         body = story.body.rstrip("\n")
         body = body + "\n\n" if body.strip() else ""
-        body += f"## [{author}] {note_stamp()}\n{text}\n"
+        suffix = f" · {kind}" if kind and kind != "note" else ""
+        body += f"## [{author}] {note_stamp()}{suffix}\n{text}\n"
         story.body = body
         self._write(story)
         return story
@@ -738,14 +846,16 @@ class Store:
 
     # -- derived views ---------------------------------------------------
 
-    def story_dict(self, story: Story, idx: Optional[dict[str, Story]] = None, stale_days: Optional[int] = None) -> dict:
-        d = story.to_dict()
+    def story_dict(self, story: Story, idx: Optional[dict[str, Story]] = None, stale_days: Optional[int] = None,
+                   compact: bool = False) -> dict:
+        d = story.to_dict(compact=compact)
         d["project"] = self.name
         states = self.dep_states(story, idx)
-        d["deps"] = [s.to_dict() for s in states]
+        if not compact:
+            d["deps"] = [s.to_dict() for s in states]
+            d["role"] = self.config.role(story.status)
         d["unmet"] = [s.ref for s in states if not s.satisfied]
         d["blocked"] = bool(d["unmet"])
-        d["role"] = self.config.role(story.status)
         d["stale"] = False
         if stale_days and self.config.role(story.status) == "active":
             updated = parse_iso(story.updated_at)
@@ -820,17 +930,18 @@ class Snapshot:
     def unmet(self, story: Story, idx: Optional[dict[str, Story]] = None) -> list[str]:
         return [d.ref for d in self.dep_states(story, idx) if not d.satisfied]
 
-    def story_dict(self, story: Story, idx: Optional[dict[str, Story]] = None, stale_days: Optional[int] = None) -> dict:
-        d = story.to_dict()
+    def story_dict(self, story: Story, idx: Optional[dict[str, Story]] = None, stale_days: Optional[int] = None,
+                   compact: bool = False) -> dict:
+        d = story.to_dict(compact=compact)
         d["project"] = self.name
         d["ref"] = self.ref
         states = self.dep_states(story, idx)
-        d["deps"] = [s.to_dict() for s in states]
+        if not compact:
+            d["deps"] = [s.to_dict() for s in states]
+            d["role"] = self.config.role(story.status)
         d["unmet"] = [s.ref for s in states if not s.satisfied]
         d["blocked"] = bool(d["unmet"])
-        d["role"] = self.config.role(story.status)
         d["stale"] = False
-        d["checklist"] = dict(zip(("done", "total"), checklist_progress(story.body)))
         return d
 
 
@@ -888,8 +999,42 @@ def _branch_diff(store: "Store", snap: Snapshot) -> dict:
     return {"only_there": only_there, "only_here": only_here, "differ": differ}
 
 
+def _claims_elsewhere(store: "Store", include_remote: bool = False) -> dict[str, list[dict]]:
+    """Active stories with an assignee on other branches: ``{id: [{branch, assignee, status}]}``."""
+    from . import gitutil
+
+    repo = gitutil.root(store.dir)
+    if repo is None:
+        return {}
+    current = gitutil.branch(repo)
+    out: dict[str, list[dict]] = {}
+    for b in gitutil.branches(repo):
+        if b["name"] == current or (b["remote"] and not include_remote):
+            continue
+        try:
+            snap = store.snapshot(b["name"])
+        except SkaldError:
+            continue
+        for st in snap.load_all()[0]:
+            if st.assignee and snap.config.role(st.status) == "active":
+                out.setdefault(st.id, []).append({"branch": b["name"], "assignee": st.assignee, "status": st.status})
+    return out
+
+
+def _is_stale(story: Story, stale_days: Optional[int]) -> bool:
+    if not stale_days:
+        return False
+    updated = parse_iso(story.updated_at)
+    if updated is None:
+        return False
+    from datetime import datetime, timezone
+
+    return (datetime.now(timezone.utc) - updated).days >= stale_days
+
+
 Store.snapshot = _snapshot_of
 Store.branch_diff = _branch_diff
+Store.claims_elsewhere = _claims_elsewhere
 Store.readonly = False
 
 

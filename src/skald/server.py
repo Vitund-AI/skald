@@ -274,20 +274,24 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(200, {"available": False, "current": None, "branches": [], "elsewhere": []})
                     return
                 current = gitutil.branch(repo)
-                out, elsewhere = [], set()
+                out, elsewhere, claims = [], set(), {}
                 for b in gitutil.branches(repo):
                     snap = self.server.snapshot(store, b["name"])
                     diff = store.branch_diff(snap)
                     is_current = b["name"] == current
                     if not is_current:
                         elsewhere.update(x.id for x in diff["only_there"])
+                        if not b["remote"]:
+                            for st in snap.load_all()[0]:
+                                if st.assignee and snap.config.role(st.status) == "active":
+                                    claims.setdefault(st.id, []).append({"branch": b["name"], "assignee": st.assignee, "status": st.status})
                     out.append({
                         "name": b["name"], "sha": b["sha"][:7], "remote": b["remote"], "current": is_current,
                         "stories": len(snap.load_all(include_archived=True)[0]),
                         "only_there": len(diff["only_there"]), "only_here": len(diff["only_here"]),
                         "differ": len(diff["differ"]),
                     })
-                self._json(200, {"available": True, "current": current, "branches": out, "elsewhere": sorted(elsewhere)})
+                self._json(200, {"available": True, "current": current, "branches": out, "elsewhere": sorted(elsewhere), "claims": claims})
                 return
             if tail == ["board"] and method == "GET":
                 stories, warnings = store.load_all()

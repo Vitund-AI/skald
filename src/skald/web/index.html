@@ -213,6 +213,7 @@
         el.title = 'Stories that exist only on other branches\n' + where;
         el.classList.remove('hidden');
       } else el.classList.add('hidden');
+      if (!state.modal && !state.dragging) render();
     } catch (e) { $('branch').classList.add('hidden'); }
   }
   function setRef(ref) {
@@ -287,11 +288,14 @@
     const cl = story.checklist && story.checklist.total ? `<span class="text-[11px] text-slate-500" title="Checklist">${story.checklist.done}/${story.checklist.total}</span>
       <span class="inline-block h-1.5 w-12 rounded bg-slate-200 overflow-hidden align-middle"><span class="block h-full bg-emerald-500" style="width:${Math.round(100 * story.checklist.done / story.checklist.total)}%"></span></span>` : '';
     const who = story.assignee ? `<span class="text-slate-500" title="Assignee">@${esc(story.assignee)}</span>` : '';
+    const claims = (state.branches && state.branches.claims && state.branches.claims[story.id]) || [];
+    const other = claims.filter(c => c.assignee !== story.assignee);
+    const claimBadge = other.length ? `<span class="text-[10px] rounded-full bg-violet-100 text-violet-800 px-1.5" title="${esc(other.map(c => `${c.assignee} on ${c.branch} (${c.status})`).join('\n'))}">also ${esc(other[0].assignee)}@${esc(other[0].branch)}</span>` : '';
     el.innerHTML = `
       <div class="flex items-start gap-1.5">
         <div class="text-sm font-medium leading-snug flex-1">${esc(story.title)}</div>${lock}
       </div>
-      <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}</div>
+      <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}${claimBadge}</div>
       <div class="mt-1.5 flex justify-between gap-2 text-[11px] text-slate-400 font-mono">
         <span>${story.id}</span>${who}<span class="font-sans ml-auto">${ago(story.updated_at)}</span>
       </div>`;

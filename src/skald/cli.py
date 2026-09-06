@@ -137,11 +137,21 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--branch", metavar="REF", help="read stories from a git ref instead of the working tree")
     ls.add_argument("--all-branches", action="store_true", help="stories that exist only on, or differ on, other branches")
     ls.add_argument("--json", action="store_true")
+    ls.add_argument("--compact", action="store_true", help="with --json: only the fields an agent needs")
 
     nx = sub.add_parser("next", help="the story to pick up next")
     nx.add_argument("--as", dest="author", help="skip stories assigned to someone else")
     nx.add_argument("--all-projects", action="store_true")
     nx.add_argument("--json", action="store_true")
+    nx.add_argument("--compact", action="store_true")
+
+    cx = sub.add_parser("context", help="one orientation block for an agent: mine, next, blockers, uncommitted")
+    cx.add_argument("--as", dest="author", help="whose assignments to show (default: agent)")
+    cx.add_argument("--json", action="store_true")
+
+    rs = sub.add_parser("resume", help="requirements, checklist state, dependencies, and the latest handoff for a story")
+    rs.add_argument("id")
+    rs.add_argument("--json", action="store_true")
 
     sh = sub.add_parser("show", help="print a story file")
     sh.add_argument("id")
@@ -180,6 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
     note.add_argument("id")
     note.add_argument("text", help="note text, or - to read stdin")
     note.add_argument("--as", dest="author", help="author label (default: agent)")
+    note.add_argument("--kind", help="handoff, decision, blocker, or any short word; shown in the heading")
 
     rm = sub.add_parser("rm", help="delete a story")
     rm.add_argument("id")
@@ -355,7 +366,7 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
         idx = {s.id: s for s in stories}
         sel = _filtered(st, args, stories, idx)
         rows.extend(_story_rows(st, sel, idx, qualify=args.all_projects))
-        dicts.extend(st.story_dict(s, idx, ws.user.get("stale_days")) for s in sel)
+        dicts.extend(st.story_dict(s, idx, ws.user.get("stale_days"), compact=args.compact) for s in sel)
     if args.json:
         print(json.dumps(dicts, indent=2))
     else:
@@ -366,11 +377,14 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
 def cmd_next(ws: Workspace, args, store: Optional[Store]) -> int:
     author = cli_identity(args.author)
     stores = ws.open_all()[0] if args.all_projects else [store]
+    stale_days = ws.user.get("stale_days")
     for st in stores:
-        s = st.next_story(for_author=author)
+        notes: list[str] = []
+        s = st.next_story(for_author=author, stale_days=stale_days, elsewhere=st.claims_elsewhere(), warnings=notes)
+        _warn(notes)
         if s:
             if args.json:
-                print(json.dumps(st.story_dict(s), indent=2))
+                print(json.dumps(st.story_dict(s, compact=args.compact), indent=2))
             else:
                 _print_table(_story_rows(st, [s], None, qualify=args.all_projects), STORY_HEADERS)
             return 0
@@ -433,6 +447,135 @@ def cmd_ls_branches(ws: Workspace, store: Store, args) -> int:
         _print_table(rows, ["BRANCH", "ID", "STATUS", "HERE", "TITLE"])
     else:
         print("no stories differ from the working tree on any other branch")
+    return 0
+
+
+def _note_line(n: Optional[dict]) -> str:
+    if not n:
+        return ""
+    first = n["text"].strip().splitlines()[0] if n["text"].strip() else ""
+    kind = f" ({n['kind']})" if n["kind"] != "note" else ""
+    return f"{n['stamp']} [{n['author']}]{kind} {first}"
+
+
+def build_context(ws: Workspace, store: Store, author: str) -> dict:
+    stories, load_warnings = store.load_all()
+    idx = {s.id: s for s in stories}
+    repo, uncommitted = _uncommitted(store)
+    mine = [s for s in stories if s.assignee == author and not store.config.is_terminal(s.status)]
+    elsewhere = store.claims_elsewhere()
+    stale_days = ws.user.get("stale_days")
+    next_notes: list[str] = []
+    nxt = store.next_story(for_author=author, stale_days=stale_days, elsewhere=elsewhere, warnings=next_notes)
+    ready_blocked = [s for s in stories if store.config.role(s.status) == "ready" and store.unmet(s, idx)]
+    from .store import _is_stale
+
+    stale_claims = [s for s in stories if s.assignee and s.assignee != author
+                    and store.config.role(s.status) == "active" and _is_stale(s, stale_days)]
+
+    def entry(s: Story) -> dict:
+        d = store.story_dict(s, idx, ws.user.get("stale_days"), compact=True)
+        last = s.last_note()
+        d["last_note"] = _note_line(last)
+        handoff = s.last_note("handoff")
+        d["has_handoff"] = handoff is not None
+        return d
+
+    return {
+        "project": store.name,
+        "branch": gitutil.branch(repo) if repo else None,
+        "author": author,
+        "mine": [entry(s) for s in mine],
+        "next": entry(nxt) if nxt else None,
+        "ready_blocked": [{"id": s.id, "title": s.title, "unmet": store.unmet(s, idx)} for s in ready_blocked],
+        "stale_claims": [{"id": s.id, "title": s.title, "assignee": s.assignee, "status": s.status, "updated_at": s.updated_at}
+                         for s in stale_claims],
+        "claimed_elsewhere": elsewhere,
+        "uncommitted": [c["path"] for c in uncommitted],
+        "warnings": load_warnings + next_notes,
+    }
+
+
+def cmd_context(ws: Workspace, store: Store, args) -> int:
+    author = cli_identity(args.author)
+    ctx = build_context(ws, store, author)
+    if args.json:
+        print(json.dumps(ctx, indent=2))
+        return 0
+    print(f"project {ctx['project']}" + (f" · branch {ctx['branch']}" if ctx["branch"] else "") + f" · acting as {author}")
+    if ctx["mine"]:
+        print(f"\nAssigned to {author}:")
+        for d in ctx["mine"]:
+            cl = f"  checklist {d['checklist']['done']}/{d['checklist']['total']}" if d["checklist"]["total"] else ""
+            ac = f"  acceptance {d['acceptance']['done']}/{d['acceptance']['total']}" if d.get("acceptance") else ""
+            flags = ("  BLOCKED" if d["blocked"] else "") + ("  stale" if d.get("stale") else "")
+            print(f"  {d['id']}  {d['status']:<12} {d['title']}{cl}{ac}{flags}")
+            if d["last_note"]:
+                print(f"          last note: {d['last_note']}")
+            if d["has_handoff"]:
+                print(f"          run: skald resume {d['id']}")
+    else:
+        print(f"\nNothing assigned to {author}.")
+    if ctx["next"]:
+        n = ctx["next"]
+        print(f"\nNext: {n['id']}  {n['title']}   (skald claim {n['id']} --as {author})")
+    else:
+        print("\nNext: nothing ready and unblocked.")
+    if ctx["ready_blocked"]:
+        print("\nReady but blocked:")
+        for b in ctx["ready_blocked"]:
+            print(f"  {b['id']}  {b['title']}  waiting on {', '.join(b['unmet'])}")
+    if ctx["stale_claims"]:
+        print(f"\nStale claims (no update for {ws.user.get('stale_days')}+ days; take over with skald claim <id>):")
+        for c in ctx["stale_claims"]:
+            print(f"  {c['id']}  {c['status']:<12} {c['title']}  ({c['assignee']}, {c['updated_at'][:10]})")
+    if ctx["claimed_elsewhere"]:
+        print("\nClaimed on other branches:")
+        for sid, claims in ctx["claimed_elsewhere"].items():
+            print(f"  {sid}  " + "; ".join(f"{c['assignee']} on {c['branch']} ({c['status']})" for c in claims))
+    if ctx["uncommitted"]:
+        print(f"\nUncommitted story files: {len(ctx['uncommitted'])} (commit them with your code)")
+    _warn(ctx["warnings"])
+    return 0
+
+
+def cmd_resume(ws: Workspace, store: Store, args) -> int:
+    from .store import requirements_of
+
+    story = store.get(args.id)
+    idx = store.index()
+    d = store.story_dict(story, idx, ws.user.get("stale_days"), compact=True)
+    notes = story.notes()
+    handoff = story.last_note("handoff")
+    latest = handoff or (notes[-1] if notes else None)
+    d["requirements"] = requirements_of(story.body)
+    d["deps"] = [x.to_dict() for x in store.dep_states(story, idx)]
+    d["latest"] = latest
+    d["note_count"] = len(notes)
+    d["decisions"] = [n for n in notes if n["kind"] == "decision"]
+    d["blockers"] = [n for n in notes if n["kind"] == "blocker"]
+    if args.json:
+        print(json.dumps(d, indent=2))
+        return 0
+    print(f"{story.id}  {story.title}")
+    print(f"status {story.status}" + (f" · assignee {story.assignee}" if story.assignee else "")
+          + (f" · checklist {d['checklist']['done']}/{d['checklist']['total']}" if d["checklist"]["total"] else "")
+          + (f" · acceptance {d['acceptance']['done']}/{d['acceptance']['total']}" if d.get("acceptance") else ""))
+    if d["deps"]:
+        print("depends on: " + ", ".join(f"{x['ref']} ({x['state']}{'' if x['satisfied'] else ', unmet'})" for x in d["deps"]))
+    print("\n" + d["requirements"].strip() + "\n")
+    if d["decisions"]:
+        print("Decisions:")
+        for n in d["decisions"]:
+            print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip().splitlines()[0]}")
+        print()
+    if latest:
+        label = "Latest handoff" if handoff else "Latest note"
+        others = len(notes) - 1
+        print(f"{label} ({latest['stamp']}, {latest['author']}){f', {others} earlier note(s) in the file' if others > 0 else ''}:")
+        print(latest["text"].rstrip())
+    else:
+        print("No notes yet.")
     return 0
 
 
@@ -974,7 +1117,7 @@ def cmd_hooks(store: Store, args) -> int:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open", "branches", "facets", "epics", "render",
+    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume",
 }
 
 
@@ -1035,6 +1178,10 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_ls(ws, args, store)
     if args.command == "branches":
         return cmd_branches(store, args)
+    if args.command == "context":
+        return cmd_context(ws, store, args)
+    if args.command == "resume":
+        return cmd_resume(ws, store, args)
     if args.command == "next":
         return cmd_next(ws, args, store)
     if args.command == "show":
@@ -1047,15 +1194,15 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         print(f"moved {story.id} to {story.status}")
         return 0
     if args.command == "claim":
-        story, warnings = store.claim(args.id, cli_identity(args.author))
+        story, warnings = store.claim(args.id, cli_identity(args.author), ws.user.get("stale_days"), store.claims_elsewhere())
         _warn(warnings)
         print(f"{story.id} claimed by {story.assignee}, now {story.status}")
         return 0
     if args.command == "set":
         return cmd_set(store, args)
     if args.command == "note":
-        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author))
-        print(f"noted on {story.id}")
+        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), args.kind)
+        print(f"noted on {story.id}" + (f" ({args.kind})" if args.kind else ""))
         return 0
     if args.command == "rm":
         story = store.delete(args.id, force=args.force)

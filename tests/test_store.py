@@ -469,3 +469,85 @@ class TestFacets(SkaldTestCase):
         self.assertEqual(f["epic"]["auth"], {"total": 2, "done": 1, "open": 1, "ids": [a.id, b.id]})
         self.assertEqual(f["epic"]["billing"]["total"], 1)
         self.assertEqual(f["area"]["web"]["ids"], [a.id])
+
+
+class TestNotesAndAcceptance(SkaldTestCase):
+    def test_parse_notes_requirements_and_kinds(self):
+        from skald.store import parse_notes, requirements_of
+
+        s = self.store()
+        a, _ = s.create("a", body="Do the thing.\n\n## Acceptance\n\n- [ ] one\n- [x] two\n")
+        s.append_note(a.id, "first", "claude")
+        s.append_note(a.id, "why", "claude", kind="decision")
+        s.append_note(a.id, "state\nof play", "claude", kind="handoff")
+        story = s.get(a.id)
+        notes = story.notes()
+        self.assertEqual([n["kind"] for n in notes], ["note", "decision", "handoff"])
+        self.assertEqual(notes[2]["text"], "state\nof play")
+        self.assertEqual(story.last_note("handoff")["text"], "state\nof play")
+        self.assertEqual(story.last_note("blocker"), None)
+        self.assertIn("## [claude] ", story.body)
+        self.assertIn(" UTC · handoff\n", story.body)
+        self.assertTrue(requirements_of(story.body).endswith("- [x] two"))
+        d = story.to_dict()
+        self.assertEqual(d["acceptance"], {"done": 1, "total": 2})
+        self.assertEqual(d["checklist"], {"done": 1, "total": 2})
+        compact = story.to_dict(compact=True)
+        self.assertNotIn("filename", compact)
+        self.assertNotIn("created_at", compact)
+        with self.assertRaises(SkaldError):
+            s.append_note(a.id, "x", "claude", kind="Not Valid")
+
+    def test_acceptance_gate_warns_on_forward_moves(self):
+        s = self.store()
+        a, _ = s.create("a", body="## Acceptance\n\n- [ ] renders\n")
+        _, w = s.update(a.id, status="ready")
+        self.assertEqual(w, [])
+        _, w = s.update(a.id, status="in_progress")          # first active: no gate
+        self.assertEqual(w, [])
+        _, w = s.update(a.id, status="review")               # forward past first active
+        self.assertTrue(any("1 of 1 acceptance criteria unchecked" in x for x in w))
+        _, w = s.update(a.id, status="in_progress")          # backwards: no gate
+        self.assertEqual(w, [])
+        _, w = s.update(a.id, status="done")
+        self.assertTrue(any("acceptance" in x for x in w))
+        s.write_body(a.id, "## Acceptance\n\n- [x] renders\n", None)
+        _, w = s.update(a.id, status="review")
+        self.assertEqual(w, [])
+
+
+class TestClaimAwareness(SkaldTestCase):
+    def test_stale_assignment_is_offered_and_takeover_warns(self):
+        s = self.store()
+        a, _ = s.create("pre-assigned", status="ready", assignee="bob")
+        notes = []
+        self.assertIsNone(s.next_story(for_author="alice", stale_days=3, warnings=notes))
+        self.assertEqual(notes, [])
+        # backdate the assignment
+        raw = a.path.read_text().replace(a.fields["updated_at"], "2020-01-01T00:00:00Z")
+        a.path.write_text(raw)
+        notes = []
+        self.assertEqual(s.next_story(for_author="alice", stale_days=3, warnings=notes).id, a.id)
+        self.assertIn("untouched for 3+ days", notes[0])
+        story, warnings = s.claim(a.id, "alice", stale_days=3)
+        self.assertEqual(story.assignee, "alice")
+        self.assertIn("was assigned to bob (stale); now alice", warnings[0])
+
+    def test_claims_on_other_branches(self):
+        s = self.store()
+        a, _ = s.create("shared", status="ready")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "base")
+        git(self.repo, "checkout", "-qb", "agent/two")
+        s.claim(a.id, "codex")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "codex claims")
+        git(self.repo, "checkout", "-q", "master")
+        elsewhere = self.store().claims_elsewhere()
+        self.assertEqual(elsewhere, {a.id: [{"branch": "agent/two", "assignee": "codex", "status": "in_progress"}]})
+        notes = []
+        self.assertIsNone(self.store().next_story(for_author="claude", elsewhere=elsewhere, warnings=notes))
+        self.assertIn("claimed by codex on branch agent/two", notes[0])
+        self.assertEqual(self.store().next_story(for_author="codex", elsewhere=elsewhere).id, a.id)
+        story, warnings = self.store().claim(a.id, "claude", elsewhere=elsewhere)
+        self.assertTrue(any("also claimed by codex" in w for w in warnings))
