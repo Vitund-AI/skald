@@ -1206,6 +1206,7 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     permissions:
+      contents: read        # listing any permission drops the rest to none; checkout needs this
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
