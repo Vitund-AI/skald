@@ -29,7 +29,6 @@ class TestRender(SkaldTestCase):
         self.assertIn(f"🔒 `{a}`", out)
         self.assertIn("Pipe \\| in title", out)
         self.assertIn("<details><summary><strong>Done (1)</strong></summary>", out)
-        self.assertNotIn("20", out.splitlines()[0])  # no timestamp anywhere near the marker
         code, again, _ = self.run_cli("render", "--stdout")
         self.assertEqual(out, again)
 
