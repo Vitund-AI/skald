@@ -1,7 +1,7 @@
-<!-- skald-render c096eb5cf56bb340 -->
+<!-- skald-render 89be87b764d60551 -->
 # skald backlog
 
-**36 open** · Backlog 2 · Ready 2 · In progress 1 · Review 31 · Done 1
+**36 open** · Backlog 2 · Ready 1 · In progress 1 · Review 32 · Done 1
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -26,12 +26,11 @@ flowchart LR
 | [be447c](stories/be447c-rename-a-project-with-reference-rewriting.md) | Rename a project with reference rewriting | `cli` |  |  |  |
 | [c78e01](stories/c78e01-bulk-operations-on-the-board.md) | Bulk operations on the board | `ui` |  |  |  |
 
-## Ready (2)
+## Ready (1)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b91662](stories/b91662-publish-0-2-0-to-pypi.md) | Publish 0.2.0 to PyPI | `packaging` |  |  |  |
-| [68a39b](stories/68a39b-confirm-windows-and-macos-behaviour-from-ci.md) | Confirm Windows and macOS behaviour from CI | `packaging` |  |  |  |
 
 ## In progress (1)
 
@@ -39,7 +38,7 @@ flowchart LR
 | --- | --- | --- | --- | --- | --- |
 | [f7674b](stories/f7674b-verify-the-board-with-tailwind-loaded-in-a-real-br.md) | Verify the board with Tailwind loaded in a real browser | `ui` |  |  |  |
 
-## Review (31)
+## Review (32)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -74,6 +73,7 @@ flowchart LR
 | [f4fa85](stories/f4fa85-skald-activity-backlog-transitions-from-git-histor.md) | skald activity: backlog transitions from git history | `git` | claude |  |  |
 | [419b5c](stories/419b5c-claude-code-skill-and-init-writing-the-instruction.md) | Claude Code skill and init writing the instructions pointer | `agents` | claude |  |  |
 | [12c4d1](stories/12c4d1-dependency-graph-mermaid-in-render-skald-graph-svg.md) | Dependency graph: Mermaid in render, skald graph, SVG on the board | `docs` `ui` | claude |  |  |
+| [68a39b](stories/68a39b-confirm-windows-and-macos-behaviour-from-ci.md) | Confirm Windows and macOS behaviour from CI | `packaging` |  |  |  |
 
 <details><summary><strong>Done (1)</strong></summary>
 
