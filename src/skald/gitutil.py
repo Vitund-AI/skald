@@ -239,8 +239,9 @@ TRAILER = "Skald-Story"
 
 def commits_for(repo: Path, story_id: str, limit: int = 50, all_branches: bool = False) -> list[dict]:
     """Commits whose message references a story via the trailer or ``[id]``."""
+    # No \b: git uses the platform regex library and BSD ERE has no word boundaries.
     args = ["log", f"-n{limit}", "--format=%h%x1f%aI%x1f%an%x1f%s", "-E",
-            f"--grep={TRAILER}: *{story_id}\\b", f"--grep=\\[{story_id}\\]"]
+            f"--grep={TRAILER}: *{story_id}([^0-9a-f]|$)", f"--grep=\\[{story_id}\\]"]
     if all_branches:
         args.insert(1, "--all")
     proc = _run(args, cwd=repo)

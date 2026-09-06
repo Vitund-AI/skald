@@ -532,6 +532,9 @@ def server_status(home: Path) -> Optional[dict]:
     return state
 
 
+START_TIMEOUT = 20.0  # seconds to wait for the background server; macOS runners are slow to spawn
+
+
 def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = None) -> dict:
     running = server_status(home)
     if running:
@@ -554,7 +557,7 @@ def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = No
         stdin=subprocess.DEVNULL, stdout=log, stderr=log, env=env, close_fds=True, **kwargs,
     )
     log.close()
-    deadline = time.time() + 5
+    deadline = time.time() + START_TIMEOUT
     while time.time() < deadline:
         if proc.poll() is not None:
             raise SkaldError(f"server exited immediately (exit {proc.returncode}); see {log_path}")
@@ -562,7 +565,7 @@ def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = No
         if state and state.get("pid") == proc.pid and health(host, state["port"]):
             return state
         time.sleep(0.1)
-    raise SkaldError(f"server did not come up within 5s; see {log_path}")
+    raise SkaldError(f"server did not come up within {int(START_TIMEOUT)}s; see {log_path}")
 
 
 def stop_server(home: Path) -> bool:

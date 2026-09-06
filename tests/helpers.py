@@ -35,7 +35,8 @@ class SkaldTestCase(unittest.TestCase):
     """Every test gets a fresh config home and a fresh git repository with a project."""
 
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp(prefix="skald-test-"))
+        # resolve() so comparisons hold where TMP is a symlink (macOS /private/var) or a short name (Windows RUNNER~1)
+        self.tmp = Path(tempfile.mkdtemp(prefix="skald-test-")).resolve()
         self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
         self.home = self.tmp / "home"
         self._env = {k: os.environ.get(k) for k in ("SKALD_HOME", "SKALD_DIR", "SKALD_AUTHOR")}

@@ -314,7 +314,8 @@ class TestTemplates(SkaldTestCase):
     def test_new_from_template(self):
         s = self.store()
         s.templates_dir.mkdir()
-        (s.templates_dir / "bug.md").write_text("## Steps\n\n1.\n\n## Expected\n")
+        with open(s.templates_dir / "bug.md", "w", newline="\n") as fh:
+            fh.write("## Steps\n\n1.\n\n## Expected\n")
         self.assertEqual(s.templates(), ["bug"])
         story, _ = s.create("crash", template="bug", body="extra")
         self.assertEqual(story.body, "## Steps\n\n1.\n\n## Expected\n\nextra\n")

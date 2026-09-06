@@ -1298,7 +1298,7 @@ def cmd_hooks_github(store: Store, args) -> int:
         return 1
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
-    print(f"wrote {path.relative_to(repo)}")
+    print(f"wrote {path.relative_to(repo).as_posix()}")
     if not settings:
         store.config.extra["render"] = {"path": rnd.DEFAULT_PATH, "format": "md"}
         store.config.save(store.dir / "config.json")
@@ -1343,7 +1343,7 @@ def cmd_hooks(store: Store, args) -> int:
     skill = repo / ".claude" / "skills" / "skald" / "SKILL.md"
     skill.parent.mkdir(parents=True, exist_ok=True)
     skill.write_text(claude_skill(), encoding="utf-8")
-    print(f"wrote {skill.relative_to(repo)}")
+    print(f"wrote {skill.relative_to(repo).as_posix()}")
     return 0
 
 

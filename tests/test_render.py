@@ -110,7 +110,8 @@ class TestHookInstallers(SkaldTestCase):
         code, out, _ = self.run_cli("hooks", "git", "--install")
         hook = self.repo / ".git" / "hooks" / "pre-commit"
         self.assertTrue(hook.exists())
-        self.assertTrue(hook.stat().st_mode & stat.S_IXUSR)
+        if os.name != "nt":
+            self.assertTrue(hook.stat().st_mode & stat.S_IXUSR)
         self.assertIn("skald check || exit 1", hook.read_text())
         self.assertIn("enabled automatic rendering", out)
         self.assertEqual(json.loads((self.skald_dir / "config.json").read_text())["render"]["path"], ".skald/README.md")
