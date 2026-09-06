@@ -394,3 +394,58 @@ class TestUserConfigCoercion(SkaldTestCase):
         u.save()
         again = UserConfig(self.home)
         self.assertEqual((again.get("stale_days"), again.get("push"), again.get("port"), again.get("author")), (7, True, 8321, ""))
+
+
+class TestSnapshots(SkaldTestCase):
+    def setUp(self):
+        super().setUp()
+        s = self.store()
+        self.a, _ = s.create("on both", status="ready")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "base")
+        git(self.repo, "checkout", "-qb", "feature")
+        self.b, _ = s.create("only on feature")
+        s.update(self.a.id, status="done")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "feature work")
+        git(self.repo, "checkout", "-q", "master")
+
+    def test_snapshot_reads_objects_not_worktree(self):
+        s = self.store()
+        snap = s.snapshot("feature")
+        self.assertTrue(snap.readonly)
+        self.assertEqual(snap.ref, "feature")
+        ids = {x.id: x.status for x in snap.load_all()[0]}
+        self.assertEqual(ids, {self.a.id: "done", self.b.id: "backlog"})
+        self.assertEqual(s.get(self.a.id).status, "ready")          # worktree untouched
+        self.assertEqual(git(self.repo, "rev-parse", "--abbrev-ref", "HEAD").strip(), "master")
+        self.assertEqual(snap.get(self.b.id[:3]).title, "only on feature")
+        from skald.errors import NotFoundError, SkaldError
+        with self.assertRaises(NotFoundError):
+            snap.get("zzz")
+        with self.assertRaises(NotFoundError):
+            s.snapshot("no-such-branch")
+        d = snap.story_dict(snap.get(self.b.id))
+        self.assertEqual((d["ref"], d["project"], d["blocked"]), ("feature", "alpha", False))
+
+    def test_branch_diff(self):
+        s = self.store()
+        diff = s.branch_diff(s.snapshot("feature"))
+        self.assertEqual([x.id for x in diff["only_there"]], [self.b.id])
+        self.assertEqual(diff["only_here"], [])
+        self.assertEqual([(h.status, t.status) for h, t in diff["differ"]], [("ready", "done")])
+        same = s.branch_diff(s.snapshot("master"))
+        self.assertEqual((same["only_there"], same["only_here"], same["differ"]), ([], [], []))
+
+    def test_snapshot_uses_config_at_ref_and_local_deps(self):
+        s = self.store()
+        git(self.repo, "checkout", "-q", "feature")
+        ProjectConfig.from_dict({"name": "alpha", "columns": SAMPLE_CONFIG_COLUMNS}).save(self.skald_dir / "config.json")
+        c, _ = self.store().create("dep", status="qa", blocked_by=[self.b.id, "other:abc123"])
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "custom columns")
+        git(self.repo, "checkout", "-q", "master")
+        snap = s.snapshot("feature")
+        self.assertEqual(snap.config.keys, ["backlog", "ready", "doing", "qa", "done", "wont_do"])
+        states = {d.ref: d.state for d in snap.dep_states(snap.get(c.id))}
+        self.assertEqual(states, {self.b.id: "backlog", "other:abc123": "unavailable"})

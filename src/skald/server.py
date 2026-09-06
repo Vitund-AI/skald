@@ -21,6 +21,7 @@ from . import __version__, gitutil
 from .errors import GitError, NotFoundError, SkaldError
 from .registry import Registry, UserConfig, Workspace
 from .store import Store
+from .util import sha256_text
 
 SSE_INTERVAL = 0.5  # seconds between change checks on an open event stream
 
@@ -40,6 +41,27 @@ class SkaldServer(ThreadingHTTPServer):
         self.home = home
         self.quiet = quiet
         self._html: Optional[str] = None
+        self._snapshots: dict = {}
+        self._snap_lock = threading.Lock()
+
+    def snapshot(self, store: Store, ref: str):
+        """A read-only snapshot of ``store`` at ``ref``, cached by the commit it resolves to."""
+        repo = gitutil.root(store.dir)
+        if repo is None:
+            raise SkaldError("this project is not inside a git repository")
+        sha = gitutil.rev_parse(repo, ref)
+        if sha is None:
+            raise NotFoundError(f"unknown git ref '{ref}'")
+        key = (str(store.dir), sha)
+        with self._snap_lock:
+            snap = self._snapshots.get(key)
+        if snap is None:
+            snap = store.snapshot(ref)
+            with self._snap_lock:
+                if len(self._snapshots) > 64:
+                    self._snapshots.clear()
+                self._snapshots[key] = snap
+        return snap
 
     def workspace(self) -> Workspace:
         # A fresh workspace per request picks up projects registered or config edited since the last one.
@@ -231,6 +253,41 @@ class Handler(BaseHTTPRequestHandler):
             name, tail = rest[1], rest[2:]
             store = self._project(ws, name)
 
+            ref = (query.get("ref") or [""])[0].strip()
+            if tail == ["board"] and method == "GET" and ref:
+                snap = self.server.snapshot(store, ref)
+                stories, warnings = snap.load_all()
+                idx = {s.id: s for s in stories}
+                self._json(200, {
+                    "project": store.name, "path": str(store.dir),
+                    "columns": [c.to_dict() for c in snap.config.columns],
+                    "stories": [snap.story_dict(s, idx) for s in stories],
+                    "warnings": warnings, "git": {"available": True, "branch": ref, "changes": []},
+                    "identity": self._identity(ws, store), "settings": ws.user.all(),
+                    "version": snap.sha, "readonly": True, "ref": ref, "sha": snap.sha,
+                })
+                return
+            if tail == ["branches"] and method == "GET":
+                repo = gitutil.root(store.dir)
+                if repo is None:
+                    self._json(200, {"available": False, "current": None, "branches": [], "elsewhere": []})
+                    return
+                current = gitutil.branch(repo)
+                out, elsewhere = [], set()
+                for b in gitutil.branches(repo):
+                    snap = self.server.snapshot(store, b["name"])
+                    diff = store.branch_diff(snap)
+                    is_current = b["name"] == current
+                    if not is_current:
+                        elsewhere.update(x.id for x in diff["only_there"])
+                    out.append({
+                        "name": b["name"], "sha": b["sha"][:7], "remote": b["remote"], "current": is_current,
+                        "stories": len(snap.load_all(include_archived=True)[0]),
+                        "only_there": len(diff["only_there"]), "only_here": len(diff["only_here"]),
+                        "differ": len(diff["differ"]),
+                    })
+                self._json(200, {"available": True, "current": current, "branches": out, "elsewhere": sorted(elsewhere)})
+                return
             if tail == ["board"] and method == "GET":
                 stories, warnings = store.load_all()
                 idx = {s.id: s for s in stories}
@@ -293,6 +350,15 @@ class Handler(BaseHTTPRequestHandler):
             if len(tail) >= 2 and tail[0] == "stories":
                 ref, sub = tail[1], tail[2:]
                 if not sub and method == "GET":
+                    git_ref = (query.get("ref") or [""])[0].strip()
+                    if git_ref:
+                        snap = self.server.snapshot(store, git_ref)
+                        story = snap.get(ref)
+                        d = snap.story_dict(story)
+                        d["body"] = story.body
+                        d["body_sha256"] = sha256_text(story.body)
+                        self._json(200, d)
+                        return
                     story = store.get(ref)
                     self._json(200, self._story_json(ws, store, story, body=True))
                     return

@@ -134,6 +134,8 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--all", action="store_true", help="include done and closed stories")
     ls.add_argument("--archived", action="store_true", help="include archived stories")
     ls.add_argument("--all-projects", action="store_true", help="every registered project")
+    ls.add_argument("--branch", metavar="REF", help="read stories from a git ref instead of the working tree")
+    ls.add_argument("--all-branches", action="store_true", help="stories that exist only on, or differ on, other branches")
     ls.add_argument("--json", action="store_true")
 
     nx = sub.add_parser("next", help="the story to pick up next")
@@ -143,7 +145,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     sh = sub.add_parser("show", help="print a story file")
     sh.add_argument("id")
+    sh.add_argument("--branch", metavar="REF", help="read the story from a git ref")
     sh.add_argument("--json", action="store_true")
+
+    br = sub.add_parser("branches", help="story counts per branch and how they differ from the working tree")
+    br.add_argument("--json", action="store_true")
 
     new = sub.add_parser("new", help="create a story")
     new.add_argument("title")
@@ -357,7 +363,67 @@ def cmd_next(ws: Workspace, args, store: Optional[Store]) -> int:
     return 1
 
 
+def cmd_branches(store: Store, args) -> int:
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    current = gitutil.branch(repo)
+    rows, dicts = [], []
+    for b in gitutil.branches(repo):
+        snap = store.snapshot(b["name"])
+        diff = store.branch_diff(snap)
+        is_current = b["name"] == current
+        d = {
+            "name": b["name"], "sha": b["sha"][:7], "remote": b["remote"], "current": is_current,
+            "stories": len(snap.load_all(include_archived=True)[0]),
+            "only_there": [x.id for x in diff["only_there"]],
+            "only_here": [x.id for x in diff["only_here"]],
+            "differ": [x.id for x, _ in diff["differ"]],
+        }
+        dicts.append(d)
+        rows.append(["*" if is_current else "", b["name"], str(d["stories"]), str(len(d["only_there"])),
+                     str(len(d["only_here"])), str(len(d["differ"]))])
+    if args.json:
+        print(json.dumps(dicts, indent=2))
+    else:
+        _print_table(rows, ["", "BRANCH", "STORIES", "ONLY THERE", "ONLY HERE", "DIFFER"])
+        print("(* = checked out; counts compare each branch with the working tree)")
+    return 0
+
+
+def cmd_ls_branches(ws: Workspace, store: Store, args) -> int:
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    current = gitutil.branch(repo)
+    rows, dicts = [], []
+    for b in gitutil.branches(repo):
+        if b["name"] == current:
+            continue
+        snap = store.snapshot(b["name"])
+        diff = store.branch_diff(snap)
+        for s in diff["only_there"]:
+            rows.append([b["name"], s.id, s.status, "-", s.title])
+            d = snap.story_dict(s)
+            d["here"] = None
+            dicts.append(d)
+        for here, there in diff["differ"]:
+            rows.append([b["name"], there.id, there.status, here.status, there.title])
+            d = snap.story_dict(there)
+            d["here"] = here.status
+            dicts.append(d)
+    if args.json:
+        print(json.dumps(dicts, indent=2))
+    elif rows:
+        _print_table(rows, ["BRANCH", "ID", "STATUS", "HERE", "TITLE"])
+    else:
+        print("no stories differ from the working tree on any other branch")
+    return 0
+
+
 def cmd_show(ws: Workspace, args, store: Store) -> int:
+    if getattr(args, "branch", None):
+        store = store.snapshot(args.branch)
     story = store.get(args.id)
     if args.json:
         d = store.story_dict(story, None, ws.user.get("stale_days"))
@@ -684,7 +750,7 @@ def cmd_hooks(store: Store, args) -> int:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open",
+    "hooks", "open", "branches",
 }
 
 
@@ -738,7 +804,13 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     _notice(ws.notices)
 
     if args.command == "ls":
+        if args.all_branches:
+            return cmd_ls_branches(ws, store, args)
+        if args.branch:
+            store = store.snapshot(args.branch)
         return cmd_ls(ws, args, store)
+    if args.command == "branches":
+        return cmd_branches(store, args)
     if args.command == "next":
         return cmd_next(ws, args, store)
     if args.command == "show":

@@ -145,6 +145,24 @@ it is the same on every clone. A reference to a project that is not
 registered on this machine counts as unmet and is reported as a warning, not
 an error, because you may simply not have cloned that repository yet.
 
+## Other branches
+
+Stories live on the branch you have checked out. Skald can read `.skald/`
+from any other branch, local or remote, straight from git objects, without
+touching your working tree:
+
+```sh
+skald branches                    # per-branch counts and how each differs from here
+skald ls --all-branches           # stories that exist only on, or differ on, other branches
+skald ls --branch feature/x       # a branch's board, read-only
+skald show a3f9c2 --branch origin/main
+```
+
+The board has a branch dropdown next to the project name and a badge
+counting stories that exist only elsewhere. Other branches are read-only
+views, and dependencies never resolve across branches: a blocker being done
+on `feature/x` does not unblock anything on `main`.
+
 ## Web board
 
 ```sh
@@ -195,9 +213,10 @@ corrupt story or configuration.
 | --- | --- |
 | `init [--name N]` | Create `.skald/` here, or register an existing one. Removes the 0.1 vendored layout. |
 | `status` | Project, branch, per-column counts, uncommitted story files. |
-| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects]` | List stories. Hides terminal columns unless `--all`. |
+| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | List stories. Hides terminal columns unless `--all`. |
 | `next [--as NAME] [--all-projects]` | First ready, unblocked story not assigned to someone else. Exit 1 if none. |
-| `show <id>` | Print the file. `--json` adds derived fields, body, and body hash. |
+| `show <id> [--branch REF]` | Print the file. `--json` adds derived fields, body, and body hash. |
+| `branches` | Story counts per branch and how each differs from the working tree. |
 | `new "<title>" [--status C] [--tags a,b] [--blocked-by id,proj:id] [--body TEXT \| -] [--template T] [--assignee A]` | Create a story and print its id. |
 | `mv <id> <column>` | Change status. Warns on unmet dependencies and WIP limits. |
 | `claim <id> --as NAME` | Assign and move into the first active column. |
@@ -276,11 +295,12 @@ Project names come from the registry; the API never accepts a path.
 | `GET /api/health` | | `{ok, version, pid}` |
 | `GET /api/projects` | | `{projects, settings}` |
 | `GET /api/ready` | | ready, unblocked stories across all projects |
-| `GET /api/projects/<p>/board` | | `{columns, stories, git, identity, settings, version, warnings}` |
+| `GET /api/projects/<p>/board[?ref=REF]` | | `{columns, stories, git, identity, settings, version, warnings}`; with `ref`, a read-only snapshot of that branch |
+| `GET /api/projects/<p>/branches` | | `{current, branches: [{name, sha, remote, stories, only_there, only_here, differ}], elsewhere}` |
 | `GET /api/projects/<p>/version` | | a hash that changes whenever any story file changes |
 | `GET /api/projects/<p>/events` | | server-sent events: `hello` on connect, `change` whenever the hash changes |
 | `POST /api/projects/<p>/stories` | `{title, status?, tags?, blocked_by?, body?, assignee?, template?}` | 201, `{story, warnings}` |
-| `GET /api/projects/<p>/stories/<id>` | | story with `body`, `body_sha256`, and `deps` |
+| `GET /api/projects/<p>/stories/<id>[?ref=REF]` | | story with `body`, `body_sha256`, and `deps`; with `ref`, as it is on that branch |
 | `PATCH /api/projects/<p>/stories/<id>` | any of `{title, status, rank, tags, blocked_by, assignee, order}` | `{story, warnings}` |
 | `PUT /api/projects/<p>/stories/<id>/body` | `{body, base_sha256}` | story, or 409 if the body changed on disk |
 | `POST /api/projects/<p>/stories/<id>/notes` | `{text, author?}` | 201, story with body |

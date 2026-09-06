@@ -223,7 +223,20 @@ Archived stories are excluded from listings unless `--archived`, still
 resolve as satisfied dependencies, still resolve by id, cannot be updated or
 deleted until unarchived, and are included in `changelog`.
 
-### 4.6 Concurrency and git
+### 4.6 Other branches
+
+`Store.snapshot(ref)` reads a project's `config.json`, stories, and archive
+at any git ref through `git ls-tree` and one `git cat-file --batch` call,
+never through the working tree or index. The result is a read-only
+`Snapshot` that duck-types the read side of `Store`. Dependencies resolve
+only within the snapshot; cross-project references are `unavailable`. The
+checked-out branch is always the truth; snapshots are informational. The
+server caches snapshots by the commit a ref resolves to.
+
+`branch_diff` compares a snapshot with the working tree by id: stories only
+there, only here, and those whose status, title, or archived flag differ.
+
+### 4.7 Concurrency and git
 
 Writes go to a temp file then `os.replace`. Board body edits carry the SHA-256
 of the body they loaded and get 409 on mismatch. Random ids mean branches
@@ -252,9 +265,10 @@ story or configuration. Commands that print stories take `--json`.
 | --- | --- |
 | `init [--name N]` | Section 2.4. Prints what it did and the CLAUDE.md line. |
 | `status [--json]` | Name, path, branch, per-column counts, unknown-status count, ready-and-unblocked count, uncommitted files under `.skald/`. |
-| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects]` | Table `ID STATUS RANK BLOCKED ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. |
+| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
 | `next [--as N] [--all-projects]` | First ready, unblocked story available to the actor. Exit 1 and a stderr message if none. |
-| `show <id>` | Raw file. `--json` adds derived fields, `body`, `body_sha256`. |
+| `show <id> [--branch REF]` | Raw file. `--json` adds derived fields, `body`, `body_sha256`. |
+| `branches [--json]` | Every local and remote branch with story count and diff counts against the working tree. |
 | `new "<title>" [--status C] [--tags a,b] [--blocked-by refs] [--body TEXT\|-] [--template T] [--assignee A]` | Create; prints the id. |
 | `mv <id> <column>` | Change status; rank goes to the bottom of the new column. |
 | `claim <id> [--as N]` | Section 5. |
@@ -299,6 +313,9 @@ branch, filter, identity, commit button when `.skald/` has uncommitted
 changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
+A branch dropdown switches to a read-only snapshot of another branch with a
+banner, no dragging, disabled fields, and no write buttons; a badge counts
+stories that exist only on other branches.
 Modal: title, status, assignee, tags, blockers, dependency chips that open
 the target (switching project if needed), body with Markdown preview, save
 with conflict detection, reload, claim, delete, notes, history tab. Toasts

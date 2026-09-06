@@ -166,3 +166,12 @@ read and act on, so `tools/call` returns it as content with `isError: true`.
 JSON-RPC errors are reserved for protocol problems: unknown methods, unknown
 tools, unparsable input. Warnings ride inside successful results, matching
 the CLI's stderr behaviour.
+
+### D27. Other branches are read-only overlays
+Snapshots come from `git ls-tree` and `git cat-file --batch`, so viewing a
+branch never checks it out, touches the index, or takes a lock. The
+checked-out branch stays the only truth: nothing can be edited through a
+snapshot, and a dependency being satisfied on another branch never unblocks
+a story here. The board shows the difference as a badge and a dropdown, not
+as a merged view, because a merged view would invite acting on state that is
+not actually in the working tree.

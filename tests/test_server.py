@@ -206,3 +206,37 @@ class TestEvents(ServerTestCase):
             buf += sock.recv(4096)
         self.assertIn(b'"version"', buf)
         sock.close()
+
+
+class TestBranchAPI(ServerTestCase):
+    def test_branches_and_readonly_board(self):
+        P = "/api/projects/alpha"
+        status, data = self.call("POST", f"{P}/stories", {"title": "base", "status": "ready"})
+        a = data["story"]["id"]
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "base")
+        git(self.repo, "checkout", "-qb", "feature")
+        status, data = self.call("POST", f"{P}/stories", {"title": "feature only"})
+        b = data["story"]["id"]
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "feature")
+        git(self.repo, "checkout", "-q", "master")
+
+        status, data = self.call("GET", f"{P}/branches")
+        self.assertEqual((status, data["current"], data["elsewhere"]), (200, "master", [b]))
+        feature = next(x for x in data["branches"] if x["name"] == "feature")
+        self.assertEqual((feature["stories"], feature["only_there"], feature["differ"]), (2, 1, 0))
+
+        status, board = self.call("GET", f"{P}/board?ref=feature")
+        self.assertEqual((status, board["readonly"], board["ref"]), (200, True, "feature"))
+        self.assertEqual(sorted(s["id"] for s in board["stories"]), sorted([a, b]))
+        status, again = self.call("GET", f"{P}/board?ref=feature")
+        self.assertEqual(again["version"], board["version"])  # cached by sha, stable
+        status, one = self.call("GET", f"{P}/stories/{b}?ref=feature")
+        self.assertEqual((status, one["ref"], one["title"]), (200, "feature", "feature only"))
+        self.assertIn("body_sha256", one)
+        self.assertEqual(self.call("GET", f"{P}/stories/{b}")[0], 404)
+        self.assertEqual(self.call("GET", f"{P}/board?ref=nope")[0], 404)
+        status, board = self.call("GET", f"{P}/board")
+        self.assertNotIn("readonly", board)
+        self.assertEqual([s["id"] for s in board["stories"]], [a])

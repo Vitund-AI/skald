@@ -29,7 +29,8 @@
 <header class="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200 flex-wrap">
   <h1 class="text-lg font-semibold tracking-tight">Skald</h1>
   <select id="project" class="rounded border border-slate-300 px-2 py-1 text-sm bg-white"></select>
-  <span id="branch" class="text-xs font-mono text-slate-500 hidden"></span>
+  <select id="branch" class="hidden rounded border border-slate-300 px-2 py-1 text-xs font-mono bg-white" title="Branch. Other branches are read-only views."></select>
+  <span id="elsewhere" class="hidden text-xs rounded-full bg-violet-100 text-violet-800 px-2 py-0.5 cursor-default"></span>
   <input id="search" type="search" placeholder="Filter (title, id, tag, assignee)  /" class="flex-1 min-w-[12rem] max-w-md rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
   <span id="conn" class="text-xs text-slate-400"></span>
   <span id="identity" class="text-xs text-slate-500" title="Notes and commits from the board use this name. Change it with: skald config author NAME"></span>
@@ -48,6 +49,7 @@
   <button id="new-btn" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700" title="New story (n)">New story</button>
 </header>
 
+<div id="ro-banner" class="hidden bg-violet-50 border-b border-violet-200 text-violet-900 text-sm px-4 py-1.5"></div>
 <main id="board" class="flex-1 flex gap-3 p-3 overflow-x-auto"></main>
 <main id="ready-view" class="hidden flex-1 overflow-y-auto p-4"></main>
 
@@ -114,7 +116,7 @@
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false,
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal');
   const ALL = '__all__';
@@ -181,7 +183,42 @@
     $('new-btn').classList.toggle('hidden', state.allView);
     $('git-btn').classList.add('hidden');
     $('branch').classList.add('hidden');
+    $('elsewhere').classList.add('hidden');
+    state.ref = ''; state.readonly = false; state.branches = null;
+    $('ro-banner').classList.add('hidden');
     state.version = null;
+    subscribe();
+    refresh(true);
+    loadBranches();
+  }
+  async function loadBranches() {
+    if (state.allView || !state.project) return;
+    try {
+      const data = await api('GET', `${P()}/branches`);
+      state.branches = data;
+      const sel = $('branch');
+      if (!data.available) { sel.classList.add('hidden'); return; }
+      const cur = data.current || 'HEAD';
+      sel.innerHTML = `<option value="">${esc(cur)} (working tree)</option>` +
+        data.branches.filter(b => !b.current).map(b => `<option value="${esc(b.name)}">${esc(b.name)}${b.only_there || b.differ ? ` (+${b.only_there} / ~${b.differ})` : ''}</option>`).join('');
+      sel.value = state.ref;
+      sel.classList.remove('hidden');
+      const el = $('elsewhere');
+      if (data.elsewhere.length) {
+        const where = data.branches.filter(b => !b.current && b.only_there).map(b => `${b.name}: ${b.only_there}`).join('\n');
+        el.textContent = `+${data.elsewhere.length} elsewhere`;
+        el.title = 'Stories that exist only on other branches\n' + where;
+        el.classList.remove('hidden');
+      } else el.classList.add('hidden');
+    } catch (e) { $('branch').classList.add('hidden'); }
+  }
+  function setRef(ref) {
+    state.ref = ref; state.readonly = !!ref; state.version = null;
+    const banner = $('ro-banner');
+    if (ref) { banner.textContent = `Read-only view of ${ref}. Switch back to the working tree to edit.`; banner.classList.remove('hidden'); }
+    else banner.classList.add('hidden');
+    $('new-btn').classList.toggle('hidden', state.readonly || state.allView);
+    if (state.readonly) $('git-btn').classList.add('hidden');
     subscribe();
     refresh(true);
   }
@@ -189,7 +226,7 @@
   function subscribe() {
     if (state.es) { state.es.close(); state.es = null; }
     state.live = false;
-    if (state.allView || !window.EventSource) return;
+    if (state.allView || state.readonly || !window.EventSource) return;
     try {
       const es = new EventSource(`${P()}/events`);
       es.addEventListener('hello', () => { state.live = true; });
@@ -217,7 +254,7 @@
     const border = story.blocked ? 'border-l-4 border-l-red-500' : story.stale ? 'border-l-4 border-l-amber-400' : '';
     el.className = `card bg-white rounded shadow-sm border border-slate-200 p-2.5 cursor-grab hover:shadow ${border}`;
     el.dataset.id = story.id;
-    el.draggable = true;
+    el.draggable = !state.readonly;
     const tags = story.tags.map(t => `<span class="inline-block rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px]">${esc(t)}</span>`).join(' ');
     const lock = story.blocked ? `<span class="text-red-500 text-sm" title="${esc(depTitle(story))}">&#128274;</span>` : '';
     const stale = story.stale ? `<span class="text-[10px] uppercase tracking-wide text-amber-600" title="No update for ${state.settings.stale_days} days">stale</span>` : '';
@@ -261,7 +298,7 @@
         <span>${esc(col.label)}</span><span class="text-xs font-normal ${over ? 'text-red-600 font-semibold' : 'text-slate-400'}">${count}</span></div>`;
       const list = document.createElement('div');
       list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 overflow-y-auto';
-      if (col.key !== null) { list.dataset.status = col.key; list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop); }
+      if (col.key !== null && !state.readonly) { list.dataset.status = col.key; list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop); }
       shown.forEach(s => list.appendChild(cardEl(s)));
       section.appendChild(list);
       board.appendChild(section);
@@ -404,13 +441,15 @@
       $('m-title').value = ''; $('m-status').value = (state.columns.find(c => c.role === 'backlog') || state.columns[0] || {}).key;
       $('m-tags').value = ''; $('m-blockers').value = ''; $('m-assignee').value = '';
       $('m-body').value = ''; $('m-deps').classList.add('hidden'); $('m-dirty').textContent = '';
+      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-body'].forEach(i => { $(i).disabled = false; });
+      $('m-save').classList.remove('hidden');
       $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden');
       ['m-note-wrap', 'm-delete', 'm-reload', 'm-claim', 'tab-history'].forEach(i => $(i).classList.add('hidden'));
       showModal(); $('m-title').focus();
       return;
     }
     try {
-      const s = await api('GET', `${P()}/stories/${id}`);
+      const s = await api('GET', `${P()}/stories/${id}${state.ref ? '?ref=' + encodeURIComponent(state.ref) : ''}`);
       fillStatusSelect(s.status);
       state.modal = s.id; state.loaded = s;
       $('m-id').textContent = `${s.project}:${s.id}  ${s.filename}`;
@@ -422,6 +461,9 @@
       if (!$('m-preview').classList.contains('hidden')) renderPreview();
       $('m-note').value = '';
       ['m-note-wrap', 'm-delete', 'm-reload', 'm-claim', 'tab-history'].forEach(i => $(i).classList.remove('hidden'));
+      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-body'].forEach(i => { $(i).disabled = state.readonly; });
+      ['m-save', 'm-claim', 'm-delete', 'm-note-wrap', 'm-reload'].forEach(i => $(i).classList.toggle('hidden', state.readonly));
+      if (state.readonly) $('m-meta').textContent += ` · read-only (${state.ref})`;
       if (!modal.classList.contains('flex')) showModal();
     } catch (err) { toast(err.message, 'error'); }
   }
@@ -503,24 +545,25 @@
     if (state.modal || state.dragging) return;
     if (state.allView) { render(); $('conn').textContent = ''; return; }
     try {
+      if (state.readonly && state.version) { $('conn').textContent = ''; return; }
       if (!force && state.version) {
         const v = await api('GET', `${P()}/version`);
         if (v.version === state.version) { $('conn').textContent = ''; return; }
       }
-      const data = await api('GET', `${P()}/board`);
+      const data = await api('GET', `${P()}/board${state.ref ? '?ref=' + encodeURIComponent(state.ref) : ''}`);
       state.columns = data.columns; state.stories = data.stories; state.settings = data.settings;
       state.identity = data.identity; state.git = data.git; state.version = data.version;
       $('identity').textContent = data.identity;
-      const br = $('branch');
-      if (data.git && data.git.branch) { br.textContent = data.git.branch; br.classList.remove('hidden'); } else br.classList.add('hidden');
       $('conn').textContent = data.warnings.length ? `${data.warnings.length} notice(s), see terminal` : '';
-      renderGit();
+      if (!state.readonly) renderGit();
       render();
     } catch (err) { $('conn').textContent = 'disconnected'; }
   }
 
   // ---- Wiring ----------------------------------------------------------
   $('project').addEventListener('change', (e) => switchProject(e.target.value));
+  $('branch').addEventListener('change', (e) => setRef(e.target.value));
+  setInterval(() => { if (document.visibilityState === 'visible' && !state.modal) loadBranches(); }, 30000);
   $('search').addEventListener('input', (e) => { state.filter = e.target.value.trim().toLowerCase(); render(); });
   $('new-btn').addEventListener('click', () => openModal(null));
   $('git-btn').addEventListener('click', openGit);
@@ -545,7 +588,7 @@
     const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
     if (e.key === 'Escape') { if (state.modal) hideModal(); else $('git-pop').classList.add('hidden'); return; }
     if (typing || state.modal) return;
-    if (e.key === 'n' && !state.allView) { e.preventDefault(); openModal(null); }
+    if (e.key === 'n' && !state.allView && !state.readonly) { e.preventDefault(); openModal(null); }
     if (e.key === '/') { e.preventDefault(); $('search').focus(); }
   });
   let tick = 0;

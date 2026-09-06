@@ -144,3 +144,67 @@ def ls_tree(repo: Path, ref: str, rel_dir: str) -> list[str]:
 def rev_parse(repo: Path, ref: str) -> Optional[str]:
     proc = _run(["rev-parse", "--verify", "--quiet", ref], cwd=repo)
     return proc.stdout.strip() if proc.returncode == 0 else None
+
+
+def head_sha(repo: Path) -> Optional[str]:
+    proc = _run(["rev-parse", "HEAD"], cwd=repo)
+    return proc.stdout.strip() if proc.returncode == 0 else None
+
+
+def branches(repo: Path) -> list[dict]:
+    """Local and remote branches as ``[{name, sha, remote}]``, sorted with local first."""
+    proc = _run(
+        ["for-each-ref", "--format=%(objectname) %(refname:short) %(refname)", "refs/heads", "refs/remotes"],
+        cwd=repo,
+    )
+    if proc.returncode != 0:
+        return []
+    out = []
+    for line in proc.stdout.splitlines():
+        parts = line.split(" ", 2)
+        if len(parts) != 3:
+            continue
+        sha, short, full = parts
+        if short.endswith("/HEAD"):
+            continue
+        out.append({"name": short, "sha": sha, "remote": full.startswith("refs/remotes/")})
+    out.sort(key=lambda b: (b["remote"], b["name"]))
+    return out
+
+
+def cat_file_batch(repo: Path, ref: str, rel_paths: list[str]) -> dict[str, Optional[str]]:
+    """Read many files at ``ref`` in one git process. Missing paths map to None."""
+    if not rel_paths:
+        return {}
+    specs = [f"{ref}:{p}" for p in rel_paths]
+    try:
+        proc = subprocess.run(
+            ["git", "cat-file", "--batch"], cwd=str(repo), input="\n".join(specs).encode() + b"\n",
+            capture_output=True, check=False,
+        )
+    except OSError as e:
+        raise GitError(f"git is not available: {e}") from None
+    if proc.returncode != 0:
+        raise GitError((proc.stderr or b"").decode(errors="replace").strip() or "git cat-file failed")
+    data = proc.stdout
+    out: dict[str, Optional[str]] = {}
+    pos = 0
+    for spec, rel in zip(specs, rel_paths):
+        nl = data.find(b"\n", pos)
+        if nl < 0:
+            out[rel] = None
+            continue
+        header = data[pos:nl].decode(errors="replace")
+        pos = nl + 1
+        if header.endswith(" missing") or header.endswith(" ambiguous"):
+            out[rel] = None
+            continue
+        parts = header.split(" ")
+        try:
+            size = int(parts[-1])
+        except ValueError:
+            out[rel] = None
+            continue
+        out[rel] = data[pos:pos + size].decode("utf-8", errors="replace")
+        pos += size + 1  # trailing newline after the object
+    return out

@@ -23,6 +23,9 @@ repository to migrate; story files are unchanged.
 - Board: project switcher, all-projects ready view, per-column limits, stale
   and checklist markers, dependency chips, Markdown preview, history tab,
   claim button, branch display, keyboard shortcuts, change-hash polling.
+- Read-only views of other branches: `skald branches`, `ls --branch`,
+  `ls --all-branches`, `show --branch`, a branch dropdown on the board, and
+  `?ref=` on the board and story endpoints. Reads git objects only.
 - Live board updates over server-sent events, with polling as fallback.
 - `skald mcp`: the store as MCP tools over stdio for agents without a shell.
 - CI on Python 3.9 to 3.13, macOS and Windows; PyPI trusted publishing on tags.

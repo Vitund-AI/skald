@@ -755,3 +755,139 @@ class Store:
                 age = datetime.now(timezone.utc) - updated
                 d["stale"] = age.days >= stale_days
         return d
+
+
+# --------------------------------------------------------------------------
+# Read-only snapshots of other branches
+# --------------------------------------------------------------------------
+
+
+class Snapshot:
+    """A project's stories as they are on a git ref, read from objects, never from the worktree.
+
+    Duck-types the read side of ``Store`` (``config``, ``name``, ``load_all``,
+    ``unmet``, ``story_dict``, ``get``) so listings work unchanged. Dependencies
+    resolve only within the snapshot; cross-project references are ``unavailable``.
+    """
+
+    readonly = True
+
+    def __init__(self, ref: str, sha: str, config: ProjectConfig, stories: list[Story], warnings: list[str]):
+        self.ref = ref
+        self.sha = sha
+        self.config = config
+        self.name = config.name
+        self._stories = sorted(stories, key=self.sort_key)
+        self.warnings = warnings
+
+    def sort_key(self, story: Story):
+        return (self.config.index(story.status), story.rank, story.created_at, story.id)
+
+    def load_all(self, include_archived: bool = False) -> tuple[list[Story], list[str]]:
+        stories = [s for s in self._stories if include_archived or not s.archived]
+        return stories, list(self.warnings)
+
+    def index(self, include_archived: bool = True) -> dict[str, Story]:
+        return {s.id: s for s in self._stories if include_archived or not s.archived}
+
+    def get(self, ref: str) -> Story:
+        ref = (ref or "").strip().lower()
+        matches = [s for s in self._stories if s.id.startswith(ref)] if ref else []
+        if len(matches) == 1:
+            return matches[0]
+        if not matches:
+            raise NotFoundError(f"no story matches '{ref}' on {self.ref}")
+        raise SkaldError(f"'{ref}' is ambiguous on {self.ref}: {', '.join(s.id for s in matches)}")
+
+    def dep_states(self, story: Story, idx: Optional[dict[str, Story]] = None) -> list[DepState]:
+        idx = idx if idx is not None else self.index()
+        out = []
+        for ref in story.blocked_by:
+            project, sid = split_ref(ref)
+            if project is not None and project != self.name:
+                out.append(DepState(ref, "unavailable", False))
+                continue
+            target = idx.get(sid)
+            if target is None:
+                out.append(DepState(ref, "missing", False))
+            elif target.archived:
+                out.append(DepState(ref, "archived", True, self.config.is_closed(target.status)))
+            else:
+                terminal = self.config.is_terminal(target.status)
+                out.append(DepState(ref, target.status, terminal, terminal and self.config.is_closed(target.status)))
+        return out
+
+    def unmet(self, story: Story, idx: Optional[dict[str, Story]] = None) -> list[str]:
+        return [d.ref for d in self.dep_states(story, idx) if not d.satisfied]
+
+    def story_dict(self, story: Story, idx: Optional[dict[str, Story]] = None, stale_days: Optional[int] = None) -> dict:
+        d = story.to_dict()
+        d["project"] = self.name
+        d["ref"] = self.ref
+        states = self.dep_states(story, idx)
+        d["deps"] = [s.to_dict() for s in states]
+        d["unmet"] = [s.ref for s in states if not s.satisfied]
+        d["blocked"] = bool(d["unmet"])
+        d["role"] = self.config.role(story.status)
+        d["stale"] = False
+        d["checklist"] = dict(zip(("done", "total"), checklist_progress(story.body)))
+        return d
+
+
+def _snapshot_of(store: "Store", ref: str) -> Snapshot:
+    from . import gitutil
+
+    repo = gitutil.root(store.dir)
+    if repo is None:
+        raise SkaldError(f"{store.dir} is not inside a git repository")
+    sha = gitutil.rev_parse(repo, ref)
+    if sha is None:
+        raise NotFoundError(f"unknown git ref '{ref}'")
+    try:
+        rel = store.dir.relative_to(repo).as_posix()
+    except ValueError:
+        raise SkaldError(f"{store.dir} is outside the repository {repo}") from None
+    story_paths = gitutil.ls_tree(repo, ref, f"{rel}/stories")
+    archive_paths = gitutil.ls_tree(repo, ref, f"{rel}/archive")
+    wanted = story_paths + archive_paths + [f"{rel}/config.json"]
+    blobs = gitutil.cat_file_batch(repo, ref, wanted)
+    config = store.config
+    cfg_text = blobs.get(f"{rel}/config.json")
+    if cfg_text:
+        try:
+            config = ProjectConfig.from_dict(json.loads(cfg_text), f"{ref}:{rel}/config.json")
+        except (ValueError, SkaldError):
+            config = store.config
+    stories, warnings = [], []
+    for path, archived in [(p, False) for p in story_paths] + [(p, True) for p in archive_paths]:
+        name = path.rsplit("/", 1)[-1]
+        sid = id_from_filename(name)
+        text = blobs.get(path)
+        if sid is None or text is None:
+            continue
+        try:
+            fields, body = parse_story_text(text, f"{ref}:{name}")
+        except CorruptStoryError as e:
+            warnings.append(f"skipping corrupt story {e}")
+            continue
+        stories.append(Story(sid, Path(path), fields, body, archived))
+    return Snapshot(ref, sha, config, stories, warnings)
+
+
+def _branch_diff(store: "Store", snap: Snapshot) -> dict:
+    """Compare a snapshot with the working tree. Returns ids grouped by relationship."""
+    here = store.index(include_archived=True)
+    there = snap.index(include_archived=True)
+    only_there = [there[i] for i in sorted(set(there) - set(here))]
+    only_here = [here[i] for i in sorted(set(here) - set(there))]
+    differ = []
+    for sid in sorted(set(here) & set(there)):
+        h, t = here[sid], there[sid]
+        if h.status != t.status or h.title != t.title or h.archived != t.archived:
+            differ.append((h, t))
+    return {"only_there": only_there, "only_here": only_here, "differ": differ}
+
+
+Store.snapshot = _snapshot_of
+Store.branch_diff = _branch_diff
+Store.readonly = False

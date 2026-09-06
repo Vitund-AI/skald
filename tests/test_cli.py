@@ -366,3 +366,44 @@ class TestCustomColumnsCLI(SkaldTestCase):
         self.assertEqual(json.loads(out), [])
         code, out, _ = self.run_cli("status")
         self.assertIn("wont_do=1", out)
+
+
+class TestBranchCommands(SkaldTestCase):
+    def setUp(self):
+        super().setUp()
+        self.a = self.new("on both", "--status", "ready")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "base")
+        git(self.repo, "checkout", "-qb", "feature")
+        self.b = self.new("only on feature")
+        self.run_cli("mv", self.a, "done")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "feature work")
+        git(self.repo, "checkout", "-q", "master")
+
+    def test_branches_ls_and_show(self):
+        code, out, _ = self.run_cli("branches")
+        self.assertEqual(code, 0)
+        self.assertIn("*  master", out)
+        self.assertRegex(out, r"feature\s+2\s+1\s+0\s+1")
+        code, out, _ = self.run_cli("branches", "--json")
+        data = {d["name"]: d for d in json.loads(out)}
+        self.assertEqual((data["feature"]["only_there"], data["feature"]["differ"]), ([self.b], [self.a]))
+        self.assertTrue(data["master"]["current"])
+
+        code, out, _ = self.run_cli("ls", "--branch", "feature", "--all", "--json")
+        self.assertEqual({s["id"]: s["status"] for s in json.loads(out)}, {self.a: "done", self.b: "backlog"})
+        code, out, _ = self.run_cli("ls", "--all-branches")
+        self.assertIn(f"feature  {self.b}  backlog  -", out)
+        self.assertIn(f"feature  {self.a}  done     ready", out)
+        code, out, _ = self.run_cli("ls", "--all-branches", "--json")
+        self.assertEqual({d["id"]: d["here"] for d in json.loads(out)}, {self.b: None, self.a: "ready"})
+
+        code, out, _ = self.run_cli("show", self.b, "--branch", "feature")
+        self.assertIn('title: "only on feature"', out)
+        code, _, err = self.run_cli("show", self.b)
+        self.assertEqual(code, 1)
+        code, _, err = self.run_cli("ls", "--branch", "nope")
+        self.assertEqual(code, 1)
+        self.assertIn("unknown git ref", err)
+        self.assertEqual(git(self.repo, "status", "--porcelain").strip(), "")
