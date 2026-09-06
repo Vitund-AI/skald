@@ -330,10 +330,14 @@ class Handler(BaseHTTPRequestHandler):
                 repo = gitutil.root(store.dir)
                 if repo is None:
                     raise GitError("this project is not inside a git repository")
+                from .cli import auto_render
+
                 rel = str(store.dir.relative_to(repo))
-                changes = gitutil.changes(repo, rel)
+                rendered = auto_render(store, repo)
+                paths = [rel] + ([rendered] if rendered and not rendered.startswith(rel + "/") else [])
+                changes = [c for p in paths for c in gitutil.changes(repo, p)]
                 message = (data.get("message") or "").strip() or f"skald: update {len(changes)} story file(s)"
-                sha = gitutil.commit_path(repo, rel, message)
+                sha = gitutil.commit_path(repo, paths, message)
                 pushed, output = False, ""
                 if data.get("push") and ws.user.get("push"):
                     output = gitutil.push(repo)

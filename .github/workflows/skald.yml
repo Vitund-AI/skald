@@ -1,0 +1,43 @@
+name: skald
+
+# Written by `skald hooks github --install`. Validates the backlog on every
+# push and pull request, and keeps the rendered board fresh on main.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - run: skald check
+
+  render:
+    if: github.event_name == 'push'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install .
+      - run: skald render --out .skald/README.md
+      - name: Commit the rendered board if it changed
+        run: |
+          if ! git diff --quiet -- .skald/README.md; then
+            git config user.name "skald"
+            git config user.email "skald@users.noreply.github.com"
+            git add -- .skald/README.md
+            git commit -m "skald: refresh rendered board [skip ci]"
+            git push
+          fi

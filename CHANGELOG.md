@@ -23,6 +23,10 @@ repository to migrate; story files are unchanged.
 - Board: project switcher, all-projects ready view, per-column limits, stale
   and checklist markers, dependency chips, Markdown preview, history tab,
   claim button, branch display, keyboard shortcuts, change-hash polling.
+- `skald render`: a committed Markdown or HTML snapshot of the board with a
+  content hash instead of a timestamp; `check` warns when it is stale;
+  `commit` re-renders when enabled. `hooks git` and `hooks github` install a
+  pre-commit hook and a workflow that keep it fresh.
 - Facet tags: `key:value` tags drive `skald facets`, `skald epics`, per-facet
   filters and swimlanes on the board, and cross-project epic views.
 - Read-only views of other branches: `skald branches`, `ls --branch`,

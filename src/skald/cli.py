@@ -231,10 +231,18 @@ def build_parser() -> argparse.ArgumentParser:
     cf.add_argument("value", nargs="?")
     cf.add_argument("--unset", action="store_true")
 
-    hk = sub.add_parser("hooks", help="print or install agent hooks")
-    hk.add_argument("target", choices=["claude"])
-    hk.add_argument("--install", action="store_true", help="merge into .claude/settings.json")
-    hk.add_argument("--strict", action="store_true", help="stop hook also fails on uncommitted story changes")
+    hk = sub.add_parser("hooks", help="print or install hooks: claude (agent), git (pre-commit), github (workflow)")
+    hk.add_argument("target", choices=["claude", "git", "github"])
+    hk.add_argument("--install", action="store_true", help="write the hook instead of printing it")
+    hk.add_argument("--strict", action="store_true", help="claude: stop hook also fails on uncommitted story changes")
+
+    rd = sub.add_parser("render", help="write a Markdown or HTML snapshot of the board to commit")
+    rd.add_argument("--format", choices=["md", "html"], help="default: from config.json, else md")
+    rd.add_argument("--out", metavar="PATH", help="default: from config.json, else .skald/README.md")
+    rd.add_argument("--archived", action="store_true", help="include archived stories")
+    rd.add_argument("--stage", action="store_true", help="git add the output afterwards")
+    rd.add_argument("--stdout", action="store_true", help="print instead of writing")
+    rd.add_argument("--enable", action="store_true", help="also record the path in config.json so commit and hooks re-render automatically")
 
     sv = sub.add_parser("serve", help="run the board in the foreground")
     sv.add_argument("--host")
@@ -535,7 +543,12 @@ def _uncommitted(store: Store) -> tuple[Optional[Path], list[dict]]:
 
 
 def cmd_check(store: Store, args) -> int:
+    from . import render as rnd
+
     problems, warnings = store.check()
+    stale = rnd.stale_message(store, _repo_of(store))
+    if stale:
+        warnings.append(stale)
     uncommitted = []
     if args.hook:
         _, uncommitted = _uncommitted(store)
@@ -600,12 +613,14 @@ def cmd_commit(ws: Workspace, store: Store, args) -> int:
     if repo is None:
         raise GitError(f"{store.dir} is not inside a git repository")
     rel = _skald_rel(store, repo)
-    changes = gitutil.changes(repo, rel)
+    rendered = auto_render(store, repo)
+    paths = [rel] + ([rendered] if rendered and not rendered.startswith(rel + "/") else [])
+    changes = [c for p in paths for c in gitutil.changes(repo, p)]
     if not changes:
         print("nothing to commit under .skald/")
         return 0
     message = args.message or f"skald: update {len(changes)} story file(s)"
-    sha = gitutil.commit_path(repo, rel, message)
+    sha = gitutil.commit_path(repo, paths, message)
     print(f"committed {sha}: {message}")
     if args.push or ws.user.get("push"):
         out = gitutil.push(repo)
@@ -749,7 +764,177 @@ def claude_hooks(strict: bool) -> dict:
     }
 
 
+def do_render(store: Store, fmt: Optional[str] = None, out: Optional[str] = None, archived: Optional[bool] = None,
+              repo: Optional[Path] = None) -> tuple[Path, str]:
+    """Render to the resolved path. Returns (absolute path, text). Does not write when out is '-'."""
+    from . import render as rnd
+
+    settings = rnd.render_settings(store) or {}
+    fmt = fmt or settings.get("format") or "md"
+    rel = out or settings.get("path") or (rnd.DEFAULT_HTML_PATH if fmt == "html" else rnd.DEFAULT_PATH)
+    base = repo or _repo_of(store) or store.dir.parent
+    path = (base / rel).resolve() if not Path(rel).is_absolute() else Path(rel)
+    include_archived = settings.get("archived", False) if archived is None else archived
+    text = rnd.render(store, fmt, path, include_archived)
+    return path, text
+
+
+def auto_render(store: Store, repo: Path) -> Optional[str]:
+    """If config.json enables rendering, re-render and return the repo-relative path written."""
+    from . import render as rnd
+    from .util import atomic_write
+
+    settings = rnd.render_settings(store)
+    if not settings:
+        return None
+    path, text = do_render(store, repo=repo)
+    atomic_write(path, text)
+    try:
+        return path.relative_to(repo).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def cmd_render(store: Store, args) -> int:
+    from . import render as rnd
+    from .util import atomic_write
+
+    repo = _repo_of(store)
+    path, text = do_render(store, args.format, args.out, True if args.archived else None, repo)
+    if args.stdout:
+        sys.stdout.write(text)
+        return 0
+    atomic_write(path, text)
+    base = repo or store.dir.parent
+    try:
+        rel = path.relative_to(base).as_posix()
+    except ValueError:
+        rel = str(path)
+    print(f"rendered {rel}")
+    if args.enable:
+        fmt = args.format or (rnd.render_settings(store) or {}).get("format") or ("html" if rel.endswith(".html") else "md")
+        store.config.extra["render"] = {"path": rel, "format": fmt, **({"archived": True} if args.archived else {})}
+        store.config.save(store.dir / "config.json")
+        print(f"enabled automatic rendering in {store.dir.name}/config.json (commit re-renders {rel})")
+    if args.stage:
+        if repo is None:
+            raise GitError("--stage needs a git repository")
+        gitutil.stage(repo, rel)
+        print(f"staged {rel}")
+    return 0
+
+
+PRE_COMMIT_HOOK = """#!/bin/sh
+# Installed by `skald hooks git --install`. Validates the backlog and refreshes
+# the rendered board before every commit. Remove this file to uninstall.
+skald check || exit 1
+skald render --stage
+"""
+
+
+def github_workflow(default_branch: str, render_path: str) -> str:
+    return f"""name: skald
+
+# Written by `skald hooks github --install`. Validates the backlog on every
+# push and pull request, and keeps the rendered board fresh on {default_branch}.
+
+on:
+  push:
+    branches: [{default_branch}]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install skald-kanban
+      - run: skald check
+
+  render:
+    if: github.event_name == 'push'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install skald-kanban
+      - run: skald render --out {render_path}
+      - name: Commit the rendered board if it changed
+        run: |
+          if ! git diff --quiet -- {render_path}; then
+            git config user.name "skald"
+            git config user.email "skald@users.noreply.github.com"
+            git add -- {render_path}
+            git commit -m "skald: refresh rendered board [skip ci]"
+            git push
+          fi
+"""
+
+
+def cmd_hooks_git(store: Store, args) -> int:
+    from . import render as rnd
+
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    if not args.install:
+        print(PRE_COMMIT_HOOK, end="")
+        print(f"\nWrite this to {gitutil.hooks_dir(repo) / 'pre-commit'} and make it executable, or rerun with --install.", file=sys.stderr)
+        return 0
+    hook = gitutil.hooks_dir(repo) / "pre-commit"
+    if hook.exists() and "skald" not in hook.read_text(encoding="utf-8", errors="replace"):
+        print(f"{hook} already exists and is not Skald's; add these lines to it yourself:", file=sys.stderr)
+        print("  skald check || exit 1\n  skald render --stage", file=sys.stderr)
+        return 1
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text(PRE_COMMIT_HOOK, encoding="utf-8")
+    hook.chmod(0o755)
+    print(f"installed {hook}")
+    if not rnd.render_settings(store):
+        store.config.extra["render"] = {"path": rnd.DEFAULT_PATH, "format": "md"}
+        store.config.save(store.dir / "config.json")
+        print(f"enabled automatic rendering of {rnd.DEFAULT_PATH} in config.json; commit config.json")
+    return 0
+
+
+def cmd_hooks_github(store: Store, args) -> int:
+    from . import render as rnd
+
+    repo = _repo_of(store) or store.dir.parent
+    settings = rnd.render_settings(store) or {}
+    text = github_workflow(gitutil.default_branch(repo) if _repo_of(store) else "main", settings.get("path", rnd.DEFAULT_PATH))
+    if not args.install:
+        print(text, end="")
+        print("\nWrite this to .github/workflows/skald.yml, or rerun with --install.", file=sys.stderr)
+        return 0
+    path = repo / ".github" / "workflows" / "skald.yml"
+    if path.exists():
+        print(f"{path} already exists; not overwriting. Printed version:", file=sys.stderr)
+        print(text, end="")
+        return 1
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    print(f"wrote {path.relative_to(repo)}")
+    if not settings:
+        store.config.extra["render"] = {"path": rnd.DEFAULT_PATH, "format": "md"}
+        store.config.save(store.dir / "config.json")
+        print(f"enabled automatic rendering of {rnd.DEFAULT_PATH} in config.json; commit config.json")
+    return 0
+
+
 def cmd_hooks(store: Store, args) -> int:
+    if args.target == "git":
+        return cmd_hooks_git(store, args)
+    if args.target == "github":
+        return cmd_hooks_github(store, args)
     snippet = claude_hooks(args.strict)
     if not args.install:
         print(json.dumps(snippet, indent=2))
@@ -789,7 +974,7 @@ def cmd_hooks(store: Store, args) -> int:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open", "branches", "facets", "epics",
+    "hooks", "open", "branches", "facets", "epics", "render",
 }
 
 
@@ -910,6 +1095,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return 0
     if args.command == "hooks":
         return cmd_hooks(store, args)
+    if args.command == "render":
+        return cmd_render(store, args)
     parser.print_help()  # pragma: no cover
     return 1
 

@@ -293,6 +293,8 @@ story or configuration. Commands that print stories take `--json`.
 | `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
 | `columns`, `templates`, `projects [rm NAME]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. |
 | `hooks claude [--install] [--strict]` | Prints or merges into `.claude/settings.json`: SessionStart `skald status && skald ls`; Stop `skald check` (or `skald check --hook` with `--strict`). |
+| `hooks git [--install]`, `hooks github [--install]` | Section 10b. |
+| `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Section 10b. |
 | `serve [--host H] [--port P] [--open]` | Foreground server. |
 | `server start\|stop\|status` | Background server via `server.json`. |
 | `open` | Start if needed, open the browser on the current project. |
@@ -360,6 +362,30 @@ macOS and Windows, and builds the wheel. Tags matching `v*` publish to PyPI
 via trusted publishing.
 
 ---
+
+## 10b. Rendered snapshots
+
+`render` writes a Markdown (default) or HTML view of the board for
+committing. Markdown goes to `.skald/README.md` unless `config.json` or
+`--out` says otherwise, so the `.skald` folder on GitHub shows the board.
+The file starts with `<!-- skald-render <hash> -->` where the hash covers
+columns and every displayed story field; there is no timestamp, so an
+unchanged backlog re-renders byte-identically. Ids link to story files
+relative to the output location. Terminal columns are collapsed in
+`<details>`; the `epic` facet produces a progress table; unknown statuses
+and, with `--archived`, archived stories get their own sections.
+
+`config.json` may carry `"render": {"path", "format", "archived"}`. When it
+does, `commit` and the board's commit button re-render before staging and
+include the output even when it lies outside `.skald/`. `check` warns when
+the marker in the rendered file no longer matches the stories.
+
+`hooks git --install` writes a pre-commit hook (`skald check`, then
+`skald render --stage`) into git's hooks directory, refusing to overwrite a
+hook it did not write. `hooks github --install` writes
+`.github/workflows/skald.yml`, which runs `check` on pushes and pull requests
+and commits a fresh render on the default branch. Both enable `render` in
+`config.json` if it is off.
 
 ## 10a. MCP server
 

@@ -27,5 +27,9 @@
       "label": "Done",
       "role": "done"
     }
-  ]
+  ],
+  "render": {
+    "path": ".skald/README.md",
+    "format": "md"
+  }
 }

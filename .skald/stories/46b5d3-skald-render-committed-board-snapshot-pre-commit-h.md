@@ -1,12 +1,12 @@
 ---
 title: "skald render: committed board snapshot, pre-commit hook, GitHub Action"
-status: "in_progress"
-rank: 20
+status: "review"
+rank: 220
 tags: ["cli", "docs"]
 blocked_by: ["cbb58e"]
 assignee: "claude"
 created_at: "2026-09-06T17:42:24Z"
-updated_at: "2026-09-06T17:49:47Z"
+updated_at: "2026-09-06T17:53:55Z"
 ---
 ## Requirements
 
@@ -19,3 +19,6 @@ Write a Markdown (default) or HTML snapshot of the backlog that GitHub renders i
 - [ ] skald commit and the board commit button re-render first when render is enabled in config.json
 - [ ] skald hooks git --install: pre-commit hook running check and render --stage, never clobbering an existing hook
 - [ ] skald hooks github --install: workflow running check on PRs and committing a fresh render on the default branch
+
+## [claude] 2026-09-06 17:53 UTC
+Implemented. skald render writes Markdown (default, .skald/README.md so GitHub shows the board in the folder view) or HTML with a content hash instead of a timestamp (D29, D30); ids link to story files; terminal columns collapsed; epic progress table from facets. check warns when stale; commit and the board button re-render when enabled in config.json, staging the file even outside .skald/. hooks git --install writes a pre-commit hook and refuses to clobber a foreign one; hooks github --install writes a workflow that checks on PRs and commits a fresh render on the default branch. Enabled on this repo.

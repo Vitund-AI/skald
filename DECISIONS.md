@@ -182,3 +182,18 @@ filters already work, cross-project epics fall out of `--all-projects`, and
 people can invent other facets (`area`, `milestone`) without asking. The
 cost is that an epic has no body of its own; a story tagged `epic:auth`
 with the epic's description is the workaround if one is wanted.
+
+### D29. Rendered snapshots carry a hash, not a timestamp
+A timestamp would change on every render and make every commit touch the
+snapshot. The embedded content hash changes only when something the
+snapshot shows changes, so re-rendering is a no-op on an unchanged backlog,
+and `check` can compare the hash to the stories to warn that the file is
+stale. The commit that contains the snapshot already records when it was
+made.
+
+### D30. The snapshot lives at `.skald/README.md` by default
+GitHub renders a directory's README in place, so anyone browsing into
+`.skald/` sees the board with no extra click. Story links are relative, so
+they work on GitHub and in local viewers. `--out` moves it elsewhere; when
+the path is outside `.skald/`, `commit` stages it as well so the "stories
+and snapshot travel together" property holds.

@@ -250,12 +250,38 @@ corrupt story or configuration.
 | `changelog --since REF [--until REF]` | Stories that reached a terminal column between two git refs. |
 | `facets [KEY] [--all-projects]`, `epics` | `key:value` tags with total, done, open, and progress. |
 | `columns`, `templates`, `projects`, `config` | Inspect configuration. |
-| `hooks claude [--install] [--strict]` | Print or install Claude Code hooks (see below). |
+| `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Write a committed snapshot of the board. |
+| `hooks claude\|git\|github [--install]` | Print or install the Claude Code hooks, a pre-commit hook, or a GitHub workflow. |
 | `open`, `server start\|stop\|status`, `serve` | The board. |
 | `mcp` | Serve the store as MCP tools over stdio (see below). |
 
 `-p NAME` before any command targets a registered project instead of the
 current directory.
+
+## A board you can see on GitHub
+
+```sh
+skald render                 # writes .skald/README.md
+skald render --enable        # and make commit, the board button, and hooks re-render it
+skald render --format html --out docs/board.html
+```
+
+The snapshot is Markdown by default, so GitHub renders it in place, and it
+lives at `.skald/README.md` so that clicking into the `.skald` folder on
+GitHub shows the board. Every id links to its story file. Terminal columns
+are collapsed, epics get a progress table, and the output is deterministic:
+no timestamp, just an embedded content hash, so an unchanged backlog produces
+no diff. `skald check` warns when the snapshot is out of date.
+
+Two installers keep it fresh without anyone remembering:
+
+```sh
+skald hooks git --install       # pre-commit hook: skald check, then skald render --stage
+skald hooks github --install    # .github/workflows/skald.yml: check on PRs, re-render on the default branch
+```
+
+Both enable automatic rendering in `config.json` if it is not already on.
+The pre-commit installer refuses to overwrite a hook it did not write.
 
 ## Agent hooks
 

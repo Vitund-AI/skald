@@ -92,17 +92,41 @@ def changes(repo: Path, subpath: str) -> list[dict]:
     return out
 
 
-def commit_path(repo: Path, subpath: str, message: str) -> str:
-    """Stage everything under ``subpath`` and commit it. Returns the new commit sha."""
+def commit_path(repo: Path, subpath, message: str) -> str:
+    """Stage everything under ``subpath`` (a path or list of paths) and commit only that. Returns the short sha."""
+    paths = [subpath] if isinstance(subpath, str) else list(subpath)
     message = (message or "").strip()
     if not message:
         raise GitError("a commit message is required")
-    _run(["add", "-A", "--", subpath], cwd=repo, check=True)
-    staged = _run(["diff", "--cached", "--quiet", "--", subpath], cwd=repo)
+    existing = [p for p in paths if (repo / p).exists()]
+    _run(["add", "-A", "--", *existing], cwd=repo, check=True)
+    staged = _run(["diff", "--cached", "--quiet", "--", *existing], cwd=repo)
     if staged.returncode == 0:
-        raise GitError(f"nothing to commit under {subpath}")
-    _run(["commit", "-q", "-m", message, "--", subpath], cwd=repo, check=True)
+        raise GitError(f"nothing to commit under {', '.join(paths)}")
+    _run(["commit", "-q", "-m", message, "--", *existing], cwd=repo, check=True)
     return _run(["rev-parse", "--short", "HEAD"], cwd=repo, check=True).stdout.strip()
+
+
+def stage(repo: Path, path: str) -> None:
+    _run(["add", "--", path], cwd=repo, check=True)
+
+
+def hooks_dir(repo: Path) -> Path:
+    """Where git looks for hooks (honours core.hooksPath and worktrees)."""
+    proc = _run(["rev-parse", "--git-path", "hooks"], cwd=repo)
+    raw = proc.stdout.strip() if proc.returncode == 0 else ".git/hooks"
+    p = Path(raw)
+    return p if p.is_absolute() else repo / p
+
+
+def default_branch(repo: Path) -> str:
+    proc = _run(["symbolic-ref", "--short", "-q", "refs/remotes/origin/HEAD"], cwd=repo)
+    if proc.returncode == 0 and proc.stdout.strip():
+        return proc.stdout.strip().split("/", 1)[-1]
+    for name in ("main", "master"):
+        if rev_parse(repo, f"refs/heads/{name}"):
+            return name
+    return branch(repo) or "main"
 
 
 def push(repo: Path) -> str:
