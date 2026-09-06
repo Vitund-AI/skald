@@ -51,7 +51,23 @@ python3 .skald/skald.py init
 ```
 
 `init` is idempotent. It never overwrites an existing `AGENTS.md` or story.
-After running, it prints one suggested line for the repository's root
+If `skald.py` is not already inside the data directory (for example when run
+from a copy on the PATH), `init` copies itself there so the repository always
+carries its own vendored tool.
+
+When the data directory is inside a git repository, `init` also sets a
+repo-local git alias if none exists:
+
+```sh
+git config alias.skald '!python3 .skald/skald.py'
+```
+
+Git runs shell aliases from the repository root, so `git skald ls` then works
+from any directory in that clone. The alias lives in `.git/config`, is never
+committed, and is a convenience only. The canonical invocation, and the one
+the agent contract documents, remains `python3 .skald/skald.py`.
+
+After running, `init` prints one suggested line for the repository's root
 `CLAUDE.md` or `AGENTS.md`:
 
 > This repository tracks work with Skald. Read `.skald/AGENTS.md` before
@@ -59,15 +75,21 @@ After running, it prints one suggested line for the repository's root
 
 ### 2.2 Path resolution
 
-`skald.py` locates its data directory relative to its own file, never the
-current working directory:
+`skald.py` never uses the current working directory to find its data. The
+data directory is resolved in this order:
 
-```
-SKALD_DIR   = Path(__file__).resolve().parent
-STORIES_DIR = SKALD_DIR / "stories"
-```
+1. `$SKALD_DIR`, if set. Used by the test suite and by anyone with an unusual
+   layout.
+2. The directory containing `skald.py`, if that directory is named `.skald`.
+   This is the vendored case and the common one.
+3. `<git root>/.skald`, where the root comes from
+   `git rev-parse --show-toplevel`. This covers running the root `skald.py`
+   of this repository and running a copy installed on the PATH as
+   `git-skald`, which git invokes as `git skald`.
+4. Otherwise, the directory containing `skald.py`.
 
-So `python3 .skald/skald.py ls` works from any directory in the repository.
+So `python3 .skald/skald.py ls` and `git skald ls` both work from any
+directory in the repository.
 
 ### 2.3 This repository
 
@@ -336,7 +358,9 @@ authentication, mobile layout.
 This is the content of `.skald/AGENTS.md`, written by `init`. It is embedded
 in `skald.py` as a template and must be kept in sync with the CLI.
 
-1. **Where things are.** The tool is `python3 .skald/skald.py`. Stories are
+1. **Where things are.** The tool is `python3 .skald/skald.py`, which works
+   from any directory in the repository. `git skald ...` may also work on
+   machines where `init` has been run, but do not rely on it. Stories are
    files in `.skald/stories/`. Run `skald ls` at the start of a session.
 2. **Pick work.** Run `skald next --json`. If it prints nothing, run `skald ls
    --json` and either pick an unblocked `ready` story or ask the human.
