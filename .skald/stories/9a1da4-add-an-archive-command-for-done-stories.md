@@ -5,7 +5,7 @@ rank: 20
 tags: ["cli"]
 blocked_by: []
 created_at: "2026-09-06T02:16:15Z"
-updated_at: "2026-09-06T02:16:15Z"
+updated_at: "2026-09-06T05:58:28Z"
 ---
 ## Requirements
 
