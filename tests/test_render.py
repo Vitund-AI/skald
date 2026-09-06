@@ -110,7 +110,8 @@ class TestHookInstallers(SkaldTestCase):
         code, out, _ = self.run_cli("hooks", "git", "--install")
         hook = self.repo / ".git" / "hooks" / "pre-commit"
         self.assertTrue(hook.exists())
-        self.assertTrue(hook.stat().st_mode & stat.S_IXUSR)
+        if os.name != "nt":
+            self.assertTrue(hook.stat().st_mode & stat.S_IXUSR)
         self.assertIn("skald check || exit 1", hook.read_text())
         self.assertIn("enabled automatic rendering", out)
         self.assertEqual(json.loads((self.skald_dir / "config.json").read_text())["render"]["path"], ".skald/README.md")
@@ -136,6 +137,7 @@ class TestHookInstallers(SkaldTestCase):
         self.assertIn("[skip ci]", text)
         self.assertIn("skald diff --since \"origin/${{ github.base_ref }}\" --until HEAD --markdown", text)
         self.assertIn("pull-requests: write", text)
+        self.assertIn("contents: read", text)
         code, out, err = self.run_cli("hooks", "github", "--install")
         self.assertEqual(code, 1)
         self.assertIn("not overwriting", err)

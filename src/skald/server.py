@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import signal
+import socketserver
 import subprocess
 import sys
 import threading
@@ -43,6 +44,15 @@ class SkaldServer(ThreadingHTTPServer):
         self._html: Optional[str] = None
         self._snapshots: dict = {}
         self._snap_lock = threading.Lock()
+
+    def server_bind(self):
+        # HTTPServer.server_bind resolves the bound host with socket.getfqdn(), a reverse DNS lookup
+        # that can stall for 30s+ (macOS runners, laptops on captive networks). We only ever bind
+        # loopback or an explicit host, so use the address as given.
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        self.server_name = host
+        self.server_port = port
 
     def snapshot(self, store: Store, ref: str):
         """A read-only snapshot of ``store`` at ``ref``, cached by the commit it resolves to."""
@@ -532,6 +542,9 @@ def server_status(home: Path) -> Optional[dict]:
     return state
 
 
+START_TIMEOUT = 20.0  # seconds to wait for the background server; macOS runners are slow to spawn
+
+
 def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = None) -> dict:
     running = server_status(home)
     if running:
@@ -554,15 +567,27 @@ def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = No
         stdin=subprocess.DEVNULL, stdout=log, stderr=log, env=env, close_fds=True, **kwargs,
     )
     log.close()
-    deadline = time.time() + 5
+    spawned_at = time.time() - 2  # tolerance for clock granularity
+    deadline = time.time() + START_TIMEOUT
     while time.time() < deadline:
         if proc.poll() is not None:
-            raise SkaldError(f"server exited immediately (exit {proc.returncode}); see {log_path}")
+            raise SkaldError(f"server exited immediately (exit {proc.returncode}); {_log_tail(log_path)}")
         state = read_state(home)
-        if state and state.get("pid") == proc.pid and health(host, state["port"]):
+        # Match on freshness and health rather than pid: some launchers (macOS framework
+        # Python, pyenv shims) run the server in a child of the process we spawned.
+        if state and float(state.get("started_at") or 0) >= spawned_at and health(host, state["port"]):
             return state
         time.sleep(0.1)
-    raise SkaldError(f"server did not come up within 5s; see {log_path}")
+    raise SkaldError(f"server did not come up within {int(START_TIMEOUT)}s; {_log_tail(log_path)}")
+
+
+def _log_tail(log_path: Path, lines: int = 15) -> str:
+    try:
+        text = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return f"see {log_path}"
+    tail = "\n".join(text[-lines:]).strip()
+    return f"log {log_path}:\n{tail}" if tail else f"log {log_path} is empty"
 
 
 def stop_server(home: Path) -> bool:

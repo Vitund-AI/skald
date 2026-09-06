@@ -314,7 +314,8 @@ class TestTemplates(SkaldTestCase):
     def test_new_from_template(self):
         s = self.store()
         s.templates_dir.mkdir()
-        (s.templates_dir / "bug.md").write_text("## Steps\n\n1.\n\n## Expected\n")
+        with open(s.templates_dir / "bug.md", "w", newline="\n") as fh:
+            fh.write("## Steps\n\n1.\n\n## Expected\n")
         self.assertEqual(s.templates(), ["bug"])
         story, _ = s.create("crash", template="bug", body="extra")
         self.assertEqual(story.body, "## Steps\n\n1.\n\n## Expected\n\nextra\n")
@@ -328,7 +329,11 @@ class TestRegistry(SkaldTestCase):
         os.environ.pop("SKALD_HOME")
         os.environ["XDG_CONFIG_HOME"] = str(self.tmp / "xdg")
         try:
-            self.assertEqual(config_home(), self.tmp / "xdg" / "skald")
+            if os.name == "nt":
+                # %APPDATA% wins over XDG on Windows by design.
+                self.assertTrue(str(config_home()).endswith("skald"))
+            else:
+                self.assertEqual(config_home(), self.tmp / "xdg" / "skald")
         finally:
             os.environ.pop("XDG_CONFIG_HOME")
 
