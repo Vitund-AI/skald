@@ -329,7 +329,11 @@ class TestRegistry(SkaldTestCase):
         os.environ.pop("SKALD_HOME")
         os.environ["XDG_CONFIG_HOME"] = str(self.tmp / "xdg")
         try:
-            self.assertEqual(config_home(), self.tmp / "xdg" / "skald")
+            if os.name == "nt":
+                # %APPDATA% wins over XDG on Windows by design.
+                self.assertTrue(str(config_home()).endswith("skald"))
+            else:
+                self.assertEqual(config_home(), self.tmp / "xdg" / "skald")
         finally:
             os.environ.pop("XDG_CONFIG_HOME")
 
