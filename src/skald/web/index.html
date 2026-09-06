@@ -388,8 +388,7 @@
     box.classList.remove('hidden');
     box.innerHTML = s.deps.map(d => {
       const colour = d.satisfied ? (d.closed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-red-100 text-red-800';
-      const cross = d.ref.includes(':');
-      return `<button class="dep rounded px-2 py-0.5 ${colour} font-mono" data-ref="${esc(d.ref)}" ${d.state === 'unavailable' || d.state === 'missing' ? 'disabled' : ''} title="Open">${esc(d.ref)} · ${esc(d.state)}${cross ? '' : ''}</button>`;
+      return `<button class="dep rounded px-2 py-0.5 ${colour} font-mono" data-ref="${esc(d.ref)}" ${d.state === 'unavailable' || d.state === 'missing' ? 'disabled' : ''} title="Open">${esc(d.ref)} · ${esc(d.state)}</button>`;
     }).join('');
     box.querySelectorAll('.dep').forEach(b => b.addEventListener('click', () => {
       const [proj, id] = b.dataset.ref.includes(':') ? b.dataset.ref.split(':') : [state.project, b.dataset.ref];

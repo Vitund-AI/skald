@@ -64,7 +64,17 @@ class UserConfig:
     def get(self, key: str):
         if key not in USER_DEFAULTS:
             raise SkaldError(f"unknown setting '{key}' (known: {', '.join(USER_DEFAULTS)})")
-        return self.data.get(key, USER_DEFAULTS[key])
+        default = USER_DEFAULTS[key]
+        value = self.data.get(key, default)
+        # Tolerate hand-edited config.json: coerce to the default's type or fall back.
+        try:
+            if isinstance(default, bool):
+                return value if isinstance(value, bool) else str(value).lower() in ("1", "true", "yes", "on")
+            if isinstance(default, int):
+                return int(value)
+            return str(value) if value is not None else default
+        except (TypeError, ValueError):
+            return default
 
     def set(self, key: str, raw: str) -> None:
         if key not in USER_DEFAULTS:

@@ -385,3 +385,12 @@ class TestRegistry(SkaldTestCase):
         (self.skald_dir / "config.json").write_text('{"name": "alpha", "format": 42}')
         with self.assertRaises(ConfigError):
             self.workspace().current()
+
+
+class TestUserConfigCoercion(SkaldTestCase):
+    def test_hand_edited_values_are_coerced(self):
+        u = UserConfig(self.home)
+        u.data.update({"stale_days": "7", "push": "yes", "port": "not a number", "author": None})
+        u.save()
+        again = UserConfig(self.home)
+        self.assertEqual((again.get("stale_days"), again.get("push"), again.get("port"), again.get("author")), (7, True, 8321, ""))
