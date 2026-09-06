@@ -232,3 +232,42 @@ def cat_file_batch(repo: Path, ref: str, rel_paths: list[str]) -> dict[str, Opti
         out[rel] = data[pos:pos + size].decode("utf-8", errors="replace")
         pos += size + 1  # trailing newline after the object
     return out
+
+
+TRAILER = "Skald-Story"
+
+
+def commits_for(repo: Path, story_id: str, limit: int = 50, all_branches: bool = False) -> list[dict]:
+    """Commits whose message references a story via the trailer or ``[id]``."""
+    args = ["log", f"-n{limit}", "--format=%h%x1f%aI%x1f%an%x1f%s", "-E",
+            f"--grep={TRAILER}: *{story_id}\\b", f"--grep=\\[{story_id}\\]"]
+    if all_branches:
+        args.insert(1, "--all")
+    proc = _run(args, cwd=repo)
+    if proc.returncode != 0:
+        return []
+    out = []
+    for line in proc.stdout.splitlines():
+        parts = line.split("\x1f")
+        if len(parts) == 4:
+            out.append({"sha": parts[0], "date": parts[1], "author": parts[2], "subject": parts[3]})
+    return out
+
+
+def commits_touching(repo: Path, since: Optional[str], until: str, subpath: str, limit: int = 200) -> list[dict]:
+    """Commits in ``since..until`` (or up to ``until``) that touch ``subpath``, oldest first."""
+    rng = f"{since}..{until}" if since else until
+    proc = _run(["log", f"-n{limit}", "--reverse", "--format=%H%x1f%h%x1f%aI%x1f%an%x1f%s", rng, "--", subpath], cwd=repo)
+    if proc.returncode != 0:
+        return []
+    out = []
+    for line in proc.stdout.splitlines():
+        parts = line.split("\x1f")
+        if len(parts) == 5:
+            out.append({"full": parts[0], "sha": parts[1], "date": parts[2], "author": parts[3], "subject": parts[4]})
+    return out
+
+
+def parent_of(repo: Path, sha: str) -> Optional[str]:
+    proc = _run(["rev-parse", "--verify", "--quiet", f"{sha}^"], cwd=repo)
+    return proc.stdout.strip() if proc.returncode == 0 else None

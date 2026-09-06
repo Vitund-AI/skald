@@ -528,8 +528,13 @@
     box.innerHTML = '<div class="text-slate-400">loading…</div>';
     try {
       const data = await api('GET', `${P()}/stories/${state.modal}/history`);
-      if (!data.history.length) { box.innerHTML = '<div class="text-slate-400 font-sans">No commits yet. Story changes are committed with the code they describe.</div>'; return; }
-      box.innerHTML = data.history.map(h => `<div class="flex gap-3"><span class="text-slate-400">${esc(h.sha)}</span><span class="text-slate-500 w-32 shrink-0">${esc(h.date.slice(0, 16).replace('T', ' '))}</span><span class="text-slate-500 w-28 shrink-0 truncate">${esc(h.author)}</span><span class="font-sans">${esc(h.subject)}</span></div>`).join('');
+      const row = h => `<div class="flex gap-3"><span class="text-slate-400">${esc(h.sha)}</span><span class="text-slate-500 w-32 shrink-0">${esc(h.date.slice(0, 16).replace('T', ' '))}</span><span class="text-slate-500 w-28 shrink-0 truncate">${esc(h.author)}</span><span class="font-sans">${esc(h.subject)}</span></div>`;
+      let html = '';
+      html += '<div class="font-sans font-semibold text-slate-600 mb-1">Code commits referencing this story</div>';
+      html += data.commits.length ? data.commits.map(row).join('') : '<div class="text-slate-400 font-sans mb-2">None yet. Add a <code>Skald-Story: ' + esc(state.modal) + '</code> trailer to commits.</div>';
+      html += '<div class="font-sans font-semibold text-slate-600 mt-3 mb-1">Story file history</div>';
+      html += data.history.length ? data.history.map(row).join('') : '<div class="text-slate-400 font-sans">No commits yet. Story changes are committed with the code they describe.</div>';
+      box.innerHTML = html;
     } catch (err) { box.innerHTML = `<div class="text-red-600 font-sans">${esc(err.message)}</div>`; }
   }
   function splitList(v) { return v.split(',').map(x => x.trim()).filter(Boolean); }

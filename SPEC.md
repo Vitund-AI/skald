@@ -305,7 +305,10 @@ story or configuration. Commands that print stories take `--json`.
 | `log <id>` | `git log --follow` on the file. |
 | `archive [--dry-run]`, `unarchive <id>` | Section 4.5. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
-| `commit [-m MSG] [--push]` | `git add -A -- .skald && git commit -- .skald`. Pushes with `--push` or the `push` setting. |
+| `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
+| `commits <id> [--all-branches] [--json]` | `git log --grep` for the trailer or `[id]`. |
+| `diff --since REF [--until REF] [--markdown] [--json]` | `diff_states` between two snapshots (or the working tree): added, removed, and changed stories with field deltas, notes added, body edits. Markdown output starts with `<!-- skald-diff -->` for comment upserts. |
+| `activity [--since REF] [--until REF] [--json]` | For each commit touching `.skald/` in the range, `diff_states(parent, commit)` rendered as events. Default range is 20 commits. |
 | `changelog --since REF [--until REF]` | Stories terminal at `until` that were absent or non-terminal at `since`, read from git objects. |
 | `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
 | `columns`, `templates`, `projects [rm NAME]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. |
@@ -401,8 +404,9 @@ the marker in the rendered file no longer matches the stories.
 `skald render --stage`) into git's hooks directory, refusing to overwrite a
 hook it did not write. `hooks github --install` writes
 `.github/workflows/skald.yml`, which runs `check` on pushes and pull requests
-and commits a fresh render on the default branch. Both enable `render` in
-`config.json` if it is off.
+and commits a fresh render on the default branch, and on pull requests
+posts or updates a `<!-- skald-diff -->` comment from `diff --markdown`.
+Both enable `render` in `config.json` if it is off.
 
 ## 10a. MCP server
 

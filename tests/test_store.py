@@ -551,3 +551,30 @@ class TestClaimAwareness(SkaldTestCase):
         self.assertEqual(self.store().next_story(for_author="codex", elsewhere=elsewhere).id, a.id)
         story, warnings = self.store().claim(a.id, "claude", elsewhere=elsewhere)
         self.assertTrue(any("also claimed by codex" in w for w in warnings))
+
+
+class TestDiffStates(SkaldTestCase):
+    def test_diff_between_snapshots(self):
+        from skald.store import diff_states
+
+        s = self.store()
+        a, _ = s.create("a", status="ready")
+        b, _ = s.create("b")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "one")
+        s.update(a.id, status="done", tags=["t"])
+        s.append_note(b.id, "n")
+        s.write_body(b.id, s.get(b.id).body + "extra\n", None)   # note plus body edit -> counts as notes only
+        c, _ = s.create("c")
+        s.delete(b.id)
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "two")
+        d = diff_states(s.snapshot("HEAD~1"), s.snapshot("HEAD"))
+        self.assertEqual([x.id for x in d["added"]], [c.id])
+        self.assertEqual([x.id for x in d["removed"]], [b.id])
+        self.assertEqual(len(d["changed"]), 1)
+        ch = d["changed"][0]
+        self.assertEqual(ch["fields"]["status"], ("ready", "done"))
+        self.assertEqual(ch["fields"]["tags"], ([], ["t"]))
+        d2 = diff_states(None, s.snapshot("HEAD"))
+        self.assertEqual(sorted(x.id for x in d2["added"]), sorted([a.id, c.id]))

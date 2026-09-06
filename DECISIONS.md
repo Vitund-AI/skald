@@ -225,3 +225,16 @@ A story assigned but untouched for `stale_days` is treated as free by
 `next`, with a warning naming the previous assignee. Without this a crashed
 agent's claim hides work forever. `context` lists stale active claims by
 others separately so a human or agent can decide to take them over.
+
+### D35. Commit linkage is a trailer, matched by grep
+`Skald-Story: <id>` is a standard git trailer, so `git interpret-trailers`
+and hosting UIs understand it, and `[<id>]` in a subject is accepted for
+people who prefer that. Lookup is `git log --grep`, which is fast enough and
+needs no index of our own. `skald commit` adds trailers automatically for
+the stories it touches; code commits rely on the contract.
+
+### D36. `diff` and `activity` are the same computation at two granularities
+Both call `diff_states` on two snapshots. `diff` compares two refs, or a
+ref and the working tree; `activity` compares each commit with its parent
+across a range. A note added counts as one event; a body edit without a new
+note counts as another, so agent progress and human edits read differently.

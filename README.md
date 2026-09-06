@@ -268,7 +268,10 @@ corrupt story or configuration.
 | `log <id>` | Git history of the story file. |
 | `archive [--dry-run]`, `unarchive <id>` | Move terminal stories to `.skald/archive/` and back. |
 | `check [--hook]` | Validate every file. Exit 2 on problems. `--hook` also fails on uncommitted story files. |
-| `commit [-m MSG] [--push]` | Commit everything under `.skald/` and nothing else. |
+| `commit [-m MSG] [--push] [--no-trailers]` | Commit everything under `.skald/` and nothing else, with `Skald-Story` trailers. |
+| `commits <id> [--all-branches]` | Commits referencing the story via trailer or `[id]`. |
+| `diff --since REF [--until REF] [--markdown]` | New, changed, and removed stories between two states. |
+| `activity [--since REF] [--until REF]` | Backlog events per commit, oldest first. |
 | `changelog --since REF [--until REF]` | Stories that reached a terminal column between two git refs. |
 | `facets [KEY] [--all-projects]`, `epics` | `key:value` tags with total, done, open, and progress. |
 | `columns`, `templates`, `projects`, `config` | Inspect configuration. |
@@ -279,6 +282,36 @@ corrupt story or configuration.
 
 `-p NAME` before any command targets a registered project instead of the
 current directory.
+
+## Linking commits to stories
+
+`skald commit` adds a `Skald-Story: <id>` trailer for every story file it
+touches. For code commits, add the same trailer yourself, or put `[a3f9c2]`
+in the subject:
+
+```sh
+git commit -m "Add wg0 template" --trailer "Skald-Story: a3f9c2"
+skald commits a3f9c2              # every commit that references the story
+```
+
+The story modal's History tab shows those commits above the story file's
+own history.
+
+## Reviewing what changed
+
+```sh
+skald diff --since main                  # new, changed, removed stories vs the working tree
+skald diff --since v1.0 --until v1.1 --markdown
+skald activity --since HEAD~20           # every event, one line each, oldest first
+skald changelog --since v1.0             # stories that reached done between two refs
+```
+
+`diff` compares two states by id and reports status, assignee, title, tag,
+blocker, and archive changes, plus notes added. `activity` walks every
+commit that touched `.skald/` and reports the same events per commit, which
+is the quickest way to see what agents did overnight. The GitHub workflow
+posts `diff --markdown` as a comment on every pull request and keeps it up
+to date.
 
 ## A board you can see on GitHub
 

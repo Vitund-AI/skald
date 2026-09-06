@@ -134,6 +134,8 @@ class TestHookInstallers(SkaldTestCase):
         self.assertIn("skald check", text)
         self.assertIn("skald render --out .skald/README.md", text)
         self.assertIn("[skip ci]", text)
+        self.assertIn("skald diff --since \"origin/${{ github.base_ref }}\" --until HEAD --markdown", text)
+        self.assertIn("pull-requests: write", text)
         code, out, err = self.run_cli("hooks", "github", "--install")
         self.assertEqual(code, 1)
         self.assertIn("not overwriting", err)

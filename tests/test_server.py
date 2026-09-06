@@ -109,7 +109,7 @@ class TestAPI(ServerTestCase):
         self.assertEqual((data["story"]["assignee"], data["story"]["status"]), ("Alpha Tester", "in_progress"))
 
         status, data = self.call("GET", f"{P}/stories/{a}/history")
-        self.assertEqual(data["history"], [])
+        self.assertEqual((data["history"], data["commits"]), ([], []))
         self.assertEqual(self.call("DELETE", f"{P}/stories/{a}")[0], 409)
         self.assertEqual(self.call("DELETE", f"{P}/stories/{a}?force=1")[0], 204)
         self.assertEqual(self.call("GET", f"{P}/stories/{a}")[0], 404)

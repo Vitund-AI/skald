@@ -401,7 +401,8 @@ class Handler(BaseHTTPRequestHandler):
                     story = store.get(ref)
                     repo = gitutil.root(store.dir)
                     entries = gitutil.log_file(repo, story.path) if repo else []
-                    self._json(200, {"history": entries})
+                    commits = gitutil.commits_for(repo, story.id) if repo else []
+                    self._json(200, {"history": entries, "commits": commits})
                     return
                 if sub == ["claim"] and method == "POST":
                     data = self._read_json()

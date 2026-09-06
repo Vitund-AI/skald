@@ -49,9 +49,11 @@ tools from `skald mcp` (see the README).
    says what changed and how it was verified. A human moves stories to done.
    If the human has told you to close stories yourself, move to done instead.
 8. **Commit together.** Story file changes go in the same commit as the code
-   they describe. Never leave `.skald/` changes uncommitted at the end of a
-   task. `skald check` tells you whether the backlog is consistent, and
-   `skald status` lists uncommitted story files.
+   they describe, and the commit message carries a trailer naming the story:
+   `git commit -m "..." --trailer "Skald-Story: <id>"`. Never leave `.skald/`
+   changes uncommitted at the end of a task. `skald check` tells you whether
+   the backlog is consistent, and `skald status` lists uncommitted story
+   files.
 
 ## Rules
 
@@ -86,7 +88,8 @@ skald set <id> title="..." rank=N assignee=NAME
 skald tag <id> +tag -tag
 skald block <id> +id -id            (use project:id for another repository)
 skald note <id> "<text>" | -  --as NAME [--kind handoff|decision|blocker]
-skald log <id>                      git history of the story
+skald log <id>                      git history of the story file
+skald commits <id>                  code commits that reference the story
 skald check [--hook]
 skald columns
 skald rm <id> [--force]

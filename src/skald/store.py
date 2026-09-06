@@ -1071,3 +1071,38 @@ def facets(stories: list[Story], config: ProjectConfig) -> dict[str, dict[str, d
                 bucket["open"] += 1
             bucket["ids"].append(s.id)
     return {k: dict(sorted(v.items())) for k, v in sorted(out.items())}
+
+
+# --------------------------------------------------------------------------
+# Diffs between two states (snapshots or the working tree)
+# --------------------------------------------------------------------------
+
+
+def diff_states(base, head) -> dict:
+    """Compare two duck-typed states (``index(include_archived=True)``) by story id."""
+    a = base.index(include_archived=True) if base is not None else {}
+    b = head.index(include_archived=True)
+    added = [b[i] for i in sorted(set(b) - set(a))]
+    removed = [a[i] for i in sorted(set(a) - set(b))]
+    changes = []
+    for sid in sorted(set(a) & set(b)):
+        x, y = a[sid], b[sid]
+        fields = {}
+        if x.status != y.status:
+            fields["status"] = (x.status, y.status)
+        if x.assignee != y.assignee:
+            fields["assignee"] = (x.assignee, y.assignee)
+        if x.title != y.title:
+            fields["title"] = (x.title, y.title)
+        if x.archived != y.archived:
+            fields["archived"] = (x.archived, y.archived)
+        if sorted(x.tags) != sorted(y.tags):
+            fields["tags"] = (x.tags, y.tags)
+        if x.blocked_by != y.blocked_by:
+            fields["blocked_by"] = (x.blocked_by, y.blocked_by)
+        nx, ny = len(parse_notes(x.body)), len(parse_notes(y.body))
+        notes_added = max(0, ny - nx)
+        body_changed = x.body != y.body and not notes_added
+        if fields or notes_added or body_changed:
+            changes.append({"story": y, "before": x, "fields": fields, "notes_added": notes_added, "body_changed": body_changed})
+    return {"added": added, "removed": removed, "changed": changes}

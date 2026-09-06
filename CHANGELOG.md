@@ -23,6 +23,9 @@ repository to migrate; story files are unchanged.
 - Board: project switcher, all-projects ready view, per-column limits, stale
   and checklist markers, dependency chips, Markdown preview, history tab,
   claim button, branch display, keyboard shortcuts, change-hash polling.
+- Git linkage and review: `Skald-Story` trailers from `commit`, `skald
+  commits`, `skald diff` with a PR comment from the workflow, and `skald
+  activity` for per-commit backlog events.
 - Agent orientation: `skald context`, `skald resume`, note kinds
   (`--kind handoff|decision|blocker`), `--compact` JSON, an advisory
   acceptance-criteria gate, and claim awareness across worktrees with stale

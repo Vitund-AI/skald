@@ -212,9 +212,26 @@ def build_parser() -> argparse.ArgumentParser:
     stt = sub.add_parser("status", help="project summary: branch, counts, uncommitted story changes")
     stt.add_argument("--json", action="store_true")
 
-    cm = sub.add_parser("commit", help="commit everything under .skald/")
+    cm = sub.add_parser("commit", help="commit everything under .skald/ with Skald-Story trailers")
     cm.add_argument("-m", "--message")
     cm.add_argument("--push", action="store_true")
+    cm.add_argument("--no-trailers", action="store_true")
+
+    cmts = sub.add_parser("commits", help="commits that reference a story (Skald-Story trailer or [id])")
+    cmts.add_argument("id")
+    cmts.add_argument("--all-branches", action="store_true")
+    cmts.add_argument("--json", action="store_true")
+
+    df = sub.add_parser("diff", help="backlog changes between two git refs")
+    df.add_argument("--since", required=True, metavar="REF")
+    df.add_argument("--until", default=None, metavar="REF", help="default: the working tree")
+    df.add_argument("--markdown", action="store_true")
+    df.add_argument("--json", action="store_true")
+
+    act = sub.add_parser("activity", help="every backlog event in git history, oldest first")
+    act.add_argument("--since", metavar="REF", help="default: 20 commits back")
+    act.add_argument("--until", default="HEAD", metavar="REF")
+    act.add_argument("--json", action="store_true")
 
     chg = sub.add_parser("changelog", help="stories completed between two git refs")
     chg.add_argument("--since", required=True, metavar="REF")
@@ -751,6 +768,154 @@ def cmd_status(ws: Workspace, store: Store, args) -> int:
     return 0
 
 
+def story_ids_in(changes: list[dict]) -> list[str]:
+    from .store import id_from_filename
+
+    ids = set()
+    for c in changes:
+        parts = c["path"].replace("\\", "/").split("/")
+        if len(parts) >= 2 and parts[-2] in ("stories", "archive"):
+            sid = id_from_filename(parts[-1])
+            if sid:
+                ids.add(sid)
+    return sorted(ids)
+
+
+def with_trailers(message: str, ids: list[str]) -> str:
+    missing = [i for i in ids if f"{gitutil.TRAILER}: {i}" not in message]
+    if not missing:
+        return message
+    return message.rstrip("\n") + "\n\n" + "\n".join(f"{gitutil.TRAILER}: {i}" for i in missing) + "\n"
+
+
+def cmd_commits(store: Store, args) -> int:
+    story = store.get(args.id)
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    entries = gitutil.commits_for(repo, story.id, all_branches=args.all_branches)
+    if args.json:
+        print(json.dumps(entries, indent=2))
+        return 0
+    if not entries:
+        print(f"no commits reference {story.id} (add a '{gitutil.TRAILER}: {story.id}' trailer or [{story.id}] to commit messages)")
+        return 0
+    for e in entries:
+        print(f"{e['sha']}  {e['date'][:16].replace('T', ' ')}  {e['author']:<20}  {e['subject']}")
+    return 0
+
+
+def _describe_change(c: dict) -> list[str]:
+    bits = []
+    for k, (x, y) in c["fields"].items():
+        if k == "archived":
+            bits.append("archived" if y else "unarchived")
+        elif k in ("tags", "blocked_by"):
+            bits.append(f"{k} {', '.join(x) or '-'} -> {', '.join(y) or '-'}")
+        else:
+            bits.append(f"{k} {x or '-'} -> {y or '-'}")
+    if c["notes_added"]:
+        bits.append(f"+{c['notes_added']} note(s)")
+    if c["body_changed"]:
+        bits.append("body edited")
+    return bits
+
+
+def cmd_diff(store: Store, args) -> int:
+    from .store import diff_states
+
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    base = store.snapshot(args.since)
+    head = store.snapshot(args.until) if args.until else store
+    d = diff_states(base, head)
+    until_label = args.until or "working tree"
+    if args.json:
+        out = {
+            "since": args.since, "until": until_label,
+            "added": [s.to_dict(compact=True) for s in d["added"]],
+            "removed": [s.to_dict(compact=True) for s in d["removed"]],
+            "changed": [{"id": c["story"].id, "title": c["story"].title,
+                         "fields": {k: list(v) for k, v in c["fields"].items()},
+                         "notes_added": c["notes_added"], "body_changed": c["body_changed"]} for c in d["changed"]],
+        }
+        print(json.dumps(out, indent=2))
+        return 0
+    total = len(d["added"]) + len(d["removed"]) + len(d["changed"])
+    if args.markdown:
+        print("<!-- skald-diff -->")
+        print(f"## Backlog changes ({args.since} → {until_label})\n")
+        if not total:
+            print("No story changes.")
+            return 0
+        if d["added"]:
+            print("**New**\n")
+            for s in d["added"]:
+                print(f"- `{s.id}` {s.title} ({s.status})")
+            print()
+        if d["changed"]:
+            print("**Changed**\n")
+            for c in d["changed"]:
+                print(f"- `{c['story'].id}` {c['story'].title}: {'; '.join(_describe_change(c))}")
+            print()
+        if d["removed"]:
+            print("**Removed**\n")
+            for s in d["removed"]:
+                print(f"- `{s.id}` {s.title}")
+            print()
+        return 0
+    if not total:
+        print(f"no story changes between {args.since} and {until_label}")
+        return 0
+    for s in d["added"]:
+        print(f"+ {s.id}  {s.status:<12} {s.title}")
+    for c in d["changed"]:
+        print(f"~ {c['story'].id}  {c['story'].title}: {'; '.join(_describe_change(c))}")
+    for s in d["removed"]:
+        print(f"- {s.id}  {s.title}")
+    return 0
+
+
+def cmd_activity(store: Store, args) -> int:
+    from .store import diff_states
+
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    since = args.since
+    if since is None:
+        since = f"{args.until}~20" if gitutil.rev_parse(repo, f"{args.until}~20") else None
+    rel = _skald_rel(store, repo)
+    commits = gitutil.commits_touching(repo, since, args.until, rel)
+    events = []
+    for c in commits:
+        parent = gitutil.parent_of(repo, c["full"])
+        head = store.snapshot(c["full"])
+        base = store.snapshot(parent) if parent else None
+        d = diff_states(base, head)
+        for s in d["added"]:
+            events.append({**c, "id": s.id, "title": s.title, "event": f"created ({s.status})"})
+        for ch in d["changed"]:
+            for bit in _describe_change(ch):
+                events.append({**c, "id": ch["story"].id, "title": ch["story"].title, "event": bit})
+        for s in d["removed"]:
+            events.append({**c, "id": s.id, "title": s.title, "event": "deleted"})
+    if args.json:
+        print(json.dumps([{k: v for k, v in e.items() if k != "full"} for e in events], indent=2))
+        return 0
+    if not events:
+        print("no backlog activity in that range")
+        return 0
+    last = None
+    for e in events:
+        if e["sha"] != last:
+            print(f"{e['sha']}  {e['date'][:16].replace('T', ' ')}  {e['author']}  {e['subject']}")
+            last = e["sha"]
+        print(f"    {e['id']}  {e['event']}  ({e['title']})")
+    return 0
+
+
 def cmd_commit(ws: Workspace, store: Store, args) -> int:
     repo = _repo_of(store)
     if repo is None:
@@ -763,6 +928,8 @@ def cmd_commit(ws: Workspace, store: Store, args) -> int:
         print("nothing to commit under .skald/")
         return 0
     message = args.message or f"skald: update {len(changes)} story file(s)"
+    if not args.no_trailers:
+        message = with_trailers(message, story_ids_in(changes))
     sha = gitutil.commit_path(repo, paths, message)
     print(f"committed {sha}: {message}")
     if args.push or ws.user.get("push"):
@@ -997,6 +1164,35 @@ jobs:
       - run: pip install skald-kanban
       - run: skald check
 
+  diff:
+    if: github.event_name == 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install skald-kanban
+      - name: Describe backlog changes in this pull request
+        run: skald diff --since "origin/${{{{ github.base_ref }}}}" --until HEAD --markdown > skald-diff.md
+      - name: Post or update the comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('skald-diff.md', 'utf8');
+            const {{ owner, repo }} = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.rest.issues.listComments({{ owner, repo, issue_number, per_page: 100 }});
+            const mine = comments.data.find(c => c.body && c.body.startsWith('<!-- skald-diff -->'));
+            if (mine) await github.rest.issues.updateComment({{ owner, repo, comment_id: mine.id, body }});
+            else await github.rest.issues.createComment({{ owner, repo, issue_number, body }});
+
   render:
     if: github.event_name == 'push'
     needs: check
@@ -1118,6 +1314,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume",
+    "commits", "diff", "activity",
 }
 
 
@@ -1230,6 +1427,12 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_commit(ws, store, args)
     if args.command == "changelog":
         return cmd_changelog(store, args)
+    if args.command == "commits":
+        return cmd_commits(store, args)
+    if args.command == "diff":
+        return cmd_diff(store, args)
+    if args.command == "activity":
+        return cmd_activity(store, args)
     if args.command == "columns":
         return cmd_columns(store, args)
     if args.command == "facets":
