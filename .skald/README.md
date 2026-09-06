@@ -1,9 +1,23 @@
-<!-- skald-render 0bdf276483757d97 -->
+<!-- skald-render c096eb5cf56bb340 -->
 # skald backlog
 
-**36 open** · Backlog 2 · Ready 4 · In progress 1 · Review 29 · Done 1
+**36 open** · Backlog 2 · Ready 2 · In progress 1 · Review 31 · Done 1
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
+
+## Dependencies
+
+```mermaid
+flowchart LR
+    n_46b5d3["46b5d3<br/>skald render: committed board snapshot,…"]
+    n_9a1da4["9a1da4<br/>Add an archive command for done stories"]
+    n_bae374["bae374<br/>Offer a pipx-installable package with a…"]
+    n_cbb58e["cbb58e<br/>Facet tags and epic progress"]
+    n_9a1da4 --> n_bae374
+    n_cbb58e --> n_46b5d3
+    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+    class n_46b5d3,n_9a1da4,n_bae374,n_cbb58e active
+```
 
 ## Backlog (2)
 
@@ -12,14 +26,12 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 | [be447c](stories/be447c-rename-a-project-with-reference-rewriting.md) | Rename a project with reference rewriting | `cli` |  |  |  |
 | [c78e01](stories/c78e01-bulk-operations-on-the-board.md) | Bulk operations on the board | `ui` |  |  |  |
 
-## Ready (4)
+## Ready (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b91662](stories/b91662-publish-0-2-0-to-pypi.md) | Publish 0.2.0 to PyPI | `packaging` |  |  |  |
 | [68a39b](stories/68a39b-confirm-windows-and-macos-behaviour-from-ci.md) | Confirm Windows and macOS behaviour from CI | `packaging` |  |  |  |
-| [419b5c](stories/419b5c-claude-code-skill-and-init-writing-the-instruction.md) | Claude Code skill and init writing the instructions pointer | `agents` |  |  |  |
-| [12c4d1](stories/12c4d1-dependency-graph-mermaid-in-render-skald-graph-svg.md) | Dependency graph: Mermaid in render, skald graph, SVG on the board | `docs` `ui` |  |  |  |
 
 ## In progress (1)
 
@@ -27,7 +39,7 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 | --- | --- | --- | --- | --- | --- |
 | [f7674b](stories/f7674b-verify-the-board-with-tailwind-loaded-in-a-real-br.md) | Verify the board with Tailwind loaded in a real browser | `ui` |  |  |  |
 
-## Review (29)
+## Review (31)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -60,6 +72,8 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 | [5c4f0c](stories/5c4f0c-link-commits-to-stories-with-a-skald-story-trailer.md) | Link commits to stories with a Skald-Story trailer | `git` | claude |  |  |
 | [610eef](stories/610eef-skald-diff-between-refs-and-a-pr-comment-from-the.md) | skald diff between refs and a PR comment from the workflow | `docs` `git` | claude |  |  |
 | [f4fa85](stories/f4fa85-skald-activity-backlog-transitions-from-git-histor.md) | skald activity: backlog transitions from git history | `git` | claude |  |  |
+| [419b5c](stories/419b5c-claude-code-skill-and-init-writing-the-instruction.md) | Claude Code skill and init writing the instructions pointer | `agents` | claude |  |  |
+| [12c4d1](stories/12c4d1-dependency-graph-mermaid-in-render-skald-graph-svg.md) | Dependency graph: Mermaid in render, skald graph, SVG on the board | `docs` `ui` | claude |  |  |
 
 <details><summary><strong>Done (1)</strong></summary>
 

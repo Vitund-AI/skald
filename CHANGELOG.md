@@ -23,6 +23,10 @@ repository to migrate; story files are unchanged.
 - Board: project switcher, all-projects ready view, per-column limits, stale
   and checklist markers, dependency chips, Markdown preview, history tab,
   claim button, branch display, keyboard shortcuts, change-hash polling.
+- Dependency graph: `skald graph` (Mermaid, DOT, JSON), a Mermaid block in
+  the rendered snapshot, and an SVG graph toggle on the board.
+- `hooks claude --install` writes a Claude Code skill; `init` writes the
+  instructions pointer into `CLAUDE.md` and `AGENTS.md`.
 - Git linkage and review: `Skald-Story` trailers from `commit`, `skald
   commits`, `skald diff` with a PR comment from the workflow, and `skald
   activity` for per-commit backlog events.

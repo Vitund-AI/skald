@@ -113,6 +113,19 @@ def render_markdown(store: Store, out_path: Path, include_archived: bool = False
             lines.append(f"| `epic:{_md_cell(name)}` | {_bar(b['done'], b['total'])} {pct}% | {b['done']} | {b['open']} |")
         lines.append("")
 
+    from .graph import build_graph, to_mermaid
+
+    graph = build_graph(store, r.stories)
+    if graph["edges"]:
+        big = len(graph["nodes"]) > 25
+        if big:
+            lines += [f"<details><summary><strong>Dependencies ({len(graph['nodes'])} stories)</strong></summary>", ""]
+        else:
+            lines += ["## Dependencies", ""]
+        lines += ["```mermaid", to_mermaid(graph).rstrip("\n"), "```", ""]
+        if big:
+            lines += ["</details>", ""]
+
     def table(stories: list[Story]) -> list[str]:
         rows = ["| ID | Title | Tags | Assignee | Blocked by | Progress |", "| --- | --- | --- | --- | --- | --- |"]
         for s in stories:

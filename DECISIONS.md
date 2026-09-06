@@ -238,3 +238,16 @@ Both call `diff_states` on two snapshots. `diff` compares two refs, or a
 ref and the working tree; `activity` compares each commit with its parent
 across a range. A note added counts as one event; a body edit without a new
 note counts as another, so agent progress and human edits read differently.
+
+### D37. The graph is Mermaid first, SVG second, and never a library
+Dependency graphs in a backlog are sparse DAGs, so a longest-path layered
+layout is enough and fits in a hundred lines of vanilla JS. Mermaid text is
+what GitHub renders inside Markdown, so the committed snapshot gets a graph
+with no JavaScript at all. Only stories with an edge are drawn; isolated
+stories would turn the graph into a grid of unrelated boxes.
+
+### D38. The contract ships as a Claude Code skill and init writes the pointer
+`AGENTS.md` only helps an agent that reads it. A skill under
+`.claude/skills/skald/` is auto-invoked when backlog work comes up, and the
+root `CLAUDE.md`/`AGENTS.md` pointer is the step people forget, so `init`
+appends it idempotently and creates `AGENTS.md` when neither file exists.

@@ -34,6 +34,7 @@
   <input id="search" type="search" placeholder="Filter (title, id, tag, assignee)  /" class="flex-1 min-w-[12rem] max-w-md rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
   <span id="facet-filters" class="flex items-center gap-2"></span>
   <select id="group-by" class="hidden rounded border border-slate-300 px-2 py-1 text-xs bg-white" title="Group the board into swimlanes by a facet"></select>
+  <button id="graph-btn" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white hover:bg-slate-50" title="Dependency graph (g)">Graph</button>
   <span id="conn" class="text-xs text-slate-400"></span>
   <span id="identity" class="text-xs text-slate-500" title="Notes and commits from the board use this name. Change it with: skald config author NAME"></span>
   <div class="relative">
@@ -54,6 +55,7 @@
 <div id="ro-banner" class="hidden bg-violet-50 border-b border-violet-200 text-violet-900 text-sm px-4 py-1.5"></div>
 <main id="board" class="flex-1 flex gap-3 p-3 overflow-x-auto"></main>
 <main id="ready-view" class="hidden flex-1 overflow-y-auto p-4"></main>
+<main id="graph-view" class="hidden flex-1 overflow-auto p-4"></main>
 
 <div id="toasts" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
 
@@ -118,7 +120,7 @@
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, facets: {}, facetFilters: {}, groupBy: '',
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, facets: {}, facetFilters: {}, groupBy: '', graph: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal');
   const ALL = '__all__';
@@ -180,6 +182,9 @@
     state.allView = state.project === ALL;
     try { localStorage.setItem('skald.project', state.project); } catch (e) {}
     const url = new URL(location.href); url.searchParams.set('project', state.project); history.replaceState(null, '', url);
+    state.graph = false; $('graph-view').classList.add('hidden');
+    $('graph-btn').classList.remove('bg-slate-800', 'text-white');
+    $('graph-btn').classList.toggle('hidden', state.allView);
     board.classList.toggle('hidden', state.allView);
     readyView.classList.toggle('hidden', !state.allView);
     $('new-btn').classList.toggle('hidden', state.allView);
@@ -312,6 +317,7 @@
 
   function render() {
     if (state.allView) return renderReady();
+    if (state.graph) return renderGraph();
     board.innerHTML = '';
     if (state.groupBy) {
       board.classList.remove('flex'); board.classList.add('grid', 'gap-4', 'content-start');
@@ -380,6 +386,81 @@
     readyView.querySelectorAll('.ready-row').forEach(row => row.addEventListener('click', () => {
       switchProject(row.dataset.project, () => setTimeout(() => openModal(row.dataset.id), 200));
     }));
+  }
+
+  // ---- Dependency graph ------------------------------------------------
+  const ROLE_FILL = { backlog: '#f1f5f9', ready: '#dbeafe', active: '#fef3c7', done: '#d1fae5', closed: '#e5e7eb', unknown: '#fee2e2' };
+  function buildGraph() {
+    const byId = {}; state.stories.forEach(s => byId[s.id] = s);
+    const nodes = {}, edges = [];
+    const add = (key, s, ext) => { if (!nodes[key]) nodes[key] = { id: key, title: s ? s.title : (ext ? `(in ${key.split(':')[0]})` : '(missing)'), role: s ? (s.role || 'unknown') : 'unknown', status: s ? s.status : (ext ? 'unavailable' : 'missing'), external: !!ext, story: s || null }; };
+    for (const s of state.stories) {
+      for (const d of (s.deps || [])) {
+        const ext = d.ref.includes(':') && d.ref.split(':')[0] !== state.project;
+        const key = ext ? d.ref : d.ref.split(':').pop();
+        add(key, ext ? null : byId[key], ext);
+        if (ext) { nodes[key].status = d.state; nodes[key].role = d.satisfied ? 'done' : (d.state === 'unavailable' ? 'unknown' : 'active'); }
+        add(s.id, s, false);
+        edges.push({ from: key, to: s.id, satisfied: d.satisfied, external: ext });
+      }
+    }
+    // depth = longest path from a source, with a cycle guard
+    const preds = {}; edges.forEach(e => (preds[e.to] = preds[e.to] || []).push(e.from));
+    const depth = {}, visiting = new Set();
+    const dep = (k) => {
+      if (depth[k] !== undefined) return depth[k];
+      if (visiting.has(k)) return 0;
+      visiting.add(k);
+      const p = preds[k] || [];
+      depth[k] = p.length ? 1 + Math.max(...p.map(dep)) : 0;
+      visiting.delete(k);
+      return depth[k];
+    };
+    Object.keys(nodes).forEach(dep);
+    edges.forEach(e => { e.cycle = depth[e.from] >= depth[e.to] && depth[e.to] !== undefined && preds[e.from] && (function reach(a, b, seen) { if (a === b) return true; for (const p of (preds[a] || [])) { if (!seen.has(p)) { seen.add(p); if (reach(p, b, seen)) return true; } } return false; })(e.from, e.to, new Set()); });
+    const order = {}; state.stories.forEach((s, i) => order[s.id] = i);
+    const cols = {};
+    Object.values(nodes).forEach(n => (cols[depth[n.id]] = cols[depth[n.id]] || []).push(n));
+    Object.values(cols).forEach(list => list.sort((a, b) => (order[a.id] ?? 1e9) - (order[b.id] ?? 1e9)));
+    const W = 220, H = 56, GX = 90, GY = 24, PAD = 20;
+    Object.entries(cols).forEach(([c, list]) => list.forEach((n, r) => { n.x = PAD + c * (W + GX); n.y = PAD + r * (H + GY); }));
+    const ncols = Object.keys(cols).length, nrows = Math.max(0, ...Object.values(cols).map(l => l.length));
+    return { nodes: Object.values(nodes), edges, width: PAD * 2 + ncols * (W + GX) - GX, height: PAD * 2 + nrows * (H + GY) - GY, W, H };
+  }
+  function renderGraph() {
+    const view = $('graph-view');
+    const g = buildGraph();
+    if (!g.edges.length) { view.innerHTML = '<div class="text-slate-500">No dependencies between stories in this project. Add some with <code>skald block &lt;id&gt; +&lt;other&gt;</code> or the Blocked by field.</div>'; return; }
+    const pos = {}; g.nodes.forEach(n => pos[n.id] = n);
+    const edgeSvg = g.edges.map(e => {
+      const a = pos[e.from], b = pos[e.to];
+      const x1 = a.x + g.W, y1 = a.y + g.H / 2, x2 = b.x, y2 = b.y + g.H / 2;
+      const dx = Math.max(40, (x2 - x1) / 2);
+      const colour = e.cycle ? '#ef4444' : e.satisfied ? '#94a3b8' : '#f59e0b';
+      return `<path d="M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}" fill="none" stroke="${colour}" stroke-width="${e.satisfied ? 1.5 : 2.5}" ${e.external ? 'stroke-dasharray="6 4"' : ''} marker-end="url(#arrow)"/>`;
+    }).join('');
+    const nodeSvg = g.nodes.map(n => {
+      const title = n.title.length > 30 ? n.title.slice(0, 29) + '…' : n.title;
+      return `<g class="gnode cursor-pointer" data-id="${esc(n.id)}" data-ext="${n.external ? 1 : 0}" transform="translate(${n.x},${n.y})">
+        <rect width="${g.W}" height="${g.H}" rx="8" fill="${ROLE_FILL[n.role] || '#fff'}" stroke="${n.external ? '#a78bfa' : '#94a3b8'}" ${n.external ? 'stroke-dasharray="5 3"' : ''}/>
+        <text x="12" y="22" font-size="12" font-family="ui-monospace,monospace" fill="#64748b">${esc(n.id)} · ${esc(n.status)}</text>
+        <text x="12" y="42" font-size="13" font-weight="500" fill="#1e293b">${esc(title)}</text></g>`;
+    }).join('');
+    view.innerHTML = `<div class="text-xs text-slate-500 mb-2">Arrows point from blocker to blocked. Amber = unmet, grey = satisfied, red = cycle, dashed = another project. Click a node to open it.</div>
+      <svg width="${g.width}" height="${g.height}" viewBox="0 0 ${g.width} ${g.height}" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker></defs>${edgeSvg}${nodeSvg}</svg>`;
+    view.querySelectorAll('.gnode').forEach(el => el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      if (el.dataset.ext === '1') { const [proj, sid] = id.split(':'); switchProject(proj, () => setTimeout(() => openModal(sid), 200)); }
+      else openModal(id);
+    }));
+  }
+  function setGraph(on) {
+    state.graph = on;
+    $('graph-btn').classList.toggle('bg-slate-800', on); $('graph-btn').classList.toggle('text-white', on);
+    board.classList.toggle('hidden', on || state.allView);
+    $('graph-view').classList.toggle('hidden', !on);
+    render();
   }
 
   // ---- Drag and drop ---------------------------------------------------
@@ -626,6 +707,7 @@
   $('project').addEventListener('change', (e) => switchProject(e.target.value));
   $('branch').addEventListener('change', (e) => setRef(e.target.value));
   $('group-by').addEventListener('change', (e) => { state.groupBy = e.target.value; render(); });
+  $('graph-btn').addEventListener('click', () => setGraph(!state.graph));
   setInterval(() => { if (document.visibilityState === 'visible' && !state.modal) loadBranches(); }, 30000);
   $('search').addEventListener('input', (e) => { state.filter = e.target.value.trim().toLowerCase(); render(); });
   $('new-btn').addEventListener('click', () => openModal(null));
@@ -653,6 +735,7 @@
     if (typing || state.modal) return;
     if (e.key === 'n' && !state.allView && !state.readonly) { e.preventDefault(); openModal(null); }
     if (e.key === '/') { e.preventDefault(); $('search').focus(); }
+    if (e.key === 'g' && !state.allView) { e.preventDefault(); setGraph(!state.graph); }
   });
   let tick = 0;
   setInterval(() => {

@@ -95,7 +95,9 @@ is registered without a separate step.
 
 `init` creates the layout when absent and is otherwise non-destructive. It
 also migrates the 0.1 layout: it deletes `.skald/skald.py` and removes a git
-alias equal to `!python3 .skald/skald.py`.
+alias equal to `!python3 .skald/skald.py`. It appends the one-line pointer to
+`.skald/AGENTS.md` to the root `CLAUDE.md` and `AGENTS.md` when they exist
+and lack it, and creates `AGENTS.md` with the pointer when neither exists.
 
 ---
 
@@ -313,7 +315,8 @@ story or configuration. Commands that print stories take `--json`.
 | `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
 | `columns`, `templates`, `projects [rm NAME]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. |
 | `hooks claude [--install] [--strict]` | Prints or merges into `.claude/settings.json`: SessionStart `skald status && skald ls`; Stop `skald check` (or `skald check --hook` with `--strict`). |
-| `hooks git [--install]`, `hooks github [--install]` | Section 10b. |
+| `hooks git [--install]`, `hooks github [--install]` | Section 10b. `hooks claude --install` also writes `.claude/skills/skald/SKILL.md` from the contract template. |
+| `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Section 10b. |
 | `serve [--host H] [--port P] [--open]` | Foreground server. |
 | `server start\|stop\|status` | Background server via `server.json`. |
@@ -407,6 +410,18 @@ hook it did not write. `hooks github --install` writes
 and commits a fresh render on the default branch, and on pull requests
 posts or updates a `<!-- skald-diff -->` comment from `diff --markdown`.
 Both enable `render` in `config.json` if it is off.
+
+## 10c. Dependency graph
+
+`graph.build_graph(store, stories, include_isolated=False)` returns nodes
+(id, title, status, role, external, archived) and edges (from blocker to
+blocked, with `satisfied`, `external`, `missing`, `cycle`). Only stories
+with an edge appear unless isolated ones are requested; cross-project
+targets are external nodes resolved through the workspace when possible.
+`to_mermaid` emits `flowchart LR` with role classes, dashed external edges,
+and thick cycle edges; `to_dot` the Graphviz equivalent. `render` embeds the
+Mermaid block after the epics, collapsed above 25 nodes. The board draws
+the same graph as inline SVG with a longest-path layered layout.
 
 ## 10a. MCP server
 

@@ -1,3 +1,8 @@
+---
+name: skald
+description: Work this repository's Skald backlog. Use at the start of any task to orient (skald context), when picking or claiming work, when recording progress, decisions, or a handoff, and when finishing a story. Covers the skald CLI and the rules for story files.
+---
+
 # Working with Skald
 
 This repository tracks its backlog with Skald. Stories are Markdown files in

@@ -233,6 +233,11 @@ def build_parser() -> argparse.ArgumentParser:
     act.add_argument("--until", default="HEAD", metavar="REF")
     act.add_argument("--json", action="store_true")
 
+    gr = sub.add_parser("graph", help="dependency graph as Mermaid (default), DOT, or JSON")
+    gr.add_argument("--format", choices=["mermaid", "dot", "json"], default="mermaid")
+    gr.add_argument("--all", action="store_true", help="include stories without dependencies")
+    gr.add_argument("--archived", action="store_true", help="include archived stories")
+
     chg = sub.add_parser("changelog", help="stories completed between two git refs")
     chg.add_argument("--since", required=True, metavar="REF")
     chg.add_argument("--until", default="HEAD", metavar="REF")
@@ -345,13 +350,33 @@ def cmd_init(ws: Workspace, args) -> int:
 
     notice = ws.registry.register(config.name, skald_dir)
     lines.append(notice or f"project '{config.name}' already registered")
+    lines.extend(write_instruction_pointer(repo or skald_dir.parent))
     lines.append("")
-    lines.append("Add this line to your repository's CLAUDE.md or AGENTS.md:")
-    lines.append("  This repository tracks work with Skald. Read .skald/AGENTS.md before starting any task.")
-    lines.append("Then commit .skald/ and run `skald open` to see the board.")
+    lines.append("Commit .skald/ and run `skald open` to see the board.")
     for line in lines:
         print(line)
     return 0
+
+
+POINTER = "This repository tracks work with Skald. Read `.skald/AGENTS.md` before starting any task."
+
+
+def write_instruction_pointer(root: Path) -> list[str]:
+    """Append the one-line pointer to root CLAUDE.md and AGENTS.md; create AGENTS.md if neither exists."""
+    out = []
+    targets = [p for p in (root / "CLAUDE.md", root / "AGENTS.md") if p.exists()]
+    if not targets:
+        (root / "AGENTS.md").write_text(f"# Agent instructions\n\n{POINTER}\n", encoding="utf-8")
+        return [f"created {root / 'AGENTS.md'} with the Skald pointer"]
+    for p in targets:
+        text = p.read_text(encoding="utf-8", errors="replace")
+        if ".skald/AGENTS.md" in text:
+            out.append(f"{p.name} already points at .skald/AGENTS.md")
+            continue
+        sep = "" if text.endswith("\n\n") else ("\n" if text.endswith("\n") else "\n\n")
+        p.write_text(text + sep + POINTER + "\n", encoding="utf-8")
+        out.append(f"added the Skald pointer to {p.name}")
+    return out
 
 
 def _filtered(store: Store, args, stories, idx):
@@ -916,6 +941,18 @@ def cmd_activity(store: Store, args) -> int:
     return 0
 
 
+def cmd_graph(store: Store, args) -> int:
+    from .graph import build_graph, render_as
+
+    stories, warnings = store.load_all(include_archived=args.archived)
+    _warn(warnings)
+    g = build_graph(store, stories, include_isolated=args.all)
+    if not g["edges"] and not args.all:
+        print("no dependencies between stories; use --all to draw every story", file=sys.stderr)
+    sys.stdout.write(render_as(g, args.format))
+    return 0
+
+
 def cmd_commit(ws: Workspace, store: Store, args) -> int:
     repo = _repo_of(store)
     if repo is None:
@@ -1303,7 +1340,23 @@ def cmd_hooks(store: Store, args) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     print(f"installed Skald hooks into {path}")
+    skill = repo / ".claude" / "skills" / "skald" / "SKILL.md"
+    skill.parent.mkdir(parents=True, exist_ok=True)
+    skill.write_text(claude_skill(), encoding="utf-8")
+    print(f"wrote {skill.relative_to(repo)}")
     return 0
+
+
+def claude_skill() -> str:
+    return (
+        "---\n"
+        "name: skald\n"
+        "description: Work this repository's Skald backlog. Use at the start of any task to orient "
+        "(skald context), when picking or claiming work, when recording progress, decisions, or a handoff, "
+        "and when finishing a story. Covers the skald CLI and the rules for story files.\n"
+        "---\n\n"
+        + agents_template()
+    )
 
 
 # --------------------------------------------------------------------------
@@ -1314,7 +1367,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume",
-    "commits", "diff", "activity",
+    "commits", "diff", "activity", "graph",
 }
 
 
@@ -1433,6 +1486,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_diff(store, args)
     if args.command == "activity":
         return cmd_activity(store, args)
+    if args.command == "graph":
+        return cmd_graph(store, args)
     if args.command == "columns":
         return cmd_columns(store, args)
     if args.command == "facets":

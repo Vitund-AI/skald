@@ -184,6 +184,21 @@ The board shows one filter dropdown per facet key it finds, and a
 progress bar. Tags are lowercased, so `epic:User-Auth` becomes
 `epic:user-auth`.
 
+## Dependency graph
+
+```sh
+skald graph                       # Mermaid, which GitHub renders inside Markdown
+skald graph --format dot | dot -Tsvg > deps.svg
+skald graph --format json
+```
+
+Only stories with a dependency appear, so the graph stays readable. Nodes
+are coloured by column role, cross-project targets are dashed, satisfied
+edges are grey, unmet edges are highlighted, and cycles are red. The
+rendered snapshot includes the graph as a Mermaid block, and the board has
+a Graph toggle (`g`) that draws the same layered graph as inline SVG with
+click-to-open.
+
 ## Other branches
 
 Stories live on the branch you have checked out. Skald can read `.skald/`
@@ -274,6 +289,7 @@ corrupt story or configuration.
 | `activity [--since REF] [--until REF]` | Backlog events per commit, oldest first. |
 | `changelog --since REF [--until REF]` | Stories that reached a terminal column between two git refs. |
 | `facets [KEY] [--all-projects]`, `epics` | `key:value` tags with total, done, open, and progress. |
+| `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Dependency graph. |
 | `columns`, `templates`, `projects`, `config` | Inspect configuration. |
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Write a committed snapshot of the board. |
 | `hooks claude\|git\|github [--install]` | Print or install the Claude Code hooks, a pre-commit hook, or a GitHub workflow. |
@@ -344,9 +360,13 @@ The pre-commit installer refuses to overwrite a hook it did not write.
 skald hooks claude --install
 ```
 
-adds two hooks to `.claude/settings.json`: a SessionStart hook that runs
-`skald status && skald ls` so the agent starts every session oriented, and a
-Stop hook that runs `skald check` so it cannot finish with a broken backlog.
+adds two hooks to `.claude/settings.json`, a SessionStart hook that runs
+`skald status && skald ls` so the agent starts every session oriented and a
+Stop hook that runs `skald check` so it cannot finish with a broken backlog,
+and writes `.claude/skills/skald/SKILL.md` so Claude Code loads the contract
+as a skill whenever backlog work comes up. `skald init` also appends the
+one-line pointer to the root `CLAUDE.md` and `AGENTS.md`, creating
+`AGENTS.md` if neither exists.
 With `--strict` the Stop hook is `skald check --hook`, which also fails while
 story files are uncommitted, enforcing the "commit stories with code" rule.
 

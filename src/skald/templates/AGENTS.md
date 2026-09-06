@@ -90,6 +90,7 @@ skald block <id> +id -id            (use project:id for another repository)
 skald note <id> "<text>" | -  --as NAME [--kind handoff|decision|blocker]
 skald log <id>                      git history of the story file
 skald commits <id>                  code commits that reference the story
+skald graph                         dependency graph as Mermaid
 skald check [--hook]
 skald columns
 skald rm <id> [--force]
