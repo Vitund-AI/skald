@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skald-kanban"
+dynamic = ["version"]
+description = "Kanban lite for coding agents: a Markdown-in-git backlog with an agent CLI and a local web board."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "Vitund AI" }]
+keywords = ["kanban", "backlog", "agents", "markdown", "git"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Vitund-AI/skald"
+Source = "https://github.com/Vitund-AI/skald"
+Issues = "https://github.com/Vitund-AI/skald/issues"
+
+[project.scripts]
+skald = "skald.cli:main"
+git-skald = "skald.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+skald = ["web/*.html", "templates/*.md"]
+
+[tool.setuptools.dynamic]
+version = { attr = "skald.__version__" }

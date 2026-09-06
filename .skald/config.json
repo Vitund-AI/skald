@@ -1,0 +1,35 @@
+{
+  "format": 1,
+  "name": "skald",
+  "columns": [
+    {
+      "key": "backlog",
+      "label": "Backlog",
+      "role": "backlog"
+    },
+    {
+      "key": "ready",
+      "label": "Ready",
+      "role": "ready"
+    },
+    {
+      "key": "in_progress",
+      "label": "In progress",
+      "role": "active"
+    },
+    {
+      "key": "review",
+      "label": "Review",
+      "role": "active"
+    },
+    {
+      "key": "done",
+      "label": "Done",
+      "role": "done"
+    }
+  ],
+  "render": {
+    "path": ".skald/README.md",
+    "format": "md"
+  }
+}

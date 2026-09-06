@@ -1,0 +1,263 @@
+"""Machine-local state: the project index and user preferences.
+
+Nothing here is ever committed. The config directory is resolved as:
+
+1. ``$SKALD_HOME`` if set.
+2. ``%APPDATA%\\skald`` on Windows.
+3. ``$XDG_CONFIG_HOME/skald``, defaulting to ``~/.config/skald``.
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Optional
+
+from .config import ProjectConfig, slugify_name
+from .errors import ConfigError, NotFoundError, SkaldError
+from .store import Store
+from .util import atomic_write, now_iso
+
+USER_DEFAULTS = {
+    "author": "",        # display name for notes made from the board; empty = git user.name
+    "push": False,       # push after committing from the board
+    "port": 8321,        # board port
+    "host": "127.0.0.1",  # board bind address
+    "stale_days": 3,     # mark active stories untouched for this many days
+}
+
+
+def config_home() -> Path:
+    env = os.environ.get("SKALD_HOME")
+    if env:
+        return Path(env).expanduser().resolve()
+    if sys.platform.startswith("win"):
+        base = os.environ.get("APPDATA")
+        if base:
+            return Path(base) / "skald"
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    base = Path(xdg).expanduser() if xdg else Path.home() / ".config"
+    return base / "skald"
+
+
+def _load_json(path: Path, default):
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as e:
+        raise ConfigError(f"{path}: not valid JSON ({e})") from None
+    except OSError as e:
+        raise ConfigError(f"{path}: {e}") from None
+
+
+class UserConfig:
+    def __init__(self, home: Optional[Path] = None):
+        self.home = home or config_home()
+        self.path = self.home / "config.json"
+        data = _load_json(self.path, {})
+        if not isinstance(data, dict):
+            raise ConfigError(f"{self.path}: must be a JSON object")
+        self.data = data
+
+    def get(self, key: str):
+        if key not in USER_DEFAULTS:
+            raise SkaldError(f"unknown setting '{key}' (known: {', '.join(USER_DEFAULTS)})")
+        default = USER_DEFAULTS[key]
+        value = self.data.get(key, default)
+        # Tolerate hand-edited config.json: coerce to the default's type or fall back.
+        try:
+            if isinstance(default, bool):
+                return value if isinstance(value, bool) else str(value).lower() in ("1", "true", "yes", "on")
+            if isinstance(default, int):
+                return int(value)
+            return str(value) if value is not None else default
+        except (TypeError, ValueError):
+            return default
+
+    def set(self, key: str, raw: str) -> None:
+        if key not in USER_DEFAULTS:
+            raise SkaldError(f"unknown setting '{key}' (known: {', '.join(USER_DEFAULTS)})")
+        default = USER_DEFAULTS[key]
+        if isinstance(default, bool):
+            if raw.lower() in ("1", "true", "yes", "on"):
+                value = True
+            elif raw.lower() in ("0", "false", "no", "off"):
+                value = False
+            else:
+                raise SkaldError(f"'{key}' must be true or false")
+        elif isinstance(default, int):
+            try:
+                value = int(raw)
+            except ValueError:
+                raise SkaldError(f"'{key}' must be an integer") from None
+        else:
+            value = raw
+        self.data[key] = value
+        self.save()
+
+    def unset(self, key: str) -> None:
+        self.data.pop(key, None)
+        self.save()
+
+    def all(self) -> dict:
+        return {k: self.get(k) for k in USER_DEFAULTS}
+
+    def save(self) -> None:
+        atomic_write(self.path, json.dumps(self.data, indent=2) + "\n")
+
+
+class Registry:
+    """The index of projects known on this machine: ``projects.json``."""
+
+    def __init__(self, home: Optional[Path] = None):
+        self.home = home or config_home()
+        self.path = self.home / "projects.json"
+        data = _load_json(self.path, {"projects": {}})
+        if not isinstance(data, dict) or not isinstance(data.get("projects"), dict):
+            raise ConfigError(f"{self.path}: expected {{\"projects\": {{...}}}}")
+        self.projects: dict[str, dict] = data["projects"]
+
+    def save(self) -> None:
+        atomic_write(self.path, json.dumps({"projects": self.projects}, indent=2, sort_keys=True) + "\n")
+
+    def register(self, name: str, skald_dir: Path) -> Optional[str]:
+        """Record ``name`` at ``skald_dir``. Returns a notice if something changed, else None."""
+        skald_dir = Path(skald_dir).resolve()
+        entry = self.projects.get(name)
+        if entry and Path(entry.get("path", "")) == skald_dir:
+            return None
+        notice = None
+        if entry:
+            notice = f"project '{name}' moved from {entry.get('path')} to {skald_dir}"
+        else:
+            notice = f"registered project '{name}' at {skald_dir}"
+        self.projects[name] = {"path": str(skald_dir), "registered_at": now_iso()}
+        self.save()
+        return notice
+
+    def remove(self, name: str) -> None:
+        if name not in self.projects:
+            raise NotFoundError(f"no registered project '{name}'")
+        del self.projects[name]
+        self.save()
+
+    def path_of(self, name: str) -> Optional[Path]:
+        entry = self.projects.get(name)
+        return Path(entry["path"]) if entry else None
+
+    def entries(self) -> list[dict]:
+        out = []
+        for name in sorted(self.projects):
+            p = Path(self.projects[name]["path"])
+            out.append({
+                "name": name,
+                "path": str(p),
+                "exists": (p / "stories").is_dir(),
+                "registered_at": self.projects[name].get("registered_at", ""),
+            })
+        return out
+
+    def name_for_path(self, skald_dir: Path) -> Optional[str]:
+        skald_dir = Path(skald_dir).resolve()
+        for name, entry in self.projects.items():
+            if Path(entry.get("path", "")) == skald_dir:
+                return name
+        return None
+
+
+# --------------------------------------------------------------------------
+# Locating and opening projects
+# --------------------------------------------------------------------------
+
+
+def find_skald_dir(start: Optional[Path] = None) -> Optional[Path]:
+    """Find the ``.skald`` directory for the current location.
+
+    ``$SKALD_DIR`` wins. Otherwise walk up from ``start`` (default: cwd)
+    looking for a ``.skald`` directory.
+    """
+    env = os.environ.get("SKALD_DIR")
+    if env:
+        return Path(env).expanduser().resolve()
+    here = (start or Path.cwd()).resolve()
+    for candidate in (here, *here.parents):
+        d = candidate / ".skald"
+        if d.is_dir():
+            return d
+    return None
+
+
+def default_name_for(skald_dir: Path) -> str:
+    return slugify_name(skald_dir.resolve().parent.name)
+
+
+class Workspace:
+    """Opens projects by name through the registry. Caches open stores."""
+
+    def __init__(self, registry: Optional[Registry] = None, user: Optional[UserConfig] = None):
+        self.registry = registry or Registry()
+        self.user = user or UserConfig(self.registry.home)
+        self._stores: dict[str, Optional[Store]] = {}
+        self.notices: list[str] = []
+
+    def open_dir(self, skald_dir: Path, register: bool = True, create_config: bool = True) -> Store:
+        """Open the project at ``skald_dir``, creating config.json if missing."""
+        skald_dir = Path(skald_dir).resolve()
+        if not (skald_dir / "stories").is_dir():
+            raise NotFoundError(f"{skald_dir} is not a Skald project (no stories/ directory); run `skald init`")
+        cfg_path = skald_dir / "config.json"
+        if cfg_path.exists():
+            config = ProjectConfig.load(cfg_path)
+        else:
+            name = self.registry.name_for_path(skald_dir) or default_name_for(skald_dir)
+            config = ProjectConfig(name)
+            if create_config:
+                config.save(cfg_path)
+                self.notices.append(f"wrote {cfg_path} (project name '{name}'); commit it with your next change")
+        if register:
+            notice = self.registry.register(config.name, skald_dir)
+            if notice:
+                self.notices.append(notice)
+        store = Store(skald_dir, config, workspace=self)
+        self._stores[config.name] = store
+        return store
+
+    def open(self, name: str) -> Optional[Store]:
+        """Open a registered project by name. Returns None if unknown or missing on disk."""
+        if name in self._stores:
+            return self._stores[name]
+        path = self.registry.path_of(name)
+        store: Optional[Store] = None
+        if path and (path / "stories").is_dir():
+            try:
+                store = self.open_dir(path, register=False, create_config=False)
+            except (ConfigError, NotFoundError):
+                store = None
+        self._stores[name] = store
+        return store
+
+    def open_all(self) -> tuple[list[Store], list[str]]:
+        stores, warnings = [], []
+        for entry in self.registry.entries():
+            s = self.open(entry["name"])
+            if s is None:
+                warnings.append(f"project '{entry['name']}' at {entry['path']} is not available")
+            else:
+                stores.append(s)
+        return stores, warnings
+
+    def current(self, project: Optional[str] = None, start: Optional[Path] = None) -> Store:
+        """The store for ``--project NAME`` or for the current directory."""
+        if project:
+            store = self.open(project)
+            if store is None:
+                raise NotFoundError(f"project '{project}' is not registered on this machine (see `skald projects`)")
+            return store
+        skald_dir = find_skald_dir(start)
+        if skald_dir is None:
+            raise NotFoundError(
+                "no .skald directory found here or in any parent; run `skald init` or pass --project NAME"
+            )
+        return self.open_dir(skald_dir)
