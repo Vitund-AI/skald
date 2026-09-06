@@ -157,6 +157,8 @@ skald serve             # run in the foreground instead
 
 One server shows every registered project; switch with the dropdown or
 choose "All projects" for a single list of ready, unblocked work everywhere.
+The page listens to a server-sent event stream, so a change made from the
+CLI or by an agent appears within a second without a refresh.
 Drag cards between and within columns. Click a card to edit it, preview the
 body as Markdown, append a note, claim it, or see its git history. Blocked
 cards show a lock, stale active cards show a marker, and columns over their
@@ -211,6 +213,7 @@ corrupt story or configuration.
 | `columns`, `templates`, `projects`, `config` | Inspect configuration. |
 | `hooks claude [--install] [--strict]` | Print or install Claude Code hooks (see below). |
 | `open`, `server start\|stop\|status`, `serve` | The board. |
+| `mcp` | Serve the store as MCP tools over stdio (see below). |
 
 `-p NAME` before any command targets a registered project instead of the
 current directory.
@@ -236,6 +239,23 @@ dangling or self references, unknown statuses, cycles, and conflict markers:
 exec skald check
 ```
 
+## MCP server
+
+Agents that cannot run shell commands can use Skald through the Model
+Context Protocol. From inside a project:
+
+```sh
+claude mcp add skald -- skald mcp
+```
+
+The server speaks JSON-RPC over stdio and exposes `skald_status`,
+`skald_columns`, `skald_list`, `skald_next`, `skald_show`, `skald_new`,
+`skald_move`, `skald_claim`, `skald_note`, `skald_set`, `skald_tag`,
+`skald_block`, and `skald_check`. Every tool takes an optional `project`
+argument; without it the project is the one containing the current
+directory. Results are JSON text, and Skald warnings come back inside the
+result rather than as errors.
+
 ## Templates
 
 Put Markdown files in `.skald/templates/` and create stories from them:
@@ -258,6 +278,7 @@ Project names come from the registry; the API never accepts a path.
 | `GET /api/ready` | | ready, unblocked stories across all projects |
 | `GET /api/projects/<p>/board` | | `{columns, stories, git, identity, settings, version, warnings}` |
 | `GET /api/projects/<p>/version` | | a hash that changes whenever any story file changes |
+| `GET /api/projects/<p>/events` | | server-sent events: `hello` on connect, `change` whenever the hash changes |
 | `POST /api/projects/<p>/stories` | `{title, status?, tags?, blocked_by?, body?, assignee?, template?}` | 201, `{story, warnings}` |
 | `GET /api/projects/<p>/stories/<id>` | | story with `body`, `body_sha256`, and `deps` |
 | `PATCH /api/projects/<p>/stories/<id>` | any of `{title, status, rank, tags, blocked_by, assignee, order}` | `{story, warnings}` |

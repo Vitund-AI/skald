@@ -11,6 +11,9 @@ pip install skald-kanban        # or: pipx install skald-kanban
 uvx --from skald-kanban skald   # run without installing
 ```
 
+If you cannot run shell commands, the same operations are available as MCP
+tools from `skald mcp` (see the README).
+
 ## Workflow
 
 1. **Orient.** Run `skald status` and `skald ls` at the start of a session.

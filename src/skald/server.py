@@ -22,6 +22,8 @@ from .errors import GitError, NotFoundError, SkaldError
 from .registry import Registry, UserConfig, Workspace
 from .store import Store
 
+SSE_INTERVAL = 0.5  # seconds between change checks on an open event stream
+
 
 def index_html() -> str:
     from importlib import resources
@@ -161,6 +163,32 @@ class Handler(BaseHTTPRequestHandler):
             h.update(f"config:{st.st_mtime_ns}:{st.st_size};".encode())
         return h.hexdigest()[:16]
 
+    def _events(self, store: Store) -> None:
+        """Server-sent events: one ``change`` event whenever any story file changes."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+        last = self._version_hash(store)
+        try:
+            self.wfile.write(f"event: hello\ndata: {json.dumps({'version': last})}\n\n".encode())
+            self.wfile.flush()
+            ticks = 0
+            while True:
+                time.sleep(SSE_INTERVAL)
+                ticks += 1
+                current = self._version_hash(store)
+                if current != last:
+                    last = current
+                    self.wfile.write(f"event: change\ndata: {json.dumps({'version': current})}\n\n".encode())
+                    self.wfile.flush()
+                elif ticks % 30 == 0:
+                    self.wfile.write(b": keepalive\n\n")
+                    self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            return
+
     # -- routes ----------------------------------------------------------
 
     def _dispatch(self, method: str, parts: list[str], query: dict) -> None:
@@ -221,6 +249,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if tail == ["version"] and method == "GET":
                 self._json(200, {"version": self._version_hash(store)})
+                return
+            if tail == ["events"] and method == "GET":
+                self._events(store)
                 return
             if tail == ["templates"] and method == "GET":
                 self._json(200, {"templates": store.templates()})

@@ -186,3 +186,23 @@ class TestDaemon(SkaldTestCase):
         self.home.mkdir(parents=True, exist_ok=True)
         srv.state_path(self.home).write_text(json.dumps({"pid": 999999999, "host": "127.0.0.1", "port": 1}))
         self.assertIsNone(srv.server_status(self.home))
+
+
+class TestEvents(ServerTestCase):
+    def test_event_stream_reports_changes(self):
+        import socket
+
+        srv.SSE_INTERVAL = 0.05
+        self.addCleanup(setattr, srv, "SSE_INTERVAL", 0.5)
+        host, port = self.httpd.server_address
+        sock = socket.create_connection((host, port), timeout=5)
+        sock.sendall(b"GET /api/projects/alpha/events HTTP/1.1\r\nHost: x\r\n\r\n")
+        buf = b""
+        while b"event: hello" not in buf:
+            buf += sock.recv(4096)
+        self.assertIn(b"text/event-stream", buf)
+        self.call("POST", "/api/projects/alpha/stories", {"title": "trigger"})
+        while b"event: change" not in buf:
+            buf += sock.recv(4096)
+        self.assertIn(b'"version"', buf)
+        sock.close()

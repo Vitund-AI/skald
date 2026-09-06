@@ -114,7 +114,7 @@
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false,
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal');
   const ALL = '__all__';
@@ -182,7 +182,21 @@
     $('git-btn').classList.add('hidden');
     $('branch').classList.add('hidden');
     state.version = null;
+    subscribe();
     refresh(true);
+  }
+  // Live updates: an event stream per project, with polling as the fallback.
+  function subscribe() {
+    if (state.es) { state.es.close(); state.es = null; }
+    state.live = false;
+    if (state.allView || !window.EventSource) return;
+    try {
+      const es = new EventSource(`${P()}/events`);
+      es.addEventListener('hello', () => { state.live = true; });
+      es.addEventListener('change', () => { state.live = true; refresh(true); });
+      es.onerror = () => { state.live = false; };
+      state.es = es;
+    } catch (e) { state.live = false; }
   }
   async function switchProject(name, then) {
     if (name !== state.project) { state.project = name; $('project').value = name; applyProject(); }
@@ -535,7 +549,14 @@
     if (e.key === 'n' && !state.allView) { e.preventDefault(); openModal(null); }
     if (e.key === '/') { e.preventDefault(); $('search').focus(); }
   });
-  setInterval(() => { if (document.visibilityState === 'visible') refresh(false); }, 1500);
+  let tick = 0;
+  setInterval(() => {
+    tick += 1;
+    if (document.visibilityState !== 'visible') return;
+    // With a live event stream, poll only every 15s as a safety net; otherwise every 1.5s.
+    if (state.live && tick % 10 !== 0) return;
+    refresh(false);
+  }, 1500);
   loadProjects().catch(err => { $('conn').textContent = 'disconnected'; toast(err.message, 'error'); });
 })();
 </script>

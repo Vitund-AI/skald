@@ -81,11 +81,11 @@ Project names in URLs are resolved through the registry. The server binds to
 localhost without authentication and writes files, so a browser tab must not
 be able to point it at arbitrary directories.
 
-### D14. Version polling instead of server-sent events **(autonomous)**
-The board polls a cheap hash of story file names, sizes, and mtimes every
-1.5 seconds and refetches only on change. SSE would be marginally more
-immediate but holds a thread per open tab on `ThreadingHTTPServer`. Deferred
-to "future"; the polling endpoint is enough for a local tool.
+### D14. A version hash endpoint, with events layered on top **(autonomous)**
+The board originally polled a cheap hash of story file names, sizes, and
+mtimes every 1.5 seconds. Server-sent events were added afterwards (D25) on
+top of the same hash, so the polling endpoint stays as the fallback and the
+hash remains the single definition of "something changed".
 
 ### D15. Background server writes its own state file
 `serve` writes `server.json` with its pid and port on startup and removes it
@@ -149,3 +149,17 @@ insurance even on a localhost-only tool.
 Skald's own backlog uses the five default columns so the dogfooding stays
 representative of a fresh install. Stories finished by an agent go to
 `review`; a human moves them to `done`.
+
+### D25. Server-sent events on the handler thread **(autonomous)**
+Each open board tab holds one handler thread that checks the version hash
+twice a second and writes a `change` event when it moves. That is a thread
+per tab on `ThreadingHTTPServer`, which is fine for a localhost tool with a
+handful of tabs. The board keeps polling every 15 seconds while the stream is
+live, so a silently dead stream degrades to slow updates rather than none.
+
+### D26. MCP errors are tool results, not protocol errors **(autonomous)**
+A Skald error such as "no story matches" is information the agent should
+read and act on, so `tools/call` returns it as content with `isError: true`.
+JSON-RPC errors are reserved for protocol problems: unknown methods, unknown
+tools, unparsable input. Warnings ride inside successful results, matching
+the CLI's stderr behaviour.

@@ -283,8 +283,12 @@ accepts a filesystem path. A fresh `Workspace` is built per request so
 registry and config edits are picked up immediately. See the README for the
 endpoint table; it is the reference.
 
-The board polls `GET .../version`, a hash of story file names, sizes, and
-mtimes, and refetches the board only when it changes.
+`GET .../version` returns a hash of story file names, sizes, and mtimes.
+`GET .../events` is a server-sent event stream that emits `hello` on connect
+and `change` whenever that hash changes, checked every half second on the
+handler thread. The board subscribes to the stream and refetches on `change`;
+it falls back to polling `version` every 1.5 seconds when the stream is
+unavailable, and polls every 15 seconds as a safety net while it is live.
 
 ---
 
@@ -328,10 +332,17 @@ via trusted publishing.
 
 ---
 
+## 10a. MCP server
+
+`skald mcp` serves the store over the MCP stdio transport: newline-delimited
+JSON-RPC 2.0 with `initialize`, `notifications/initialized`, `ping`,
+`tools/list`, and `tools/call`; batches are supported. Only the `tools`
+capability is offered. Each tool mirrors a CLI command, takes an optional
+`project`, and returns JSON text. Skald errors are returned as tool results
+with `isError: true`, never as JSON-RPC errors, so the agent sees the message.
+
 ## 11. Future
 
-- Server-sent events instead of version polling.
-- An MCP server mode so agents without shell access can use the store.
 - A dependency graph view.
 - Multi-select and bulk moves on the board.
 - Renaming a project with reference rewriting across registered projects.

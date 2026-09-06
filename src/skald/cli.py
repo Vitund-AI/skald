@@ -237,6 +237,7 @@ def build_parser() -> argparse.ArgumentParser:
     srvs.add_parser("status")
 
     sub.add_parser("open", help="start the server if needed and open the board for this project")
+    sub.add_parser("mcp", help="serve the store as MCP tools over stdio (for agents without a shell)")
 
     return p
 
@@ -711,6 +712,10 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_projects(ws, args)
     if args.command == "config":
         return cmd_config(ws, args)
+    if args.command == "mcp":
+        from .mcp import McpServer
+
+        return McpServer(ws).serve()
     if args.command in ("serve", "server", "open"):
         from . import server as srv
 
