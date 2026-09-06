@@ -6,10 +6,13 @@ are the first things to revisit if they feel wrong.
 
 ## 0.1
 
-### D1. The filename is the story id
-Two sources of truth (an `id` field and a filename) can disagree. The
-filename wins and the field was dropped. Renaming a file changes the id and
-`check` reports the dangling references.
+### D1. The id lives in the filename, not in the frontmatter
+Every story has an id (see D2 for its form). The 0.1 draft stored it twice,
+as an `id:` frontmatter field and as the filename prefix, and two sources of
+truth can disagree. The frontmatter field was dropped; the filename prefix is
+the only place the id is written. `a3f9c2-implement-wireguard.md` has id
+`a3f9c2`. Renaming a file therefore changes the id, and `check` reports the
+dangling references.
 
 ### D2. Random six-hex ids instead of integers
 Sequential ids produce add/add merge conflicts whenever two branches create
