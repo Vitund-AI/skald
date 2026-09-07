@@ -177,7 +177,8 @@ class Handler(BaseHTTPRequestHandler):
             changes = gitutil.changes(repo, rel)
         except (GitError, ValueError):
             changes = []
-        return {"available": True, "branch": gitutil.branch(repo), "changes": changes}
+        head = gitutil.head_sha(repo)
+        return {"available": True, "branch": gitutil.branch(repo), "head": head[:7] if head else None, "changes": changes}
 
     def _version_hash(self, store: Store) -> str:
         h = hashlib.sha1()
@@ -238,6 +239,12 @@ class Handler(BaseHTTPRequestHandler):
 
         if rest == ["health"] and method == "GET":
             self._json(200, {"ok": True, "version": __version__, "pid": os.getpid()})
+            return
+
+        if rest == ["help"] and method == "GET":
+            from .cli import command_reference
+
+            self._json(200, {"version": __version__, "commands": command_reference()})
             return
 
         if rest == ["projects"] and method == "GET":
