@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 class TestRepo(unittest.TestCase):
     def test_package_data_is_present(self):
-        self.assertIn("<title>Skald</title>", (ROOT / "src" / "skald" / "web" / "index.html").read_text())
+        self.assertIn("<title>Skald</title>", (ROOT / "src" / "skald" / "web" / "index.html").read_text(encoding="utf-8"))
         self.assertIn("# Working with Skald", cli.agents_template())
 
     def test_own_agents_md_matches_template(self):
