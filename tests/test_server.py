@@ -52,6 +52,29 @@ class TestAPI(ServerTestCase):
         with urlopen(self.base + "/favicon.ico") as res:
             self.assertEqual(res.status, 204)
 
+    def test_help_reference_matches_parser(self):
+        from skald.cli import build_parser, command_reference
+
+        status, data = self.call("GET", "/api/help")
+        self.assertEqual(status, 200)
+        names = [c["name"] for c in data["commands"]]
+        parser_names = [n for a in build_parser()._actions if hasattr(a, "choices") and isinstance(a.choices, dict) for n in a.choices]
+        self.assertEqual(names, parser_names)
+        self.assertEqual(data["commands"], command_reference())
+        new = next(c for c in data["commands"] if c["name"] == "new")
+        self.assertEqual(new["help"], "create a story")
+        self.assertTrue(new["usage"].startswith("skald new "))
+        self.assertNotIn("[-h]", new["usage"])
+        flags = [a["flags"][0] for a in new["arguments"]]
+        self.assertIn("title", flags)
+        self.assertIn("--tags TAGS", flags)
+        server = next(c for c in data["commands"] if c["name"] == "server")
+        self.assertEqual([s["name"] for s in server["subcommands"]], ["server start", "server stop", "server status"])
+        self.assertTrue(all(s["help"] for s in server["subcommands"]))
+        render = next(c for c in data["commands"] if c["name"] == "render")
+        fmt = next(a for a in render["arguments"] if a["flags"][0].startswith("--format"))
+        self.assertEqual(fmt["choices"], ["md", "html"])
+
     def test_crud_flow(self):
         P = "/api/projects/alpha"
         status, data = self.call("POST", f"{P}/stories", {"title": "First", "tags": ["x"], "body": "- [ ] a\n"})

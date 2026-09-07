@@ -256,12 +256,20 @@ One server shows every registered project; switch with the dropdown or
 choose "All projects" for a single list of ready, unblocked work everywhere.
 The page listens to a server-sent event stream, so a change made from the
 CLI or by an agent appears within a second without a refresh.
-Drag cards between and within columns. Click a card to edit it, preview the
-body as Markdown, append a note, claim it, or see its git history. Blocked
-cards show a lock, stale active cards show a marker, and columns over their
-WIP limit turn red. The header shows the current branch and, when story
-files are uncommitted, a button that commits just `.skald/` (and pushes, if
-you enable that).
+Drag cards between and within columns, or Tab to a card and press Enter.
+Click a card to edit it, preview the body as Markdown, append a note, claim
+it, or see its git history. Blocked cards show a lock, stale active cards
+show a marker, and columns over their WIP limit turn red. The header shows
+the current branch and, when story files are uncommitted, a button that
+commits just `.skald/` (and pushes, if you enable that). A toast announces
+changes made outside the board, and new commits on the branch.
+
+Press `?` for the Help panel: keyboard shortcuts, what the card markers
+mean, the story file format, and the full CLI reference, generated from the
+same parser as `skald --help` so it can never lag behind. The theme follows
+the operating system; the header button forces light or dark, and the choice
+is remembered per browser. Columns share the width on wide screens and stack
+on phones.
 
 The board uses Tailwind and marked from CDNs, so styling and Markdown
 preview need internet access. The server binds to `127.0.0.1` and has no
@@ -440,8 +448,9 @@ Project names come from the registry; the API never accepts a path.
 | --- | --- | --- |
 | `GET /api/health` | | `{ok, version, pid}` |
 | `GET /api/projects` | | `{projects, settings}` |
+| `GET /api/help` | | `{version, commands: [{name, help, usage, arguments, subcommands}]}`, the CLI reference read from the argparse parser |
 | `GET /api/ready` | | ready, unblocked stories across all projects |
-| `GET /api/projects/<p>/board[?ref=REF]` | | `{columns, stories, facets, git, identity, settings, version, warnings}`; with `ref`, a read-only snapshot of that branch |
+| `GET /api/projects/<p>/board[?ref=REF]` | | `{columns, stories, facets, git, identity, settings, version, warnings}`; `git` carries `branch`, `head`, and `changes`; with `ref`, a read-only snapshot of that branch |
 | `GET /api/projects/<p>/branches` | | `{current, branches: [{name, sha, remote, stories, only_there, only_here, differ}], elsewhere}` |
 | `GET /api/projects/<p>/version` | | a hash that changes whenever any story file changes |
 | `GET /api/projects/<p>/events` | | server-sent events: `hello` on connect, `change` whenever the hash changes |

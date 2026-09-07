@@ -332,6 +332,10 @@ accepts a filesystem path. A fresh `Workspace` is built per request so
 registry and config edits are picked up immediately. See the README for the
 endpoint table; it is the reference.
 
+`GET /api/help` returns the CLI reference built by `cli.command_reference()`,
+which walks the argparse tree; the board's Help panel renders it, so the
+page never carries its own copy of the command list.
+
 `GET .../version` returns a hash of story file names, sizes, and mtimes.
 `GET .../events` is a server-sent event stream that emits `hello` on connect
 and `change` whenever that hash changes, checked every half second on the
@@ -356,8 +360,28 @@ stories that exist only on other branches.
 Modal: title, status, assignee, tags, blockers, dependency chips that open
 the target (switching project if needed), body with Markdown preview, save
 with conflict detection, reload, claim, delete, notes, history tab. Toasts
-for warnings and errors. Keyboard: `n` new, `/` filter, `Esc` close.
-Not in scope: authentication, mobile layout, multi-select.
+for warnings, errors, changes made outside the board (from the event
+stream, suppressed for three seconds after the board's own writes), and a
+new `HEAD` on the branch. Keyboard: `n` new, `/` filter, `g` graph, `?`
+help, `Esc` close; cards, ready rows, and graph nodes are focusable and open
+on Enter. An empty project shows a hint instead of five bare columns.
+
+Help panel: shortcuts and card markers, the CLI reference from `/api/help`
+with a filter, and a story file primer with links to the docs.
+
+Theme: a dozen CSS custom properties on `:root` define the palette; a
+`data-theme` attribute on the root element selects light or dark. A script
+in `<head>` sets it before first paint from `localStorage` (`skald.theme`:
+`auto`, `light`, `dark`; `auto` follows `prefers-color-scheme` and tracks
+changes). Tailwind is configured to expose the properties as colour names
+(`bg-surface`, `text-muted`, ...) and its `dark:` variant keys off the same
+attribute for the few semantic accents. The graph reads its fills from the
+same properties, so it re-renders on theme change.
+
+Layout: columns are flex items with a 15rem floor and a 28rem ceiling, so
+five columns fit a laptop screen and ten scroll; below the `sm` breakpoint
+they stack vertically.
+Not in scope: authentication, multi-select.
 
 ---
 

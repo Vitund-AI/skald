@@ -267,3 +267,19 @@ neighbour ships. The comparison table instead describes design choices:
 where data lives, who the tool is built for, how agents and humans reach it.
 It links every project, states the month it was checked, and names the cases
 where another tool is the better choice.
+
+### D41. The board is themed through CSS custom properties, not `dark:` on every class
+The page is 800 lines of inline utility classes. Doubling each colour with a
+`dark:` variant would touch most of them and tax every future change. Instead
+a dozen custom properties on `:root` carry the palette, a `data-theme`
+attribute picks the set, and Tailwind exposes the properties as colour names.
+New markup uses the semantic names and gets both themes for free; `dark:`
+survives only for a few red, amber, and violet accents. The attribute is set
+by a script in `<head>` so there is no flash of the wrong theme.
+
+### D42. The Help panel's CLI reference is generated from the parser
+A hand-written command list in the page would drift the first time a flag
+changed. `cli.command_reference()` walks the argparse tree and `GET /api/help`
+serves it; the test asserts the endpoint matches the parser exactly. Help
+strings on the parser are therefore the single source for `--help`, the
+board, and any future docs generator.

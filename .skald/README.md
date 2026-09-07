@@ -1,7 +1,7 @@
-<!-- skald-render 89be87b764d60551 -->
+<!-- skald-render 6b79c60396f185c2 -->
 # skald backlog
 
-**36 open** · Backlog 2 · Ready 1 · In progress 1 · Review 32 · Done 1
+**38 open** · Backlog 2 · Ready 1 · In progress 0 · Review 35 · Done 1
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -32,13 +32,11 @@ flowchart LR
 | --- | --- | --- | --- | --- | --- |
 | [b91662](stories/b91662-publish-0-2-0-to-pypi.md) | Publish 0.2.0 to PyPI | `packaging` |  |  |  |
 
-## In progress (1)
+## In progress (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [f7674b](stories/f7674b-verify-the-board-with-tailwind-loaded-in-a-real-br.md) | Verify the board with Tailwind loaded in a real browser | `ui` |  |  |  |
+_none_
 
-## Review (32)
+## Review (35)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -74,6 +72,9 @@ flowchart LR
 | [419b5c](stories/419b5c-claude-code-skill-and-init-writing-the-instruction.md) | Claude Code skill and init writing the instructions pointer | `agents` | claude |  |  |
 | [12c4d1](stories/12c4d1-dependency-graph-mermaid-in-render-skald-graph-svg.md) | Dependency graph: Mermaid in render, skald graph, SVG on the board | `docs` `ui` | claude |  |  |
 | [68a39b](stories/68a39b-confirm-windows-and-macos-behaviour-from-ci.md) | Confirm Windows and macOS behaviour from CI | `packaging` |  |  |  |
+| [c5f90f](stories/c5f90f-board-polish-dark-mode-layout-fixes-keyboard-acces.md) | Board polish: dark mode, layout fixes, keyboard access, empty states | `ui` | claude |  | 8/8 |
+| [bd9aca](stories/bd9aca-help-panel-with-keyboard-shortcuts-and-the-cli-ref.md) | Help panel with keyboard shortcuts and the CLI reference | `docs` `ui` | claude |  | 4/4 |
+| [f7674b](stories/f7674b-verify-the-board-with-tailwind-loaded-in-a-real-br.md) | Verify the board with Tailwind loaded in a real browser | `ui` |  |  |  |
 
 <details><summary><strong>Done (1)</strong></summary>
 

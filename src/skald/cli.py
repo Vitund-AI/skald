@@ -117,6 +117,49 @@ def _skald_rel(store: Store, repo: Path) -> str:
 # --------------------------------------------------------------------------
 
 
+def command_reference(parser: Optional[argparse.ArgumentParser] = None) -> list[dict]:
+    """Every subcommand with its help text and options, read from the parser so it cannot drift.
+
+    Returns ``[{name, help, usage, arguments: [{flags, help, choices}], subcommands: [...]}]``.
+    """
+    parser = parser or build_parser()
+
+    def describe(p: argparse.ArgumentParser, prefix: str) -> dict:
+        args, subs = [], []
+        for a in p._actions:
+            if isinstance(a, argparse._HelpAction) or a.help == argparse.SUPPRESS:
+                continue
+            if isinstance(a, argparse._SubParsersAction):
+                for name, sp in a.choices.items():
+                    subs.append(describe(sp, f"{prefix} {name}"))
+                continue
+            flags = list(a.option_strings) or [a.metavar or a.dest]
+            if a.option_strings and a.nargs != 0:
+                flags = [f"{f} {a.metavar or a.dest.upper()}" for f in flags]
+            elif not a.option_strings and a.nargs in ("*", "+", "?"):
+                flags = [f"[{flags[0]}...]" if a.nargs in ("*", "+") else f"[{flags[0]}]"]
+            args.append({
+                "flags": flags, "help": a.help or "",
+                "choices": [str(c) for c in a.choices] if a.choices else [],
+                "positional": not a.option_strings,
+            })
+        usage = " ".join(p.format_usage().split()).replace("usage: ", "", 1).replace("[-h] ", "")
+        return {"name": prefix.strip(), "help": p.description or "", "usage": usage, "arguments": args, "subcommands": subs}
+
+    out = []
+    for a in parser._actions:
+        if isinstance(a, argparse._SubParsersAction):
+            helps = {c.dest: c.help for c in a._choices_actions}
+            for name, sp in a.choices.items():
+                d = describe(sp, name)
+                d["help"] = helps.get(name) or sp.description or ""
+                for sub in d["subcommands"]:
+                    sub_helps = {c.dest: c.help for act in sp._actions if isinstance(act, argparse._SubParsersAction) for c in act._choices_actions}
+                    sub["help"] = sub_helps.get(sub["name"].split()[-1]) or sub["help"]
+                out.append(d)
+    return out
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="skald", description="Kanban lite for coding agents.")
     p.add_argument("--version", action="version", version=f"skald {__version__}")
@@ -284,11 +327,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     srv = sub.add_parser("server", help="manage the background board server")
     srvs = srv.add_subparsers(dest="server_cmd")
-    ss = srvs.add_parser("start")
+    ss = srvs.add_parser("start", help="start the board server in the background")
     ss.add_argument("--host")
     ss.add_argument("--port", type=int)
-    srvs.add_parser("stop")
-    srvs.add_parser("status")
+    srvs.add_parser("stop", help="stop the background server")
+    srvs.add_parser("status", help="show whether the background server is running")
 
     sub.add_parser("open", help="start the server if needed and open the board for this project")
     sub.add_parser("mcp", help="serve the store as MCP tools over stdio (for agents without a shell)")

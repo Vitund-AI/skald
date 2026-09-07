@@ -6,6 +6,12 @@ The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
 
 ### Added
+- Board: dark theme (follows the OS, or forced from the header), a Help panel
+  (`?`) with shortcuts, card markers, the story file format, and the CLI
+  reference served by `GET /api/help` straight from the argparse parser.
+- Board: keyboard access to cards, an empty-project hint, columns that share
+  the width and stack on phones, and toasts for changes made outside the
+  board or a new commit on the branch.
 - `pip install skald-kanban` provides `skald` and `git-skald`.
 - Machine-local project index; every command registers the current project,
   `skald projects` lists them, `-p NAME` and `--all-projects` act across them.
@@ -48,6 +54,8 @@ repository to migrate; story files are unchanged.
 - CI on Python 3.9 to 3.13, macOS and Windows; PyPI trusted publishing on tags.
 
 ### Changed
+- Board: the graph toggle stays readable when active and the story modal no
+  longer overflows sideways.
 - README opens with a comparison of repository-native trackers so readers
   can tell whether Skald's focus matches theirs.
 - Notes from the CLI default to author `agent`; notes from the board use the
