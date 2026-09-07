@@ -109,7 +109,7 @@ columns may share a role, so "QA" and "In progress" can both be active.
 When someone removes a column from `config.json`, stories in it must not
 vanish or start failing every command. The parser accepts any status; the
 store sorts unknown ones last; the board shows an "Unknown status" column;
-`check` reports them. Only `mv` and `new` reject a status that is not a
+`check` reports them. Only `move` and `new` reject a status that is not a
 column.
 
 ### D18. A closed blocker satisfies the dependency, with a warning **(autonomous)**
@@ -283,3 +283,12 @@ changed. `cli.command_reference()` walks the argparse tree and `GET /api/help`
 serves it; the test asserts the endpoint matches the parser exactly. Help
 strings on the parser are therefore the single source for `--help`, the
 board, and any future docs generator.
+
+### D43. `move`, not `mv`, changes a story's column
+`mv` was chosen to match `ls` and `rm`, but it carries file semantics: in
+Unix and git, `mv` takes a source and a destination path and relocates a
+file. `skald mv <id> <column>` has that shape while leaving the file where it
+is, which invites a wrong reading. `ls` and `rm` do what their names say, so
+they stay. `move` is Kanban's own verb for the action. `mv` remains as a
+hidden alias for one release because existing notes and hooks mention it; the
+Help panel and `--help` list only `move`.

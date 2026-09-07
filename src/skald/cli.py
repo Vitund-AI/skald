@@ -150,7 +150,11 @@ def command_reference(parser: Optional[argparse.ArgumentParser] = None) -> list[
     for a in parser._actions:
         if isinstance(a, argparse._SubParsersAction):
             helps = {c.dest: c.help for c in a._choices_actions}
+            seen = set()
             for name, sp in a.choices.items():
+                if id(sp) in seen:  # an alias such as mv for move
+                    continue
+                seen.add(id(sp))
                 d = describe(sp, name)
                 d["help"] = helps.get(name) or sp.description or ""
                 for sub in d["subcommands"]:
@@ -214,9 +218,9 @@ def build_parser() -> argparse.ArgumentParser:
     new.add_argument("--assignee", default="")
     new.add_argument("--json", action="store_true")
 
-    mv = sub.add_parser("mv", help="change a story's status")
+    mv = sub.add_parser("move", aliases=["mv"], help="move a story to a column")
     mv.add_argument("id")
-    mv.add_argument("status", metavar="COLUMN")
+    mv.add_argument("status", metavar="COLUMN", help="a column key from .skald/config.json")
 
     cl = sub.add_parser("claim", help="assign a story to yourself and start it")
     cl.add_argument("id")
@@ -737,7 +741,7 @@ def cmd_set(store: Store, args) -> int:
         elif key == "assignee":
             kwargs["assignee"] = value
         else:
-            raise SkaldError(f"cannot set '{key}' (use mv, tag, or block for status, tags, blocked_by)")
+            raise SkaldError(f"cannot set '{key}' (use move, tag, or block for status, tags, blocked_by)")
     story, warnings = store.update(args.id, **kwargs)
     _warn(warnings)
     print(f"updated {story.id}")
@@ -1408,7 +1412,7 @@ def claude_skill() -> str:
 # --------------------------------------------------------------------------
 
 PROJECT_COMMANDS = {
-    "ls", "next", "show", "new", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
+    "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume",
     "commits", "diff", "activity", "graph",
@@ -1482,7 +1486,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_show(ws, args, store)
     if args.command == "new":
         return cmd_new(ws, args, store)
-    if args.command == "mv":
+    if args.command in ("move", "mv"):
         story, warnings = store.update(args.id, status=args.status)
         _warn(warnings)
         print(f"moved {story.id} to {story.status}")

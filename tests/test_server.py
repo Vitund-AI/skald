@@ -59,7 +59,9 @@ class TestAPI(ServerTestCase):
         self.assertEqual(status, 200)
         names = [c["name"] for c in data["commands"]]
         parser_names = [n for a in build_parser()._actions if hasattr(a, "choices") and isinstance(a.choices, dict) for n in a.choices]
-        self.assertEqual(names, parser_names)
+        self.assertEqual(names, [n for n in parser_names if n != "mv"])
+        self.assertIn("move", names)
+        self.assertNotIn("mv", names)  # hidden alias
         self.assertEqual(data["commands"], command_reference())
         new = next(c for c in data["commands"] if c["name"] == "new")
         self.assertEqual(new["help"], "create a story")

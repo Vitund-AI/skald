@@ -54,6 +54,8 @@ repository to migrate; story files are unchanged.
 - CI on Python 3.9 to 3.13, macOS and Windows; PyPI trusted publishing on tags.
 
 ### Changed
+- `skald move <id> <column>` replaces `skald mv`; `mv` still works as an
+  undocumented alias for one release.
 - Board: the graph toggle stays readable when active and the story modal no
   longer overflows sideways.
 - README opens with a comparison of repository-native trackers so readers
