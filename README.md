@@ -85,7 +85,7 @@ skald resume a3f9c2               # requirements, checklist, deps, latest handof
 skald note a3f9c2 "Why we chose X" --as claude --kind decision
 # ... write code, tick acceptance criteria ...
 skald note a3f9c2 "Done: ... Remaining: ... Next: ..." --as claude --kind handoff
-skald mv a3f9c2 review
+skald move a3f9c2 review
 git add .skald src && git commit
 ```
 
@@ -307,7 +307,7 @@ corrupt story or configuration.
 | `show <id> [--branch REF]` | Print the file. `--json` adds derived fields, body, and body hash. |
 | `branches` | Story counts per branch and how each differs from the working tree. |
 | `new "<title>" [--status C] [--tags a,b] [--blocked-by id,proj:id] [--body TEXT \| -] [--template T] [--assignee A]` | Create a story and print its id. |
-| `mv <id> <column>` | Change status. Warns on unmet dependencies and WIP limits. |
+| `move <id> <column>` | Change status. Warns on unmet dependencies and WIP limits. |
 | `claim <id> --as NAME` | Assign and move into the first active column. |
 | `set <id> title="..." rank=N assignee=NAME` | Edit fields. `assignee=` clears it. |
 | `tag <id> +tag -tag` | Add or remove tags. |

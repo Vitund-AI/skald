@@ -58,7 +58,7 @@ tools from `skald mcp` (see the README).
 ## Rules
 
 - Never edit the lines between the two `---` fences of a story file by hand,
-  and never create story files by hand. Use `skald new`, `skald mv`,
+  and never create story files by hand. Use `skald new`, `skald move`,
   `skald set`, `skald tag`, `skald block`, and `skald claim`.
 - You may edit the body of a story (everything after the second `---`) with
   any tool. Prefer `skald note` for appending.
@@ -83,7 +83,7 @@ skald next [--as NAME] [--json] [--compact]
 skald show <id> [--json]
 skald new "<title>" [--status COL] [--tags a,b] [--blocked-by id,proj:id] [--body TEXT | --body -] [--template NAME]
 skald claim <id> --as NAME
-skald mv <id> <column>
+skald move <id> <column>
 skald set <id> title="..." rank=N assignee=NAME
 skald tag <id> +tag -tag
 skald block <id> +id -id            (use project:id for another repository)

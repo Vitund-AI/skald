@@ -298,7 +298,7 @@ story or configuration. Commands that print stories take `--json`.
 | `show <id> [--branch REF]` | Raw file. `--json` adds derived fields, `body`, `body_sha256`. |
 | `branches [--json]` | Every local and remote branch with story count and diff counts against the working tree. |
 | `new "<title>" [--status C] [--tags a,b] [--blocked-by refs] [--body TEXT\|-] [--template T] [--assignee A]` | Create; prints the id. |
-| `mv <id> <column>` | Change status; rank goes to the bottom of the new column. |
+| `move <id> <column>` | Change status; rank goes to the bottom of the new column. |
 | `claim <id> [--as N]` | Section 5. |
 | `set <id> title=.. rank=N assignee=..` | Field edits. |
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |

@@ -1,7 +1,7 @@
-<!-- skald-render 6b79c60396f185c2 -->
+<!-- skald-render 4f13f83ca98e2bd5 -->
 # skald backlog
 
-**38 open** · Backlog 2 · Ready 1 · In progress 0 · Review 35 · Done 1
+**39 open** · Backlog 2 · Ready 1 · In progress 0 · Review 36 · Done 1
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -36,7 +36,7 @@ flowchart LR
 
 _none_
 
-## Review (35)
+## Review (36)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -75,6 +75,7 @@ _none_
 | [c5f90f](stories/c5f90f-board-polish-dark-mode-layout-fixes-keyboard-acces.md) | Board polish: dark mode, layout fixes, keyboard access, empty states | `ui` | claude |  | 8/8 |
 | [bd9aca](stories/bd9aca-help-panel-with-keyboard-shortcuts-and-the-cli-ref.md) | Help panel with keyboard shortcuts and the CLI reference | `docs` `ui` | claude |  | 4/4 |
 | [f7674b](stories/f7674b-verify-the-board-with-tailwind-loaded-in-a-real-br.md) | Verify the board with Tailwind loaded in a real browser | `ui` |  |  |  |
+| [d3c39e](stories/d3c39e-rename-mv-to-move.md) | Rename mv to move | `cli` | claude |  |  |
 
 <details><summary><strong>Done (1)</strong></summary>
 
