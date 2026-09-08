@@ -339,6 +339,8 @@ def build_parser() -> argparse.ArgumentParser:
     srvs.add_parser("status", help="show whether the background server is running")
 
     sub.add_parser("open", help="start the server if needed and open the board for this project")
+    cp = sub.add_parser("completion", help="print a shell completion script: eval \"$(skald completion zsh)\"")
+    cp.add_argument("shell", choices=["bash", "zsh", "fish"])
     sub.add_parser("mcp", help="serve the store as MCP tools over stdio (for agents without a shell)")
 
     return p
@@ -693,6 +695,28 @@ def cmd_new(ws: Workspace, args, store: Store) -> int:
         print(json.dumps(store.story_dict(story), indent=2))
     else:
         print(story.id)
+    return 0
+
+
+def cmd_complete(ws: Workspace, argv: list[str]) -> int:
+    """``skald _complete -- CWORD WORD...``: candidates for the shell scripts, one per line as value<TAB>description."""
+    from .completion import complete
+
+    if argv and argv[0] == "--":
+        argv = argv[1:]
+    if not argv:
+        return 1
+    try:
+        cword = int(argv[0])
+    except ValueError:
+        return 1
+    words = argv[1:]
+    try:
+        cands = complete(ws, words, cword)
+    except Exception:  # completion must never break the shell
+        return 0
+    for value, desc in cands:
+        print(f"{value}\t{desc}" if desc else value)
     return 0
 
 
@@ -1435,6 +1459,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     if len(argv) >= 3 and argv[0] in ("-p", "--project") and argv[2] in ("tag", "block"):
         store = ws.current(argv[1])
         return cmd_tag_block(store, argv[2:])
+    if argv and argv[0] == "_complete":
+        return cmd_complete(ws, argv[1:])
 
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -1444,6 +1470,11 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
 
     if args.command == "init":
         return cmd_init(ws, args)
+    if args.command == "completion":
+        from .completion import SCRIPTS
+
+        sys.stdout.write(SCRIPTS[args.shell])
+        return 0
     if args.command == "projects":
         return cmd_projects(ws, args)
     if args.command == "config":

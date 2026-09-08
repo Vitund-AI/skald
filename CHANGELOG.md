@@ -6,6 +6,9 @@ The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
 
 ### Added
+- `skald completion bash|zsh|fish`: Tab completes commands, flags, story ids
+  with titles, columns, tags, blockers, projects, templates, branches, and
+  note kinds; `git skald` too.
 - Board: multi-select with press-and-hold (or `x`), batch drag between
   columns, and a bar to move, tag, or archive the selection. `skald archive`
   and `POST .../archive` accept specific ids.
