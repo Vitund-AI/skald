@@ -10,8 +10,6 @@ updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 
-## Requirements
-
 Add a Help panel to the board (header button and the ? key) so a person can look up reference information without leaving the page: keyboard shortcuts, the CLI command reference, and a short note on the story file format.
 
 The CLI reference must be generated from the argparse parser via GET /api/help, not hand-copied into the page, so it cannot drift from the real commands.

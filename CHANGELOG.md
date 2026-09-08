@@ -61,6 +61,8 @@ repository to migrate; story files are unchanged.
 - CI on Python 3.9 to 3.13, macOS and Windows; PyPI trusted publishing on tags.
 
 ### Changed
+- `new` no longer adds a second `## Requirements` heading when the body
+  already starts with one.
 - Board: columns keep their scroll position across re-renders, so selecting
   cards or receiving a live update deep in a long column no longer jumps to
   the top.

@@ -20,6 +20,22 @@ package.
 Stories are committed with the code they describe, so the board travels with
 the branch and shows up in pull request diffs.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/board-dark.png">
+  <img src="docs/images/board-light.png" alt="The Skald board showing this repository's backlog: Backlog, Ready, In progress, Review, and Done columns, a story claimed by an agent, and a button to commit the changed story files" width="100%">
+</picture>
+
+<table>
+<tr>
+<td width="50%" valign="top"><img src="docs/images/cli-session.png" alt="A terminal session: skald status, skald claim, skald resume, a handoff note, skald move, and skald diff"></td>
+<td width="50%" valign="top"><img src="docs/images/story.png" alt="A story open on the board with a dependency chip, an acceptance checklist, and dated notes"></td>
+</tr>
+<tr>
+<td align="center"><sub>An agent's session: claim, resume, hand off, move, and see the diff.</sub></td>
+<td align="center"><sub>The same story on the board: dependencies, acceptance criteria, notes.</sub></td>
+</tr>
+</table>
+
 ## Is Skald the right tool?
 
 Several projects keep a tracker inside the repository. They make different
@@ -91,6 +107,8 @@ after `tag` and `--tags`, blockers after `block`, project names after `-p`,
 templates, branch names, and note kinds. `git skald` completes the same way.
 The scripts are thin shims that ask `skald` itself for candidates, so they
 never go out of date.
+
+<img src="docs/images/cli-completion.png" alt="zsh completing skald move: story ids listed with their titles and statuses" width="720">
 
 ## Quick start
 
@@ -242,6 +260,8 @@ skald graph --format dot | dot -Tsvg > deps.svg
 skald graph --format json
 ```
 
+<img src="docs/images/graph.png" alt="The board's graph view: blockers on the left, blocked stories on the right, arrows coloured by whether the dependency is met" width="100%">
+
 Only stories with a dependency appear, so the graph stays readable. Nodes
 are coloured by column role, cross-project targets are dashed, satisfied
 edges are grey, unmet edges are highlighted, and cycles are red. The
@@ -286,6 +306,8 @@ Press and hold a card (or press `x` on a focused one) to start a selection
 in its column: click other cards to add or remove them, drag any selected
 card to move the batch, or use the bar at the bottom to move, tag, or
 archive them together. A click in another column or `Esc` ends it.
+
+<img src="docs/images/multi-select.png" alt="Three cards selected in the Review column with the bulk action bar offering Move to, a tag box, and Clear" width="100%">
 Click a card to edit it, preview the body as Markdown, append a note, claim
 it, or see its git history. Blocked cards show a lock, stale active cards
 show a marker, and columns over their WIP limit turn red. The header shows
