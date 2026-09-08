@@ -304,3 +304,16 @@ use resumes without a dedicated exit control; `Esc` and `x` give keyboard
 users the same paths. Batch moves reuse the single-story `PATCH` rather than
 a new bulk endpoint: the API stays small, warnings still come back per story,
 and a partial failure leaves the board showing exactly what happened.
+
+### D45. Completion is a self-calling shim, not argcomplete or a terminal UI
+A terminal board was considered and dropped: `curses` is not in the standard
+library on Windows, and it would be a second rendering of the web board. What
+people actually want at the prompt is not to type hex ids, so `skald
+completion` follows the pattern of `gh` and `kubectl`: the shell script is a
+few lines that call `skald _complete` and print what comes back. The logic
+stays in Python with access to the parser (`command_reference()`, so new
+flags complete without touching the scripts) and to the story files (ids
+with titles, columns, tags). `argcomplete` would have done the parser half
+generically but is a third-party dependency, and it cannot know that the
+word after `move` is a story id. Each Tab costs one interpreter start, which
+is the same order as git's own completion.

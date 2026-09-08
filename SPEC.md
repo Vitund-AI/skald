@@ -324,6 +324,7 @@ story or configuration. Commands that print stories take `--json`.
 | `serve [--host H] [--port P] [--open]` | Foreground server. |
 | `server start\|stop\|status` | Background server via `server.json`. |
 | `open` | Start if needed, open the browser on the current project. |
+| `completion bash\|zsh\|fish` | Prints a shim that calls the hidden `_complete -- CWORD WORD...` for candidates (`value<TAB>description` lines). `completion.py` derives commands and flags from `command_reference()` and reads the store for ids, columns, tags, authors, templates, branches, and projects; it never raises into the shell. `_complete` is intercepted before argparse and absent from `--help` and the reference. |
 
 ---
 

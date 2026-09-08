@@ -77,6 +77,21 @@ Then add one line to your repository's `CLAUDE.md` or `AGENTS.md`:
 `skald` command inside it. The backlog is already there; the first command
 registers the project on your machine.
 
+### Shell completion
+
+```sh
+eval "$(skald completion zsh)"       # in ~/.zshrc
+eval "$(skald completion bash)"      # in ~/.bashrc
+skald completion fish > ~/.config/fish/completions/skald.fish
+```
+
+Tab completes subcommands and flags, story ids (zsh and fish show the title
+and status next to each id), column keys after `move` and `--status`, tags
+after `tag` and `--tags`, blockers after `block`, project names after `-p`,
+templates, branch names, and note kinds. `git skald` completes the same way.
+The scripts are thin shims that ask `skald` itself for candidates, so they
+never go out of date.
+
 ## Quick start
 
 ```sh
@@ -341,6 +356,7 @@ corrupt story or configuration.
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Write a committed snapshot of the board. |
 | `hooks claude\|git\|github [--install]` | Print or install the Claude Code hooks, a pre-commit hook, or a GitHub workflow. |
 | `open`, `server start\|stop\|status`, `serve` | The board. |
+| `completion bash\|zsh\|fish` | Print the shell completion script to `eval` from your rc file. |
 | `mcp` | Serve the store as MCP tools over stdio (see below). |
 
 `-p NAME` before any command targets a registered project instead of the
