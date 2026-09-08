@@ -1,11 +1,11 @@
 ---
 title: "CI and PyPI publishing workflows"
 status: "review"
-rank: 170
+rank: 40
 tags: ["packaging"]
 blocked_by: []
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-06T07:04:42Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

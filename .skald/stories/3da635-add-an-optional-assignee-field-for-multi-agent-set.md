@@ -1,11 +1,11 @@
 ---
 title: "Add an optional assignee field for multi-agent setups"
-status: "review"
-rank: 50
+status: "done"
+rank: 150
 tags: ["cli", "ui"]
 blocked_by: []
 created_at: "2026-09-06T02:16:15Z"
-updated_at: "2026-09-06T07:04:41Z"
+updated_at: "2026-09-08T17:24:16Z"
 ---
 ## Requirements
 

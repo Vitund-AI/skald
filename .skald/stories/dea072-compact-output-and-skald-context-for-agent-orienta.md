@@ -1,12 +1,12 @@
 ---
 title: "Compact output and skald context for agent orientation"
 status: "review"
-rank: 230
+rank: 100
 tags: ["agents"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:42Z"
-updated_at: "2026-09-06T19:06:43Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

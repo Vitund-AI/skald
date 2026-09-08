@@ -1,12 +1,12 @@
 ---
 title: "Bulk operations on the board"
 status: "review"
-rank: 380
+rank: 30
 tags: ["ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-08T04:32:57Z"
+updated_at: "2026-09-08T17:26:09Z"
 ---
 ## Requirements
 
@@ -19,3 +19,8 @@ When the user has finished making the selection, they can drag to move the batch
 
 ## [claude] 2026-09-08 04:32 UTC · result
 Implemented as you described: press and hold a card (450ms, pointer events so touch works too) starts a selection in that column; circles appear on the column's cards and the selected ones get a check. Clicks in the column toggle; a click elsewhere or Esc ends it; x on a focused card is the keyboard route. Dragging a selected card moves the batch and inserts it at the drop point. A bar at the bottom moves, tags, or archives the selection; archive shows only for done or closed columns and uses the new ids parameter on skald archive and POST .../archive. Verified in headless Chromium: long press, add and remove by click, batch drag, bulk tag, bulk move, archive, clear by column click and Esc, and that a normal click still opens the story afterwards. One bug caught there: the hold re-renders the board under the pointer, so the release lands on a new element and no click fires; pointer listeners now live on the document. D44.
+
+## [human] 2026-09-08 17:26 UTC
+tested moving sets of stories to different columns - ok
+
+What I did note is that on click to select a card, the column scrolls back to the top of the list. This is not desirable behavior as it makes a multi select a click, scroll, click, scroll... task instead of a quick click through the items.

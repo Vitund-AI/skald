@@ -1,11 +1,11 @@
 ---
 title: "Machine-local project index with auto-registration"
-status: "review"
-rank: 70
+status: "done"
+rank: 160
 tags: ["core"]
 blocked_by: []
 created_at: "2026-09-06T07:04:41Z"
-updated_at: "2026-09-06T07:04:41Z"
+updated_at: "2026-09-08T17:24:16Z"
 ---
 ## Requirements
 

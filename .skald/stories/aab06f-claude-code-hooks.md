@@ -1,11 +1,11 @@
 ---
 title: "Claude Code hooks"
 status: "review"
-rank: 150
+rank: 10
 tags: ["agents"]
 blocked_by: []
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-06T07:04:42Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

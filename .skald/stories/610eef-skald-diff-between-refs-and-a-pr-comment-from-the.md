@@ -1,12 +1,12 @@
 ---
 title: "skald diff between refs and a PR comment from the workflow"
 status: "review"
-rank: 280
+rank: 150
 tags: ["docs", "git"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:43Z"
-updated_at: "2026-09-06T19:09:25Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

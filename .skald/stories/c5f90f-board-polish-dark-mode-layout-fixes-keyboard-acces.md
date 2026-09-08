@@ -1,12 +1,12 @@
 ---
 title: "Board polish: dark mode, layout fixes, keyboard access, empty states"
 status: "review"
-rank: 330
+rank: 200
 tags: ["ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-07T01:29:56Z"
-updated_at: "2026-09-07T01:37:50Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

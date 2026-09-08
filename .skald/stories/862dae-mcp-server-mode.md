@@ -1,11 +1,11 @@
 ---
 title: "MCP server mode"
 status: "review"
-rank: 190
+rank: 60
 tags: ["agents"]
 blocked_by: []
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-06T07:08:04Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

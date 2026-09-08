@@ -1,12 +1,12 @@
 ---
 title: "Claude Code skill and init writing the instructions pointer"
 status: "review"
-rank: 300
+rank: 170
 tags: ["agents"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:43Z"
-updated_at: "2026-09-06T19:12:48Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 
