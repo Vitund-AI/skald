@@ -337,7 +337,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"templates": store.templates()})
                 return
             if tail == ["archive"] and method == "POST":
-                moved = store.archive()
+                body = self._read_json()
+                ids = body.get("ids")
+                if ids is not None and not (isinstance(ids, list) and all(isinstance(i, str) for i in ids)):
+                    raise SkaldError("ids must be a list of story ids")
+                moved = store.archive(ids=ids)
                 self._json(200, {"archived": [s.id for s in moved]})
                 return
             if tail == ["git"] and method == "GET":

@@ -308,7 +308,7 @@ story or configuration. Commands that print stories take `--json`.
 | `note <id> "text"\|- [--as N] [--kind K]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. |
 | `rm <id> [--force]` | Delete; refuses while other stories depend on it. |
 | `log <id>` | `git log --follow` on the file. |
-| `archive [--dry-run]`, `unarchive <id>` | Section 4.5. |
+| `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
 | `commits <id> [--all-branches] [--json]` | `git log --grep` for the trailer or `[id]`. |
@@ -368,6 +368,18 @@ stream, suppressed for three seconds after the board's own writes), and a
 new `HEAD` on the branch. Keyboard: `n` new, `/` filter, `g` graph, `?`
 help, `Esc` close; cards, ready rows, and graph nodes are focusable and open
 on Enter. An empty project shows a hint instead of five bare columns.
+
+Multi-select: pressing and holding a card for 450ms (pointer events, so
+mouse and touch) or pressing `x` on a focused card starts a selection scoped
+to that card's column. Every card in the column shows a circle; selected
+ones show a check. A click on a card in the column toggles it; a click on a
+card or empty space in another column, or `Esc`, ends the selection. Dragging
+a selected card drags the batch: the drop inserts the batch, in selection
+order, at the placeholder. A bar at the bottom moves the batch to a column,
+adds a tag to each, or archives it (shown only when the column is terminal).
+Batch moves are sequential `PATCH` calls per story followed by one `order`
+call; warnings are collected and shown once each. The selection survives
+re-renders and drops ids that leave the column.
 
 Help panel: shortcuts and card markers, the CLI reference from `/api/help`
 with a filter, and a story file primer with links to the docs.

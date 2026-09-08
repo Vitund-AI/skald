@@ -267,6 +267,10 @@ choose "All projects" for a single list of ready, unblocked work everywhere.
 The page listens to a server-sent event stream, so a change made from the
 CLI or by an agent appears within a second without a refresh.
 Drag cards between and within columns, or Tab to a card and press Enter.
+Press and hold a card (or press `x` on a focused one) to start a selection
+in its column: click other cards to add or remove them, drag any selected
+card to move the batch, or use the bar at the bottom to move, tag, or
+archive them together. A click in another column or `Esc` ends it.
 Click a card to edit it, preview the body as Markdown, append a note, claim
 it, or see its git history. Blocked cards show a lock, stale active cards
 show a marker, and columns over their WIP limit turn red. The header shows
@@ -324,7 +328,7 @@ corrupt story or configuration.
 | `block <id> +id -id` | Add or remove dependencies. `proj:id` for another project. Cycles warn. |
 | `note <id> "<text>" \| - [--as NAME] [--kind K]` | Append a timestamped note; kind `handoff`, `decision`, `blocker`, or any short word. |
 | `log <id>` | Git history of the story file. |
-| `archive [--dry-run]`, `unarchive <id>` | Move terminal stories to `.skald/archive/` and back. |
+| `archive [id ...] [--dry-run]`, `unarchive <id>` | Move terminal stories to `.skald/archive/` and back; with ids, only those (each must be done or closed). |
 | `check [--hook]` | Validate every file. Exit 2 on problems. `--hook` also fails on uncommitted story files. |
 | `commit [-m MSG] [--push] [--no-trailers]` | Commit everything under `.skald/` and nothing else, with `Skald-Story` trailers. |
 | `commits <id> [--all-branches]` | Commits referencing the story via trailer or `[id]`. |
@@ -474,7 +478,7 @@ Project names come from the registry; the API never accepts a path.
 | `DELETE /api/projects/<p>/stories/<id>[?force=1]` | | 204, or 409 if other stories depend on it |
 | `GET /api/projects/<p>/git` | | `{branch, changes, push_enabled, identity}` |
 | `POST /api/projects/<p>/git/commit` | `{message?, push?}` | `{sha, message, pushed, output}` |
-| `POST /api/projects/<p>/archive` | | `{archived: [ids]}` |
+| `POST /api/projects/<p>/archive` | `{ids?}` | `{archived: [ids]}`; without `ids`, every done or closed story; with them, only those, 400 if any is not in a terminal column |
 | `GET /api/projects/<p>/templates` | | `{templates}` |
 
 `order` is the full ordered list of ids for the story's column. Sending

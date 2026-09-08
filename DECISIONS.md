@@ -292,3 +292,15 @@ is, which invites a wrong reading. `ls` and `rm` do what their names say, so
 they stay. `move` is Kanban's own verb for the action. `mv` remains as a
 hidden alias for one release because existing notes and hooks mention it; the
 Help panel and `--help` list only `move`.
+
+### D44. Multi-select is a press-and-hold mode scoped to one column
+Checkboxes on every card would clutter the board for the common case of
+moving one card. A press-and-hold on a card (the maintainer's suggestion)
+enters a selection mode for that card's column only, which keeps the batch
+meaningful: every selected story shares a status, so "move", "tag", and
+"archive" apply cleanly and the archive action can be hidden unless the
+column is terminal. Clicking outside the column ends the mode, so ordinary
+use resumes without a dedicated exit control; `Esc` and `x` give keyboard
+users the same paths. Batch moves reuse the single-story `PATCH` rather than
+a new bulk endpoint: the API stays small, warnings still come back per story,
+and a partial failure leaves the board showing exactly what happened.

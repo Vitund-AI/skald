@@ -6,6 +6,9 @@ The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
 
 ### Added
+- Board: multi-select with press-and-hold (or `x`), batch drag between
+  columns, and a bar to move, tag, or archive the selection. `skald archive`
+  and `POST .../archive` accept specific ids.
 - Board: dark theme (follows the OS, or forced from the header), a Help panel
   (`?`) with shortcuts, card markers, the story file format, and the CLI
   reference served by `GET /api/help` straight from the argparse parser.

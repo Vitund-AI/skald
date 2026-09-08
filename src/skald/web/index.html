@@ -60,6 +60,11 @@
   .tab.active { border-bottom: 2px solid var(--accent); color: var(--ink); }
   .toggle[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
   .card:focus-visible, .ready-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .card.selectable { cursor: pointer; }
+  .card.selected { outline: 2px solid var(--accent); outline-offset: -2px; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .sel-mark { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; border-radius: 9999px; border: 1.5px solid var(--line-strong); color: transparent; font-size: .75rem; flex: none; margin-top: .1rem; }
+  .card.selected .sel-mark { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .card.dragging-batch { opacity: .4; }
   kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8em; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: .25rem; padding: 0 .35em; background: var(--surface); }
   .help details > summary { cursor: pointer; list-style: none; }
   .help details > summary::-webkit-details-marker { display: none; }
@@ -103,6 +108,13 @@
 <main id="ready-view" class="hidden flex-1 overflow-y-auto p-4"></main>
 <main id="graph-view" class="hidden flex-1 overflow-auto p-4"></main>
 
+<div id="bulk" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-surface border border-strong rounded-lg shadow-xl px-3 py-2 flex items-center gap-2 text-sm flex-wrap max-w-[95vw]">
+  <span id="bulk-count" class="font-semibold"></span>
+  <select id="bulk-move" class="rounded border border-strong px-2 py-1 text-xs" title="Move the selected stories to a column"></select>
+  <input id="bulk-tag" class="rounded border border-strong px-2 py-1 text-xs w-28" placeholder="+tag" title="Add a tag to the selected stories (Enter)">
+  <button id="bulk-archive" class="rounded border border-strong px-2 py-1 text-xs hover:bg-hover" title="Move the selected done or closed stories to .skald/archive/">Archive</button>
+  <button id="bulk-clear" class="text-muted hover:text-ink text-xs" title="Clear selection (Esc)">Clear</button>
+</div>
 <div id="toasts" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
 
 <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-2 sm:p-4 z-40">
@@ -186,6 +198,12 @@
         <div><kbd>Enter</kbd> Open the focused card</div>
         <div><kbd>Esc</kbd> Close a dialog or popover</div>
         <div>Drag a card to move or reorder it</div>
+        <div class="font-semibold text-muted sm:col-span-2 mt-3">Selecting several cards</div>
+        <div>Press and hold a card (or <kbd>x</kbd> on a focused card) to start a selection</div>
+        <div>Click other cards in that column to add or remove them</div>
+        <div>Drag any selected card to move the whole batch</div>
+        <div>The bar at the bottom moves, tags, or archives the batch</div>
+        <div>Click in another column or press <kbd>Esc</kbd> to finish</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Cards</div>
         <div><span class="inline-block w-1 h-3 bg-red-500 align-middle mr-1"></span> Red edge: blocked by an unmet dependency</div>
         <div><span class="inline-block w-1 h-3 bg-amber-400 align-middle mr-1"></span> Amber edge: stale, no update for a while</div>
@@ -238,6 +256,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, facets: {}, facetFilters: {}, groupBy: '', graph: false,
     lastWrite: 0, help: false, helpCli: null,
+    sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal'), help = $('help');
   const ALL = '__all__';
@@ -321,6 +340,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     $('branch').classList.add('hidden');
     $('elsewhere').classList.add('hidden');
     $('empty').classList.add('hidden');
+    clearSelection();
     state.ref = ''; state.readonly = false; state.branches = null;
     state.facetFilters = {}; state.groupBy = ''; state.facets = {};
     $('ro-banner').classList.add('hidden');
@@ -419,10 +439,14 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   function cardEl(story) {
     const el = document.createElement('div');
     const border = story.blocked ? 'border-l-4 border-l-red-500' : story.stale ? 'border-l-4 border-l-amber-400' : '';
-    el.className = `card bg-surface rounded shadow-sm border border-line p-2.5 cursor-grab hover:shadow ${border}`;
+    const selectable = state.sel.column !== null && state.sel.column === story.status;
+    const selected = selectable && state.sel.ids.has(story.id);
+    el.className = `card bg-surface rounded shadow-sm border border-line p-2.5 cursor-grab hover:shadow ${border} ${selectable ? 'selectable' : ''} ${selected ? 'selected' : ''}`;
     el.dataset.id = story.id;
     el.draggable = !state.readonly;
     el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', story.title);
+    if (selectable) el.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    const mark = selectable ? `<span class="sel-mark" aria-hidden="true">&#10003;</span>` : '';
     const tags = story.tags.map(t => `<span class="inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(t)}</span>`).join(' ');
     const lock = story.blocked ? `<span class="text-red-500 text-sm" title="${esc(depTitle(story))}">&#128274;</span>` : '';
     const stale = story.stale ? `<span class="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400" title="No update for ${state.settings.stale_days} days">stale</span>` : '';
@@ -433,23 +457,124 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const other = claims.filter(c => c.assignee !== story.assignee);
     const claimBadge = other.length ? `<span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5" title="${esc(other.map(c => `${c.assignee} on ${c.branch} (${c.status})`).join('\n'))}">also ${esc(other[0].assignee)}@${esc(other[0].branch)}</span>` : '';
     el.innerHTML = `
-      <div class="flex items-start gap-1.5">
+      <div class="flex items-start gap-1.5">${mark}
         <div class="text-sm font-medium leading-snug flex-1">${esc(story.title)}</div>${lock}
       </div>
       <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}${claimBadge}</div>
       <div class="mt-1.5 flex justify-between gap-2 text-[11px] text-faint font-mono">
         <span>${story.id}</span>${who}<span class="font-sans ml-auto">${ago(story.updated_at)}</span>
       </div>`;
-    el.addEventListener('click', () => openModal(story.id));
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(story.id); } });
-    el.addEventListener('dragstart', (e) => {
-      state.dragging = story.id;
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', story.id);
-      setTimeout(() => el.classList.add('dragging'), 0);
+    el.addEventListener('click', (e) => {
+      if (state.suppressClick) { state.suppressClick = false; return; }
+      if (state.sel.column === null) return openModal(story.id);
+      if (story.status === state.sel.column) toggleSelect(story.id);
+      else clearSelection();  // a click in another column ends the selection
     });
-    el.addEventListener('dragend', () => { state.dragging = null; removePlaceholder(); render(); });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'x' && !state.readonly) { e.preventDefault(); if (state.sel.column === story.status) toggleSelect(story.id); else enterSelection(story); return; }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+    });
+    // Press and hold (mouse or touch) starts a selection in this card's column.
+    let hold = null;
+    const cancelHold = () => { if (hold) { clearTimeout(hold); hold = null; } };
+    el.addEventListener('pointerdown', (e) => {
+      if (state.readonly || e.button !== 0) return;
+      const x0 = e.clientX, y0 = e.clientY;
+      cancelHold();
+      // Listeners live on the document: the hold re-renders the board, so this element is gone by pointerup.
+      const move = (ev) => { if (Math.abs(ev.clientX - x0) > 6 || Math.abs(ev.clientY - y0) > 6) done(); };
+      const up = () => { const fired = hold === null; done(); if (fired) setTimeout(() => { state.suppressClick = false; }, 50); };
+      const done = () => { cancelHold(); document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up); };
+      hold = setTimeout(() => { hold = null; state.suppressClick = true; enterSelection(story); }, 450);
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up);
+      document.addEventListener('pointercancel', up);
+    });
+    el.addEventListener('dragstart', (e) => {
+      cancelHold();
+      state.dragging = story.id;
+      state.dragBatch = selected ? [...state.sel.ids] : [story.id];
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', state.dragBatch.join(','));
+      setTimeout(() => {
+        el.classList.add('dragging');
+        if (state.dragBatch.length > 1) board.querySelectorAll('.card.selected').forEach(c => c.classList.add('dragging-batch'));
+      }, 0);
+    });
+    el.addEventListener('dragend', () => { state.dragging = null; state.dragBatch = []; removePlaceholder(); render(); });
     return el;
+  }
+
+  // ---- Multi-select ------------------------------------------------------
+  function enterSelection(story) {
+    if (state.readonly || state.allView) return;
+    state.sel = { column: story.status, ids: new Set([story.id]) };
+    render();
+  }
+  function toggleSelect(id) {
+    if (state.sel.ids.has(id)) state.sel.ids.delete(id); else state.sel.ids.add(id);
+    if (!state.sel.ids.size) return clearSelection();
+    render();
+  }
+  function clearSelection() {
+    const had = state.sel.column !== null;
+    state.sel = { column: null, ids: new Set() };
+    $('bulk').classList.add('hidden');
+    if (had) render();
+  }
+  function selectedStories() { return state.stories.filter(s => state.sel.ids.has(s.id)); }
+  function renderBulk() {
+    const bar = $('bulk');
+    if (state.sel.column === null) { bar.classList.add('hidden'); return; }
+    // Drop ids that left the column (moved by someone else, or by us).
+    const inColumn = new Set(state.stories.filter(s => s.status === state.sel.column).map(s => s.id));
+    [...state.sel.ids].forEach(id => { if (!inColumn.has(id)) state.sel.ids.delete(id); });
+    if (!state.sel.ids.size) { state.sel = { column: null, ids: new Set() }; bar.classList.add('hidden'); return; }
+    const n = state.sel.ids.size;
+    $('bulk-count').textContent = `${n} selected`;
+    $('bulk-move').innerHTML = `<option value="">Move to…</option>` + state.columns.filter(c => c.key !== state.sel.column).map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
+    const col = state.columns.find(c => c.key === state.sel.column);
+    const terminal = col && (col.role === 'done' || col.role === 'closed');
+    $('bulk-archive').classList.toggle('hidden', !terminal);
+    bar.classList.remove('hidden');
+  }
+  async function bulkMove(status, order) {
+    const ids = [...state.sel.ids];
+    if (!ids.length || !status) return;
+    const warnings = [];
+    try {
+      for (const id of ids) { const res = await api('PATCH', `${P()}/stories/${id}`, { status }); warnings.push(...(res.warnings || [])); }
+      if (order) { const res = await api('PATCH', `${P()}/stories/${ids[0]}`, { order }); warnings.push(...(res.warnings || [])); }
+      toast(`Moved ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'} to ${status}`);
+    } catch (err) { toast(err.message, 'error'); }
+    showWarnings([...new Set(warnings)]);
+    clearSelection();
+    await refresh(true);
+  }
+  async function bulkTag(tag) {
+    tag = (tag || '').trim().replace(/^\+/, '');
+    if (!tag) return;
+    const stories = selectedStories();
+    try {
+      for (const s of stories) {
+        if (s.tags.includes(tag)) continue;
+        await api('PATCH', `${P()}/stories/${s.id}`, { tags: [...s.tags, tag] });
+      }
+      toast(`Tagged ${stories.length} with ${tag}`);
+      $('bulk-tag').value = '';
+    } catch (err) { toast(err.message, 'error'); }
+    await refresh(true);
+  }
+  async function bulkArchive() {
+    const ids = [...state.sel.ids];
+    if (!ids.length) return;
+    if (!confirm(`Archive ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'}? They move to .skald/archive/ and leave the board.`)) return;
+    try {
+      const res = await api('POST', `${P()}/archive`, { ids });
+      toast(`Archived ${res.archived.length}`);
+    } catch (err) { toast(err.message, 'error'); }
+    clearSelection();
+    await refresh(true);
   }
 
   function renderEmpty() {
@@ -465,6 +590,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   function render() {
     if (state.allView) return renderReady();
     renderEmpty();
+    renderBulk();
     if (state.graph) return renderGraph();
     board.innerHTML = '';
     if (state.groupBy) {
@@ -628,7 +754,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     e.dataTransfer.dropEffect = 'move';
     const list = e.currentTarget;
     if (!placeholder) { placeholder = document.createElement('div'); placeholder.className = 'placeholder'; }
-    const cards = [...list.querySelectorAll('.card')].filter(c => c.dataset.id !== state.dragging);
+    const batch = new Set(state.dragBatch.length ? state.dragBatch : [state.dragging]);
+    const cards = [...list.querySelectorAll('.card')].filter(c => !batch.has(c.dataset.id));
     let before = null;
     for (const c of cards) {
       const r = c.getBoundingClientRect();
@@ -642,14 +769,17 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const id = state.dragging;
     if (!id || !placeholder) return;
     const status = list.dataset.status;
+    const batch = state.dragBatch.length ? state.dragBatch : [id];
+    const inBatch = new Set(batch);
     const order = [];
     for (const child of list.children) {
-      if (child === placeholder) order.push(id);
-      else if (child.dataset.id && child.dataset.id !== id) order.push(child.dataset.id);
+      if (child === placeholder) order.push(...batch);
+      else if (child.dataset.id && !inBatch.has(child.dataset.id)) order.push(child.dataset.id);
     }
-    const hidden = state.stories.filter(s => s.status === status && !matches(s) && s.id !== id).map(s => s.id);
+    const hidden = state.stories.filter(s => s.status === status && !matches(s) && !inBatch.has(s.id)).map(s => s.id);
     removePlaceholder();
-    state.dragging = null;
+    state.dragging = null; state.dragBatch = [];
+    if (batch.length > 1) { await bulkMove(status, order.concat(hidden)); return; }
     try {
       const res = await api('PATCH', `${P()}/stories/${id}`, { status, order: order.concat(hidden) });
       showWarnings(res.warnings);
@@ -901,6 +1031,16 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('help-filter').addEventListener('input', renderHelpCli);
   help.querySelectorAll('.htab').forEach(t => t.addEventListener('click', () => showHelpTab(t.dataset.htab)));
   help.addEventListener('click', (e) => { if (e.target === help) hideHelp(); });
+  $('bulk-move').addEventListener('change', (e) => { const v = e.target.value; e.target.value = ''; if (v) bulkMove(v); });
+  $('bulk-tag').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); bulkTag(e.target.value); } });
+  $('bulk-archive').addEventListener('click', bulkArchive);
+  $('bulk-clear').addEventListener('click', clearSelection);
+  // A click anywhere on the board outside the selected column ends the selection.
+  board.addEventListener('click', (e) => {
+    if (state.sel.column === null || e.target.closest('.card')) return;
+    const list = e.target.closest('[data-status]');
+    if (!list || list.dataset.status !== state.sel.column) clearSelection();
+  });
   $('project').addEventListener('change', (e) => switchProject(e.target.value));
   $('branch').addEventListener('change', (e) => setRef(e.target.value));
   $('group-by').addEventListener('change', (e) => { state.groupBy = e.target.value; render(); });
@@ -928,7 +1068,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
   document.addEventListener('keydown', (e) => {
     const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
-    if (e.key === 'Escape') { if (state.help) hideHelp(); else if (state.modal) hideModal(); else $('git-pop').classList.add('hidden'); return; }
+    if (e.key === 'Escape') { if (state.help) hideHelp(); else if (state.modal) hideModal(); else if (state.sel.column !== null) clearSelection(); else $('git-pop').classList.add('hidden'); return; }
     if (typing || state.modal) return;
     if (e.key === '?') { e.preventDefault(); if (state.help) hideHelp(); else showHelp(); return; }
     if (state.help) return;

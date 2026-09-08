@@ -248,6 +248,7 @@ def build_parser() -> argparse.ArgumentParser:
     lg.add_argument("--json", action="store_true")
 
     ar = sub.add_parser("archive", help="move done and closed stories to .skald/archive/")
+    ar.add_argument("ids", nargs="*", help="only these stories (default: every done or closed story)")
     ar.add_argument("--dry-run", action="store_true")
     ua = sub.add_parser("unarchive", help="move a story back out of the archive")
     ua.add_argument("id")
@@ -1513,7 +1514,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     if args.command == "log":
         return cmd_log(store, args)
     if args.command == "archive":
-        moved = store.archive(dry_run=args.dry_run)
+        moved = store.archive(dry_run=args.dry_run, ids=args.ids or None)
         verb = "would archive" if args.dry_run else "archived"
         for s in moved:
             print(f"{verb} {s.id}  {s.title}")

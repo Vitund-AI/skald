@@ -754,9 +754,22 @@ class Store:
         os.unlink(story.path)
         return story
 
-    def archive(self, dry_run: bool = False) -> list[Story]:
-        """Move every story in a terminal column to ``.skald/archive/``."""
+    def archive(self, dry_run: bool = False, ids=None) -> list[Story]:
+        """Move every story in a terminal column to ``.skald/archive/``, or only ``ids``.
+
+        Every id given must be in a terminal column; otherwise nothing is moved.
+        """
         stories, _ = self.load_all()
+        if ids is not None:
+            wanted = [self.resolve(ref) for ref in ids]
+            by_id = {s.id: s for s in stories}
+            missing = [i for i in wanted if i not in by_id]
+            if missing:
+                raise NotFoundError(f"not in the backlog: {', '.join(missing)}")
+            blocked = [i for i in wanted if not self.config.is_terminal(by_id[i].status)]
+            if blocked:
+                raise SkaldError(f"not in a done or closed column: {', '.join(blocked)}")
+            stories = [by_id[i] for i in dict.fromkeys(wanted)]
         moved = []
         for s in stories:
             if self.config.is_terminal(s.status):

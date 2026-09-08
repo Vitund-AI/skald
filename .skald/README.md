@@ -1,7 +1,7 @@
-<!-- skald-render e15d6f5b0d84698a -->
+<!-- skald-render d14ebddbe587db0b -->
 # skald backlog
 
-**38 open** · Backlog 2 · Ready 1 · In progress 0 · Review 35 · Done 3
+**38 open** · Backlog 1 · Ready 1 · In progress 0 · Review 36 · Done 3
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -17,16 +17,15 @@ flowchart LR
     n_cbb58e --> n_46b5d3
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_46b5d3,n_bae374,n_cbb58e active
     class n_9a1da4 done
+    class n_46b5d3,n_bae374,n_cbb58e active
 ```
 
-## Backlog (2)
+## Backlog (1)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [be447c](stories/be447c-rename-a-project-with-reference-rewriting.md) | Rename a project with reference rewriting | `cli` |  |  |  |
-| [c78e01](stories/c78e01-bulk-operations-on-the-board.md) | Bulk operations on the board | `ui` |  |  |  |
 
 ## Ready (1)
 
@@ -38,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (35)
+## Review (36)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -77,6 +76,7 @@ _none_
 | [f7674b](stories/f7674b-verify-the-board-with-tailwind-loaded-in-a-real-br.md) | Verify the board with Tailwind loaded in a real browser | `ui` |  |  |  |
 | [d3c39e](stories/d3c39e-rename-mv-to-move.md) | Rename mv to move | `cli` | claude |  |  |
 | [1b15cc](stories/1b15cc-install-from-github-until-the-first-pypi-release.md) | Install from GitHub until the first PyPI release | `docs` `packaging` | claude |  |  |
+| [c78e01](stories/c78e01-bulk-operations-on-the-board.md) | Bulk operations on the board | `ui` | claude |  |  |
 
 <details><summary><strong>Done (3)</strong></summary>
 
