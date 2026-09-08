@@ -1,7 +1,7 @@
-<!-- skald-render d59c180a1e908062 -->
+<!-- skald-render e15d6f5b0d84698a -->
 # skald backlog
 
-**40 open** · Backlog 2 · Ready 1 · In progress 0 · Review 37 · Done 1
+**38 open** · Backlog 2 · Ready 1 · In progress 0 · Review 35 · Done 3
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -16,7 +16,9 @@ flowchart LR
     n_9a1da4 --> n_bae374
     n_cbb58e --> n_46b5d3
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
-    class n_46b5d3,n_9a1da4,n_bae374,n_cbb58e active
+    classDef done fill:#d1fae5,stroke:#34d399,color:#475569
+    class n_46b5d3,n_bae374,n_cbb58e active
+    class n_9a1da4 done
 ```
 
 ## Backlog (2)
@@ -36,16 +38,14 @@ flowchart LR
 
 _none_
 
-## Review (37)
+## Review (35)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [92086e](stories/92086e-publish-a-pre-commit-hook-recipe-that-runs-skald-c.md) | Publish a pre-commit hook recipe that runs skald check | `docs` |  |  |  |
-| [9a1da4](stories/9a1da4-add-an-archive-command-for-done-stories.md) | Add an archive command for done stories | `cli` |  |  |  |
 | [e0cc9f](stories/e0cc9f-render-the-story-body-as-markdown-in-the-modal.md) | Render the story body as Markdown in the modal | `ui` |  |  |  |
-| [bae374](stories/bae374-offer-a-pipx-installable-package-with-a-global-ska.md) | Offer a pipx-installable package with a global skald command | `packaging` |  | 🔒 `9a1da4` |  |
+| [bae374](stories/bae374-offer-a-pipx-installable-package-with-a-global-ska.md) | Offer a pipx-installable package with a global skald command | `packaging` |  | `9a1da4` |  |
 | [3da635](stories/3da635-add-an-optional-assignee-field-for-multi-agent-set.md) | Add an optional assignee field for multi-agent setups | `cli` `ui` |  |  |  |
-| [670177](stories/670177-daemon-background-mode-for-the-web-server.md) | Daemon (background) mode for the web server | `ui` |  |  |  |
 | [189d1b](stories/189d1b-machine-local-project-index-with-auto-registration.md) | Machine-local project index with auto-registration | `core` |  |  |  |
 | [63898e](stories/63898e-per-project-config-json-with-name-and-format-versi.md) | Per-project config.json with name and format version | `core` |  |  |  |
 | [058512](stories/058512-cross-project-dependencies-as-project-id.md) | Cross-project dependencies as project:id | `core` |  |  |  |
@@ -78,10 +78,12 @@ _none_
 | [d3c39e](stories/d3c39e-rename-mv-to-move.md) | Rename mv to move | `cli` | claude |  |  |
 | [1b15cc](stories/1b15cc-install-from-github-until-the-first-pypi-release.md) | Install from GitHub until the first PyPI release | `docs` `packaging` | claude |  |  |
 
-<details><summary><strong>Done (1)</strong></summary>
+<details><summary><strong>Done (3)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [9bf832](stories/9bf832-dependency-graph-view.md) | Dependency graph view | `ui` |  |  |  |
+| [9a1da4](stories/9a1da4-add-an-archive-command-for-done-stories.md) | Add an archive command for done stories | `cli` |  |  |  |
+| [670177](stories/670177-daemon-background-mode-for-the-web-server.md) | Daemon (background) mode for the web server | `ui` |  |  |  |
 
 </details>

@@ -1,11 +1,11 @@
 ---
 title: "Add an archive command for done stories"
-status: "review"
+status: "done"
 rank: 20
 tags: ["cli"]
 blocked_by: []
 created_at: "2026-09-06T02:16:15Z"
-updated_at: "2026-09-06T07:04:40Z"
+updated_at: "2026-09-08T04:21:57Z"
 ---
 ## Requirements
 
