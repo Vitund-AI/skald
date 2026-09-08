@@ -531,6 +531,8 @@ class Store:
                 full_body += "\n"
             if body:
                 full_body += "\n" + body
+        elif body.lstrip().startswith("## Requirements"):
+            full_body = body.lstrip()  # the caller wrote the heading already
         else:
             full_body = "## Requirements\n\n" + body
         stamp = now_iso()

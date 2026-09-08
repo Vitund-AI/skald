@@ -1,7 +1,7 @@
-<!-- skald-render 0b8cafc8b66daa8d -->
+<!-- skald-render 63f03885ebe8f9e3 -->
 # skald backlog
 
-**27 open** · Backlog 1 · Ready 1 · In progress 0 · Review 25 · Done 15
+**28 open** · Backlog 1 · Ready 1 · In progress 0 · Review 26 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -17,8 +17,8 @@ flowchart LR
     n_9a1da4 --> n_bae374
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_46b5d3,n_cbb58e active
     class n_9a1da4,n_bae374 done
+    class n_46b5d3,n_cbb58e active
 ```
 
 ## Backlog (1)
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (25)
+## Review (26)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -66,6 +66,7 @@ _none_
 | [d3c39e](stories/d3c39e-rename-mv-to-move.md) | Rename mv to move | `cli` | claude |  |  |
 | [1b15cc](stories/1b15cc-install-from-github-until-the-first-pypi-release.md) | Install from GitHub until the first PyPI release | `docs` `packaging` | claude |  |  |
 | [61b53c](stories/61b53c-shell-completion-for-bash-zsh-and-fish.md) | Shell completion for bash, zsh, and fish | `cli` | claude |  | 5/5 |
+| [664976](stories/664976-readme-screenshots-board-story-terminal-session-co.md) | README screenshots: board, story, terminal session, completion, graph, multi-select | `docs` | claude |  |  |
 
 <details><summary><strong>Done (15)</strong></summary>
 

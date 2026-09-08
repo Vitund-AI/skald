@@ -10,8 +10,6 @@ updated_at: "2026-09-08T18:51:39Z"
 ---
 ## Requirements
 
-## Requirements
-
 skald completion bash|zsh|fish prints a script to eval from the shell rc file. The script is a thin shim that calls a hidden skald _complete command, so all completion logic lives in Python and has real data: subcommands and flags from the parser (command_reference), story ids with titles as descriptions (zsh and fish), column keys after move and --status, tags after tag and --tags, project names after -p, template names after --template, branch names after --branch, note kinds after --kind, and choices from the parser. Also completes git skald.
 
 Standard library only; no argcomplete. Each Tab spawns Python once.
