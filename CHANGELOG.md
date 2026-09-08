@@ -6,6 +6,9 @@ The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
 
 ### Added
+- `skald completion bash|zsh|fish`: Tab completes commands, flags, story ids
+  with titles, columns, tags, blockers, projects, templates, branches, and
+  note kinds; `git skald` too.
 - Board: multi-select with press-and-hold (or `x`), batch drag between
   columns, and a bar to move, tag, or archive the selection. `skald archive`
   and `POST .../archive` accept specific ids.
@@ -58,6 +61,11 @@ repository to migrate; story files are unchanged.
 - CI on Python 3.9 to 3.13, macOS and Windows; PyPI trusted publishing on tags.
 
 ### Changed
+- `new` no longer adds a second `## Requirements` heading when the body
+  already starts with one.
+- Board: columns keep their scroll position across re-renders, so selecting
+  cards or receiving a live update deep in a long column no longer jumps to
+  the top.
 - `skald move <id> <column>` replaces `skald mv`; `mv` still works as an
   undocumented alias for one release.
 - Board: the graph toggle stays readable when active and the story modal no

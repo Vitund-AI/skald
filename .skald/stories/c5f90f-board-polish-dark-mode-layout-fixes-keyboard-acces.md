@@ -10,8 +10,6 @@ updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 
-## Requirements
-
 Found while verifying the board in a real browser with Tailwind loaded (f7674b).
 
 - Graph button label disappears when the graph is active (white text on the retained white background).

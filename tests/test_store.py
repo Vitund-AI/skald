@@ -122,6 +122,13 @@ class TestStoreBasics(SkaldTestCase):
         s.delete(b.id)
         self.assertEqual(s.check(), ([], []))
 
+    def test_new_does_not_duplicate_the_requirements_heading(self):
+        s = self.store()
+        a, _ = s.create("a", body="## Requirements\n\nDo the thing.\n")
+        self.assertEqual(a.body.count("## Requirements"), 1)
+        b, _ = s.create("b", body="Do the thing.\n")
+        self.assertTrue(b.body.startswith("## Requirements\n\nDo the thing."))
+
     def test_archive_selected_ids(self):
         s = self.store()
         a, _ = s.create("a", status="done")
