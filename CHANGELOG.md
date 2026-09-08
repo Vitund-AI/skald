@@ -58,6 +58,9 @@ repository to migrate; story files are unchanged.
 - CI on Python 3.9 to 3.13, macOS and Windows; PyPI trusted publishing on tags.
 
 ### Changed
+- Board: columns keep their scroll position across re-renders, so selecting
+  cards or receiving a live update deep in a long column no longer jumps to
+  the top.
 - `skald move <id> <column>` replaces `skald mv`; `mv` still works as an
   undocumented alias for one release.
 - Board: the graph toggle stays readable when active and the story modal no

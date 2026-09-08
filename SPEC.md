@@ -380,6 +380,9 @@ adds a tag to each, or archives it (shown only when the column is terminal).
 Batch moves are sequential `PATCH` calls per story followed by one `order`
 call; warnings are collected and shown once each. The selection survives
 re-renders and drops ids that leave the column.
+Every board render captures and restores each column's scroll offset (and
+the board's own), so selecting or refreshing deep in a long column does not
+jump back to the top.
 
 Help panel: shortcuts and card markers, the CLI reference from `/api/help`
 with a filter, and a story file primer with links to the docs.
