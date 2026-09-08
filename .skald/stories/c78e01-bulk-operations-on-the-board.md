@@ -6,7 +6,7 @@ tags: ["ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-08T17:26:09Z"
+updated_at: "2026-09-08T17:33:27Z"
 ---
 ## Requirements
 
@@ -24,3 +24,6 @@ Implemented as you described: press and hold a card (450ms, pointer events so to
 tested moving sets of stories to different columns - ok
 
 What I did note is that on click to select a card, the column scrolls back to the top of the list. This is not desirable behavior as it makes a multi select a click, scroll, click, scroll... task instead of a quick click through the items.
+
+## [claude] 2026-09-08 17:33 UTC · result
+Fixed the scroll jump: every render rebuilt the column elements, which reset their scroll offsets. render() now captures each column's scrollTop (and the board's own scroll) before rebuilding and restores them afterwards. Verified in headless Chromium on a 30-card column scrolled to 900px: long press, three selection clicks, and a live refresh from a CLI note all left the offset at 900 with the selection intact. Leaving the story in review for you to confirm.
