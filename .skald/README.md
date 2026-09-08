@@ -17,8 +17,8 @@ flowchart LR
     n_cbb58e --> n_46b5d3
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_9a1da4 done
     class n_46b5d3,n_bae374,n_cbb58e active
+    class n_9a1da4 done
 ```
 
 ## Backlog (1)
