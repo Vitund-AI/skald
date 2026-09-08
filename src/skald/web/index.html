@@ -592,6 +592,17 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     renderEmpty();
     renderBulk();
     if (state.graph) return renderGraph();
+    // Rebuilding the columns would reset their scroll positions; keep them so
+    // selecting or refreshing deep in a long column does not jump to the top.
+    const scrolls = [...board.querySelectorAll('.col-list')].map(l => l.scrollTop);
+    const boardScroll = { left: board.scrollLeft, top: board.scrollTop };
+    try { renderBoard(); }
+    finally {
+      board.querySelectorAll('.col-list').forEach((l, i) => { if (scrolls[i]) l.scrollTop = scrolls[i]; });
+      board.scrollLeft = boardScroll.left; board.scrollTop = boardScroll.top;
+    }
+  }
+  function renderBoard() {
     board.innerHTML = '';
     if (state.groupBy) {
       board.classList.remove('flex', 'flex-col', 'sm:flex-row'); board.classList.add('grid', 'gap-4', 'content-start');
