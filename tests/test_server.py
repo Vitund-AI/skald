@@ -170,6 +170,14 @@ class TestAPI(ServerTestCase):
         self.call("PATCH", f"/api/projects/beta/stories/{b}", {"status": "done"})
         status, data = self.call("POST", "/api/projects/beta/archive", {})
         self.assertEqual(data["archived"], [b])
+        status, data = self.call("POST", "/api/projects/alpha/stories", {"title": "x", "status": "done"})
+        x = data["story"]["id"]
+        status, data = self.call("POST", "/api/projects/alpha/stories", {"title": "y", "status": "ready"})
+        y = data["story"]["id"]
+        self.assertEqual(self.call("POST", "/api/projects/alpha/archive", {"ids": [x, y]})[0], 400)
+        self.assertEqual(self.call("POST", "/api/projects/alpha/archive", {"ids": "x"})[0], 400)
+        status, data = self.call("POST", "/api/projects/alpha/archive", {"ids": [x]})
+        self.assertEqual((status, data["archived"]), (200, [x]))
         status, data = self.call("GET", "/api/projects/beta/templates")
         self.assertEqual(data["templates"], [])
 

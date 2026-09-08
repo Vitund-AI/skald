@@ -122,6 +122,19 @@ class TestStoreBasics(SkaldTestCase):
         s.delete(b.id)
         self.assertEqual(s.check(), ([], []))
 
+    def test_archive_selected_ids(self):
+        s = self.store()
+        a, _ = s.create("a", status="done")
+        b, _ = s.create("b", status="done")
+        c, _ = s.create("c", status="ready")
+        with self.assertRaises(SkaldError):
+            s.archive(ids=[a.id, c.id])
+        self.assertTrue(a.path.exists())
+        with self.assertRaises(NotFoundError):
+            s.archive(ids=["zzzzzz"])
+        self.assertEqual([x.id for x in s.archive(ids=[b.id[:3], b.id])], [b.id])
+        self.assertEqual(sorted(x.id for x in s.load_all()[0]), sorted([a.id, c.id]))
+
     def test_load_all_skips_corrupt_and_check_reports(self):
         s = self.store()
         s.create("good")
