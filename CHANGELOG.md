@@ -12,7 +12,8 @@ repository to migrate; story files are unchanged.
 - Board: keyboard access to cards, an empty-project hint, columns that share
   the width and stack on phones, and toasts for changes made outside the
   board or a new commit on the branch.
-- `pip install skald-kanban` provides `skald` and `git-skald`.
+- The `skald-kanban` package provides `skald` and `git-skald`. Until the first
+  PyPI release, install it from GitHub with `pip install git+https://github.com/Vitund-AI/skald.git`.
 - Machine-local project index; every command registers the current project,
   `skald projects` lists them, `-p NAME` and `--all-projects` act across them.
 - `.skald/config.json` with project name, format version, and custom columns

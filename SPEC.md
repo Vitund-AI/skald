@@ -17,8 +17,11 @@ migration path is in section 2.4.
 
 ## 1. Goals and principles
 
-1. **Install once per machine.** `pip install skald-kanban` provides `skald`
-   and `git-skald`. Repositories carry data only, never the tool.
+1. **Install once per machine.** The `skald-kanban` distribution provides
+   `skald` and `git-skald`. Until the first PyPI release it installs from the
+   GitHub repository (`pip install git+https://github.com/Vitund-AI/skald.git`),
+   and generated workflows do the same. Repositories carry data only, never
+   the tool.
 2. **Standard library only.** No third-party Python packages. Minimum Python
    3.9. The board loads Tailwind and marked from CDNs; that is the one
    external dependency and it degrades to unstyled, un-previewed but working.
@@ -406,7 +409,7 @@ registry and user config, every CLI command, every API endpoint, the
 background server lifecycle, and this repository's own backlog passing
 `check`. CI runs the suite on Python 3.9 through 3.13 on Linux, plus 3.12 on
 macOS and Windows, and builds the wheel. Tags matching `v*` publish to PyPI
-via trusted publishing.
+via trusted publishing once the project exists there; no tag has been cut yet.
 
 ---
 

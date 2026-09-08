@@ -3,6 +3,7 @@ import json
 import os
 import stat
 
+from skald import cli
 from skald import render as rnd
 from skald.config import ProjectConfig
 
@@ -131,7 +132,8 @@ class TestHookInstallers(SkaldTestCase):
         wf = self.repo / ".github" / "workflows" / "skald.yml"
         self.assertTrue(wf.exists())
         text = wf.read_text()
-        self.assertIn("pip install skald-kanban", text)
+        self.assertIn(f"pip install {cli.INSTALL_SPEC}", text)
+        self.assertNotIn("pip install skald-kanban", text)
         self.assertIn("skald check", text)
         self.assertIn("skald render --out .skald/README.md", text)
         self.assertIn("[skip ci]", text)
