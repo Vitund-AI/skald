@@ -1,7 +1,7 @@
-<!-- skald-render d14ebddbe587db0b -->
+<!-- skald-render 4f67d6fe4949432d -->
 # skald backlog
 
-**38 open** · Backlog 1 · Ready 1 · In progress 0 · Review 36 · Done 3
+**26 open** · Backlog 1 · Ready 1 · In progress 0 · Review 24 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -13,12 +13,12 @@ flowchart LR
     n_9a1da4["9a1da4<br/>Add an archive command for done stories"]
     n_bae374["bae374<br/>Offer a pipx-installable package with a…"]
     n_cbb58e["cbb58e<br/>Facet tags and epic progress"]
-    n_9a1da4 --> n_bae374
     n_cbb58e --> n_46b5d3
+    n_9a1da4 --> n_bae374
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_46b5d3,n_bae374,n_cbb58e active
-    class n_9a1da4 done
+    class n_9a1da4,n_bae374 done
+    class n_46b5d3,n_cbb58e active
 ```
 
 ## Backlog (1)
@@ -37,24 +37,13 @@ flowchart LR
 
 _none_
 
-## Review (36)
+## Review (24)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
-| [92086e](stories/92086e-publish-a-pre-commit-hook-recipe-that-runs-skald-c.md) | Publish a pre-commit hook recipe that runs skald check | `docs` |  |  |  |
-| [e0cc9f](stories/e0cc9f-render-the-story-body-as-markdown-in-the-modal.md) | Render the story body as Markdown in the modal | `ui` |  |  |  |
-| [bae374](stories/bae374-offer-a-pipx-installable-package-with-a-global-ska.md) | Offer a pipx-installable package with a global skald command | `packaging` |  | `9a1da4` |  |
-| [3da635](stories/3da635-add-an-optional-assignee-field-for-multi-agent-set.md) | Add an optional assignee field for multi-agent setups | `cli` `ui` |  |  |  |
-| [189d1b](stories/189d1b-machine-local-project-index-with-auto-registration.md) | Machine-local project index with auto-registration | `core` |  |  |  |
-| [63898e](stories/63898e-per-project-config-json-with-name-and-format-versi.md) | Per-project config.json with name and format version | `core` |  |  |  |
-| [058512](stories/058512-cross-project-dependencies-as-project-id.md) | Cross-project dependencies as project:id | `core` |  |  |  |
-| [b5d7d7](stories/b5d7d7-custom-columns-with-roles-and-wip-limits.md) | Custom columns with roles and WIP limits | `core` `ui` |  |  |  |
-| [4ed498](stories/4ed498-author-identity-for-notes-and-claims.md) | Author identity for notes and claims | `core` |  |  |  |
-| [8d081d](stories/8d081d-git-integration-status-commit-log-changelog-board.md) | Git integration: status, commit, log, changelog, board commit button | `git` `ui` |  |  |  |
-| [830b31](stories/830b31-board-project-switcher-and-all-projects-ready-view.md) | Board: project switcher and all-projects ready view | `ui` |  |  |  |
-| [0b108f](stories/0b108f-board-checklist-progress-stale-marker-branch-histo.md) | Board: checklist progress, stale marker, branch, history tab, keyboard shortcuts | `ui` |  |  |  |
 | [aab06f](stories/aab06f-claude-code-hooks.md) | Claude Code hooks | `agents` |  |  |  |
 | [9e4f8e](stories/9e4f8e-story-templates.md) | Story templates | `cli` |  |  |  |
+| [c78e01](stories/c78e01-bulk-operations-on-the-board.md) | Bulk operations on the board | `ui` | claude |  |  |
 | [c5e56b](stories/c5e56b-ci-and-pypi-publishing-workflows.md) | CI and PyPI publishing workflows | `packaging` |  |  |  |
 | [883a6a](stories/883a6a-server-sent-events-for-live-board-updates.md) | Server-sent events for live board updates | `ui` |  |  |  |
 | [862dae](stories/862dae-mcp-server-mode.md) | MCP server mode | `agents` |  |  |  |
@@ -76,14 +65,25 @@ _none_
 | [f7674b](stories/f7674b-verify-the-board-with-tailwind-loaded-in-a-real-br.md) | Verify the board with Tailwind loaded in a real browser | `ui` |  |  |  |
 | [d3c39e](stories/d3c39e-rename-mv-to-move.md) | Rename mv to move | `cli` | claude |  |  |
 | [1b15cc](stories/1b15cc-install-from-github-until-the-first-pypi-release.md) | Install from GitHub until the first PyPI release | `docs` `packaging` | claude |  |  |
-| [c78e01](stories/c78e01-bulk-operations-on-the-board.md) | Bulk operations on the board | `ui` | claude |  |  |
 
-<details><summary><strong>Done (3)</strong></summary>
+<details><summary><strong>Done (15)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [9bf832](stories/9bf832-dependency-graph-view.md) | Dependency graph view | `ui` |  |  |  |
+| [b5d7d7](stories/b5d7d7-custom-columns-with-roles-and-wip-limits.md) | Custom columns with roles and WIP limits | `core` `ui` |  |  |  |
+| [058512](stories/058512-cross-project-dependencies-as-project-id.md) | Cross-project dependencies as project:id | `core` |  |  |  |
+| [63898e](stories/63898e-per-project-config-json-with-name-and-format-versi.md) | Per-project config.json with name and format version | `core` |  |  |  |
+| [e0cc9f](stories/e0cc9f-render-the-story-body-as-markdown-in-the-modal.md) | Render the story body as Markdown in the modal | `ui` |  |  |  |
+| [92086e](stories/92086e-publish-a-pre-commit-hook-recipe-that-runs-skald-c.md) | Publish a pre-commit hook recipe that runs skald check | `docs` |  |  |  |
+| [4ed498](stories/4ed498-author-identity-for-notes-and-claims.md) | Author identity for notes and claims | `core` |  |  |  |
+| [0b108f](stories/0b108f-board-checklist-progress-stale-marker-branch-histo.md) | Board: checklist progress, stale marker, branch, history tab, keyboard shortcuts | `ui` |  |  |  |
+| [8d081d](stories/8d081d-git-integration-status-commit-log-changelog-board.md) | Git integration: status, commit, log, changelog, board commit button | `git` `ui` |  |  |  |
+| [830b31](stories/830b31-board-project-switcher-and-all-projects-ready-view.md) | Board: project switcher and all-projects ready view | `ui` |  |  |  |
 | [9a1da4](stories/9a1da4-add-an-archive-command-for-done-stories.md) | Add an archive command for done stories | `cli` |  |  |  |
 | [670177](stories/670177-daemon-background-mode-for-the-web-server.md) | Daemon (background) mode for the web server | `ui` |  |  |  |
+| [bae374](stories/bae374-offer-a-pipx-installable-package-with-a-global-ska.md) | Offer a pipx-installable package with a global skald command | `packaging` |  | `9a1da4` |  |
+| [3da635](stories/3da635-add-an-optional-assignee-field-for-multi-agent-set.md) | Add an optional assignee field for multi-agent setups | `cli` `ui` |  |  |  |
+| [189d1b](stories/189d1b-machine-local-project-index-with-auto-registration.md) | Machine-local project index with auto-registration | `core` |  |  |  |
 
 </details>

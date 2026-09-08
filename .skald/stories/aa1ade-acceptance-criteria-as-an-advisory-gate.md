@@ -1,12 +1,12 @@
 ---
 title: "Acceptance criteria as an advisory gate"
 status: "review"
-rank: 250
+rank: 120
 tags: ["core"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:43Z"
-updated_at: "2026-09-06T19:06:43Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "skald activity: backlog transitions from git history"
 status: "review"
-rank: 290
+rank: 160
 tags: ["git"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:43Z"
-updated_at: "2026-09-06T19:09:25Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

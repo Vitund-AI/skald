@@ -1,12 +1,12 @@
 ---
 title: "Claim awareness across worktrees and stale claims"
 status: "review"
-rank: 260
+rank: 130
 tags: ["agents", "core"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:42Z"
-updated_at: "2026-09-06T19:06:43Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

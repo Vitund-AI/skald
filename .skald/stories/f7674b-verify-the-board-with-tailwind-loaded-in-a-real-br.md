@@ -1,11 +1,11 @@
 ---
 title: "Verify the board with Tailwind loaded in a real browser"
 status: "review"
-rank: 350
+rank: 220
 tags: ["ui"]
 blocked_by: []
 created_at: "2026-09-06T02:16:15Z"
-updated_at: "2026-09-07T01:37:51Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

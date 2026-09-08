@@ -1,12 +1,12 @@
 ---
 title: "Facet tags and epic progress"
 status: "review"
-rank: 210
+rank: 80
 tags: ["core", "ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T17:42:24Z"
-updated_at: "2026-09-06T17:49:47Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

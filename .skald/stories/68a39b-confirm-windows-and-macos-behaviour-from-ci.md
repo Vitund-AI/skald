@@ -1,11 +1,11 @@
 ---
 title: "Confirm Windows and macOS behaviour from CI"
 status: "review"
-rank: 320
+rank: 190
 tags: ["packaging"]
 blocked_by: []
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-06T20:54:31Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

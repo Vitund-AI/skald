@@ -1,12 +1,12 @@
 ---
 title: "Read-only views of other branches"
 status: "review"
-rank: 200
+rank: 70
 tags: ["core", "ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T17:42:24Z"
-updated_at: "2026-09-06T17:46:52Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 

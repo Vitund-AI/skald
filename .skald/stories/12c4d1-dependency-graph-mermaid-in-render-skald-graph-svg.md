@@ -1,12 +1,12 @@
 ---
 title: "Dependency graph: Mermaid in render, skald graph, SVG on the board"
 status: "review"
-rank: 310
+rank: 180
 tags: ["docs", "ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:43Z"
-updated_at: "2026-09-06T19:12:48Z"
+updated_at: "2026-09-08T17:24:21Z"
 ---
 ## Requirements
 
