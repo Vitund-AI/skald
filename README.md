@@ -47,11 +47,21 @@ GitHub issues (git-bug, git-issue).
 
 ## Install
 
+Skald is not on PyPI yet; it needs more time on real backlogs first. Install
+straight from this repository:
+
 ```sh
-pip install skald-kanban        # or: pipx install skald-kanban / uv tool install skald-kanban
+pip install git+https://github.com/Vitund-AI/skald.git
+# or: pipx install git+https://github.com/Vitund-AI/skald.git
+# or: uv tool install git+https://github.com/Vitund-AI/skald.git
 cd your-repo
 skald init
 ```
+
+Append `@main` or a tag such as `@v0.2.0` to the URL to pin a revision. Upgrade
+with the same command plus `--upgrade` (`pipx upgrade skald-kanban` or
+`uv tool upgrade skald-kanban` for those tools). The distribution name stays
+`skald-kanban`, so nothing changes when it reaches PyPI.
 
 `init` creates `.skald/`, writes `AGENTS.md`, and registers the project in
 your machine-local index so the board can find it. It is safe to run again,

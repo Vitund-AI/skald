@@ -1226,6 +1226,10 @@ skald render --stage
 """
 
 
+# Until the first PyPI release, generated workflows install from the repository.
+INSTALL_SPEC = "git+https://github.com/Vitund-AI/skald.git"
+
+
 def github_workflow(default_branch: str, render_path: str) -> str:
     return f"""name: skald
 
@@ -1245,7 +1249,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install skald-kanban
+      - run: pip install {INSTALL_SPEC}
       - run: skald check
 
   diff:
@@ -1262,7 +1266,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install skald-kanban
+      - run: pip install {INSTALL_SPEC}
       - name: Describe backlog changes in this pull request
         run: skald diff --since "origin/${{{{ github.base_ref }}}}" --until HEAD --markdown > skald-diff.md
       - name: Post or update the comment
@@ -1289,7 +1293,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install skald-kanban
+      - run: pip install {INSTALL_SPEC}
       - run: skald render --out {render_path}
       - name: Commit the rendered board if it changed
         run: |

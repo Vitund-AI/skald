@@ -12,8 +12,8 @@ This repository tracks its backlog with Skald. Stories are Markdown files in
 If `skald` is not installed, install it with one of:
 
 ```
-pip install skald-kanban        # or: pipx install skald-kanban
-uvx --from skald-kanban skald   # run without installing
+pip install git+https://github.com/Vitund-AI/skald.git        # or: pipx install ...
+uvx --from git+https://github.com/Vitund-AI/skald.git skald   # run without installing
 ```
 
 If you cannot run shell commands, the same operations are available as MCP
