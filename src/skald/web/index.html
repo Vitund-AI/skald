@@ -115,6 +115,14 @@
   <button id="bulk-archive" class="rounded border border-strong px-2 py-1 text-xs hover:bg-hover" title="Move the selected done or closed stories to .skald/archive/">Archive</button>
   <button id="bulk-clear" class="text-muted hover:text-ink text-xs" title="Clear selection (Esc)">Clear</button>
 </div>
+<div id="locked" class="hidden fixed inset-0 z-50 bg-canvas flex items-center justify-center p-6">
+  <div class="max-w-md text-center">
+    <div class="text-lg font-semibold mb-2">This board needs its key</div>
+    <p class="text-muted text-sm">Open it from a terminal inside the repository:</p>
+    <pre class="mt-3 rounded bg-chip px-4 py-3 text-sm text-left">skald open</pre>
+    <p class="text-faint text-xs mt-3">The key lives on this machine only. Scripts send it as <code>Authorization: Bearer</code>, from <code>skald server token</code>.</p>
+  </div>
+</div>
 <div id="toasts" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
 
 <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-2 sm:p-4 z-40">
@@ -256,7 +264,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, facets: {}, facetFilters: {}, groupBy: '', graph: false,
     lastWrite: 0, help: false, helpCli: null,
-    sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false,
+    sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal'), help = $('help');
   const ALL = '__all__';
@@ -267,6 +275,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
     if (method !== 'GET') state.lastWrite = Date.now();
     const res = await fetch(path, opts);
+    if (res.status === 401) { lock(); const err = new Error('not authorised'); err.status = 401; throw err; }
     if (res.status === 204) return null;
     let data = null;
     try { data = await res.json(); } catch (e) { data = null; }
@@ -274,6 +283,24 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     return data;
   }
   const P = () => `/api/projects/${encodeURIComponent(state.project)}`;
+
+  // ---- Access ----------------------------------------------------------
+  // `skald open` puts the key in the URL fragment, which never reaches the server. Trade it for a
+  // session cookie once, then drop it from the address bar.
+  async function establishSession() {
+    const m = (location.hash || '').match(/^#key=([A-Za-z0-9]+)$/);
+    if (!m) return;
+    try {
+      await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: m[1] }) });
+    } catch (e) {}
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  function lock() {
+    if (state.locked) return;
+    state.locked = true;
+    if (state.es) { state.es.close(); state.es = null; }
+    $('locked').classList.remove('hidden');
+  }
 
   // ---- Toasts ----------------------------------------------------------
   function toast(msg, kind) {
@@ -1090,12 +1117,15 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   let tick = 0;
   setInterval(() => {
     tick += 1;
-    if (document.visibilityState !== 'visible') return;
+    if (state.locked || document.visibilityState !== 'visible') return;
     // With a live event stream, poll only every 15s as a safety net; otherwise every 1.5s.
     if (state.live && tick % 10 !== 0) return;
     refresh(false);
   }, 1500);
-  loadProjects().catch(err => { $('conn').textContent = 'disconnected'; toast(err.message, 'error'); });
+  establishSession().then(loadProjects).catch(err => {
+    if (err.status === 401) return;
+    $('conn').textContent = 'disconnected'; toast(err.message, 'error');
+  });
 })();
 </script>
 </body>

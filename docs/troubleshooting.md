@@ -54,6 +54,20 @@ not show in `resume`.
 
 ## The board
 
+**The page says it needs its key**
+You opened the board by typing the address. Run `skald open` inside the
+repository; it opens the board with the key and the page keeps a session
+cookie from then on. If you rotated the token with `skald server token
+--rotate`, every open tab needs a fresh `skald open`.
+
+**A script gets 401**
+Send the token: `-H "Authorization: Bearer $(skald server token)"`. Only
+`/api/health` is open.
+
+**A request gets 403**
+The `Host` header was not this machine. Use `127.0.0.1` or `localhost` in
+the URL, not a DNS name.
+
 **The page is unstyled or the preview does not render**
 Tailwind and marked load from CDNs. Without internet access the board works
 but looks plain. Nothing else depends on the network.

@@ -356,9 +356,25 @@ story or configuration. Commands that print stories take `--json`.
 
 ## 7. HTTP API
 
-`ThreadingHTTPServer`, bound to `127.0.0.1` by default, no authentication.
-Project names in URLs are resolved through the registry; the API never
-accepts a filesystem path. A fresh `Workspace` is built per request so
+`ThreadingHTTPServer`, bound to `127.0.0.1` by default. Project names in
+URLs are resolved through the registry; the API never accepts a filesystem
+path.
+
+Access: `serve` generates a 32-byte hex token on first start, stored as
+`token` in the machine-local directory with mode 0600 (directory 0700), and
+re-reads it whenever the file's mtime changes so `server token --rotate`
+takes effect immediately. Every `/api/` route except `GET /api/health` and
+`/api/session` requires the token as `Authorization: Bearer` or as the
+`skald_session` cookie, compared in constant time; failures are 401. Before
+that, every `/api/` route except health checks the `Host` header against
+`localhost`, `127.0.0.1`, `::1`, or the bound address, and refuses with 403
+otherwise (DNS rebinding); the check is skipped when bound to all
+interfaces, where the token is the only gate. `POST /api/session {token}`
+sets the cookie (`HttpOnly`, `SameSite=Strict`, `Path=/`) and `DELETE`
+clears it. `skald open` and `serve --open` put the key in the URL fragment
+(`/#key=…`), which browsers never send to the server; the page posts it to
+`/api/session` and rewrites the URL. The CLI and MCP server read files
+directly and are unaffected. A fresh `Workspace` is built per request so
 registry and config edits are picked up immediately. See the README for the
 endpoint table; it is the reference.
 

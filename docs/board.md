@@ -1,7 +1,7 @@
 # The board
 
 One local web page that shows every registered project, updates live, and
-never needs a login.
+needs no account: `skald open` carries the key.
 
 ```sh
 skald open              # ensure the background server is running, open this project
@@ -12,10 +12,35 @@ skald serve             # run in the foreground instead
 ```
 
 The server binds to `127.0.0.1` on port 8321 by default (`skald config port`
-changes it). It has no authentication and every write endpoint changes
-files, so only expose it on other interfaces deliberately. The page loads
-Tailwind and marked from CDNs, so styling and Markdown preview need internet
-access; without it the board still works, unstyled.
+changes it). The page loads Tailwind and marked from CDNs, so styling and
+Markdown preview need internet access; without it the board still works,
+unstyled.
+
+## Access
+
+The server requires a key. `skald open` handles it: the first server start
+generates a random token in your machine-local directory (a private file,
+never committed), and `skald open` opens the board with the key in the URL
+fragment. The page trades it for a session cookie and drops it from the
+address bar. A board opened by typing the address shows one line asking you
+to run `skald open`.
+
+Why: a localhost bind keeps the network out, but not other users on the
+machine, and not the web pages you visit, which can send requests to
+`127.0.0.1` from your own browser. The cookie is `HttpOnly` and
+`SameSite=Strict`, and the server refuses requests whose `Host` header is
+not this machine, so neither a hostile page nor a DNS name pointing at
+127.0.0.1 can ride your session.
+
+Scripts send the same token as a header, from `skald server token`:
+
+```sh
+curl -H "Authorization: Bearer $(skald server token)" http://127.0.0.1:8321/api/projects
+skald server token --rotate      # new token; browser sessions and scripts must reconnect
+```
+
+`/api/health` is the only open endpoint. Exposing the server on another
+interface still means plaintext HTTP, so do that deliberately.
 
 ## Header
 
