@@ -1444,8 +1444,8 @@ jobs:
       - name: Commit the rendered board if it changed
         run: |
           if ! git diff --quiet -- {render_path}; then
-            git config user.name "skald"
-            git config user.email "skald@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -- {render_path}
             git commit -m "skald: refresh rendered board [skip ci]"
             git push
