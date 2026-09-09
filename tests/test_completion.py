@@ -88,7 +88,7 @@ class TestCompletion(SkaldTestCase):
         self.assertEqual(self.values("facets", ""), ["epic"])
         self.assertIn("author", self.values("config", ""))
         self.assertEqual(self.values("config", "push", ""), ["true", "false"])
-        self.assertEqual(self.values("projects", ""), ["rm"])
+        self.assertEqual(self.values("projects", ""), ["rm", "use"])
         self.assertEqual(self.values("projects", "rm", ""), ["alpha", "beta"])
         self.assertEqual(self.values("hooks", ""), ["claude", "git", "github"])
         self.assertEqual(self.values("completion", "z"), ["zsh"])

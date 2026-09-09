@@ -1,7 +1,7 @@
-<!-- skald-render 2ebfd9b3f6d16d3b -->
+<!-- skald-render 1b0711aadc649ef7 -->
 # skald backlog
 
-**32 open** · Backlog 1 · Ready 1 · In progress 0 · Review 30 · Done 15
+**33 open** · Backlog 1 · Ready 1 · In progress 0 · Review 31 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -17,8 +17,8 @@ flowchart LR
     n_9a1da4 --> n_bae374
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_46b5d3,n_cbb58e active
     class n_9a1da4,n_bae374 done
+    class n_46b5d3,n_cbb58e active
 ```
 
 ## Backlog (1)
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (30)
+## Review (31)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -71,6 +71,7 @@ _none_
 | [71f880](stories/71f880-user-docs-guides-under-docs-and-a-generated-cli-re.md) | User docs: guides under docs/ and a generated CLI reference | `docs` | claude |  | 4/4 |
 | [43a999](stories/43a999-board-server-authentication-machine-local-token-se.md) | Board server authentication: machine-local token, session cookie, bearer header | `core` `ui` | claude |  | 5/5 |
 | [b2f19e](stories/b2f19e-render-workflow-commits-as-github-actions-bot-not.md) | Render workflow commits as github-actions[bot], not a real user's noreply address | `git` `packaging` | claude |  | 2/2 |
+| [8c4d2c](stories/8c4d2c-checkouts-see-every-worktree-s-working-tree-on-the.md) | Checkouts: see every worktree's working tree on the board, claims visible before commit | `agents` `core` `ui` | claude |  | 6/6 |
 
 <details><summary><strong>Done (15)</strong></summary>
 

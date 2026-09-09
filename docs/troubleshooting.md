@@ -15,6 +15,17 @@ The index does not know that project yet. Run any `skald` command inside
 its repository once; that registers it. `skald projects` lists what is
 known.
 
+**`project 'x' is registered at A; this checkout at B is recorded beside it`**
+You ran a command in a second checkout of a repository, a worktree or
+another clone. Nothing is wrong: commands act where you run them, and the
+board can show this checkout too. `skald projects use` here makes it the
+primary, the one `-p x` and the board open first.
+
+**The board shows a checkout I did not expect**
+The primary is the first checkout registered. `skald projects` lists them;
+`skald projects use` in the right one switches. If the old directory is
+gone, the next checkout to run a command takes over automatically.
+
 **A dependency warns `unavailable`**
 A `project:id` reference points at a project that is not registered here.
 Clone and register it, or accept the warning: it counts as unmet and blocks

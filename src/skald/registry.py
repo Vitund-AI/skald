@@ -8,6 +8,7 @@ Nothing here is ever committed. The config directory is resolved as:
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import secrets
@@ -150,6 +151,11 @@ class UserConfig:
         atomic_write(self.path, json.dumps(self.data, indent=2) + "\n")
 
 
+def checkout_id(skald_dir: Path) -> str:
+    """An opaque, stable id for a checkout: the API and the board refer to paths only through it."""
+    return hashlib.sha1(str(Path(skald_dir).resolve()).encode("utf-8")).hexdigest()[:8]
+
+
 class Registry:
     """The index of projects known on this machine: ``projects.json``."""
 
@@ -165,19 +171,108 @@ class Registry:
         atomic_write(self.path, json.dumps({"projects": self.projects}, indent=2, sort_keys=True) + "\n")
 
     def register(self, name: str, skald_dir: Path) -> Optional[str]:
-        """Record ``name`` at ``skald_dir``. Returns a notice if something changed, else None."""
+        """Record ``name`` at ``skald_dir``. Returns a notice if something changed, else None.
+
+        The first path registered for a name is the primary: the one ``-p NAME``,
+        cross-project references, and the board use. Another checkout of the
+        same project (a worktree or a second clone) is recorded as a checkout
+        and never replaces a primary that still exists. The primary moves only
+        when its directory has gone, which is the "I moved the repository" case.
+        """
         skald_dir = Path(skald_dir).resolve()
         entry = self.projects.get(name)
-        if entry and Path(entry.get("path", "")) == skald_dir:
+        if entry is None:
+            self.projects[name] = {"path": str(skald_dir), "registered_at": now_iso()}
+            self.save()
+            return f"registered project '{name}' at {skald_dir}"
+        primary = Path(entry.get("path", ""))
+        if primary == skald_dir:
             return None
-        notice = None
-        if entry:
-            notice = f"project '{name}' moved from {entry.get('path')} to {skald_dir}"
-        else:
-            notice = f"registered project '{name}' at {skald_dir}"
-        self.projects[name] = {"path": str(skald_dir), "registered_at": now_iso()}
+        others = [Path(p) for p in entry.get("checkouts", [])]
+        if not (primary / "stories").is_dir():
+            entry["path"] = str(skald_dir)
+            entry["registered_at"] = now_iso()
+            entry["checkouts"] = [str(p) for p in others if p != skald_dir]
+            if not entry["checkouts"]:
+                entry.pop("checkouts")
+            self.save()
+            return f"project '{name}' moved from {primary} to {skald_dir}"
+        if skald_dir in others:
+            return None
+        entry["checkouts"] = [str(p) for p in others] + [str(skald_dir)]
         self.save()
-        return notice
+        return (f"project '{name}' is registered at {primary}; this checkout at {skald_dir} is recorded "
+                f"beside it (`skald projects use` here makes it the primary)")
+
+    def use(self, name: str, skald_dir: Path) -> None:
+        """Make ``skald_dir`` the primary path for ``name``; the old primary becomes a checkout."""
+        skald_dir = Path(skald_dir).resolve()
+        entry = self.projects.get(name)
+        if entry is None:
+            raise NotFoundError(f"no registered project '{name}'")
+        primary = Path(entry.get("path", ""))
+        if primary == skald_dir:
+            return
+        others = [Path(p) for p in entry.get("checkouts", []) if Path(p) != skald_dir]
+        if (primary / "stories").is_dir():
+            others.insert(0, primary)
+        entry["path"] = str(skald_dir)
+        entry["registered_at"] = now_iso()
+        if others:
+            entry["checkouts"] = [str(p) for p in others]
+        else:
+            entry.pop("checkouts", None)
+        self.save()
+
+    def checkouts(self, name: str) -> list[dict]:
+        """Every working tree of ``name``: the primary first, then recorded checkouts and git worktrees.
+
+        Each is ``{id, path, primary, worktree, exists}``. ``id`` is a short hash
+        of the path so the HTTP API never carries a filesystem path. Recorded
+        checkouts whose directory has gone are forgotten.
+        """
+        entry = self.projects.get(name)
+        if entry is None:
+            return []
+        primary = Path(entry.get("path", ""))
+        exists = (primary / "stories").is_dir()
+        out = [{"id": checkout_id(primary), "path": str(primary), "primary": True, "worktree": False, "exists": exists}]
+        seen = {primary}
+        # Git worktrees of the primary, found without anyone registering them.
+        worktrees: list[Path] = []
+        if exists:
+            from . import gitutil
+
+            repo = gitutil.root(primary)
+            if repo is not None:
+                try:
+                    rel = primary.relative_to(repo)
+                except ValueError:
+                    rel = None
+                if rel is not None:
+                    worktrees = [(wt / rel).resolve() for wt in gitutil.worktrees(repo)]
+        kept = []
+        for p in [Path(x) for x in entry.get("checkouts", [])]:
+            if p in seen:
+                continue
+            seen.add(p)
+            if not (p / "stories").is_dir():
+                continue
+            kept.append(p)
+            out.append({"id": checkout_id(p), "path": str(p), "primary": False, "worktree": p in worktrees,
+                        "exists": True})
+        if [str(p) for p in kept] != entry.get("checkouts", []):
+            if kept:
+                entry["checkouts"] = [str(p) for p in kept]
+            else:
+                entry.pop("checkouts", None)
+            self.save()
+        for p in worktrees:
+            if p in seen or not (p / "stories").is_dir():
+                continue
+            seen.add(p)
+            out.append({"id": checkout_id(p), "path": str(p), "primary": False, "worktree": True, "exists": True})
+        return out
 
     def remove(self, name: str) -> None:
         if name not in self.projects:
@@ -198,6 +293,7 @@ class Registry:
                 "path": str(p),
                 "exists": (p / "stories").is_dir(),
                 "registered_at": self.projects[name].get("registered_at", ""),
+                "checkouts": [c for c in self.checkouts(name) if not c["primary"]],
             })
         return out
 
@@ -263,7 +359,9 @@ class Workspace:
             if notice:
                 self.notices.append(notice)
         store = Store(skald_dir, config, workspace=self)
-        self._stores[config.name] = store
+        primary = self.registry.path_of(config.name)
+        if primary is None or primary == skald_dir:
+            self._stores[config.name] = store
         return store
 
     def open(self, name: str) -> Optional[Store]:
@@ -279,6 +377,30 @@ class Workspace:
                 store = None
         self._stores[name] = store
         return store
+
+    def open_checkout(self, name: str, checkout: str) -> Optional[Store]:
+        """Open one checkout of ``name`` by its id (see ``Registry.checkouts``). None if unknown."""
+        for c in self.registry.checkouts(name):
+            if c["id"] == checkout:
+                if c["primary"]:
+                    return self.open(name)
+                try:
+                    return self.open_dir(Path(c["path"]), register=False, create_config=False)
+                except (ConfigError, NotFoundError):
+                    return None
+        return None
+
+    def other_checkouts(self, store: Store) -> list[Store]:
+        """Stores for the other working trees of ``store``'s project, for claims made there but not committed."""
+        out = []
+        for c in self.registry.checkouts(store.name):
+            if Path(c["path"]) == store.dir or not c["exists"]:
+                continue
+            try:
+                out.append(self.open_dir(Path(c["path"]), register=False, create_config=False))
+            except (ConfigError, NotFoundError, SkaldError):
+                continue
+        return out
 
     def open_all(self) -> tuple[list[Store], list[str]]:
         stores, warnings = [], []

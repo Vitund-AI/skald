@@ -454,7 +454,7 @@ List story templates in .skald/templates/.
 ## projects
 
 ```
-skald projects [--json] {rm} ...
+skald projects [--json] {rm,use} ...
 ```
 
 List projects registered on this machine.
@@ -474,6 +474,18 @@ Forget a project (files are untouched).
 | Argument | Description |
 | --- | --- |
 | `name` | the project name from its config.json |
+
+### projects use
+
+```
+skald projects use [path]
+```
+
+Make this checkout the project's primary: the one -p NAME and the board open.
+
+| Argument | Description |
+| --- | --- |
+| `[path]` | a checkout of the project; default: the current directory |
 
 ## config
 

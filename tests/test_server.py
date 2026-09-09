@@ -283,6 +283,43 @@ class TestBranchAPI(ServerTestCase):
         self.assertNotIn("readonly", board)
         self.assertEqual([s["id"] for s in board["stories"]], [a])
 
+    def test_checkouts_worktree_view_and_claims(self):
+        P = "/api/projects/alpha"
+        status, data = self.call("POST", f"{P}/stories", {"title": "shared", "status": "ready"})
+        a = data["story"]["id"]
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "base")
+        wt = self.tmp / "alpha-wt"
+        git(self.repo, "worktree", "add", "-q", "-b", "feature", str(wt))
+
+        status, cos = self.call("GET", f"{P}/checkouts")
+        self.assertEqual(status, 200)
+        self.assertEqual([(c["primary"], c["worktree"], c["branch"]) for c in cos["checkouts"]],
+                         [(True, False, "master"), (False, True, "feature")])
+        self.assertEqual(cos["current"], cos["checkouts"][0]["id"])
+        wt_id = cos["checkouts"][1]["id"]
+        self.assertNotIn("/", wt_id)
+
+        # The worktree's board is its own working tree, editable; the primary is untouched.
+        status, board = self.call("GET", f"{P}/board?checkout={wt_id}")
+        self.assertEqual((status, board["checkout"]["primary"], board["git"]["branch"]), (200, False, "feature"))
+        self.assertEqual(board["path"], str((wt / ".skald").resolve()))
+        status, data = self.call("POST", f"{P}/stories/{a}/claim?checkout={wt_id}", {"author": "worker"})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.call("GET", f"{P}/stories/{a}?checkout={wt_id}")[1]["assignee"], "worker")
+        self.assertEqual(self.call("GET", f"{P}/stories/{a}")[1]["assignee"], "")
+        status, cos = self.call("GET", f"{P}/checkouts")
+        self.assertEqual(cos["checkouts"][1]["changes"], 1)
+        # From the primary, the uncommitted claim in the worktree is a claim elsewhere.
+        status, data = self.call("GET", f"{P}/branches")
+        self.assertEqual(data["claims"][a], [{"branch": "feature", "assignee": "worker", "status": "in_progress",
+                                             "checkout": str((wt / ".skald").resolve())}])
+        # Ids only: an unknown id is 404, and a path is not an id.
+        self.assertEqual(self.call("GET", f"{P}/board?checkout=nope")[0], 404)
+        self.assertEqual(self.call("GET", f"{P}/board?checkout={wt / '.skald'}")[0], 404)
+        status, cos = self.call("GET", f"{P}/checkouts?checkout={wt_id}")
+        self.assertEqual(cos["current"], wt_id)
+
 
 class TestAuth(ServerTestCase):
     def test_token_required_except_health(self):
