@@ -6,6 +6,14 @@ The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
 
 ### Added
+- User guides under `docs/`: getting started, working with agents, the
+  board, stories, git and CI, multiple projects, the HTTP API, and
+  troubleshooting. `skald docs` generates `docs/cli.md` from the parser and
+  every CLI argument now has help text. The README is the front door.
+- `skald release VERSION` writes a changelog section from the done column,
+  stamps the stories with `released`, archives them, and commits; stories can
+  carry a `## Changelog` section written for users; `ls --release VERSION`
+  lists what shipped.
 - `skald completion bash|zsh|fish`: Tab completes commands, flags, story ids
   with titles, columns, tags, blockers, projects, templates, branches, and
   note kinds; `git skald` too.

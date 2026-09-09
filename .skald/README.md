@@ -1,7 +1,7 @@
-<!-- skald-render 63f03885ebe8f9e3 -->
+<!-- skald-render 9e4b5779b126d008 -->
 # skald backlog
 
-**28 open** · Backlog 1 · Ready 1 · In progress 0 · Review 26 · Done 15
+**30 open** · Backlog 1 · Ready 1 · In progress 0 · Review 28 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (26)
+## Review (28)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -67,6 +67,8 @@ _none_
 | [1b15cc](stories/1b15cc-install-from-github-until-the-first-pypi-release.md) | Install from GitHub until the first PyPI release | `docs` `packaging` | claude |  |  |
 | [61b53c](stories/61b53c-shell-completion-for-bash-zsh-and-fish.md) | Shell completion for bash, zsh, and fish | `cli` | claude |  | 5/5 |
 | [664976](stories/664976-readme-screenshots-board-story-terminal-session-co.md) | README screenshots: board, story, terminal session, completion, graph, multi-select | `docs` | claude |  |  |
+| [95e3a5](stories/95e3a5-skald-release-changelog-section-from-the-done-colu.md) | skald release: changelog section from the done column, then archive with a version stamp | `cli` `git` | claude |  | 6/6 |
+| [71f880](stories/71f880-user-docs-guides-under-docs-and-a-generated-cli-re.md) | User docs: guides under docs/ and a generated CLI reference | `docs` | claude |  | 4/4 |
 
 <details><summary><strong>Done (15)</strong></summary>
 

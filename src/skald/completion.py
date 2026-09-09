@@ -25,7 +25,7 @@ ID_COMMANDS = {"show", "move", "claim", "set", "tag", "block", "note", "rm", "lo
 FLAG_SOURCES = {
     "-p": "projects", "--project": "projects", "--status": "columns", "--template": "templates",
     "--branch": "refs", "--since": "refs", "--until": "refs", "--as": "authors", "--assignee": "authors",
-    "--tags": "tags", "--blocked-by": "ids", "--kind": "kinds",
+    "--tags": "tags", "--blocked-by": "ids", "--kind": "kinds", "--release": "releases",
 }
 
 Candidate = tuple[str, str]
@@ -142,6 +142,12 @@ class Completer:
             return self.ids(project)
         if name == "kinds":
             return [(k, "note kind") for k in NOTE_KINDS]
+        if name == "releases":
+            seen: dict[str, int] = {}
+            for s in self.stories(project, archived=True):
+                if s.released:
+                    seen[s.released] = seen.get(s.released, 0) + 1
+            return [(v, f"{n} stor{'y' if n == 1 else 'ies'}") for v, n in sorted(seen.items(), reverse=True)]
         return []
 
     # -- the walk -----------------------------------------------------------
