@@ -537,7 +537,7 @@ Run the board in the foreground.
 ## server
 
 ```
-skald server {start,stop,status} ...
+skald server {start,stop,status,token} ...
 ```
 
 Manage the background board server.
@@ -570,6 +570,18 @@ skald server status
 ```
 
 Show whether the background server is running.
+
+### server token
+
+```
+skald server token [--rotate]
+```
+
+Print the board's access token (scripts send it as Authorization: Bearer).
+
+| Argument | Description |
+| --- | --- |
+| `--rotate` | replace it; existing browser sessions stop working |
 
 ## open
 

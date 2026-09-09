@@ -68,6 +68,6 @@ skald config author --unset
 ```
 
 Settings live in the same machine-local directory and apply to every
-project. Identity works like this: notes from the CLI are labelled `agent`
+project, as does the board's access token (`skald server token`). Identity works like this: notes from the CLI are labelled `agent`
 unless you pass `--as NAME` or set `SKALD_AUTHOR`; notes from the board use
 `SKALD_AUTHOR`, then the configured `author`, then your git `user.name`.
