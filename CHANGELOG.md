@@ -6,6 +6,11 @@ The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
 
 ### Added
+- The board server requires a per-machine token. `skald open` handles the
+  handshake through a session cookie; scripts send `Authorization: Bearer`
+  with the value from `skald server token`. Requests from a non-local `Host`
+  are refused. This closes cross-site requests from web pages and other
+  local users.
 - User guides under `docs/`: getting started, working with agents, the
   board, stories, git and CI, multiple projects, the HTTP API, and
   troubleshooting. `skald docs` generates `docs/cli.md` from the parser and

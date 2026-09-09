@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
+import stat
 import sys
 from pathlib import Path
 from typing import Optional
@@ -39,6 +41,46 @@ def config_home() -> Path:
     xdg = os.environ.get("XDG_CONFIG_HOME")
     base = Path(xdg).expanduser() if xdg else Path.home() / ".config"
     return base / "skald"
+
+
+def token_path(home: Path) -> Path:
+    return home / "token"
+
+
+def read_token(home: Path) -> Optional[str]:
+    """The board server's token, or None if none has been generated yet."""
+    try:
+        value = token_path(home).read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return value or None
+
+
+def ensure_token(home: Path) -> str:
+    """Create the token on first use. The file is private to the user (0600 in a 0700 directory)."""
+    existing = read_token(home)
+    if existing:
+        return existing
+    return rotate_token(home)
+
+
+def rotate_token(home: Path) -> str:
+    """Replace the token. Existing browser sessions and scripts stop working until they use the new one."""
+    home.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(home, stat.S_IRWXU)
+    except OSError:  # pragma: no cover - Windows, or a directory we do not own
+        pass
+    value = secrets.token_hex(32)
+    path = token_path(home)
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(value + "\n")
+    try:
+        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+    except OSError:  # pragma: no cover
+        pass
+    return value
 
 
 def _load_json(path: Path, default):

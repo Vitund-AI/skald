@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import os
 import signal
@@ -11,6 +12,7 @@ import sys
 import threading
 import time
 import webbrowser
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Optional
@@ -20,7 +22,7 @@ from urllib.request import urlopen
 
 from . import __version__, gitutil
 from .errors import GitError, NotFoundError, SkaldError
-from .registry import Registry, UserConfig, Workspace
+from .registry import Registry, UserConfig, Workspace, ensure_token, read_token, token_path
 from .store import Store, facets as compute_facets
 from .util import sha256_text
 
@@ -44,6 +46,21 @@ class SkaldServer(ThreadingHTTPServer):
         self._html: Optional[str] = None
         self._snapshots: dict = {}
         self._snap_lock = threading.Lock()
+        self._token: Optional[str] = None
+        self._token_mtime: Optional[int] = None
+
+    def token(self) -> Optional[str]:
+        """The current token, re-read when the file changes so `server token --rotate` takes effect at once."""
+        if self.home is None:
+            return None
+        try:
+            mtime = token_path(self.home).stat().st_mtime_ns
+        except OSError:
+            self._token, self._token_mtime = None, None
+            return None
+        if mtime != self._token_mtime:
+            self._token, self._token_mtime = read_token(self.home), mtime
+        return self._token
 
     def server_bind(self):
         # HTTPServer.server_bind resolves the bound host with socket.getfqdn(), a reverse DNS lookup
@@ -94,17 +111,74 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- plumbing --------------------------------------------------------
 
-    def _send(self, status: int, body: bytes, content_type: str) -> None:
+    def _send(self, status: int, body: bytes, content_type: str, headers: Optional[list] = None) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for name, value in headers or []:
+            self.send_header(name, value)
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
 
-    def _json(self, status: int, obj) -> None:
-        self._send(status, json.dumps(obj).encode("utf-8"), "application/json; charset=utf-8")
+    def _json(self, status: int, obj, headers: Optional[list] = None) -> None:
+        self._send(status, json.dumps(obj).encode("utf-8"), "application/json; charset=utf-8", headers)
+
+    # -- access ----------------------------------------------------------
+
+    LOOPBACK = {"localhost", "127.0.0.1", "::1", "[::1]"}
+    COOKIE = "skald_session"
+
+    def _host_ok(self) -> bool:
+        """Refuse requests whose Host is not this machine: a hostile DNS name pointing at 127.0.0.1 fails here."""
+        bound = self.server.server_address[0]
+        if bound in ("", "0.0.0.0", "::"):
+            return True  # bound to every interface on purpose; the token is the only gate
+        host = (self.headers.get("Host") or "").strip().lower()
+        if host.startswith("["):
+            host = host.split("]", 1)[0] + "]"
+        else:
+            host = host.rsplit(":", 1)[0] if host.count(":") == 1 else host
+        return host in self.LOOPBACK or host == bound.lower()
+
+    def _presented_token(self) -> Optional[str]:
+        auth = self.headers.get("Authorization") or ""
+        if auth.lower().startswith("bearer "):
+            return auth[7:].strip()
+        raw = self.headers.get("Cookie")
+        if raw:
+            jar = SimpleCookie()
+            try:
+                jar.load(raw)
+            except Exception:  # pragma: no cover - malformed cookie header
+                return None
+            if self.COOKIE in jar:
+                return jar[self.COOKIE].value
+        return None
+
+    def _authorised(self) -> bool:
+        expected = self.server.token()
+        given = self._presented_token()
+        if not expected or not given:
+            return False
+        return hmac.compare_digest(expected.encode(), given.encode())
+
+    def _session(self, method: str) -> None:
+        """POST {token} mints the session cookie for the board; DELETE clears it."""
+        if method == "DELETE":
+            self._json(200, {"ok": True}, [("Set-Cookie", f"{self.COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict")])
+            return
+        if method != "POST":
+            self._json(405, {"error": "method not allowed"})
+            return
+        body = self._read_json()
+        token = body.get("token")
+        expected = self.server.token()
+        if not isinstance(token, str) or not expected or not hmac.compare_digest(expected.encode(), token.encode()):
+            self._json(401, {"error": "wrong token; open the board with `skald open`"})
+            return
+        self._json(200, {"ok": True}, [("Set-Cookie", f"{self.COOKIE}={expected}; Path=/; HttpOnly; SameSite=Strict")])
 
     def _read_json(self) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
@@ -235,11 +309,19 @@ class Handler(BaseHTTPRequestHandler):
             self._json(404, {"error": "not found"})
             return
         rest = parts[1:]
-        ws = self.server.workspace()
-
         if rest == ["health"] and method == "GET":
             self._json(200, {"ok": True, "version": __version__, "pid": os.getpid()})
             return
+        if not self._host_ok():
+            self._json(403, {"error": "requests must come from this machine"})
+            return
+        if rest == ["session"]:
+            self._session(method)
+            return
+        if not self._authorised():
+            self._json(401, {"error": "not authorised; open the board with `skald open`, or send Authorization: Bearer <token> from `skald server token`"})
+            return
+        ws = self.server.workspace()
 
         if rest == ["help"] and method == "GET":
             from .cli import command_reference
@@ -506,11 +588,22 @@ def pid_alive(pid: int) -> bool:
     return True
 
 
+def board_url(host: str, port: int, token: Optional[str], project: Optional[str] = None) -> str:
+    """The URL `skald open` opens: the key rides in the fragment, which never reaches the server or its log."""
+    url = f"http://{host}:{port}/"
+    if project:
+        url += f"?project={project}"
+    if token:
+        url += f"#key={token}"
+    return url
+
+
 def serve(home: Path, host: str, port: int, open_browser: bool = False, quiet: bool = True) -> int:
+    home.mkdir(parents=True, exist_ok=True)
+    token = ensure_token(home)
     httpd = SkaldServer((host, port), home=home, quiet=quiet)
     actual_port = httpd.server_address[1]
     url = f"http://{host}:{actual_port}/"
-    home.mkdir(parents=True, exist_ok=True)
     state_path(home).write_text(json.dumps({
         "pid": os.getpid(), "host": host, "port": actual_port, "started_at": time.time(), "version": __version__,
     }), encoding="utf-8")
@@ -525,7 +618,7 @@ def serve(home: Path, host: str, port: int, open_browser: bool = False, quiet: b
         except (ValueError, OSError):  # pragma: no cover - not main thread / platform
             pass
     if open_browser:
-        webbrowser.open(url)
+        webbrowser.open(board_url(host, actual_port, token))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:  # pragma: no cover
@@ -650,6 +743,15 @@ def cmd_server(ws: Workspace, args) -> int:
         else:
             print("server is not running")
         return 0
+    if args.server_cmd == "token":
+        from .registry import rotate_token
+
+        if args.rotate:
+            print(rotate_token(home))
+            print("token rotated; browser sessions and scripts need the new value", file=sys.stderr)
+        else:
+            print(ensure_token(home))
+        return 0
     if args.server_cmd == "status":
         state = server_status(home)
         if state:
@@ -657,7 +759,7 @@ def cmd_server(ws: Workspace, args) -> int:
             return 0
         print("not running")
         return 1
-    print("usage: skald server start|stop|status", file=sys.stderr)
+    print("usage: skald server start|stop|status|token", file=sys.stderr)
     return 1
 
 
@@ -667,7 +769,7 @@ def cmd_open(ws: Workspace, store: Store) -> int:
     if not state:
         state = start_server(home, ws.user.get("host"), int(ws.user.get("port")))
         print(f"started server at http://{state['host']}:{state['port']}/ (pid {state['pid']})")
-    url = f"http://{state['host']}:{state['port']}/?project={store.name}"
-    print(url)
+    url = board_url(state["host"], state["port"], ensure_token(home), store.name)
+    print(url.split("#", 1)[0])
     webbrowser.open(url)
     return 0

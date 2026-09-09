@@ -7,7 +7,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from skald import server as srv
-from skald.registry import UserConfig
+from skald.registry import UserConfig, ensure_token, read_token, rotate_token
 
 from .helpers import SkaldTestCase, git
 
@@ -15,6 +15,7 @@ from .helpers import SkaldTestCase, git
 class ServerTestCase(SkaldTestCase):
     def setUp(self):
         super().setUp()
+        self.token = ensure_token(self.home)
         self.httpd = srv.SkaldServer(("127.0.0.1", 0), home=self.home, quiet=True)
         self.base = f"http://127.0.0.1:{self.httpd.server_address[1]}"
         t = threading.Thread(target=self.httpd.serve_forever, daemon=True)
@@ -22,11 +23,15 @@ class ServerTestCase(SkaldTestCase):
         self.addCleanup(self.httpd.server_close)
         self.addCleanup(self.httpd.shutdown)
 
-    def call(self, method, path, body=None):
+    def call(self, method, path, body=None, headers=None, auth=True):
         data = json.dumps(body).encode() if body is not None else None
         req = Request(self.base + path, data=data, method=method)
         if data is not None:
             req.add_header("Content-Type", "application/json")
+        if auth:
+            req.add_header("Authorization", f"Bearer {self.token}")
+        for k, v in (headers or {}).items():
+            req.add_header(k, v)
         try:
             with urlopen(req) as res:
                 raw = res.read()
@@ -71,7 +76,7 @@ class TestAPI(ServerTestCase):
         self.assertIn("title", flags)
         self.assertIn("--tags TAGS", flags)
         server = next(c for c in data["commands"] if c["name"] == "server")
-        self.assertEqual([s["name"] for s in server["subcommands"]], ["server start", "server stop", "server status"])
+        self.assertEqual([s["name"] for s in server["subcommands"]], ["server start", "server stop", "server status", "server token"])
         self.assertTrue(all(s["help"] for s in server["subcommands"]))
         render = next(c for c in data["commands"] if c["name"] == "render")
         fmt = next(a for a in render["arguments"] if a["flags"][0].startswith("--format"))
@@ -182,7 +187,8 @@ class TestAPI(ServerTestCase):
         self.assertEqual(data["templates"], [])
 
     def test_bad_json(self):
-        req = Request(self.base + "/api/projects/alpha/stories", data=b"{not json", method="POST")
+        req = Request(self.base + "/api/projects/alpha/stories", data=b"{not json", method="POST",
+                      headers={"Authorization": f"Bearer {self.token}"})
         req.add_header("Content-Type", "application/json")
         with self.assertRaises(HTTPError) as cm:
             urlopen(req)
@@ -232,7 +238,7 @@ class TestEvents(ServerTestCase):
         self.addCleanup(setattr, srv, "SSE_INTERVAL", 0.5)
         host, port = self.httpd.server_address
         sock = socket.create_connection((host, port), timeout=5)
-        sock.sendall(b"GET /api/projects/alpha/events HTTP/1.1\r\nHost: x\r\n\r\n")
+        sock.sendall(f"GET /api/projects/alpha/events HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer {self.token}\r\n\r\n".encode())
         buf = b""
         while b"event: hello" not in buf:
             buf += sock.recv(4096)
@@ -276,3 +282,57 @@ class TestBranchAPI(ServerTestCase):
         status, board = self.call("GET", f"{P}/board")
         self.assertNotIn("readonly", board)
         self.assertEqual([s["id"] for s in board["stories"]], [a])
+
+
+class TestAuth(ServerTestCase):
+    def test_token_required_except_health(self):
+        self.assertEqual(self.call("GET", "/api/health", auth=False)[0], 200)
+        status, data = self.call("GET", "/api/projects", auth=False)
+        self.assertEqual(status, 401)
+        self.assertIn("skald open", data["error"])
+        self.assertEqual(self.call("GET", "/api/projects", auth=False, headers={"Authorization": "Bearer nope"})[0], 401)
+        self.assertEqual(self.call("POST", "/api/projects/alpha/stories", {"title": "x"}, auth=False)[0], 401)
+        self.assertEqual(self.call("GET", "/api/projects")[0], 200)
+        with urlopen(self.base + "/") as res:  # the page itself is public; it shows the lock message
+            self.assertEqual(res.status, 200)
+
+    def test_session_cookie_flow(self):
+        status, data = self.call("POST", "/api/session", {"token": "wrong"}, auth=False)
+        self.assertEqual(status, 401)
+        req = Request(self.base + "/api/session", data=json.dumps({"token": self.token}).encode(), method="POST",
+                      headers={"Content-Type": "application/json"})
+        with urlopen(req) as res:
+            cookie = res.headers.get("Set-Cookie")
+        self.assertIn("skald_session=", cookie)
+        self.assertIn("HttpOnly", cookie)
+        self.assertIn("SameSite=Strict", cookie)
+        value = cookie.split(";")[0]
+        self.assertEqual(self.call("GET", "/api/projects", auth=False, headers={"Cookie": value})[0], 200)
+        req = Request(self.base + "/api/session", method="DELETE", headers={"Cookie": value})
+        with urlopen(req) as res:
+            self.assertIn("Max-Age=0", res.headers.get("Set-Cookie"))
+
+    def test_host_header_must_be_local(self):
+        status, data = self.call("GET", "/api/projects", headers={"Host": "evil.example.com"})
+        self.assertEqual(status, 403)
+        self.assertEqual(self.call("GET", "/api/projects", headers={"Host": "localhost:9"})[0], 200)
+        self.assertEqual(self.call("GET", "/api/projects", headers={"Host": "127.0.0.1"})[0], 200)
+        self.assertEqual(self.call("POST", "/api/session", {"token": self.token}, auth=False, headers={"Host": "evil.example.com"})[0], 403)
+
+    def test_rotate_invalidates_and_cli_prints(self):
+        old = self.token
+        code, out, _ = self.run_cli("server", "token")
+        self.assertEqual((code, out.strip()), (0, old))
+        code, out, err = self.run_cli("server", "token", "--rotate")
+        new = out.strip()
+        self.assertNotEqual(new, old)
+        self.assertEqual(read_token(self.home), new)
+        self.assertEqual(self.call("GET", "/api/projects")[0], 401)  # old token in self.token
+        self.assertEqual(self.call("GET", "/api/projects", auth=False, headers={"Authorization": f"Bearer {new}"})[0], 200)
+        if os.name != "nt":
+            self.assertEqual(oct(srv.token_path(self.home).stat().st_mode & 0o777), "0o600")
+
+    def test_board_url_carries_key_in_fragment(self):
+        url = srv.board_url("127.0.0.1", 8321, "abc", "alpha")
+        self.assertEqual(url, "http://127.0.0.1:8321/?project=alpha#key=abc")
+        self.assertEqual(srv.board_url("127.0.0.1", 8321, None), "http://127.0.0.1:8321/")

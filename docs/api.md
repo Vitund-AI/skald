@@ -1,8 +1,26 @@
 # HTTP API
 
 The board server exposes everything the board does as JSON over HTTP. It
-binds to `127.0.0.1` by default and has no authentication; every write
-endpoint changes files in the repository.
+binds to `127.0.0.1` by default; every write endpoint changes files in the
+repository.
+
+## Authentication
+
+Every `/api/` route except `GET /api/health` and `POST /api/session` needs
+the machine's token, either as `Authorization: Bearer <token>` or as the
+`skald_session` cookie the board holds. `skald server token` prints the
+token; `--rotate` replaces it. Requests without it get 401. The `Host`
+header must name this machine (`localhost`, `127.0.0.1`, `::1`, or the bound
+address) or the request gets 403; that closes DNS rebinding.
+
+```sh
+TOKEN=$(skald server token)
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8321/api/projects
+```
+
+`POST /api/session` with `{"token": "..."}` sets the cookie (`HttpOnly`,
+`SameSite=Strict`, `Path=/`); `DELETE /api/session` clears it. The board
+sends this itself when `skald open` hands it the key in the URL fragment.
 
 All request and response bodies are JSON. Errors are `{"error": "..."}` with
 a 4xx or 5xx status: 400 for a bad request, 404 for an unknown project or
@@ -14,7 +32,8 @@ as errors.
 
 | Method and path | Body | Result |
 | --- | --- | --- |
-| `GET /api/health` | | `{ok, version, pid}` |
+| `GET /api/health` | | `{ok, version, pid}`; open, no token |
+| `POST /api/session`, `DELETE /api/session` | `{token}` | Sets or clears the session cookie; open, but the token must match |
 | `GET /api/projects` | | `{projects, settings}` |
 | `GET /api/help` | | `{version, commands: [{name, help, usage, arguments, subcommands}]}`, the CLI reference read from the argparse parser |
 | `GET /api/ready` | | ready, unblocked stories across all projects |
