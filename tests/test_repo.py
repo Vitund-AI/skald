@@ -20,6 +20,12 @@ class TestRepo(unittest.TestCase):
             self.skipTest("no .skald/AGENTS.md in this checkout")
         self.assertEqual(agents.read_text(encoding="utf-8"), cli.agents_template())
 
+    def test_cli_reference_is_current(self):
+        doc = ROOT / "docs" / "cli.md"
+        if not doc.exists():
+            self.skipTest("no docs/cli.md in this checkout")
+        self.assertEqual(doc.read_text(encoding="utf-8"), cli.docs_markdown(), "run `skald docs`")
+
     def test_own_backlog_is_clean(self):
         skald_dir = ROOT / ".skald"
         if not (skald_dir / "stories").exists():
