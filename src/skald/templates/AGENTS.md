@@ -48,6 +48,9 @@ tools from `skald mcp` (see the README).
 7. **Finish.** Move the story to the review column with a closing note that
    says what changed and how it was verified. A human moves stories to done.
    If the human has told you to close stories yourself, move to done instead.
+   If the change is visible to users, add a `## Changelog` section to the
+   story body first: one or two sentences written for users, not a summary
+   of the work. `skald release` copies it into the project's changelog.
 8. **Commit together.** Story file changes go in the same commit as the code
    they describe, and the commit message carries a trailer naming the story:
    `git commit -m "..." --trailer "Skald-Story: <id>"`. Never leave `.skald/`

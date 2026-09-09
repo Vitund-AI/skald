@@ -180,6 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--unblocked", action="store_true", help="only stories with no unmet dependencies")
     ls.add_argument("--all", action="store_true", help="include done and closed stories")
     ls.add_argument("--archived", action="store_true", help="include archived stories")
+    ls.add_argument("--release", metavar="VERSION", help="only stories shipped in this version (implies --archived and --all)")
     ls.add_argument("--all-projects", action="store_true", help="every registered project")
     ls.add_argument("--branch", metavar="REF", help="read stories from a git ref instead of the working tree")
     ls.add_argument("--all-branches", action="store_true", help="stories that exist only on, or differ on, other branches")
@@ -339,6 +340,12 @@ def build_parser() -> argparse.ArgumentParser:
     srvs.add_parser("status", help="show whether the background server is running")
 
     sub.add_parser("open", help="start the server if needed and open the board for this project")
+    rl = sub.add_parser("release", help="record a version: a changelog section from the done column, then archive those stories")
+    rl.add_argument("version", help="the version being shipped, e.g. 1.2.0")
+    rl.add_argument("--changelog", default=None, metavar="PATH", help="default: CHANGELOG.md at the repository root")
+    rl.add_argument("--date", help="YYYY-MM-DD (default: today)")
+    rl.add_argument("--dry-run", action="store_true", help="print the section and the stories; change nothing")
+    rl.add_argument("--no-commit", action="store_true", help="write and archive but do not commit")
     cp = sub.add_parser("completion", help="print a shell completion script: eval \"$(skald completion zsh)\"")
     cp.add_argument("shell", choices=["bash", "zsh", "fish"])
     sub.add_parser("mcp", help="serve the store as MCP tools over stdio (for agents without a shell)")
@@ -431,6 +438,9 @@ def write_instruction_pointer(root: Path) -> list[str]:
 
 def _filtered(store: Store, args, stories, idx):
     rows = stories
+    release = getattr(args, "release", None)
+    if release:
+        return [s for s in rows if s.released == release]
     if args.status:
         rows = [s for s in rows if s.status == args.status]
     elif not args.all:
@@ -453,7 +463,7 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
         stores = [store]
     rows, dicts = [], []
     for st in stores:
-        stories, load_warnings = st.load_all(include_archived=args.archived)
+        stories, load_warnings = st.load_all(include_archived=args.archived or bool(getattr(args, "release", None)))
         _warn(load_warnings)
         idx = {s.id: s for s in stories}
         sel = _filtered(st, args, stories, idx)
@@ -1025,6 +1035,39 @@ def cmd_graph(store: Store, args) -> int:
     return 0
 
 
+def cmd_release(ws: Workspace, store: Store, args) -> int:
+    from . import release as rel
+
+    repo = _repo_of(store)
+    plan = rel.plan(store, args.version, args.date)
+    if args.dry_run:
+        sys.stdout.write(plan.section())
+        print(f"\nwould archive {len(plan.stories)} stor{'y' if len(plan.stories) == 1 else 'ies'} with released: {plan.version}")
+        return 0
+    root = repo or store.dir.parent
+    changelog = Path(args.changelog) if args.changelog else root / rel.DEFAULT_CHANGELOG
+    if not changelog.is_absolute():
+        changelog = root / changelog
+    result = rel.apply(store, plan, changelog)
+    print(f"wrote {changelog.relative_to(root).as_posix() if changelog.is_relative_to(root) else changelog}: section {plan.version} ({plan.date})")
+    for s in plan.stories:
+        print(f"archived {s.id}  {s.title}")
+    if args.no_commit or repo is None:
+        if repo is None:
+            print("not a git repository; nothing committed")
+        return 0
+    skald_rel = _skald_rel(store, repo)
+    rendered = auto_render(store, repo)
+    paths = [skald_rel]
+    for extra in (rendered, changelog.relative_to(repo).as_posix() if changelog.is_relative_to(repo) else None):
+        if extra and not extra.startswith(skald_rel + "/") and extra not in paths:
+            paths.append(extra)
+    message = with_trailers(f"Release {plan.version}", [s.id for s in plan.stories])
+    sha = gitutil.commit_path(repo, paths, message)
+    print(f"committed {sha}: Release {plan.version}")
+    return 0
+
+
 def cmd_commit(ws: Workspace, store: Store, args) -> int:
     repo = _repo_of(store)
     if repo is None:
@@ -1444,7 +1487,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume",
-    "commits", "diff", "activity", "graph",
+    "commits", "diff", "activity", "graph", "release",
 }
 
 
@@ -1544,6 +1587,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return 0
     if args.command == "log":
         return cmd_log(store, args)
+    if args.command == "release":
+        return cmd_release(ws, store, args)
     if args.command == "archive":
         moved = store.archive(dry_run=args.dry_run, ids=args.ids or None)
         verb = "would archive" if args.dry_run else "archived"

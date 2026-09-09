@@ -199,6 +199,7 @@ updated_at: "2026-09-06T08:12:41Z"
 | `tags` | array of strings | Stored lowercase, sorted, unique. |
 | `blocked_by` | array of strings | `id` or `project:id`. Sorted, unique. |
 | `assignee` | string | Omitted from the file when empty. |
+| `released` | string | Set by `release`; the version the story shipped in. Only on archived stories in practice. |
 | `created_at`, `updated_at` | string | ISO 8601 UTC with `Z`. `updated_at` set on every write. |
 
 ### 4.3 Body and notes
@@ -251,6 +252,28 @@ projects with `--all-projects`.
 Archived stories are excluded from listings unless `--archived`, still
 resolve as satisfied dependencies, still resolve by id, cannot be updated or
 deleted until unarchived, and are included in `changelog`.
+
+### 4.5b Releases
+
+`release VERSION` gives the done column a meaning: done is finished but not
+shipped; archived with `released` is shipped in that version. It collects
+every story in a `done` or `closed` column, builds a changelog section
+(`## VERSION (DATE)` with one bullet per done story and a `### Not doing`
+list for closed ones), merges it into the changelog, sets `released` on each
+story, archives them, and commits `.skald/`, the changelog, and the rendered
+snapshot with a `Skald-Story` trailer per story.
+
+The bullet text is the story's `## Changelog` section (everything under that
+heading up to the next heading, joined into one paragraph; notes are never
+included) or, when absent, the title. Merge rule: if the changelog's first
+`##` section heading contains "unreleased", that heading becomes
+`## VERSION (DATE)` and the generated list is appended to the end of the
+section under `### Stories` (with `#### Not doing`), so curated notes for the
+version are kept; otherwise the new section is inserted above the first
+`##` heading. A missing changelog is created with a `# Changelog` title.
+Skald never edits version files or creates tags. `--dry-run` prints the
+section and the count and touches nothing; `--no-commit` writes and archives
+only. It is an error when no story is in a terminal column.
 
 ### 4.6 Other branches
 
@@ -309,6 +332,8 @@ story or configuration. Commands that print stories take `--json`.
 | `rm <id> [--force]` | Delete; refuses while other stories depend on it. |
 | `log <id>` | `git log --follow` on the file. |
 | `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |
+| `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit]` | Section 4.5b. |
+| `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
 | `commits <id> [--all-branches] [--json]` | `git log --grep` for the trailer or `[id]`. |

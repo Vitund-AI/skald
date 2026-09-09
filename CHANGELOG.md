@@ -6,6 +6,10 @@ The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
 
 ### Added
+- `skald release VERSION` writes a changelog section from the done column,
+  stamps the stories with `released`, archives them, and commits; stories can
+  carry a `## Changelog` section written for users; `ls --release VERSION`
+  lists what shipped.
 - `skald completion bash|zsh|fish`: Tab completes commands, flags, story ids
   with titles, columns, tags, blockers, projects, templates, branches, and
   note kinds; `git skald` too.
