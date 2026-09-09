@@ -351,7 +351,7 @@ corrupt story or configuration.
 | --- | --- |
 | `init [--name N]` | Create `.skald/` here, or register an existing one. Removes the 0.1 vendored layout. |
 | `status` | Project, branch, per-column counts, uncommitted story files. |
-| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | List stories. Hides terminal columns unless `--all`. |
+| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--release V] [--all-projects] [--branch REF] [--all-branches]` | List stories. Hides terminal columns unless `--all`; `--release` lists what shipped in a version. |
 | `context [--as NAME]` | One orientation block: assigned stories with last notes, next story, blocked ready stories, stale claims, claims on other branches, uncommitted files. |
 | `resume <id>` | Requirements, checklist and acceptance state, dependencies, decisions, latest handoff. |
 | `next [--as NAME] [--all-projects] [--compact]` | First ready, unblocked story available to the caller; skips claims on other branches; offers stale assignments. Exit 1 if none. |
@@ -372,6 +372,7 @@ corrupt story or configuration.
 | `diff --since REF [--until REF] [--markdown]` | New, changed, and removed stories between two states. |
 | `activity [--since REF] [--until REF]` | Backlog events per commit, oldest first. |
 | `changelog --since REF [--until REF]` | Stories that reached a terminal column between two git refs. |
+| `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit]` | Changelog section from the done and closed columns, then stamp `released`, archive, and commit. |
 | `facets [KEY] [--all-projects]`, `epics` | `key:value` tags with total, done, open, and progress. |
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Dependency graph. |
 | `columns`, `templates`, `projects`, `config` | Inspect configuration. |
@@ -413,6 +414,29 @@ commit that touched `.skald/` and reports the same events per commit, which
 is the quickest way to see what agents did overnight. The GitHub workflow
 posts `diff --markdown` as a comment on every pull request and keeps it up
 to date.
+
+## Releases
+
+```sh
+skald release 1.2.0 --dry-run      # preview the changelog section
+skald release 1.2.0                # write it, stamp and archive the stories, commit
+skald ls --release 1.2.0           # what shipped in 1.2.0
+```
+
+Done means finished but not shipped. `release` takes every story in a done
+or closed column, adds a section for the version to `CHANGELOG.md` (or
+`--changelog PATH`), stamps each story with `released: "1.2.0"`, moves it to
+the archive, and commits with a `Skald-Story` trailer per story. Closed
+stories are listed under "Not doing".
+
+The changelog line for a story is its `## Changelog` section when it has
+one, a sentence or two written for users, and its title otherwise. The agent
+contract asks for that section on user-visible changes, so release notes
+accumulate as the work is done. If the changelog's first section is marked
+unreleased, it becomes this version and the generated list is appended to
+it under `### Stories`, so hand-written notes survive; otherwise a new
+section goes in above the first one. Skald does not bump version files or
+create tags; `--no-commit` leaves the changes for your own release commit.
 
 ## A board you can see on GitHub
 

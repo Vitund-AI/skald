@@ -17,7 +17,7 @@ from .config import ProjectConfig
 from .errors import ConflictError, CorruptStoryError, NotFoundError, SkaldError
 from .util import atomic_write, checklist_progress, note_stamp, now_iso, parse_iso, read_text, sha256_text, slugify
 
-KNOWN_FIELDS = ["title", "status", "rank", "tags", "blocked_by", "assignee", "created_at", "updated_at"]
+KNOWN_FIELDS = ["title", "status", "rank", "tags", "blocked_by", "assignee", "released", "created_at", "updated_at"]
 RANK_STEP = 10
 
 ID_RE = re.compile(r"^[0-9a-f]{6}$")
@@ -137,6 +137,10 @@ class Story:
     @property
     def updated_at(self) -> str:
         return self.fields["updated_at"]
+
+    @property
+    def released(self) -> str:
+        return self.fields.get("released", "") or ""
 
     def to_dict(self, compact: bool = False) -> dict:
         d = {"id": self.id}
@@ -754,6 +758,15 @@ class Store:
                 f"{story.id} is a dependency of {', '.join(d.id for d in deps)}; use --force to delete anyway"
             )
         os.unlink(story.path)
+        return story
+
+    def mark_released(self, ref: str, version: str) -> Story:
+        """Record the version a story shipped in (``released`` in the frontmatter)."""
+        story = self.get(ref)
+        if story.archived:
+            raise ConflictError(f"{story.id} is archived; unarchive it first")
+        story.fields["released"] = version
+        self._write(story)
         return story
 
     def archive(self, dry_run: bool = False, ids=None) -> list[Story]:

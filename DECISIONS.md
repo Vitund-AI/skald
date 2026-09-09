@@ -317,3 +317,16 @@ with titles, columns, tags). `argcomplete` would have done the parser half
 generically but is a third-party dependency, and it cannot know that the
 word after `move` is a story id. Each Tab costs one interpreter start, which
 is the same order as git's own completion.
+
+### D46. `release` archives the done column and takes its notes from the stories
+Archiving had no trigger, and "done" had no meaning beyond "finished". Tying
+the two together gives the column a definition people already have in their
+heads: done is not shipped yet, archived with a version is shipped. The
+changelog line comes from an optional `## Changelog` section on the story
+rather than the title, because titles describe work and release notes
+describe outcomes; asking agents for that section at finish time makes the
+release notes a byproduct of the work. Skald records the version and stops
+there: bumping version files and tagging are language- and project-specific,
+and doing them here would tie the tool to Python packaging. The merge rule
+for an unreleased first section keeps hand-written notes, because a curated
+paragraph above a generated list is what most changelogs look like.
