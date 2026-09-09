@@ -102,6 +102,13 @@ There is already a pre-commit hook it did not write. Merge the two by hand;
 the hook body is one line each for `skald check` and `skald render
 --stage`.
 
+**A stranger named `skald` appears among the contributors**
+A workflow written before 0.2.0 committed the rendered board as
+`skald@users.noreply.github.com`, an address GitHub attributes to the
+account with that username. Re-run `skald hooks github --install`; the
+workflow now commits as `github-actions[bot]`. Commits already made keep
+their attribution unless history is rewritten.
+
 **The GitHub workflow's diff job cannot check out the repository**
 The job needs `contents: read` alongside `pull-requests: write`. Regenerate
 the workflow with `skald hooks github --install` if you edited it.
