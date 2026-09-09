@@ -1,7 +1,7 @@
-<!-- skald-render 08c4bf64f812db68 -->
+<!-- skald-render 2ebfd9b3f6d16d3b -->
 # skald backlog
 
-**31 open** · Backlog 1 · Ready 1 · In progress 0 · Review 29 · Done 15
+**32 open** · Backlog 1 · Ready 1 · In progress 0 · Review 30 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -17,8 +17,8 @@ flowchart LR
     n_9a1da4 --> n_bae374
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_9a1da4,n_bae374 done
     class n_46b5d3,n_cbb58e active
+    class n_9a1da4,n_bae374 done
 ```
 
 ## Backlog (1)
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (29)
+## Review (30)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -70,6 +70,7 @@ _none_
 | [95e3a5](stories/95e3a5-skald-release-changelog-section-from-the-done-colu.md) | skald release: changelog section from the done column, then archive with a version stamp | `cli` `git` | claude |  | 6/6 |
 | [71f880](stories/71f880-user-docs-guides-under-docs-and-a-generated-cli-re.md) | User docs: guides under docs/ and a generated CLI reference | `docs` | claude |  | 4/4 |
 | [43a999](stories/43a999-board-server-authentication-machine-local-token-se.md) | Board server authentication: machine-local token, session cookie, bearer header | `core` `ui` | claude |  | 5/5 |
+| [b2f19e](stories/b2f19e-render-workflow-commits-as-github-actions-bot-not.md) | Render workflow commits as github-actions[bot], not a real user's noreply address | `git` `packaging` | claude |  | 2/2 |
 
 <details><summary><strong>Done (15)</strong></summary>
 

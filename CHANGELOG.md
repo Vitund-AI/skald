@@ -96,6 +96,12 @@ repository to migrate; story files are unchanged.
 - The vendored `.skald/skald.py` and the `git config alias.skald` shim.
   `init` removes both.
 
+### Fixed
+- The workflow written by `skald hooks github --install` commits the rendered
+  board as `github-actions[bot]`. It used to commit as
+  `skald@users.noreply.github.com`, which GitHub attributes to the unrelated
+  account named `skald`. Re-run the install to update an existing workflow.
+
 ## 0.1.0
 
 First version: single-file `skald.py` with CLI, JSON API, and embedded board.
