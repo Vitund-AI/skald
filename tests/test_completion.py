@@ -92,7 +92,7 @@ class TestCompletion(SkaldTestCase):
         self.assertEqual(self.values("projects", "rm", ""), ["alpha", "beta"])
         self.assertEqual(self.values("hooks", ""), ["claude", "git", "github"])
         self.assertEqual(self.values("completion", "z"), ["zsh"])
-        self.assertEqual(self.values("server", ""), ["start", "stop", "status"])
+        self.assertEqual(self.values("server", ""), ["start", "stop", "status", "token"])
 
     def test_outside_a_project_degrades(self):
         cwd = self.tmp / "nowhere"

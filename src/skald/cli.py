@@ -383,6 +383,8 @@ def build_parser() -> argparse.ArgumentParser:
     ss.add_argument("--port", type=int, help="port (default: from skald config port)")
     srvs.add_parser("stop", help="stop the background server")
     srvs.add_parser("status", help="show whether the background server is running")
+    tk = srvs.add_parser("token", help="print the board's access token (scripts send it as Authorization: Bearer)")
+    tk.add_argument("--rotate", action="store_true", help="replace it; existing browser sessions stop working")
 
     sub.add_parser("open", help="start the server if needed and open the board for this project")
     rl = sub.add_parser("release", help="record a version: a changelog section from the done column, then archive those stories")

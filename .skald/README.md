@@ -1,7 +1,7 @@
-<!-- skald-render 9e4b5779b126d008 -->
+<!-- skald-render 08c4bf64f812db68 -->
 # skald backlog
 
-**30 open** · Backlog 1 · Ready 1 · In progress 0 · Review 28 · Done 15
+**31 open** · Backlog 1 · Ready 1 · In progress 0 · Review 29 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (28)
+## Review (29)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -69,6 +69,7 @@ _none_
 | [664976](stories/664976-readme-screenshots-board-story-terminal-session-co.md) | README screenshots: board, story, terminal session, completion, graph, multi-select | `docs` | claude |  |  |
 | [95e3a5](stories/95e3a5-skald-release-changelog-section-from-the-done-colu.md) | skald release: changelog section from the done column, then archive with a version stamp | `cli` `git` | claude |  | 6/6 |
 | [71f880](stories/71f880-user-docs-guides-under-docs-and-a-generated-cli-re.md) | User docs: guides under docs/ and a generated CLI reference | `docs` | claude |  | 4/4 |
+| [43a999](stories/43a999-board-server-authentication-machine-local-token-se.md) | Board server authentication: machine-local token, session cookie, bearer header | `core` `ui` | claude |  | 5/5 |
 
 <details><summary><strong>Done (15)</strong></summary>
 
