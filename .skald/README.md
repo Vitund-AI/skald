@@ -1,7 +1,7 @@
-<!-- skald-render 6c789c5a8efda456 -->
+<!-- skald-render 9e4b5779b126d008 -->
 # skald backlog
 
-**29 open** · Backlog 1 · Ready 1 · In progress 0 · Review 27 · Done 15
+**30 open** · Backlog 1 · Ready 1 · In progress 0 · Review 28 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -17,8 +17,8 @@ flowchart LR
     n_9a1da4 --> n_bae374
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_46b5d3,n_cbb58e active
     class n_9a1da4,n_bae374 done
+    class n_46b5d3,n_cbb58e active
 ```
 
 ## Backlog (1)
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (27)
+## Review (28)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -68,6 +68,7 @@ _none_
 | [61b53c](stories/61b53c-shell-completion-for-bash-zsh-and-fish.md) | Shell completion for bash, zsh, and fish | `cli` | claude |  | 5/5 |
 | [664976](stories/664976-readme-screenshots-board-story-terminal-session-co.md) | README screenshots: board, story, terminal session, completion, graph, multi-select | `docs` | claude |  |  |
 | [95e3a5](stories/95e3a5-skald-release-changelog-section-from-the-done-colu.md) | skald release: changelog section from the done column, then archive with a version stamp | `cli` `git` | claude |  | 6/6 |
+| [71f880](stories/71f880-user-docs-guides-under-docs-and-a-generated-cli-re.md) | User docs: guides under docs/ and a generated CLI reference | `docs` | claude |  | 4/4 |
 
 <details><summary><strong>Done (15)</strong></summary>
 

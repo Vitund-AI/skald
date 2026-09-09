@@ -330,3 +330,15 @@ there: bumping version files and tagging are language- and project-specific,
 and doing them here would tie the tool to Python packaging. The merge rule
 for an unreleased first section keeps hand-written notes, because a curated
 paragraph above a generated list is what most changelogs look like.
+
+### D47. Docs are plain Markdown pages, and the CLI reference is generated
+A README that tries to be tutorial, reference, and rationale at once serves
+none of them past a certain length. The guides moved to `docs/` as one page
+per question a user actually has, in Markdown that GitHub renders with no
+site generator to maintain; a Pages site can be layered on later without
+rewriting. The command reference is the one page that would drift within
+weeks if hand-written, so `skald docs` generates it from `command_reference()`
+(the same source as `--help` and the board's Help panel) and a test fails
+when the committed file is stale. The README keeps what a first visitor
+needs: what it is, whether it fits, install, a quick start, pictures, and
+links.
