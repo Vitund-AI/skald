@@ -15,12 +15,13 @@ error or not found, 2 corrupt story or configuration.
 - [`next`](#next) the story to pick up next
 - [`context`](#context) one orientation block for an agent: mine, next, blockers, uncommitted
 - [`resume`](#resume) requirements, checklist state, dependencies, and the latest handoff for a story
+- [`audit`](#audit) check a story's cited paths, path:line references, and commit hashes against the tree, and note the result
 - [`show`](#show) print a story file
 - [`branches`](#branches) story counts per branch and how they differ from the working tree
 - [`new`](#new) create a story
 - [`move`](#move) move a story to a column
 - [`claim`](#claim) assign a story to yourself and start it
-- [`set`](#set) set title=..., rank=N, or assignee=NAME
+- [`set`](#set) set title=..., rank=N, assignee=NAME, or parent=ID
 - [`tag`](#tag) tag <id> +tag -tag ...
 - [`block`](#block) block <id> +id -id ... (project:id for other projects)
 - [`note`](#note) append a note to a story
@@ -69,7 +70,7 @@ Create .skald/ here (or register an existing one).
 ## ls
 
 ```
-skald ls [--status COLUMN] [--tag TAG] [--assignee ASSIGNEE] [--unblocked] [--questions] [--all] [--archived] [--release VERSION] [--all-projects] [--branch REF] [--all-branches] [--json] [--compact]
+skald ls [--status COLUMN] [--tag TAG] [--assignee ASSIGNEE] [--unblocked] [--questions] [--parent ID] [--all] [--archived] [--release VERSION] [--all-projects] [--branch REF] [--all-branches] [--json] [--compact]
 ```
 
 List stories.
@@ -81,6 +82,7 @@ List stories.
 | `--assignee ASSIGNEE` | only stories assigned to this name |
 | `--unblocked` | only stories with no unmet dependencies |
 | `--questions` | only stories with an open question (waiting on a human) |
+| `--parent ID` | only the children of this story |
 | `--all` | include done and closed stories |
 | `--archived` | include archived stories |
 | `--release VERSION` | only stories shipped in this version (implies --archived and --all) |
@@ -133,6 +135,22 @@ Requirements, checklist state, dependencies, and the latest handoff for a story.
 | `--full` | print the whole body, every section, instead of the requirements |
 | `--json` | print JSON |
 
+## audit
+
+```
+skald audit [--notes] [--no-note] [--as AUTHOR] [--json] id
+```
+
+Check a story's cited paths, path:line references, and commit hashes against the tree, and note the result.
+
+| Argument | Description |
+| --- | --- |
+| `id` | story id or unique prefix |
+| `--notes` | also check claims made in notes, not only the body above them |
+| `--no-note` | print the result without appending an audit note |
+| `--as AUTHOR` | author label for the audit note (default: agent) |
+| `--json` | print JSON |
+
 ## show
 
 ```
@@ -162,7 +180,7 @@ Story counts per branch and how they differ from the working tree.
 ## new
 
 ```
-skald new [--status COLUMN] [--tags TAGS] [--blocked-by BLOCKED_BY] [--body BODY] [--template TEMPLATE] [--assignee ASSIGNEE] [--json] title
+skald new [--status COLUMN] [--tags TAGS] [--blocked-by BLOCKED_BY] [--body BODY] [--template TEMPLATE] [--assignee ASSIGNEE] [--parent ID] [--no-inherit] [--created-at WHEN] [--json] title
 ```
 
 Create a story.
@@ -176,6 +194,9 @@ Create a story.
 | `--body BODY` | requirements text, or - to read stdin |
 | `--template TEMPLATE` | a template from .skald/templates/ |
 | `--assignee ASSIGNEE` | assign on creation |
+| `--parent ID` | make this a child of another story in this project; its facet tags are inherited |
+| `--no-inherit` | with --parent: do not copy the parent's facet tags |
+| `--created-at WHEN` | backdate created_at and updated_at: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now |
 | `--json` | print the story as JSON instead of its id |
 
 ## move
@@ -210,12 +231,12 @@ Assign a story to yourself and start it.
 skald set id key=value [key=value ...]
 ```
 
-Set title=..., rank=N, or assignee=NAME.
+Set title=..., rank=N, assignee=NAME, or parent=ID.
 
 | Argument | Description |
 | --- | --- |
 | `id` | story id or unique prefix |
-| `[key=value...]` | title=..., rank=N, assignee=NAME (assignee= clears it) |
+| `[key=value...]` | title=..., rank=N, assignee=NAME (assignee= clears it), parent=ID (parent=- clears it) |
 
 ## tag
 
@@ -236,7 +257,7 @@ Block <id> +id -id ... (project:id for other projects).
 ## note
 
 ```
-skald note [--as AUTHOR] [--kind KIND] id text
+skald note [--as AUTHOR] [--kind KIND] [--at WHEN] id text
 ```
 
 Append a note to a story.
@@ -247,6 +268,7 @@ Append a note to a story.
 | `text` | note text, or - to read stdin |
 | `--as AUTHOR` | author label (default: agent) |
 | `--kind KIND` | handoff, decision, blocker, question (open until a later decision), or any short word; shown in the heading |
+| `--at WHEN` | backdate the note heading: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now |
 
 ## answer
 

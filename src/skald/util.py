@@ -17,6 +17,17 @@ def note_stamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
+def parse_when(value: str) -> datetime | None:
+    """A user-given instant: ``YYYY-MM-DD HH:MM`` (UTC), ``YYYY-MM-DDTHH:MM:SSZ``, or ``YYYY-MM-DD`` (midnight)."""
+    value = (value or "").strip()
+    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%MZ", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+    return None
+
+
 def parse_iso(value: str) -> datetime | None:
     try:
         return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)

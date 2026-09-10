@@ -619,6 +619,57 @@ class TestNotesAndAcceptance(SkaldTestCase):
         with self.assertRaises(SkaldError):
             s.append_note(a.id, "x", "claude", kind="Not Valid")
 
+    def test_parents_field_children_cycles_and_delete(self):
+        from skald.errors import ConflictError, SkaldError
+        from skald.store import parse_story_text, serialise_story
+        s = self.store()
+        epic, _ = s.create("Auth overhaul", tags=["epic:auth", "area:web", "plain"])
+        child, _ = s.create("Login form", parent=epic.id, tags=["ui"])
+        # Inherits the parent's facet tags only; the field is written in canonical position and round-trips.
+        self.assertEqual(child.tags, ["area:web", "epic:auth", "ui"])
+        self.assertEqual(s.get(child.id).parent, epic.id)
+        text = child.path.read_text()
+        self.assertLess(text.index("assignee") if "assignee" in text else text.index("parent"), text.index("created_at"))
+        fields, body = parse_story_text(text, "x")
+        self.assertEqual(serialise_story(fields, body), text)
+        other, _ = s.create("No inherit", parent=epic.id, inherit=False)
+        self.assertEqual(other.tags, [])
+        # children and progress in story_dict.
+        self.assertEqual([c.id for c in s.children(epic.id)], sorted([child.id, other.id], key=lambda i: [c.id for c in s.children(epic.id)].index(i)))
+        d = s.story_dict(s.get(epic.id), s.index())
+        self.assertEqual(d["children"], {"total": 2, "done": 0})
+        self.assertNotIn("children", s.story_dict(s.get(child.id), s.index()))
+        # Cross-project, self, and cycles are rejected at set time.
+        with self.assertRaises(SkaldError):
+            s.update(child.id, parent="other:abc123")
+        with self.assertRaises(SkaldError):
+            s.update(child.id, parent=child.id)
+        with self.assertRaises(SkaldError):
+            s.update(epic.id, parent=child.id)
+        # Clearing.
+        s.update(other.id, parent="-")
+        self.assertEqual(s.get(other.id).parent, "")
+        # rm refuses while children exist, like blocked_by.
+        with self.assertRaises(ConflictError):
+            s.delete(epic.id)
+        # check: a dangling parent and a hand-made cycle are problems.
+        child_path = s.get(child.id).path
+        child_path.write_text(child_path.read_text().replace(f'parent: "{epic.id}"', 'parent: "ffffff"'))
+        problems, _ = s.check()
+        self.assertTrue(any("parent references missing story ffffff" in p for p in problems), problems)
+        child_path.write_text(child_path.read_text().replace('parent: "ffffff"', f'parent: "{epic.id}"'))
+        epic_path = s.get(epic.id).path
+        epic_path.write_text(epic_path.read_text().replace('created_at:', f'parent: "{child.id}"\ncreated_at:'))
+        problems, _ = s.check()
+        self.assertTrue(any(p.startswith("parent cycle:") for p in problems), problems)
+        epic_path.write_text(epic_path.read_text().replace(f'parent: "{child.id}"\n', ''))
+        # Moving a parent to done with an open child warns; release warns too.
+        _, w = s.update(epic.id, status="done")
+        self.assertTrue(any("child(ren) still open" in x for x in w), w)
+        from skald import release as rel
+        plan = rel.plan(s, "9.9.9")
+        self.assertTrue(any("ships with 1 child(ren) still open" in x for x in plan.warnings))
+
     def test_lanes_skip_next_and_warn_on_claim_and_move(self):
         import json as _json
         cfg_path = self.skald_dir / "config.json"

@@ -112,6 +112,25 @@ agent's instructions file at `.skald/AGENTS.md` and give it a name to use
 with `--as`. Notes made without `--as` are labelled `agent`; `SKALD_AUTHOR`
 in the environment sets the default.
 
+## Keeping a design record true
+
+A long story cites code: `src/router/dispatch.py:184`, a commit hash, a
+file that has since been renamed. Line numbers drift within days, and a
+record that is wrong about the code sends the next session down a dead
+path. The checkable half of that is mechanical:
+
+```sh
+skald audit a3f9c2
+```
+
+checks every cited path for existence, every `path:line` for a file that
+long, and every commit hash against the repository, then lists the
+referenced files that changed since the last audit, and appends an `audit`
+note with the summary. `resume` shows `last audited 2026-08-27 (14d ago);
+2 referenced file(s) changed since` in its header, or `never audited`. The
+tool never says the story is still true; it says what it could check. The
+agent reads the changed files and records its own judgment as a note.
+
 ## Several agents at once
 
 Agents working in parallel worktrees see each other. `skald next` skips

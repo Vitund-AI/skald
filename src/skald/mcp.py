@@ -44,6 +44,7 @@ TOOLS: list[dict] = [
      "inputSchema": _schema({**PROJECT_PROP,
                              "title": {"type": "string"}, "status": {"type": "string"}, "body": {"type": "string"},
                              "tags": {"type": "array", "items": {"type": "string"}},
+                             "parent": {"type": "string", "description": "id of the parent story in this project; facet tags are inherited unless inherit=false"}, "inherit": {"type": "boolean"}, "created_at": {"type": "string", "description": "backdate created_at: YYYY-MM-DD HH:MM (UTC) or an ISO instant"},
                              "blocked_by": {"type": "array", "items": {"type": "string"}, "description": "ids, or project:id"},
                              "assignee": {"type": "string"}, "template": {"type": "string"}}, ["title"])},
     {"name": "skald_move", "description": "Change a story's status. Warnings are advisory.",
@@ -51,17 +52,19 @@ TOOLS: list[dict] = [
     {"name": "skald_claim", "description": "Assign a story to the caller and move it into the first active column.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP}, ["id"])},
     {"name": "skald_note", "description": "Append a timestamped note to a story's body. kind=handoff for end-of-session state, decision, or blocker.",
-     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"},
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"}, "at": {"type": "string", "description": "backdate the note: YYYY-MM-DD HH:MM (UTC) or an ISO instant"},
                              "kind": {"type": "string", "description": "handoff, decision, blocker, question (open until a later decision), or another short word"}}, ["id", "text"])},
+    {"name": "skald_audit", "description": "Check a story's cited paths, path:line references, and commit hashes against the tree, report referenced files changed since the last audit, and append an audit note (note=false to skip). Lists what it could check; judging the premises is yours.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "note": {"type": "boolean"}, "notes": {"type": "boolean", "description": "also check claims in notes"}}, ["id"])},
     {"name": "skald_answer", "description": "Answer a story's open questions: appends a decision note, which closes every question before it.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"}}, ["id", "text"])},
     {"name": "skald_context", "description": "Orientation for the caller: assigned stories with last notes, the next unblocked story, blocked ready stories, stories waiting on a human (open questions), claims on other branches, uncommitted story files.",
      "inputSchema": _schema({**PROJECT_PROP, **AS_PROP})},
     {"name": "skald_resume", "description": "A story's requirements (the ## Requirements section when there is one), the other sections' headings and sizes, checklist and acceptance state, dependencies, decisions, and its latest handoff note. Pass section to read one section, or full for the whole body.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "section": {"type": "string"}, "full": {"type": "boolean"}}, ["id"])},
-    {"name": "skald_set", "description": "Update title, rank, tags, blocked_by, or assignee.",
+    {"name": "skald_set", "description": "Update title, rank, tags, blocked_by, assignee, or parent (\"-\" clears it).",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP,
-                             "title": {"type": "string"}, "rank": {"type": "integer"},
+                             "parent": {"type": "string"}, "title": {"type": "string"}, "rank": {"type": "integer"},
                              "tags": {"type": "array", "items": {"type": "string"}},
                              "blocked_by": {"type": "array", "items": {"type": "string"}},
                              "assignee": {"type": "string"}}, ["id"])},
@@ -164,6 +167,7 @@ class McpServer:
         story, warnings = store.create(
             args.get("title", ""), args.get("status"), args.get("tags", []), args.get("blocked_by", []),
             args.get("body", ""), args.get("assignee", ""), args.get("template"),
+            parent=args.get("parent"), inherit=args.get("inherit", True), created_at=args.get("created_at"),
         )
         return self._with_warnings(store, story, warnings)
 
@@ -203,10 +207,25 @@ class McpServer:
 
     def tool_skald_note(self, args: dict) -> Any:
         store = self._store(args)
-        story = store.append_note(args["id"], args.get("text", ""), self._actor(args), args.get("kind"))
+        story = store.append_note(args["id"], args.get("text", ""), self._actor(args), args.get("kind"), at=args.get("at"))
         d = store.story_dict(story)
         d["body"] = story.body
         return d
+
+    def tool_skald_audit(self, args: dict) -> Any:
+        from . import audit as au
+        from .cli import _repo_of
+
+        store = self._store(args)
+        story = store.get(args["id"])
+        result = au.run_audit(story, _repo_of(store), include_notes=bool(args.get("notes")))
+        result["summary"] = au.summary_lines(result)
+        if args.get("note", True):
+            store.append_note(story.id, "\n".join(result["summary"]), self._actor(args), "audit")
+            result["noted"] = True
+        else:
+            result["noted"] = False
+        return result
 
     def tool_skald_answer(self, args: dict) -> Any:
         store = self._store(args)
@@ -218,7 +237,7 @@ class McpServer:
 
     def tool_skald_set(self, args: dict) -> Any:
         store = self._store(args)
-        fields = {k: args[k] for k in ("title", "rank", "tags", "blocked_by", "assignee") if k in args}
+        fields = {k: args[k] for k in ("title", "rank", "tags", "blocked_by", "assignee", "parent") if k in args}
         if not fields:
             raise SkaldError("nothing to set")
         return self._with_warnings(store, *store.update(args["id"], **fields))

@@ -123,6 +123,12 @@ Put the skeleton in `.skald/templates/design.md` and create records with
 `skald new "Title" --template design`. Templates stay project-owned; `init`
 does not write one.
 
+Bringing existing records in is a script's job, and two flags keep their
+history honest: `skald new --created-at "2024-03-01 09:30"` sets the
+creation stamps, and `skald note <id> "..." --at "2024-03-02 10:00" --kind
+decision` backdates a note. Both take `YYYY-MM-DD HH:MM` in UTC, an ISO
+instant, or a bare date, and both default to now.
+
 ## Columns and roles
 
 Each project defines its columns in `.skald/config.json`:
@@ -195,7 +201,10 @@ succeeds. A missing target, a self reference, and a cycle are reported by
 `skald check`. A target in a project that is not registered on this machine
 counts as unmet with a warning, because you may simply not have cloned it.
 
-## Facets and epics
+## Epics: a tag, or a parent
+
+There are two ways to say "this story is part of that one", and they suit
+different sizes of thing.
 
 A tag written as `key:value` is a facet. `epic:auth` makes an epic without a
 schema change, and because tags are plain strings it works across projects:
@@ -210,6 +219,27 @@ skald facets                              # every key and value with done/open c
 
 The board shows one filter per facet key and can split into swimlanes by
 any of them.
+
+When the epic is itself a story with a body, a design record whose pieces
+ship separately, use a parent instead. A child is an ordinary story with
+one extra field:
+
+```sh
+skald new "Login form" --parent a3f9c2          # inherits a3f9c2's facet tags
+skald new "Session cookie" --parent a3f9c2 --no-inherit
+skald set 7b21e0 parent=a3f9c2                  # parent=- clears it
+skald ls --parent a3f9c2                        # the children
+skald resume 7b21e0                             # shows the parent's requirements first
+```
+
+`ls` marks a parent with `(children 1/3)` and a child with `(child of
+a3f9c2)`. A parent is local to the project; `check` reports a missing
+parent or a cycle; `rm` refuses while children exist; moving a parent to
+done with a child still open warns, as does `release`. `next` treats
+children as ordinary stories, so a parent usually sits in a backlog column
+while its children move. The tag stays the lightweight option and works
+across repositories; the parent carries a body, questions, decisions, and
+an audit date, which a tag cannot.
 
 ### Lanes
 

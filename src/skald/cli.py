@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import sys
+import textwrap
 from pathlib import Path
 from typing import Optional
 
@@ -77,8 +78,15 @@ def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False) 
         unmet = store.unmet(s, idx)
         sid = f"{store.name}:{s.id}" if qualify else s.id
         q = len(s.open_questions())
+        kids = [k for k in (idx or {}).values() if k.parent == s.id] if idx else []
+        title = s.title
+        if kids:
+            done = sum(1 for k in kids if store.config.is_terminal(k.status))
+            title = f"{s.title}  (children {done}/{len(kids)})"
+        elif s.parent:
+            title = f"{s.title}  (child of {s.parent})"
         rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", f"?{q}" if q else "-", s.assignee or "-",
-                     ",".join(s.tags) or "-", s.title])
+                     ",".join(s.tags) or "-", title])
     return rows
 
 
@@ -227,6 +235,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--assignee", help="only stories assigned to this name")
     ls.add_argument("--unblocked", action="store_true", help="only stories with no unmet dependencies")
     ls.add_argument("--questions", action="store_true", help="only stories with an open question (waiting on a human)")
+    ls.add_argument("--parent", metavar="ID", help="only the children of this story")
     ls.add_argument("--all", action="store_true", help="include done and closed stories")
     ls.add_argument("--archived", action="store_true", help="include archived stories")
     ls.add_argument("--release", metavar="VERSION", help="only stories shipped in this version (implies --archived and --all)")
@@ -252,6 +261,13 @@ def build_parser() -> argparse.ArgumentParser:
     rs.add_argument("--full", action="store_true", help="print the whole body, every section, instead of the requirements")
     rs.add_argument("--json", action="store_true", help="print JSON")
 
+    au = sub.add_parser("audit", help="check a story's cited paths, path:line references, and commit hashes against the tree, and note the result")
+    au.add_argument("id", help="story id or unique prefix")
+    au.add_argument("--notes", action="store_true", help="also check claims made in notes, not only the body above them")
+    au.add_argument("--no-note", action="store_true", help="print the result without appending an audit note")
+    au.add_argument("--as", dest="author", help="author label for the audit note (default: agent)")
+    au.add_argument("--json", action="store_true", help="print JSON")
+
     sh = sub.add_parser("show", help="print a story file")
     sh.add_argument("id", help="story id or unique prefix")
     sh.add_argument("--branch", metavar="REF", help="read the story from a git ref")
@@ -268,6 +284,9 @@ def build_parser() -> argparse.ArgumentParser:
     new.add_argument("--body", default="", help="requirements text, or - to read stdin")
     new.add_argument("--template", help="a template from .skald/templates/")
     new.add_argument("--assignee", default="", help="assign on creation")
+    new.add_argument("--parent", metavar="ID", help="make this a child of another story in this project; its facet tags are inherited")
+    new.add_argument("--no-inherit", action="store_true", help="with --parent: do not copy the parent's facet tags")
+    new.add_argument("--created-at", metavar="WHEN", help="backdate created_at and updated_at: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now")
     new.add_argument("--json", action="store_true", help="print the story as JSON instead of its id")
 
     mv = sub.add_parser("move", aliases=["mv"], help="move a story to a column")
@@ -278,9 +297,9 @@ def build_parser() -> argparse.ArgumentParser:
     cl.add_argument("id", help="story id or unique prefix")
     cl.add_argument("--as", dest="author", help="who is claiming (default: agent)")
 
-    st = sub.add_parser("set", help="set title=..., rank=N, or assignee=NAME")
+    st = sub.add_parser("set", help="set title=..., rank=N, assignee=NAME, or parent=ID")
     st.add_argument("id", help="story id or unique prefix")
-    st.add_argument("assignments", nargs="+", metavar="key=value", help="title=..., rank=N, assignee=NAME (assignee= clears it)")
+    st.add_argument("assignments", nargs="+", metavar="key=value", help="title=..., rank=N, assignee=NAME (assignee= clears it), parent=ID (parent=- clears it)")
 
     sub.add_parser("tag", help="tag <id> +tag -tag ...")
     sub.add_parser("block", help="block <id> +id -id ... (project:id for other projects)")
@@ -290,6 +309,7 @@ def build_parser() -> argparse.ArgumentParser:
     note.add_argument("text", help="note text, or - to read stdin")
     note.add_argument("--as", dest="author", help="author label (default: agent)")
     note.add_argument("--kind", help="handoff, decision, blocker, question (open until a later decision), or any short word; shown in the heading")
+    note.add_argument("--at", metavar="WHEN", help="backdate the note heading: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now")
 
     ans = sub.add_parser("answer", help="answer a story's open questions: appends a decision note, which closes them")
     ans.add_argument("id", help="story id or unique prefix")
@@ -510,6 +530,9 @@ def _filtered(store: Store, args, stories, idx):
         rows = [s for s in rows if tag in s.tags]
     if getattr(args, "assignee", None):
         rows = [s for s in rows if s.assignee == args.assignee]
+    if getattr(args, "parent", None):
+        pid = store.resolve(args.parent)
+        rows = [s for s in rows if s.parent == pid]
     if args.unblocked:
         rows = [s for s in rows if not store.unmet(s, idx)]
     return rows
@@ -757,15 +780,29 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
     d["decisions"] = [n for n in notes if n["kind"] == "decision"]
     d["blockers"] = [n for n in notes if n["kind"] == "blocker"]
     d["open_questions"] = story.open_questions()
+    if story.parent and story.parent in idx:
+        from .store import requirements_of
+
+        p = idx[story.parent]
+        d["parent_story"] = {"id": p.id, "title": p.title, "status": p.status, "requirements": requirements_of(p.body)}
+    from . import audit as au
+
+    d["audit"] = au.status_line(story, _repo_of(store))
     if args.json:
         print(json.dumps(d, indent=2))
         return 0
     print(f"{story.id}  {story.title}")
     print(f"status {story.status}" + (f" · assignee {story.assignee}" if story.assignee else "")
           + (f" · checklist {d['checklist']['done']}/{d['checklist']['total']}" if d["checklist"]["total"] else "")
-          + (f" · acceptance {d['acceptance']['done']}/{d['acceptance']['total']}" if d.get("acceptance") else ""))
+          + (f" · acceptance {d['acceptance']['done']}/{d['acceptance']['total']}" if d.get("acceptance") else "")
+          + f" · {d['audit']}")
     if d["deps"]:
         print("depends on: " + ", ".join(f"{x['ref']} ({x['state']}{'' if x['satisfied'] else ', unmet'})" for x in d["deps"]))
+    if d.get("parent_story"):
+        p = d["parent_story"]
+        print(f"\nchild of {p['id']}  {p['title']}  ({p['status']})")
+        if p.get("requirements"):
+            print(textwrap.indent(p["requirements"].strip(), "  "))
     if "section" in d:
         print("\n" + d["section"]["text"].strip() + "\n")
     elif "body" in d:
@@ -799,6 +836,29 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
     return 0
 
 
+def cmd_audit(ws: Workspace, store: Store, args) -> int:
+    """The tool checks claims; the agent checks premises. It lists what it could verify and never says the story is true."""
+    from . import audit as au
+
+    story = store.get(args.id)
+    repo = _repo_of(store)
+    result = au.run_audit(story, repo, include_notes=args.notes)
+    lines = au.summary_lines(result)
+    noted = None
+    if not args.no_note:
+        noted = store.append_note(story.id, "\n".join(lines), cli_identity(args.author), "audit")
+    if args.json:
+        result["noted"] = noted is not None
+        print(json.dumps(result, indent=2))
+        return 0
+    print(f"audit {story.id}  {story.title}")
+    for line in lines:
+        print(f"  {line}")
+    if noted is not None:
+        print(f"noted on {story.id} (audit)")
+    return 0
+
+
 def cmd_show(ws: Workspace, args, store: Store) -> int:
     if getattr(args, "branch", None):
         store = store.snapshot(args.branch)
@@ -817,7 +877,9 @@ def cmd_new(ws: Workspace, args, store: Store) -> int:
     tags = [t for t in args.tags.split(",") if t.strip()]
     blockers = [b for b in args.blocked_by.split(",") if b.strip()]
     body = _read_text_arg(args.body)
-    story, warnings = store.create(args.title, args.status, tags, blockers, body, args.assignee, args.template)
+    story, warnings = store.create(args.title, args.status, tags, blockers, body, args.assignee, args.template,
+                                   parent=getattr(args, "parent", None), inherit=not getattr(args, "no_inherit", False),
+                                   created_at=getattr(args, "created_at", None))
     _warn(warnings)
     if args.json:
         print(json.dumps(store.story_dict(story), indent=2))
@@ -893,6 +955,8 @@ def cmd_set(store: Store, args) -> int:
                 raise SkaldError(f"rank must be an integer, got '{value}'") from None
         elif key == "assignee":
             kwargs["assignee"] = value
+        elif key == "parent":
+            kwargs["parent"] = value.strip()
         else:
             raise SkaldError(f"cannot set '{key}' (use move, tag, or block for status, tags, blocked_by)")
     story, warnings = store.update(args.id, **kwargs)
@@ -1192,6 +1256,7 @@ def cmd_release(ws: Workspace, store: Store, args) -> int:
 
     repo = _repo_of(store)
     plan = rel.plan(store, args.version, args.date)
+    _warn(plan.warnings)
     if args.dry_run:
         sys.stdout.write(plan.section())
         print(f"\nwould archive {len(plan.stories)} stor{'y' if len(plan.stories) == 1 else 'ies'} with released: {plan.version}")
@@ -1674,7 +1739,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
-    "commits", "diff", "activity", "graph", "release",
+    "commits", "diff", "activity", "graph", "release", "audit",
 }
 
 
@@ -1748,6 +1813,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_context(ws, store, args)
     if args.command == "resume":
         return cmd_resume(ws, store, args)
+    if args.command == "audit":
+        return cmd_audit(ws, store, args)
     if args.command == "next":
         return cmd_next(ws, args, store)
     if args.command == "show":
@@ -1767,7 +1834,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     if args.command == "set":
         return cmd_set(store, args)
     if args.command == "note":
-        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), args.kind)
+        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), args.kind, at=getattr(args, "at", None))
         print(f"noted on {story.id}" + (f" ({args.kind})" if args.kind else ""))
         return 0
     if args.command == "answer":
