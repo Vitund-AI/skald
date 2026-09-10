@@ -109,12 +109,6 @@ scripts ask `skald` itself for candidates, so they never go out of date.
 
 <img src="images/cli-completion.png" alt="zsh completing skald move: story ids listed with their titles and statuses" width="720">
 
-## Upgrading from 0.1
-
-Run `skald init` in the repository. It deletes the vendored `.skald/skald.py`,
-removes the old git alias, writes `config.json`, and registers the project.
-Story files are unchanged.
-
 ## Where things live
 
 | Path | What | Committed |

@@ -15,7 +15,6 @@ from .registry import Registry, UserConfig, Workspace, find_skald_dir
 from .store import Store, Story, serialise_story, split_ref
 from .util import read_text
 
-OLD_ALIAS = "!python3 .skald/skald.py"
 
 
 # --------------------------------------------------------------------------
@@ -448,16 +447,6 @@ def cmd_init(ws: Workspace, args) -> int:
     else:
         agents.write_text(agents_template(), encoding="utf-8")
         lines.append("wrote AGENTS.md")
-
-    legacy = skald_dir / "skald.py"
-    if legacy.exists():
-        legacy.unlink()
-        lines.append("removed vendored skald.py from the 0.1 layout (the package replaces it)")
-    if repo:
-        alias = gitutil.get_alias(repo, "skald")
-        if alias == OLD_ALIAS:
-            gitutil.unset_alias(repo, "skald")
-            lines.append("removed the 0.1 git alias; `git skald` now uses the installed git-skald command")
 
     notice = ws.registry.register(config.name, skald_dir)
     lines.append(notice or f"project '{config.name}' already registered")

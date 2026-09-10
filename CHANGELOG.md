@@ -9,6 +9,12 @@
   every session start, resume, clear, and compaction. `--as NAME` bakes the
   agent's name into the hook. Re-run the install to update an existing hook.
 
+### Removed
+- The migration from the unreleased 0.1 single-file layout: `init` no longer
+  looks for a vendored `skald.py` or the old git alias, and the upgrade
+  sections are gone from the docs. 0.2.0 was the first release anyone
+  installed.
+
 ### Fixed
 - `skald serve --port 0` and `skald server start` with port 0 ask the
   operating system for a free port instead of silently using the configured
@@ -17,8 +23,8 @@
 
 ## 0.2.0 (2026-09-09)
 
-The single-file tool became a package. Run `skald init` once in each existing
-repository to migrate; story files are unchanged.
+The first release: a Python package with a CLI, a local web board, an MCP
+server, and hooks for Claude Code.
 
 ### Added
 - Checkouts: a project with several working trees on one machine (git
@@ -118,10 +124,6 @@ repository to migrate; story files are unchanged.
 - The web server skips the reverse DNS lookup on bind, so `skald serve` and
   `skald server start` come up instantly on macOS and offline machines.
 
-### Removed
-- The vendored `.skald/skald.py` and the `git config alias.skald` shim.
-  `init` removes both.
-
 ### Fixed
 - The workflow written by `skald hooks github --install` commits the rendered
   board as `github-actions[bot]`. It used to commit as
@@ -177,10 +179,6 @@ repository to migrate; story files are unchanged.
 - One server shows every registered project. The header has a project switcher, and "All projects: ready work" lists ready, unblocked stories across all of them, opening each in its own project. (830b31)
 - `skald archive` moves done and closed stories into `.skald/archive/` so the board and listings stay small; archived stories still satisfy `blocked_by` links and `skald unarchive` brings one back. (9a1da4)
 - The board server runs in the background: `skald server start`, `status`, and `stop`, and `skald open` starts it if needed before opening the browser. `skald serve` still runs it in the foreground. (670177)
-- Skald installs as a package with a global `skald` command and a `git skald` alias, replacing the vendored single-file copy. `skald init` migrates a 0.1 repository. (bae374)
+- Skald installs as a package with a global `skald` command and a `git skald` alias,. (bae374)
 - Stories have an optional `assignee`. `skald next` skips stories assigned to someone else and cards show who holds them, so several agents can share one repository. (3da635)
 - Every command registers the current project in a machine-local index, so one board and `-p NAME` reach every repository you use Skald in. `skald projects` lists them, `skald projects rm` forgets one, and `--all-projects` acts across all of them. (189d1b)
-
-## 0.1.0
-
-First version: single-file `skald.py` with CLI, JSON API, and embedded board.

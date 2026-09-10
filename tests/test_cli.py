@@ -35,17 +35,13 @@ class TestInit(SkaldTestCase):
         code, out, _ = self.run_cli("init", "--name", "Renamed Thing", cwd=repo)
         self.assertIn("renamed project to 'renamed-thing'", out)
 
-    def test_init_from_subdirectory_and_migration(self):
+    def test_init_from_subdirectory(self):
         sub = self.repo / "src"
         sub.mkdir()
-        (self.skald_dir / "skald.py").write_text("legacy")
-        git(self.repo, "config", "alias.skald", cli.OLD_ALIAS)
         code, out, err = self.run_cli("init", cwd=sub)
         self.assertEqual(code, 0, err)
-        self.assertFalse((self.skald_dir / "skald.py").exists())
-        self.assertIn("removed vendored", out)
-        self.assertIn("removed the 0.1 git alias", out)
-        self.assertNotIn("skald", git(self.repo, "config", "--list"))
+        self.assertIn("already registered", out)
+        self.assertTrue((self.skald_dir / "AGENTS.md").exists())
 
     def test_agents_md_matches_package_template(self):
         code, _, _ = self.run_cli("init")

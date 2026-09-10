@@ -1,7 +1,7 @@
-<!-- skald-render 2a4631a07173d12f -->
+<!-- skald-render e2804ac75f556a23 -->
 # skald backlog
 
-**3 open** · Backlog 0 · Ready 1 · In progress 0 · Review 2 · Done 0
+**4 open** · Backlog 0 · Ready 1 · In progress 0 · Review 3 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -19,12 +19,13 @@ _none_
 
 _none_
 
-## Review (2)
+## Review (3)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [a25045](stories/a25045-serve-port-0-falls-back-to-the-configured-port.md) | serve --port 0 falls back to the configured port | `core` | claude |  | 3/3 |
 | [f3bac3](stories/f3bac3-claude-code-sessionstart-hook-runs-skald-context-n.md) | Claude Code SessionStart hook runs skald context, not skald ls | `agents` | claude |  | 3/3 |
+| [2f74dd](stories/2f74dd-remove-the-0-1-migration-path-and-its-mentions.md) | Remove the 0.1 migration path and its mentions | `cli` `docs` | claude |  | 3/3 |
 
 <details><summary><strong>Done (0)</strong></summary>
 

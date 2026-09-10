@@ -63,19 +63,6 @@ def user_name(repo: Path) -> Optional[str]:
     return name or None
 
 
-def get_alias(repo: Path, name: str) -> Optional[str]:
-    try:
-        proc = _run(["config", "--get", f"alias.{name}"], cwd=repo)
-    except GitError:
-        return None
-    return proc.stdout.strip() if proc.returncode == 0 else None
-
-
-def unset_alias(repo: Path, name: str) -> None:
-    try:
-        _run(["config", "--unset", f"alias.{name}"], cwd=repo)
-    except GitError:
-        pass
 
 
 def changes(repo: Path, subpath: str) -> list[dict]:

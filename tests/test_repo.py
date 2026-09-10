@@ -35,6 +35,3 @@ class TestRepo(unittest.TestCase):
         problems, _ = Store(skald_dir, config).check()
         self.assertEqual(problems, [])
 
-    def test_no_legacy_single_file_layout(self):
-        self.assertFalse((ROOT / "skald.py").exists())
-        self.assertFalse((ROOT / ".skald" / "skald.py").exists())
