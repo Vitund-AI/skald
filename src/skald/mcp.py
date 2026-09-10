@@ -229,18 +229,12 @@ class McpServer:
 
     def tool_skald_answer(self, args: dict) -> Any:
         store = self._store(args)
-        open_qs = store.get(args["id"]).open_questions()
-        text = args.get("text", "")
         which = args.get("question")
-        if which is not None:
-            if not isinstance(which, int) or not 1 <= which <= len(open_qs):
-                raise SkaldError(f"question must be between 1 and {len(open_qs)}")
-            from .store import answer_line
-
-            text = f"{answer_line(open_qs[which - 1])}\n{text}"
-        story = store.append_note(args["id"], text, self._actor(args), "decision")
+        if which is not None and not isinstance(which, int):
+            raise SkaldError("question must be an integer")
+        story, closed = store.answer(args["id"], args.get("text", ""), self._actor(args), which)
         d = store.story_dict(story)
-        d["closed_questions"] = 1 if which is not None else len(open_qs)
+        d["closed_questions"] = closed
         return d
 
     def tool_skald_set(self, args: dict) -> Any:

@@ -231,7 +231,7 @@
         <div><span class="inline-block w-1 h-3 bg-red-500 align-middle mr-1"></span> Red edge: blocked by an unmet dependency</div>
         <div><span class="inline-block w-1 h-3 bg-amber-400 align-middle mr-1"></span> Amber edge: stale, no update for a while</div>
         <div><span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5">also x@branch</span> Claimed by someone on another branch or in another checkout</div>
-        <div><span class="text-[10px] rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-1.5">? 2</span> Open questions, waiting on a human; the modal lists them and Answer closes them with a decision note</div>
+        <div><span class="text-[10px] rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-1.5">? 2</span> Open questions, waiting on a human; the modal lists them, Answer beside one aims your reply at it alone, and Answer all closes every one with a decision note</div>
         <div><span class="inline-block h-1.5 w-8 rounded bg-slate-300 dark:bg-slate-600 overflow-hidden align-middle"><span class="block h-full w-1/3 bg-sky-500"></span></span> Children done over total, on a parent story; the dialog lists them and can add one</div>
         <div><span class="inline-block h-1.5 w-8 rounded bg-slate-300 dark:bg-slate-600 overflow-hidden align-middle"><span class="block h-full w-1/2 bg-emerald-500"></span></span> Acceptance checklist progress</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Header</div>
@@ -279,7 +279,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false,
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null,
     lastWrite: 0, help: false, helpCli: null,
     sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
   };
@@ -1037,7 +1037,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       const qs = (s.questions && s.questions.items) || [];
       $('m-questions').classList.toggle('hidden', !qs.length);
       $('m-answer-btn').classList.toggle('hidden', !qs.length || state.readonly);
-      $('m-questions-list').innerHTML = qs.map(q => `<li class="rounded bg-amber-50 dark:bg-amber-950 px-2 py-1"><span class="text-muted text-xs">${esc(q.stamp)} · ${esc(q.author)}</span><br>${esc(q.text)}</li>`).join('');
+      state.answering = null;
+      renderQuestions(qs);
       $('m-title').value = s.title; $('m-status').value = s.status; $('m-assignee').value = s.assignee || '';
       $('m-tags').value = s.tags.join(', '); $('m-blockers').value = s.blocked_by.join(', ');
       $('m-parent').value = s.parent || '';
@@ -1104,13 +1105,41 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       await openModal(s.id);
     } catch (err) { toast(err.message, 'error'); }
   }
+  // The open questions, each with its own Answer button. Selecting one aims the decision at it alone,
+  // the way `skald answer --question N` does; with none selected the decision closes every question.
+  function renderQuestions(qs) {
+    const sel = state.answering;
+    $('m-questions-list').innerHTML = qs.map((q, i) => {
+      const n = i + 1, on = sel === n;
+      return `<li class="rounded px-2 py-1 flex gap-2 items-start ${on ? 'bg-amber-200 dark:bg-amber-800 ring-1 ring-amber-500' : 'bg-amber-50 dark:bg-amber-950'}">
+        <div class="grow"><span class="text-muted text-xs">${n}. ${esc(q.stamp)} · ${esc(q.author)}</span><br>${esc(q.text)}</div>
+        ${state.readonly ? '' : `<button type="button" data-q="${n}" class="q-answer shrink-0 rounded border border-strong px-2 py-0.5 text-xs bg-surface hover:bg-hover" title="Aim the reply at this question only">${on ? 'Selected' : 'Answer'}</button>`}
+      </li>`;
+    }).join('');
+    const btn = $('m-answer-btn');
+    btn.textContent = sel ? `Answer question ${sel}` : (qs.length > 1 ? 'Answer all' : 'Answer');
+    btn.title = sel ? `Append the text as a decision note aimed at question ${sel}; the others stay open`
+                    : 'Append the text as a decision note, which answers every open question';
+    $('m-note').placeholder = sel ? `Your answer to question ${sel}` : 'Appended to the bottom of the story with a timestamp and your name';
+    for (const b of $('m-questions-list').querySelectorAll('.q-answer')) {
+      b.addEventListener('click', () => {
+        const n = Number(b.dataset.q);
+        state.answering = state.answering === n ? null : n;
+        renderQuestions(qs);
+        $('m-note').focus();
+      });
+    }
+  }
   async function addNote(kind) {
     const text = $('m-note').value.trim();
     if (!text || state.modal === 'new') return;
     try {
-      await api('POST', `${P()}/stories/${state.modal}/notes`, kind ? { text, kind } : { text });
+      const body = kind ? { text, kind } : { text };
+      if (kind === 'decision' && state.answering) body.question = state.answering;
+      await api('POST', `${P()}/stories/${state.modal}/notes`, body);
       $('m-note').value = '';
-      if (kind === 'decision') toast('Answered');
+      if (kind === 'decision') toast(state.answering ? `Answered question ${state.answering}` : 'Answered');
+      state.answering = null;
       await openModal(state.modal);
     } catch (err) { toast(err.message, 'error'); }
   }

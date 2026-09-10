@@ -246,7 +246,10 @@ case it closes only that question; `story_dict` carries
 `questions: {open}` (plus `items` when not compact), `context` lists every
 story with one under `waiting`, `resume` prints them after the decisions,
 `ls` shows `?N` in a `Q` column and `--questions` filters, and `answer` is
-`note --kind decision` with a count of what it closed.
+`note --kind decision` with a count of what it closed. `Store.answer` is
+the one place the targeted first line is written; the CLI, the MCP tool,
+and `POST .../notes` with `question` all call it, and the board's dialog
+offers an Answer button beside each open question.
 A note of kind `audit` is written by `audit` and holds the compact summary
 of what it checked; `resume` reports the newest one's date and how many
 referenced files changed since. The tool checks claims; the agent checks

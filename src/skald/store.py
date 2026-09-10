@@ -931,6 +931,21 @@ class Store:
                 changed.append(s)
         return changed
 
+    def answer(self, ref: str, text: str, author: str = "agent", question: Optional[int] = None) -> tuple[Story, int]:
+        """Append a decision note. With ``question`` (1-based over the open questions, as ``resume`` numbers
+        them) the note's first line names that question so only it closes; otherwise every open question
+        closes. Returns the story and how many questions the note closes."""
+        open_qs = self.get(ref).open_questions()
+        text = (text or "").strip()
+        if question is not None:
+            if not open_qs:
+                raise SkaldError("this story has no open question")
+            if not 1 <= question <= len(open_qs):
+                raise SkaldError(f"question must be between 1 and {len(open_qs)} (open questions on this story)")
+            text = f"{answer_line(open_qs[question - 1])}\n{text}"
+        story = self.append_note(ref, text, author, "decision")
+        return story, (1 if question is not None else len(open_qs))
+
     def append_note(self, ref: str, text: str, author: str = "agent", kind: Optional[str] = None,
                     at: Optional[str] = None) -> Story:
         """Append a dated note. ``at`` backdates the heading (a migration primitive); the default is now."""
