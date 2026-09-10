@@ -10,8 +10,7 @@ design. Everything here is normative unless marked *future*. Where this
 document and the code disagree, the code is wrong. For *why* a choice was
 made, see `DECISIONS.md`.
 
-This is the 0.3 specification. It supersedes the 0.1 single-file design; the
-migration path is in section 2.4.
+This is the specification as of 0.2.
 
 ---
 
@@ -115,10 +114,9 @@ opens one by id; `Workspace.other_checkouts(store)` opens every other working
 tree of a store's project.
 
 `init` creates the layout when absent and is otherwise non-destructive. It
-also migrates the 0.1 layout: it deletes `.skald/skald.py` and removes a git
-alias equal to `!python3 .skald/skald.py`. It appends the one-line pointer to
-`.skald/AGENTS.md` to the root `CLAUDE.md` and `AGENTS.md` when they exist
-and lack it, and creates `AGENTS.md` with the pointer when neither exists.
+appends the one-line pointer to `.skald/AGENTS.md` to the root `CLAUDE.md`
+and `AGENTS.md` when they exist and lack it, and creates `AGENTS.md` with
+the pointer when neither exists.
 
 ---
 
@@ -225,7 +223,13 @@ updated_at: "2026-09-06T08:12:41Z"
 Notes appended by `note` have the heading
 `## [<author>] <YYYY-MM-DD HH:MM> UTC` followed by ` · <kind>` when a kind
 was given. `parse_notes` recovers `{author, stamp, kind, text}` from the
-body; the text before the first note heading is the requirements.
+body. The text before the first note heading is the prelude (`prelude_of`):
+every section the author wrote. `requirements_of` is the `## Requirements`
+section of the prelude when there is one, else the whole prelude; a heading,
+not a length limit, decides what `resume` prints. `sections_of` lists the
+prelude's H2 headings with line counts and `section_of` returns one by
+case-insensitive prefix; `resume --section NAME` and `--full` expose them,
+and the default output ends with a one-line map of the other sections.
 `## Acceptance` (or `## Acceptance criteria`) introduces a section whose
 task-list items are the acceptance criteria; `acceptance_progress` counts
 them and `update` warns when a story moves into a terminal column, or forward

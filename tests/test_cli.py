@@ -35,17 +35,13 @@ class TestInit(SkaldTestCase):
         code, out, _ = self.run_cli("init", "--name", "Renamed Thing", cwd=repo)
         self.assertIn("renamed project to 'renamed-thing'", out)
 
-    def test_init_from_subdirectory_and_migration(self):
+    def test_init_from_subdirectory(self):
         sub = self.repo / "src"
         sub.mkdir()
-        (self.skald_dir / "skald.py").write_text("legacy")
-        git(self.repo, "config", "alias.skald", cli.OLD_ALIAS)
         code, out, err = self.run_cli("init", cwd=sub)
         self.assertEqual(code, 0, err)
-        self.assertFalse((self.skald_dir / "skald.py").exists())
-        self.assertIn("removed vendored", out)
-        self.assertIn("removed the 0.1 git alias", out)
-        self.assertNotIn("skald", git(self.repo, "config", "--list"))
+        self.assertIn("already registered", out)
+        self.assertTrue((self.skald_dir / "AGENTS.md").exists())
 
     def test_agents_md_matches_package_template(self):
         code, _, _ = self.run_cli("init")
@@ -526,6 +522,23 @@ class TestAgentOrientation(SkaldTestCase):
         code, out, _ = self.run_cli("resume", a, "--json")
         d = json.loads(out)
         self.assertEqual((d["latest"]["kind"], d["note_count"], len(d["decisions"])), ("handoff", 2, 1))
+        self.assertEqual(d["sections"], [{"heading": "Requirements", "lines": 1}, {"heading": "Acceptance", "lines": 2}])
+        self.assertEqual(d["requirements"], "## Requirements\n\nBuild it.")
+        # The rest of the body is a map, paid for on request.
+        code, out, _ = self.run_cli("resume", a)
+        self.assertIn("Also in this story: ## Acceptance (2 lines)", out)
+        self.assertIn(f"skald resume {a} --section acceptance", out)
+        self.assertNotIn("- [ ] renders", out)
+        code, out, _ = self.run_cli("resume", a, "--section", "acc")
+        self.assertIn("- [ ] renders", out)
+        self.assertNotIn("Build it.", out)
+        code, out, _ = self.run_cli("resume", a, "--full")
+        self.assertIn("Build it.", out)
+        self.assertIn("- [ ] renders", out)
+        self.assertNotIn("Also in this story", out)
+        code, out, err = self.run_cli("resume", a, "--section", "design")
+        self.assertEqual(code, 1)
+        self.assertIn("no section starting with 'design'", err)
 
         code, out, err = self.run_cli("move", a, "review")
         self.assertIn("acceptance criteria unchecked", err)

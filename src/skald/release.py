@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 from .errors import SkaldError
-from .store import Store, Story, requirements_of
+from .store import Store, Story, prelude_of
 
 CHANGELOG_HEADING_RE = re.compile(r"^##\s+changelog\s*$", re.I)
 SECTION_RE = re.compile(r"^##\s+(.*)$")
@@ -22,7 +22,7 @@ DEFAULT_CHANGELOG = "CHANGELOG.md"
 
 def changelog_text(story: Story) -> str:
     """The story's ``## Changelog`` section as one paragraph, or its title."""
-    lines = requirements_of(story.body).splitlines()
+    lines = prelude_of(story.body).splitlines()
     start = None
     for i, line in enumerate(lines):
         if CHANGELOG_HEADING_RE.match(line.strip()):

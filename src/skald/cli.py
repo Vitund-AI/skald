@@ -15,7 +15,6 @@ from .registry import Registry, UserConfig, Workspace, find_skald_dir
 from .store import Store, Story, serialise_story, split_ref
 from .util import read_text
 
-OLD_ALIAS = "!python3 .skald/skald.py"
 
 
 # --------------------------------------------------------------------------
@@ -244,6 +243,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     rs = sub.add_parser("resume", help="requirements, checklist state, dependencies, and the latest handoff for a story")
     rs.add_argument("id", help="story id or unique prefix")
+    rs.add_argument("--section", metavar="NAME", help="print one section of the body instead, matched by prefix (e.g. design)")
+    rs.add_argument("--full", action="store_true", help="print the whole body, every section, instead of the requirements")
     rs.add_argument("--json", action="store_true", help="print JSON")
 
     sh = sub.add_parser("show", help="print a story file")
@@ -448,16 +449,6 @@ def cmd_init(ws: Workspace, args) -> int:
     else:
         agents.write_text(agents_template(), encoding="utf-8")
         lines.append("wrote AGENTS.md")
-
-    legacy = skald_dir / "skald.py"
-    if legacy.exists():
-        legacy.unlink()
-        lines.append("removed vendored skald.py from the 0.1 layout (the package replaces it)")
-    if repo:
-        alias = gitutil.get_alias(repo, "skald")
-        if alias == OLD_ALIAS:
-            gitutil.unset_alias(repo, "skald")
-            lines.append("removed the 0.1 git alias; `git skald` now uses the installed git-skald command")
 
     notice = ws.registry.register(config.name, skald_dir)
     lines.append(notice or f"project '{config.name}' already registered")
@@ -702,16 +693,31 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
     return 0
 
 
-def cmd_resume(ws: Workspace, store: Store, args) -> int:
-    from .store import requirements_of
+def _resume_extras(story: Story, args) -> dict:
+    """Body views for ``resume``: requirements by default, one section, or everything before the notes."""
+    from .store import prelude_of, requirements_of, section_of, sections_of
 
+    out: dict = {"requirements": requirements_of(story.body), "sections": sections_of(story.body)}
+    section = getattr(args, "section", None)
+    if section:
+        text = section_of(story.body, section)
+        if text is None:
+            names = ", ".join(s["heading"] for s in out["sections"]) or "none"
+            raise NotFoundError(f"{story.id} has no section starting with '{section}' (sections: {names})")
+        out["section"] = {"heading": text.splitlines()[0].lstrip("# ").strip(), "text": text}
+    if getattr(args, "full", False):
+        out["body"] = prelude_of(story.body)
+    return out
+
+
+def cmd_resume(ws: Workspace, store: Store, args) -> int:
     story = store.get(args.id)
     idx = store.index()
     d = store.story_dict(story, idx, ws.user.get("stale_days"), compact=True)
     notes = story.notes()
     handoff = story.last_note("handoff")
     latest = handoff or (notes[-1] if notes else None)
-    d["requirements"] = requirements_of(story.body)
+    d.update(_resume_extras(story, args))
     d["deps"] = [x.to_dict() for x in store.dep_states(story, idx)]
     d["latest"] = latest
     d["note_count"] = len(notes)
@@ -726,7 +732,19 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
           + (f" · acceptance {d['acceptance']['done']}/{d['acceptance']['total']}" if d.get("acceptance") else ""))
     if d["deps"]:
         print("depends on: " + ", ".join(f"{x['ref']} ({x['state']}{'' if x['satisfied'] else ', unmet'})" for x in d["deps"]))
-    print("\n" + d["requirements"].strip() + "\n")
+    if "section" in d:
+        print("\n" + d["section"]["text"].strip() + "\n")
+    elif "body" in d:
+        print("\n" + d["body"].strip() + "\n")
+    else:
+        print("\n" + d["requirements"].strip() + "\n")
+        # The rest of the body is a map, not a dump: an agent pays for a section only when it asks.
+        shown = d["requirements"].splitlines()[0].lstrip("# ").strip().lower() if d["requirements"].startswith("## ") else None
+        others = [s for s in d["sections"] if s["heading"].lower() != shown]
+        if others and shown is not None:
+            print("Also in this story: " + " · ".join(f"## {s['heading']} ({s['lines']} lines)" for s in others))
+            first = others[0]["heading"].split()[0].lower()
+            print(f"  skald resume {story.id} --section {first}   |   skald resume {story.id} --full\n")
     if d["decisions"]:
         print("Decisions:")
         for n in d["decisions"]:

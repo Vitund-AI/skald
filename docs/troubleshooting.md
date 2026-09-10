@@ -136,12 +136,6 @@ completions directory on the next shell start.
 Bash splits words on colons. zsh and fish handle them; in bash, type the id
 after the colon yourself.
 
-## Upgrading
-
-**A leftover `.skald/skald.py` or `git skald` alias from 0.1**
-Run `skald init` in the repository. It removes both, writes `config.json`,
-and registers the project; stories are untouched.
-
 ## Still stuck
 
 `skald --version` and `skald check` output, plus the story file in

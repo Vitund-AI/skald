@@ -33,7 +33,9 @@ tools from `skald mcp` (see the README).
    story to you and moves it into the first active column. Then run
    `skald resume <id>`: it prints the requirements, the checklist and
    acceptance state, dependencies, decisions, and the latest handoff note,
-   which is everything a previous session left for you. Use `skald show <id>`
+   which is everything a previous session left for you. On a long story it
+   ends with a map of the other sections; read one with `skald resume <id>
+   --section <name>` or all of them with `--full`. Use `skald show <id>`
    only when you need the full history.
 4. **Warnings are advisory.** If a command prints a `WARNING:` about unmet
    dependencies, decide whether to stub the missing piece or work the blocker

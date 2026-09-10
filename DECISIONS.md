@@ -402,3 +402,23 @@ run in. If a rename with live references ever comes up, the answer is an
 alias: `config.json` gains `"aliases": ["old-name"]`, the registry indexes
 aliases, and old references keep resolving on every clone with nothing
 rewritten. Not built until someone needs it.
+
+### D52. The 0.1 migration is gone, because nobody had 0.1
+`init` deleted a vendored `.skald/skald.py` and the matching git alias, and
+the docs carried upgrade sections, all for a layout that never left this
+repository. Code that migrates from a state no user has ever been in is
+clutter for every reader and a test surface with no purpose, so it was
+removed rather than kept "just in case". The decisions that mention 0.1
+(D1, D6, D9) stay as written: they record why the design is what it is.
+
+### D53. A heading, not a length limit, decides what `resume` prints
+`resume` printed everything above the first note, which on a design record
+of several hundred lines was the design, the options, and the history,
+every session, before the agent had asked for any of it. The fix is not a
+line cap: a cap would cut mid-sentence at a number nobody can see in the
+file. The `## Requirements` heading that `new` already writes is the cut.
+When it exists, `resume` prints that section and a map of the rest, and an
+agent pays for a section only when it asks. Bodies without the heading are
+unchanged, so nothing existing prints differently unless its author put
+the heading there on purpose. `release` reads the changelog section from
+the prelude, not the requirements, so it is unaffected.

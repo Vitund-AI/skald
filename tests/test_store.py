@@ -599,7 +599,17 @@ class TestNotesAndAcceptance(SkaldTestCase):
         self.assertEqual(story.last_note("blocker"), None)
         self.assertIn("## [claude] ", story.body)
         self.assertIn(" UTC · handoff\n", story.body)
-        self.assertTrue(requirements_of(story.body).endswith("- [x] two"))
+        # requirements_of is the ## Requirements section only; the prelude is every section.
+        self.assertEqual(requirements_of(story.body), "## Requirements\n\nDo the thing.")
+        from skald.store import prelude_of, section_of, sections_of
+        self.assertTrue(prelude_of(story.body).endswith("- [x] two"))
+        self.assertEqual(sections_of(story.body), [{"heading": "Requirements", "lines": 1}, {"heading": "Acceptance", "lines": 2}])
+        self.assertEqual(section_of(story.body, "acc"), "## Acceptance\n\n- [ ] one\n- [x] two")
+        self.assertIsNone(section_of(story.body, "design"))
+        # Without the heading, requirements are the whole prelude; a heading followed directly by a note is empty.
+        self.assertEqual(requirements_of("Just prose.\n\n## [x] 2026-01-01 00:00 UTC\nnote"), "Just prose.")
+        self.assertEqual(requirements_of("## Requirements\n## [x] 2026-01-01 00:00 UTC\nnote"), "## Requirements")
+        self.assertEqual(sections_of("no headings"), [])
         d = story.to_dict()
         self.assertEqual(d["acceptance"], {"done": 1, "total": 2})
         self.assertEqual(d["checklist"], {"done": 1, "total": 2})
