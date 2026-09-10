@@ -758,8 +758,13 @@ def stop_server(home: Path) -> bool:
 
 
 def _host_port(ws: Workspace, args) -> tuple[str, int]:
-    host = getattr(args, "host", None) or ws.user.get("host")
-    port = getattr(args, "port", None) or int(ws.user.get("port"))
+    """The bind address: flags win over settings. Port 0 means "any free port", so only None falls back."""
+    host = getattr(args, "host", None)
+    if host is None:
+        host = ws.user.get("host")
+    port = getattr(args, "port", None)
+    if port is None:
+        port = int(ws.user.get("port"))
     return host, port
 
 

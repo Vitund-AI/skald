@@ -126,9 +126,11 @@ skald move a3f9c2 review
 git add .skald src && git commit --trailer "Skald-Story: a3f9c2"
 ```
 
-For Claude Code, `skald hooks claude --install` adds a SessionStart hook, a
-Stop hook that refuses to end with a broken backlog, and a skill that loads
-the contract. Agents without a shell can use `skald mcp`.
+For Claude Code, `skald hooks claude --install --as claude` adds a
+SessionStart hook that runs `skald context` so every session begins
+oriented without reading the whole backlog, a Stop hook that refuses to end
+with a broken backlog, and a skill that loads the contract. Agents without a
+shell can use `skald mcp`.
 
 ## Documentation
 

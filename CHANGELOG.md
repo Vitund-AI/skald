@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- The Claude Code SessionStart hook written by `skald hooks claude` runs
+  `skald context`, a bounded orientation block, instead of `skald status &&
+  skald ls`, which printed every open story into the agent's context on
+  every session start, resume, clear, and compaction. `--as NAME` bakes the
+  agent's name into the hook. Re-run the install to update an existing hook.
+
+### Fixed
+- `skald serve --port 0` and `skald server start` with port 0 ask the
+  operating system for a free port instead of silently using the configured
+  one. The test suite now passes on a machine with a board already running
+  on 8321.
+
 ## 0.2.0 (2026-09-09)
 
 The single-file tool became a package. Run `skald init` once in each existing

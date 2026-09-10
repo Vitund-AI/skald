@@ -364,6 +364,7 @@ def build_parser() -> argparse.ArgumentParser:
     hk.add_argument("target", choices=["claude", "git", "github"], help="which hook to print or install")
     hk.add_argument("--install", action="store_true", help="write the hook instead of printing it")
     hk.add_argument("--strict", action="store_true", help="claude: stop hook also fails on uncommitted story changes")
+    hk.add_argument("--as", dest="author", metavar="NAME", help="claude: bake the agent's name into the SessionStart hook (skald context --as NAME)")
 
     rd = sub.add_parser("render", help="write a Markdown or HTML snapshot of the board to commit")
     rd.add_argument("--format", choices=["md", "html"], help="default: from config.json, else md")
@@ -1331,11 +1332,14 @@ def cmd_columns(store: Store, args) -> int:
     return 0
 
 
-def claude_hooks(strict: bool) -> dict:
+def claude_hooks(strict: bool, author: Optional[str] = None) -> dict:
+    """The Claude Code hooks. SessionStart runs the bounded orientation block, never a full listing:
+    hook output is paid for on every session start, resume, clear, and compaction, whatever the backlog size."""
     stop = "skald check --hook" if strict else "skald check"
+    start = "skald context" + (f" --as {author}" if author else "")
     return {
         "hooks": {
-            "SessionStart": [{"hooks": [{"type": "command", "command": "skald status && skald ls"}]}],
+            "SessionStart": [{"hooks": [{"type": "command", "command": start}]}],
             "Stop": [{"hooks": [{"type": "command", "command": stop}]}],
         }
     }
@@ -1546,7 +1550,7 @@ def cmd_hooks(store: Store, args) -> int:
         return cmd_hooks_git(store, args)
     if args.target == "github":
         return cmd_hooks_github(store, args)
-    snippet = claude_hooks(args.strict)
+    snippet = claude_hooks(args.strict, getattr(args, 'author', None))
     if not args.install:
         print(json.dumps(snippet, indent=2))
         print("\nMerge this into .claude/settings.json, or rerun with --install.", file=sys.stderr)

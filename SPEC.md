@@ -366,7 +366,7 @@ story or configuration. Commands that print stories take `--json`.
 | `changelog --since REF [--until REF]` | Stories terminal at `until` that were absent or non-terminal at `since`, read from git objects. |
 | `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
 | `columns`, `templates`, `projects [rm NAME \| use [PATH]]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. `projects` lists each project's other checkouts beneath it with branch and dirty count; `use` makes a checkout the primary. |
-| `hooks claude [--install] [--strict]` | Prints or merges into `.claude/settings.json`: SessionStart `skald status && skald ls`; Stop `skald check` (or `skald check --hook` with `--strict`). |
+| `hooks claude [--install] [--strict] [--as NAME]` | Prints or merges into `.claude/settings.json`: SessionStart `skald context` (`--as NAME` when given), never a full listing, because hook output is paid for on every session start; Stop `skald check` (or `skald check --hook` with `--strict`). |
 | `hooks git [--install]`, `hooks github [--install]` | Section 10b. `hooks claude --install` also writes `.claude/skills/skald/SKILL.md` from the contract template. |
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Section 10b. |

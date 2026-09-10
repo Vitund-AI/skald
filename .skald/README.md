@@ -1,7 +1,7 @@
-<!-- skald-render ad98d865c8b7beeb -->
+<!-- skald-render 52fdfca0ba1a0ba9 -->
 # skald backlog
 
-**2 open** · Backlog 1 · Ready 1 · In progress 0 · Review 0 · Done 0
+**4 open** · Backlog 1 · Ready 1 · In progress 0 · Review 2 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -21,9 +21,12 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 _none_
 
-## Review (0)
+## Review (2)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [a25045](stories/a25045-serve-port-0-falls-back-to-the-configured-port.md) | serve --port 0 falls back to the configured port | `core` | claude |  | 3/3 |
+| [f3bac3](stories/f3bac3-claude-code-sessionstart-hook-runs-skald-context-n.md) | Claude Code SessionStart hook runs skald context, not skald ls | `agents` | claude |  | 3/3 |
 
 <details><summary><strong>Done (0)</strong></summary>
 
