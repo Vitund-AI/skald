@@ -102,10 +102,14 @@ in the environment sets the default.
 
 ## Several agents at once
 
-Agents working in parallel worktrees see each other through git.
-`skald next` skips stories claimed by another name on another local branch
-and says so, `skald claim` warns before taking over someone else's story,
-and the board marks cards claimed elsewhere with a badge. An assignment that
+Agents working in parallel worktrees see each other. `skald next` skips
+stories claimed by another name in another checkout of the project or on
+another local branch and says so, `skald claim` warns before taking over
+someone else's story, and the board marks cards claimed elsewhere with a
+badge. A claim in a worktree counts from the moment the file is written,
+before any commit, because the other working trees are read from disk. The
+board can show each worktree's working tree, so you can watch every agent's
+column mid-task; see [The board](board.md#working-trees-and-branches). An assignment that
 has not been touched for `stale_days` (three by default, see
 [Multiple projects](multi-project.md) for settings) is offered to `next`
 again with a warning.

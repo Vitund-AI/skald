@@ -47,10 +47,15 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Project** switches between registered projects. "All projects: ready
   work" is a single list of ready, unblocked stories everywhere; click one to
   open it in its project.
-- **Branch** shows the working tree by default. Choosing another branch,
-  local or remote, shows a read-only view of the backlog as it is there,
-  with a banner and no editing. A badge counts stories that exist only on
-  other branches.
+- **Branch** shows the working tree by default. When the project has more
+  than one checkout on this machine, the dropdown starts with a "Working
+  trees" group: one entry per checkout with its branch, path, and a count
+  of uncommitted story files. Choosing one shows that working tree, edits
+  and all, and it is editable; a banner names the path. Below that, choosing
+  a branch, local or remote, shows a read-only view of the backlog as it is
+  committed there, with a banner and no editing. A badge counts stories that
+  exist only on other branches. See
+  [Working trees and branches](#working-trees-and-branches).
 - **Filter** matches title, id, tag, or assignee. `/` focuses it.
 - **Facet filters and swimlanes** appear when stories carry `key:value`
   tags. One dropdown per key filters; "swimlanes by" splits the board into
@@ -109,6 +114,26 @@ tag to each story, or archives them when the column is done or closed.
 Clicking in another column or pressing `Esc` ends the selection.
 
 <img src="images/multi-select.png" alt="Three cards selected in the Review column with the bulk action bar offering Move to, a tag box, and Clear" width="100%">
+
+## Working trees and branches
+
+The dropdown offers two different things. A **working tree** is a checkout
+of the project on this machine: the primary, a git worktree, or another
+clone. Its view is the files on disk, so an agent working in a worktree
+shows up mid-task, claims and notes included, before it commits anything.
+Everything works there: drag, edit, notes, claims, and the commit button,
+which commits in that checkout on its branch. Cards claimed in another
+working tree show the "also name@branch" badge, so two agents in two
+worktrees cannot both take a story.
+
+A **branch** is a read-only snapshot of what is committed there. Use it to
+review a branch you do not have checked out, or to compare. It cannot show
+uncommitted work, which is why worktrees get their own entries.
+
+Checkouts are found from `git worktree list` and from commands run in other
+clones; the address bar carries an opaque id for the one shown, never a
+path. See [Multiple projects](multi-project.md#several-checkouts-of-one-repository)
+for how the primary is chosen.
 
 ## The graph
 

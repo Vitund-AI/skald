@@ -22,7 +22,7 @@ from urllib.request import urlopen
 
 from . import __version__, gitutil
 from .errors import GitError, NotFoundError, SkaldError
-from .registry import Registry, UserConfig, Workspace, ensure_token, read_token, token_path
+from .registry import Registry, UserConfig, Workspace, ensure_token, read_token, token_path, checkout_id
 from .store import Store, facets as compute_facets
 from .util import sha256_text
 
@@ -224,11 +224,34 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- helpers ---------------------------------------------------------
 
-    def _project(self, ws: Workspace, name: str) -> Store:
+    def _project(self, ws: Workspace, name: str, query: Optional[dict] = None) -> Store:
+        """The project's primary store, or the checkout named by ``?checkout=ID`` (an id, never a path)."""
+        checkout = (query.get("checkout") or [""])[0].strip() if query else ""
+        if checkout:
+            store = ws.open_checkout(name, checkout)
+            if store is None:
+                raise NotFoundError(f"project '{name}' has no checkout '{checkout}' (see /api/projects/{name}/checkouts)")
+            return store
         store = ws.open(name)
         if store is None:
             raise NotFoundError(f"project '{name}' is not registered on this machine")
         return store
+
+    def _checkouts(self, ws: Workspace, name: str) -> list[dict]:
+        out = []
+        for c in ws.registry.checkouts(name):
+            d = dict(c)
+            d["branch"], d["changes"] = None, 0
+            if c["exists"]:
+                repo = gitutil.root(Path(c["path"]))
+                if repo is not None:
+                    d["branch"] = gitutil.branch(repo)
+                    try:
+                        d["changes"] = len(gitutil.changes(repo, str(Path(c["path"]).relative_to(repo))))
+                    except (GitError, ValueError):
+                        pass
+            out.append(d)
+        return out
 
     def _identity(self, ws: Workspace, store: Store) -> str:
         from .cli import human_identity
@@ -350,7 +373,11 @@ class Handler(BaseHTTPRequestHandler):
 
         if len(rest) >= 2 and rest[0] == "projects":
             name, tail = rest[1], rest[2:]
-            store = self._project(ws, name)
+            store = self._project(ws, name, query)
+
+            if tail == ["checkouts"] and method == "GET":
+                self._json(200, {"current": checkout_id(store.dir), "checkouts": self._checkouts(ws, name)})
+                return
 
             ref = (query.get("ref") or [""])[0].strip()
             if tail == ["board"] and method == "GET" and ref:
@@ -374,13 +401,22 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 current = gitutil.branch(repo)
                 out, elsewhere, claims = [], set(), {}
+                covered = set()
+                for co in ws.other_checkouts(store):
+                    co_repo = gitutil.root(co.dir)
+                    label = (gitutil.branch(co_repo) if co_repo else None) or "working tree"
+                    covered.add(label)
+                    for st in co.load_all()[0]:
+                        if st.assignee and co.config.role(st.status) == "active":
+                            claims.setdefault(st.id, []).append(
+                                {"branch": label, "assignee": st.assignee, "status": st.status, "checkout": str(co.dir)})
                 for b in gitutil.branches(repo):
                     snap = self.server.snapshot(store, b["name"])
                     diff = store.branch_diff(snap)
                     is_current = b["name"] == current
                     if not is_current:
                         elsewhere.update(x.id for x in diff["only_there"])
-                        if not b["remote"]:
+                        if not b["remote"] and b["name"] not in covered:
                             for st in snap.load_all()[0]:
                                 if st.assignee and snap.config.role(st.status) == "active":
                                     claims.setdefault(st.id, []).append({"branch": b["name"], "assignee": st.assignee, "status": st.status})
@@ -399,6 +435,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {
                     "project": store.name,
                     "path": str(store.dir),
+                    "checkout": {"id": checkout_id(store.dir), "path": str(store.dir),
+                                 "primary": ws.registry.path_of(store.name) == store.dir},
                     "columns": [c.to_dict() for c in store.config.columns],
                     "stories": [store.story_dict(s, idx, ws.user.get("stale_days")) for s in stories],
                     "facets": compute_facets(stories, store.config),
