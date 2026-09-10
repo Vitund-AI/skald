@@ -2,13 +2,6 @@
 
 ## 0.4.0 (2026-09-10)
 
-- `skald rm --force` now clears the parent field on the deleted story's children and removes it from other stories' blocked_by, printing each change, instead of leaving references that `skald check` reports as problems. (e2c6c8)
-- The package version is 0.3.0, and a test now fails when the newest release heading in the changelog does not match the version in the package. (380af0)
-- `skald context` lists at most five stories under Waiting on a human and says how many more there are; `skald ls --questions` has the full list. (01c403)
-- `skald import` brings an existing folder of Markdown records into the backlog, driven by a JSON mapping file: titles, creation dates, statuses, tags, and dated notes are extracted by rules you write, bodies are kept byte for byte, links across the repository can be rewritten to the new story files, and a dry run shows exactly what would happen. (382a77)
-- `skald resume` lists a long section map one heading per line, and `skald answer --question N` closes only the Nth open question instead of all of them. (288335)
-
-
 ### Added
 - `skald import PATH... --map FILE` brings an existing folder of Markdown
   records into the backlog: titles from the H1, bodies kept byte for byte,
@@ -29,7 +22,7 @@
   numbers them, by naming it in the decision's first line; a decision
   without that line still closes every open question. MCP `skald_answer`
   takes `question`.
-- The package version is 0.3.0. A test now fails when the newest release
+- The package version is 0.4.0. A test now fails when the newest release
   heading in the changelog does not match the version in the package, since
   `release` never edits version files.
 
