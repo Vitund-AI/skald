@@ -26,6 +26,17 @@ class TestRepo(unittest.TestCase):
             self.skipTest("no docs/cli.md in this checkout")
         self.assertEqual(doc.read_text(encoding="utf-8"), cli.docs_markdown(), "run `skald docs`")
 
+    def test_newest_changelog_release_matches_package_version(self):
+        """release never edits version files (D46), so the bump must happen by hand; this catches a missed one."""
+        import re
+
+        from skald import __version__
+
+        first = next(l for l in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8").splitlines() if l.startswith("## "))
+        m = re.match(r"^## (\d+\.\d+\.\d+)", first)
+        if m:
+            self.assertEqual(m.group(1), __version__, "bump src/skald/__init__.py to match the newest release in CHANGELOG.md")
+
     def test_own_backlog_is_clean(self):
         skald_dir = ROOT / ".skald"
         if not (skald_dir / "stories").exists():

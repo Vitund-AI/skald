@@ -13,6 +13,7 @@ the reasoning behind it in [DECISIONS.md](../DECISIONS.md).
 | [Stories](stories.md) | You want the story file format, the design-record layout for long stories, columns and roles, facets and epics, templates, archiving, and releases. |
 | [Git and CI](git-and-ci.md) | You want commit trailers, reviewing what changed, the committed snapshot, hooks, the GitHub workflow, and the release flow. |
 | [Multiple projects](multi-project.md) | You have more than one repository, or several checkouts of one, or want cross-project dependencies and one board for all of them. |
+| [Importing](importing.md) | You have an existing folder of Markdown records to bring into the backlog. |
 | [CLI reference](cli.md) | You need the exact flags. Generated from the parser, so it is always current. |
 | [HTTP API](api.md) | You are scripting against the board server. |
 | [Troubleshooting](troubleshooting.md) | Something printed an error or looks wrong. |

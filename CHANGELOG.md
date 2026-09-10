@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `skald import PATH... --map FILE` brings an existing folder of Markdown
+  records into the backlog: titles from the H1, bodies kept byte for byte,
+  dates, statuses, tags, and dated notes extracted by rules in a JSON mapping
+  file, links across the repository rewritten to the new story files with
+  `--rewrite-links`, sources removed with `--rm` so one commit keeps the
+  history, and `--dry-run` to see it all first. See docs/importing.md.
+
+### Changed
+- `skald rm --force` clears the deleted story's id from other stories'
+  `blocked_by` and the `parent` field of its children, printing each change,
+  instead of leaving references that `skald check` reports as problems.
+- `skald context` lists at most five stories under "Waiting on a human",
+  newest question first, and says how many more there are; `skald ls
+  --questions` has the full list.
+- `skald resume` lists a long section map one heading per line.
+- `skald answer --question N` closes only the Nth open question, as `resume`
+  numbers them, by naming it in the decision's first line; a decision
+  without that line still closes every open question. MCP `skald_answer`
+  takes `question`.
+- The package version is 0.3.0. A test now fails when the newest release
+  heading in the changelog does not match the version in the package, since
+  `release` never edits version files.
+
 ## 0.3.0 (2026-09-10)
 
 ### Added

@@ -41,6 +41,9 @@ everything in it belongs in the repository.
 command inside it. The backlog is already there, and the first command
 registers the project on your machine.
 
+**Already have a folder of Markdown records?** `skald import` brings them
+in with their dates, tags, and history; see [Importing](importing.md).
+
 ## Your first stories
 
 ```sh
