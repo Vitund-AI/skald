@@ -5,8 +5,9 @@ rank: 50
 tags: ["agents", "cli"]
 blocked_by: []
 assignee: "claude"
+released: "0.4.0"
 created_at: "2026-09-10T18:21:55Z"
-updated_at: "2026-09-10T20:18:26Z"
+updated_at: "2026-09-10T20:18:46Z"
 ---
 ## Requirements
 
