@@ -21,8 +21,18 @@ git add -A && git commit -m "Move the backlog into Skald"
 - **Notes** are extracted by rules and appended as dated notes in their
   original order, using `note --at`, so the story's history reads as it
   happened. Their author is `--as NAME`, default `import`.
-- **Status, tags, and `created_at`** come from rules; `--status COLUMN`
-  overrides every status rule.
+- **Status and tags** come from rules; `--status COLUMN` overrides every
+  status rule, and `--tag TAG` (repeatable) adds a fixed tag to every story
+  in the run, so a bucket imported on its own can carry `area:fleet-hosts`.
+- **`created_at`** comes from a regex when the mapping has one, else from
+  git: the author date of the commit that added the file, following
+  renames. A file git does not know is stamped now. The dry run says which
+  of the three applied to each file.
+- The mapping is checked before any file is read: every regex must compile,
+  a `$N` in a template must not exceed the regex's groups, `on` must name a
+  subject, a status must be a column, and a notes rule needs `block` or
+  `section`. The errors name the rule (`tags[2]: template refers to $2 but
+  the regex has 1 group(s)`).
 - Nothing is written if any file has a problem (a date that does not parse,
   a status that is not a column): the errors name the files, and you fix the
   mapping.
@@ -57,9 +67,9 @@ optional. `$1` in a value is the first group of the rule's regex.
 
 | Key | Rule | Meaning |
 | --- | --- | --- |
-| `created_at` | `{regex, group}` | Searched in the body; the group is the date (`YYYY-MM-DD`, `YYYY-MM-DD HH:MM`, or an ISO instant). Sets `created_at` and `updated_at`. No match is a problem. |
-| `status` | list of `{regex, on, status}` and `{default}` | The first matching rule wins; `on` is `filename`, `relpath`, or `body` (the default). |
-| `tags` | list of `{regex, on, tag}` | Every matching rule adds its tag, lowercased. |
+| `created_at` | `{regex, group, fallback}` | Searched in the body; the group is the date (`YYYY-MM-DD`, `YYYY-MM-DD HH:MM`, or an ISO instant). Sets `created_at` and `updated_at`. When the regex does not match, or there is no rule, `fallback` applies: `git-added` (the default: the commit that added the file, then now), `now`, or `error` (no match is a problem). |
+| `status` | list of `{regex, on, status}` and `{default}` | The first matching rule wins; `on` is `filename`, `relpath` (under the directory you gave), `path` (under the project root), or `body` (the default). |
+| `tags` | list of `{regex, on, tag}` | Every matching rule adds its tag, lowercased. `relpath` is relative to the directory you gave, so a rule on the bucket name matches only when you import the parent of the buckets; use `path` for the same rule bucket by bucket, or `--tag`. |
 | `notes` | `{block, until, date_group, kind}` | A line matching `block` starts a note that runs until a line matching `until` (or the end); `date_group` names the group holding its date; blockquote markers are removed. |
 | `notes` | `{section, per, kind}` | An H2 heading matching `section` and everything under it leave the body; with `per: "bullet"` each top-level bullet becomes one note of that kind, stamped at the story's `created_at`. |
 | `strip` | list of regexes | Lines to drop, typically bold status lines whose meaning moved into the frontmatter. |
@@ -72,12 +82,17 @@ on day one.
 
 ## Links and history
 
-`--rewrite-links ROOT` scans text files under `ROOT` for references to each
-imported file, as Markdown links or bare paths, relative to the referencing
-file or to `ROOT`, and rewrites them to the new story file, relative to the
-referencing file. It reports counts per file. Links between imported records
-are rewritten inside the new stories too, so a record that pointed at
-another keeps pointing at it.
+`--rewrite-links ROOT` scans text files under `ROOT`, and the new stories
+wherever `.skald/` is, for references to each imported file, as Markdown
+links or bare paths, and rewrites them to the new story file, relative to
+the referencing file. A reference is resolved against the referencing
+file's directory, every ancestor of it up to `ROOT`, and the project root,
+so `other.md`, `fleet-hosts/other.md` written from a sibling bucket, and
+`docs/backlog/fleet-hosts/other.md` all find the file. Inside an imported
+story the record's original directory is tried first, since that is where
+its links pointed. `ROOT` should normally be the repository root; a
+narrower `ROOT` only limits which files are scanned. It reports counts per
+file.
 
 `--rm` deletes each source file in the same operation. Commit the removals
 and the new stories together: the body is unchanged apart from the title

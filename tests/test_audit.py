@@ -33,7 +33,8 @@ class TestAuditCommand(SkaldTestCase):
         (self.repo / "top.py").write_text("only\n")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "seed")
-        sha = git(self.repo, "rev-parse", "--short", "HEAD").strip()
+        # The full sha: a short one can be all digits, which the extractor rightly reads as a number.
+        sha = git(self.repo, "rev-parse", "HEAD").strip()
         body = (f"Reads src/keep.py:2 and src/keep.py:10, deletes src/gone.py, and cites top.py:1. "
                 f"Landed in {sha}; the earlier attempt was deadbeef1.")
         sid = self.new("Design", "--body", body)

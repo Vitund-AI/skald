@@ -289,7 +289,7 @@ Answer a story's open questions: appends a decision note, which closes them.
 ## import
 
 ```
-skald import [--map FILE] [--status COLUMN] [--rewrite-links ROOT] [--rm] [--dry-run] [--as AUTHOR] PATH [PATH ...]
+skald import [--map FILE] [--status COLUMN] [--tag TAG] [--rewrite-links ROOT] [--rm] [--dry-run] [--as AUTHOR] PATH [PATH ...]
 ```
 
 Bring a folder of Markdown records into the backlog, driven by a mapping file.
@@ -299,7 +299,8 @@ Bring a folder of Markdown records into the backlog, driven by a mapping file.
 | `[PATH...]` | Markdown files, or directories searched recursively |
 | `--map FILE` | JSON mapping: created_at, status, tags, notes, strip, exclude rules (see docs/importing.md) |
 | `--status COLUMN` | column for every imported story; overrides the mapping's status rules |
-| `--rewrite-links ROOT` | rewrite references to each imported file across ROOT to the new story path |
+| `--tag TAG` | add this tag to every imported story (repeatable), e.g. --tag area:fleet |
+| `--rewrite-links ROOT` | rewrite references to each imported file across ROOT (normally the repository root) and in the new stories |
 | `--rm` | delete each source file after importing it, so one commit carries removal and creation |
 | `--dry-run` | print what would be written, per file, and write nothing |
 | `--as AUTHOR` | author label for the extracted notes (default: import) |
