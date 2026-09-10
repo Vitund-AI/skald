@@ -76,6 +76,11 @@ class TestMcp(SkaldTestCase):
         res, _ = self.call(server, "skald_resume", id=a)
         self.assertEqual(res["latest"]["kind"], "handoff")
         self.assertIn("requirements", res)
+        self.assertIn("sections", res)
+        res, _ = self.call(server, "skald_resume", id=a, full=True)
+        self.assertIn("body", res)
+        _, err = self.call(server, "skald_resume", id=a, section="nope")
+        self.assertIn("no section", err)
 
         _, err = self.call(server, "skald_show", id="zzz")
         self.assertIn("ERROR: no story matches", err)

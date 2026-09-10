@@ -223,7 +223,13 @@ updated_at: "2026-09-06T08:12:41Z"
 Notes appended by `note` have the heading
 `## [<author>] <YYYY-MM-DD HH:MM> UTC` followed by ` · <kind>` when a kind
 was given. `parse_notes` recovers `{author, stamp, kind, text}` from the
-body; the text before the first note heading is the requirements.
+body. The text before the first note heading is the prelude (`prelude_of`):
+every section the author wrote. `requirements_of` is the `## Requirements`
+section of the prelude when there is one, else the whole prelude; a heading,
+not a length limit, decides what `resume` prints. `sections_of` lists the
+prelude's H2 headings with line counts and `section_of` returns one by
+case-insensitive prefix; `resume --section NAME` and `--full` expose them,
+and the default output ends with a one-line map of the other sections.
 `## Acceptance` (or `## Acceptance criteria`) introduces a section whose
 task-list items are the acceptance criteria; `acceptance_progress` counts
 them and `update` warns when a story moves into a terminal column, or forward

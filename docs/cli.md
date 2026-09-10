@@ -118,7 +118,7 @@ One orientation block for an agent: mine, next, blockers, uncommitted.
 ## resume
 
 ```
-skald resume [--json] id
+skald resume [--section NAME] [--full] [--json] id
 ```
 
 Requirements, checklist state, dependencies, and the latest handoff for a story.
@@ -126,6 +126,8 @@ Requirements, checklist state, dependencies, and the latest handoff for a story.
 | Argument | Description |
 | --- | --- |
 | `id` | story id or unique prefix |
+| `--section NAME` | print one section of the body instead, matched by prefix (e.g. design) |
+| `--full` | print the whole body, every section, instead of the requirements |
 | `--json` | print JSON |
 
 ## show

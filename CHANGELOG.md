@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Changed
+- `skald resume` prints the `## Requirements` section when the body has
+  one, then a one-line map of the other sections with their sizes; `--section
+  NAME` prints one section and `--full` the whole body. A body without the
+  heading prints whole, as before. The MCP `skald_resume` tool takes `section`
+  and `full` and returns `sections`.
 - The Claude Code SessionStart hook written by `skald hooks claude` runs
   `skald context`, a bounded orientation block, instead of `skald status &&
   skald ls`, which printed every open story into the agent's context on

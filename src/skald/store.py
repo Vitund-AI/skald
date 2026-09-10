@@ -67,10 +67,58 @@ def parse_notes(body: str) -> list[dict]:
     return notes
 
 
-def requirements_of(body: str) -> str:
-    """The body before the first note heading."""
+def prelude_of(body: str) -> str:
+    """The body before the first note heading: every section the author wrote, none of the notes."""
     m = NOTE_HEADING_RE.search(body)
     return (body[:m.start()] if m else body).rstrip("\n")
+
+
+H2_RE = re.compile(r"^##\s+(?!\[)(.+?)\s*$")
+
+
+def sections_of(body: str) -> list[dict]:
+    """The H2 sections of the prelude in order: ``[{heading, lines}]``, lines counted below each heading."""
+    lines = prelude_of(body).splitlines()
+    out: list[dict] = []
+    for i, line in enumerate(lines):
+        m = H2_RE.match(line)
+        if m:
+            out.append({"heading": m.group(1), "start": i, "lines": 0})
+    for j, sec in enumerate(out):
+        end = out[j + 1]["start"] if j + 1 < len(out) else len(lines)
+        block = [ln for ln in lines[sec["start"] + 1:end]]
+        while block and not block[-1].strip():
+            block.pop()
+        while block and not block[0].strip():
+            block.pop(0)
+        sec["lines"] = len(block)
+    for sec in out:
+        del sec["start"]
+    return out
+
+
+def section_of(body: str, name: str) -> Optional[str]:
+    """One H2 section of the prelude, heading included, matched case-insensitively by prefix; None if absent."""
+    lines = prelude_of(body).splitlines()
+    want = name.strip().lower()
+    start = None
+    for i, line in enumerate(lines):
+        m = H2_RE.match(line)
+        if m and start is None and m.group(1).lower().startswith(want):
+            start = i
+        elif m and start is not None:
+            return "\n".join(lines[start:i]).rstrip("\n")
+    return "\n".join(lines[start:]).rstrip("\n") if start is not None else None
+
+
+def requirements_of(body: str) -> str:
+    """What ``resume`` prints: the ``## Requirements`` section when the body has one, else the whole prelude.
+
+    A heading, not a length limit, decides the cut, so the author of the body
+    controls it and the rule is visible in the file.
+    """
+    section = section_of(body, "requirements")
+    return section if section is not None else prelude_of(body)
 
 
 def acceptance_progress(body: str) -> tuple[int, int]:

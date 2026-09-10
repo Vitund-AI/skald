@@ -55,8 +55,8 @@ TOOLS: list[dict] = [
                              "kind": {"type": "string", "description": "handoff, decision, blocker, or another short word"}}, ["id", "text"])},
     {"name": "skald_context", "description": "Orientation for the caller: assigned stories with last notes, the next unblocked story, blocked ready stories, claims on other branches, uncommitted story files.",
      "inputSchema": _schema({**PROJECT_PROP, **AS_PROP})},
-    {"name": "skald_resume", "description": "A story's requirements, checklist and acceptance state, dependencies, decisions, and its latest handoff note.",
-     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP}, ["id"])},
+    {"name": "skald_resume", "description": "A story's requirements (the ## Requirements section when there is one), the other sections' headings and sizes, checklist and acceptance state, dependencies, decisions, and its latest handoff note. Pass section to read one section, or full for the whole body.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "section": {"type": "string"}, "full": {"type": "boolean"}}, ["id"])},
     {"name": "skald_set", "description": "Update title, rank, tags, blocked_by, or assignee.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP,
                              "title": {"type": "string"}, "rank": {"type": "integer"},
@@ -181,14 +181,16 @@ class McpServer:
         return build_context(self._ws(), store, self._actor(args))
 
     def tool_skald_resume(self, args: dict) -> Any:
-        from .store import requirements_of
+        import argparse
+
+        from .cli import _resume_extras
 
         store = self._store(args)
         story = store.get(args["id"])
         idx = store.index()
         d = store.story_dict(story, idx, compact=True)
         notes = story.notes()
-        d["requirements"] = requirements_of(story.body)
+        d.update(_resume_extras(story, argparse.Namespace(section=args.get("section"), full=bool(args.get("full")))))
         d["deps"] = [x.to_dict() for x in store.dep_states(story, idx)]
         d["latest"] = story.last_note("handoff") or (notes[-1] if notes else None)
         d["decisions"] = [n for n in notes if n["kind"] == "decision"]

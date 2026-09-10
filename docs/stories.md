@@ -55,6 +55,12 @@ Frontmatter fields:
 
 ## Sections the tools understand
 
+- **`## Requirements`** is what `skald resume` prints. When the body has
+  the heading, only that section is shown, followed by a one-line map of
+  the other sections with their sizes; `resume --section design` prints
+  one, `resume --full` prints everything. A body without the heading is
+  printed whole. So the author of a long story decides the cut by where
+  the heading sits.
 - **Checklist items** (`- [ ]` and `- [x]`) anywhere in the body become the
   progress bar on the card.
 - **`## Acceptance`** holds the definition of done. Moving a story into a
