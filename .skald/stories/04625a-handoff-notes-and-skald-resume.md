@@ -1,12 +1,12 @@
 ---
 title: "Handoff notes and skald resume"
-status: "review"
-rank: 110
+status: "done"
+rank: 130
 tags: ["agents"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:42Z"
-updated_at: "2026-09-08T17:24:21Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

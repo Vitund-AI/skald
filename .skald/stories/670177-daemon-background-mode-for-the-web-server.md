@@ -1,11 +1,11 @@
 ---
 title: "Daemon (background) mode for the web server"
 status: "done"
-rank: 130
+rank: 470
 tags: ["ui"]
 blocked_by: []
 created_at: "2026-09-06T05:24:05Z"
-updated_at: "2026-09-08T17:24:16Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

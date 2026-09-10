@@ -1,11 +1,11 @@
 ---
 title: "Story templates"
-status: "review"
-rank: 20
+status: "done"
+rank: 50
 tags: ["cli"]
 blocked_by: []
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-08T17:24:21Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

@@ -1,11 +1,11 @@
 ---
 title: "Offer a pipx-installable package with a global skald command"
 status: "done"
-rank: 140
+rank: 480
 tags: ["packaging"]
 blocked_by: ["9a1da4"]
 created_at: "2026-09-06T02:16:15Z"
-updated_at: "2026-09-08T17:24:16Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

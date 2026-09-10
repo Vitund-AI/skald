@@ -1,11 +1,11 @@
 ---
 title: "Board: project switcher and all-projects ready view"
 status: "done"
-rank: 110
+rank: 450
 tags: ["ui"]
 blocked_by: []
 created_at: "2026-09-06T07:04:41Z"
-updated_at: "2026-09-08T17:24:16Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

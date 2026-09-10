@@ -1,12 +1,12 @@
 ---
 title: "skald release: changelog section from the done column, then archive with a version stamp"
-status: "review"
-rank: 270
+status: "done"
+rank: 300
 tags: ["cli", "git"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-09T21:40:55Z"
-updated_at: "2026-09-09T21:43:40Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

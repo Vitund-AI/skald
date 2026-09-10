@@ -1,11 +1,11 @@
 ---
 title: "Publish a pre-commit hook recipe that runs skald check"
 status: "done"
-rank: 70
+rank: 410
 tags: ["docs"]
 blocked_by: []
 created_at: "2026-09-06T02:16:15Z"
-updated_at: "2026-09-08T17:24:16Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

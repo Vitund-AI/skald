@@ -1,12 +1,12 @@
 ---
 title: "Shell completion for bash, zsh, and fish"
-status: "review"
-rank: 250
+status: "done"
+rank: 280
 tags: ["cli"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-08T18:47:37Z"
-updated_at: "2026-09-08T18:51:39Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "User docs: guides under docs/ and a generated CLI reference"
-status: "review"
-rank: 280
+status: "done"
+rank: 310
 tags: ["docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-09T21:45:45Z"
-updated_at: "2026-09-09T21:52:18Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

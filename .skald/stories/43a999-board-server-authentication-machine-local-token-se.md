@@ -1,12 +1,12 @@
 ---
 title: "Board server authentication: machine-local token, session cookie, bearer header"
-status: "review"
-rank: 290
+status: "done"
+rank: 320
 tags: ["core", "ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-09T22:21:58Z"
-updated_at: "2026-09-09T22:31:08Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

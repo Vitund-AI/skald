@@ -1,12 +1,12 @@
 ---
 title: "Rename mv to move"
-status: "review"
-rank: 230
+status: "done"
+rank: 260
 tags: ["cli"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-07T19:34:04Z"
-updated_at: "2026-09-08T17:24:21Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

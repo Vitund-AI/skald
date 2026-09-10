@@ -1,11 +1,11 @@
 ---
 title: "Board: checklist progress, stale marker, branch, history tab, keyboard shortcuts"
 status: "done"
-rank: 90
+rank: 430
 tags: ["ui"]
 blocked_by: []
 created_at: "2026-09-06T07:04:41Z"
-updated_at: "2026-09-08T17:24:16Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

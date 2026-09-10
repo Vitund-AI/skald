@@ -1,12 +1,12 @@
 ---
 title: "Install from GitHub until the first PyPI release"
-status: "review"
-rank: 240
+status: "done"
+rank: 270
 tags: ["docs", "packaging"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-08T01:16:16Z"
-updated_at: "2026-09-08T17:24:21Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

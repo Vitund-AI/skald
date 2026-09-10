@@ -1,11 +1,11 @@
 ---
 title: "Git integration: status, commit, log, changelog, board commit button"
 status: "done"
-rank: 100
+rank: 440
 tags: ["git", "ui"]
 blocked_by: []
 created_at: "2026-09-06T07:04:41Z"
-updated_at: "2026-09-08T17:24:16Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

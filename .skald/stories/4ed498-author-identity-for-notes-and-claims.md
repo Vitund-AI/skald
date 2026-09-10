@@ -1,11 +1,11 @@
 ---
 title: "Author identity for notes and claims"
 status: "done"
-rank: 80
+rank: 420
 tags: ["core"]
 blocked_by: []
 created_at: "2026-09-06T07:04:41Z"
-updated_at: "2026-09-08T17:24:16Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

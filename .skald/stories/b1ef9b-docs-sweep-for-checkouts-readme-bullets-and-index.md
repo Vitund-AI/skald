@@ -1,12 +1,12 @@
 ---
 title: "Docs sweep for checkouts: README bullets and index rows, agent contract, Help panel legend, git-and-ci"
-status: "review"
-rank: 330
+status: "done"
+rank: 360
 tags: ["docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T00:25:30Z"
-updated_at: "2026-09-10T00:26:11Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

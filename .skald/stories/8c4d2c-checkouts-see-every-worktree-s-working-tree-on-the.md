@@ -1,12 +1,12 @@
 ---
 title: "Checkouts: see every worktree's working tree on the board, claims visible before commit"
-status: "review"
-rank: 310
+status: "done"
+rank: 340
 tags: ["agents", "core", "ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-09T23:42:51Z"
-updated_at: "2026-09-09T23:51:53Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

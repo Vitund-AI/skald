@@ -1,12 +1,12 @@
 ---
 title: "skald render: committed board snapshot, pre-commit hook, GitHub Action"
-status: "review"
-rank: 90
+status: "done"
+rank: 120
 tags: ["cli", "docs"]
 blocked_by: ["cbb58e"]
 assignee: "claude"
 created_at: "2026-09-06T17:42:24Z"
-updated_at: "2026-09-08T17:24:21Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

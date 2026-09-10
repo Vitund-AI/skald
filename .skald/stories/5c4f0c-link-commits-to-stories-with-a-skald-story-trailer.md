@@ -1,12 +1,12 @@
 ---
 title: "Link commits to stories with a Skald-Story trailer"
-status: "review"
-rank: 140
+status: "done"
+rank: 170
 tags: ["git"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T19:01:42Z"
-updated_at: "2026-09-08T17:24:21Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

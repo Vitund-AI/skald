@@ -1,12 +1,12 @@
 ---
 title: "Help panel with keyboard shortcuts and the CLI reference"
-status: "review"
-rank: 210
+status: "done"
+rank: 240
 tags: ["docs", "ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-07T01:29:56Z"
-updated_at: "2026-09-08T17:24:21Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

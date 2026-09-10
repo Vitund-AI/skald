@@ -1,12 +1,12 @@
 ---
 title: "Render workflow commits as github-actions[bot], not a real user's noreply address"
-status: "review"
-rank: 300
+status: "done"
+rank: 330
 tags: ["git", "packaging"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-09T23:04:27Z"
-updated_at: "2026-09-09T23:05:41Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "Changelog text on every story before the 0.2.0 release"
-status: "review"
-rank: 340
+status: "done"
+rank: 370
 tags: ["docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T00:45:17Z"
-updated_at: "2026-09-10T00:45:17Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

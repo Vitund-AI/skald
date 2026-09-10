@@ -1,11 +1,11 @@
 ---
 title: "Cross-project dependencies as project:id"
 status: "done"
-rank: 40
+rank: 30
 tags: ["core"]
 blocked_by: []
 created_at: "2026-09-06T07:04:41Z"
-updated_at: "2026-09-08T17:24:16Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

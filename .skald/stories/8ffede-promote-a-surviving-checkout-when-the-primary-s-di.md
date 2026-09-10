@@ -1,12 +1,12 @@
 ---
 title: "Promote a surviving checkout when the primary's directory has gone"
-status: "review"
-rank: 350
+status: "done"
+rank: 380
 tags: ["core"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T00:45:44Z"
-updated_at: "2026-09-10T00:47:29Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

@@ -1,7 +1,7 @@
-<!-- skald-render 6dbc23180e6a23cc -->
+<!-- skald-render 3c36bc4224d8b8f6 -->
 # skald backlog
 
-**37 open** · Backlog 1 · Ready 1 · In progress 0 · Review 35 · Done 15
+**2 open** · Backlog 1 · Ready 1 · In progress 0 · Review 0 · Done 50
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -15,10 +15,8 @@ flowchart LR
     n_cbb58e["cbb58e<br/>Facet tags and epic progress"]
     n_cbb58e --> n_46b5d3
     n_9a1da4 --> n_bae374
-    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_46b5d3,n_cbb58e active
-    class n_9a1da4,n_bae374 done
+    class n_46b5d3,n_9a1da4,n_bae374,n_cbb58e done
 ```
 
 ## Backlog (1)
@@ -37,10 +35,17 @@ flowchart LR
 
 _none_
 
-## Review (35)
+## Review (0)
+
+_none_
+
+<details><summary><strong>Done (50)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
+| [9bf832](stories/9bf832-dependency-graph-view.md) | Dependency graph view | `ui` |  |  |  |
+| [b5d7d7](stories/b5d7d7-custom-columns-with-roles-and-wip-limits.md) | Custom columns with roles and WIP limits | `core` `ui` |  |  |  |
+| [058512](stories/058512-cross-project-dependencies-as-project-id.md) | Cross-project dependencies as project:id | `core` |  |  |  |
 | [aab06f](stories/aab06f-claude-code-hooks.md) | Claude Code hooks | `agents` |  |  |  |
 | [9e4f8e](stories/9e4f8e-story-templates.md) | Story templates | `cli` |  |  |  |
 | [c78e01](stories/c78e01-bulk-operations-on-the-board.md) | Bulk operations on the board | `ui` | claude |  |  |
@@ -49,10 +54,10 @@ _none_
 | [862dae](stories/862dae-mcp-server-mode.md) | MCP server mode | `agents` |  |  |  |
 | [d8a25c](stories/d8a25c-read-only-views-of-other-branches.md) | Read-only views of other branches | `core` `ui` | claude |  | 0/6 |
 | [cbb58e](stories/cbb58e-facet-tags-and-epic-progress.md) | Facet tags and epic progress | `core` `ui` | claude |  | 0/4 |
-| [46b5d3](stories/46b5d3-skald-render-committed-board-snapshot-pre-commit-h.md) | skald render: committed board snapshot, pre-commit hook, GitHub Action | `cli` `docs` | claude | 🔒 `cbb58e` | 0/7 |
-| [dea072](stories/dea072-compact-output-and-skald-context-for-agent-orienta.md) | Compact output and skald context for agent orientation | `agents` | claude |  |  |
+| [46b5d3](stories/46b5d3-skald-render-committed-board-snapshot-pre-commit-h.md) | skald render: committed board snapshot, pre-commit hook, GitHub Action | `cli` `docs` | claude | `cbb58e` | 0/7 |
 | [04625a](stories/04625a-handoff-notes-and-skald-resume.md) | Handoff notes and skald resume | `agents` | claude |  |  |
 | [aa1ade](stories/aa1ade-acceptance-criteria-as-an-advisory-gate.md) | Acceptance criteria as an advisory gate | `core` | claude |  |  |
+| [dea072](stories/dea072-compact-output-and-skald-context-for-agent-orienta.md) | Compact output and skald context for agent orientation | `agents` | claude |  |  |
 | [654c29](stories/654c29-claim-awareness-across-worktrees-and-stale-claims.md) | Claim awareness across worktrees and stale claims | `agents` `core` | claude |  |  |
 | [5c4f0c](stories/5c4f0c-link-commits-to-stories-with-a-skald-story-trailer.md) | Link commits to stories with a Skald-Story trailer | `git` | claude |  |  |
 | [610eef](stories/610eef-skald-diff-between-refs-and-a-pr-comment-from-the.md) | skald diff between refs and a PR comment from the workflow | `docs` `git` | claude |  |  |
@@ -76,14 +81,6 @@ _none_
 | [b1ef9b](stories/b1ef9b-docs-sweep-for-checkouts-readme-bullets-and-index.md) | Docs sweep for checkouts: README bullets and index rows, agent contract, Help panel legend, git-and-ci | `docs` | claude |  | 4/4 |
 | [2a929c](stories/2a929c-changelog-text-on-every-story-before-the-0-2-0-rel.md) | Changelog text on every story before the 0.2.0 release | `docs` | claude |  | 2/2 |
 | [8ffede](stories/8ffede-promote-a-surviving-checkout-when-the-primary-s-di.md) | Promote a surviving checkout when the primary's directory has gone | `core` | claude |  | 4/4 |
-
-<details><summary><strong>Done (15)</strong></summary>
-
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [9bf832](stories/9bf832-dependency-graph-view.md) | Dependency graph view | `ui` |  |  |  |
-| [b5d7d7](stories/b5d7d7-custom-columns-with-roles-and-wip-limits.md) | Custom columns with roles and WIP limits | `core` `ui` |  |  |  |
-| [058512](stories/058512-cross-project-dependencies-as-project-id.md) | Cross-project dependencies as project:id | `core` |  |  |  |
 | [63898e](stories/63898e-per-project-config-json-with-name-and-format-versi.md) | Per-project config.json with name and format version | `core` |  |  |  |
 | [e0cc9f](stories/e0cc9f-render-the-story-body-as-markdown-in-the-modal.md) | Render the story body as Markdown in the modal | `ui` |  |  |  |
 | [92086e](stories/92086e-publish-a-pre-commit-hook-recipe-that-runs-skald-c.md) | Publish a pre-commit hook recipe that runs skald check | `docs` |  |  |  |

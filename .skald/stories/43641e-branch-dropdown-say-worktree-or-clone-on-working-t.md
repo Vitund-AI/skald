@@ -1,12 +1,12 @@
 ---
 title: "Branch dropdown: say worktree or clone on working-tree entries, mark branches that have one as committed only"
-status: "review"
-rank: 320
+status: "done"
+rank: 350
 tags: ["ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T00:14:03Z"
-updated_at: "2026-09-10T00:16:34Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "Bulk operations on the board"
-status: "review"
-rank: 30
+status: "done"
+rank: 60
 tags: ["ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-08T17:33:27Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 

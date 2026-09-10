@@ -1,12 +1,12 @@
 ---
 title: "README screenshots: board, story, terminal session, completion, graph, multi-select"
-status: "review"
-rank: 260
+status: "done"
+rank: 290
 tags: ["docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-08T20:28:04Z"
-updated_at: "2026-09-08T20:28:04Z"
+updated_at: "2026-09-10T00:56:04Z"
 ---
 ## Requirements
 
