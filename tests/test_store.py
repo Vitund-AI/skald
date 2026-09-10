@@ -397,6 +397,32 @@ class TestRegistry(SkaldTestCase):
             r.remove("alpha")
         self.assertEqual(r.entries(), [])
 
+    def test_missing_primary_promotes_a_surviving_checkout(self):
+        r = Registry(self.home)
+        other = self.make_repo("second", init_skald=False)
+        (other / ".skald" / "stories").mkdir(parents=True)
+        ProjectConfig("alpha").save(other / ".skald" / "config.json")
+        r.register("alpha", other / ".skald")
+        shutil.rmtree(self.repo)
+        # Any listing promotes the survivor and says so; a fresh registry sees the new primary.
+        cos = Registry(self.home).checkouts("alpha")
+        self.assertEqual([(c["primary"], c["exists"]) for c in cos], [(True, True)])
+        self.assertEqual(Path(cos[0]["path"]), (other / ".skald").resolve())
+        fresh = Registry(self.home)
+        self.assertEqual(fresh.path_of("alpha"), (other / ".skald").resolve())
+        self.assertNotIn("checkouts", fresh.projects["alpha"])
+        # Opening by name through a registry that still holds the stale path also promotes, with a notice.
+        stale = Registry(self.home)
+        stale.projects["alpha"]["path"] = str(self.skald_dir)
+        stale.projects["alpha"]["checkouts"] = [str((other / ".skald").resolve())]
+        ws = Workspace(stale, UserConfig(self.home))
+        self.assertEqual(ws.open("alpha").dir, (other / ".skald").resolve())
+        self.assertTrue(any("moved from" in n and "gone" in n for n in ws.notices))
+        # With no survivor the project stays, listed as missing.
+        shutil.rmtree(other)
+        entries = Registry(self.home).entries()
+        self.assertEqual([(e["name"], e["exists"]) for e in entries], [("alpha", False)])
+
     def test_worktrees_are_checkouts_and_claims_there_are_seen(self):
         st = self.store()
         st.create("On main", status="ready")

@@ -15,7 +15,8 @@ repository to migrate; story files are unchanged.
   checkouts with branch and dirty count; `skald projects use` picks the
   primary. `next`, `claim`, and `context` see claims made in other checkouts
   before they are committed. A second checkout no longer replaces the
-  registered path each time a command runs there.
+  registered path each time a command runs there; when the primary's
+  directory has gone, a surviving checkout is promoted on the next listing.
 - The board server requires a per-machine token. `skald open` handles the
   handshake through a session cookie; scripts send `Authorization: Bearer`
   with the value from `skald server token`. Requests from a non-local `Host`

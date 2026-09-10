@@ -306,6 +306,17 @@ class TestProjectsAndConfig(SkaldTestCase):
         self.assertEqual(Registry(self.home).path_of("alpha"), self.skald_dir.resolve())
         code, out, _ = self.run_cli("projects", "use", str(self.tmp / "nowhere"))
         self.assertEqual(code, 1)
+        # The primary goes away: the listing promotes the worktree and -p works from anywhere.
+        code, out, _ = self.run_cli("projects", "use", cwd=wt)  # worktree is primary; the main checkout is recorded
+        code, out, _ = self.run_cli("projects", "use", str(self.repo))
+        import shutil
+        shutil.rmtree(self.repo / ".skald")
+        code, out, err = self.run_cli("projects", cwd=self.tmp)
+        self.assertIn("moved from", err)
+        self.assertIn("gone", err)
+        self.assertEqual(Registry(self.home).path_of("alpha"), (wt / ".skald").resolve())
+        code, out, err = self.run_cli("-p", "alpha", "show", a, "--json", cwd=self.tmp)
+        self.assertEqual(code, 0, err)
 
     def test_config_command(self):
         code, out, _ = self.run_cli("config")

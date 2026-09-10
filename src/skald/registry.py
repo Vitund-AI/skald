@@ -166,6 +166,7 @@ class Registry:
         if not isinstance(data, dict) or not isinstance(data.get("projects"), dict):
             raise ConfigError(f"{self.path}: expected {{\"projects\": {{...}}}}")
         self.projects: dict[str, dict] = data["projects"]
+        self.notices: list[str] = []
 
     def save(self) -> None:
         atomic_write(self.path, json.dumps({"projects": self.projects}, indent=2, sort_keys=True) + "\n")
@@ -236,6 +237,15 @@ class Registry:
             return []
         primary = Path(entry.get("path", ""))
         exists = (primary / "stories").is_dir()
+        if not exists:
+            # The primary has gone but another checkout survives: promote it now rather than waiting
+            # for a command to run there. With no survivor the project stays listed as missing, since an
+            # unmounted drive looks the same as a deletion.
+            survivors = [Path(p) for p in entry.get("checkouts", []) if (Path(p) / "stories").is_dir()]
+            if survivors:
+                self.use(name, survivors[0])
+                self.notices.append(f"project '{name}' moved from {primary} to {survivors[0]} (the old directory is gone)")
+                primary, exists = survivors[0], True
         out = [{"id": checkout_id(primary), "path": str(primary), "primary": True, "worktree": False, "exists": exists}]
         seen = {primary}
         # Git worktrees of the primary, found without anyone registering them.
@@ -369,6 +379,10 @@ class Workspace:
         if name in self._stores:
             return self._stores[name]
         path = self.registry.path_of(name)
+        if path is not None and not (path / "stories").is_dir():
+            self.registry.checkouts(name)  # promotes a surviving checkout, if any
+            self.notices.extend(n for n in self.registry.notices if n not in self.notices)
+            path = self.registry.path_of(name)
         store: Optional[Store] = None
         if path and (path / "stories").is_dir():
             try:

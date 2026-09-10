@@ -101,8 +101,12 @@ separate step.
 Registration keeps one primary path per name. A command run in another
 checkout of the same project while the primary's directory still exists
 records that checkout beside it and prints a notice; it never replaces the
-primary. The primary moves only when its directory has gone (a moved
-repository). `projects use` makes the current checkout the primary.
+primary. The primary moves only when its directory has gone: a moved
+repository takes over when a command runs there, and a surviving recorded
+checkout is promoted by `Registry.checkouts` on any listing or open, with a
+notice in `Registry.notices` that `Workspace` and `projects` surface. A
+project with no surviving checkout stays listed as missing. `projects use`
+makes the current checkout the primary.
 `Registry.checkouts(name)` lists the primary, the recorded checkouts, and
 the git worktrees of the primary (from `git worktree list`), each with an
 opaque id (a hash of the path) so the HTTP API never carries paths; recorded

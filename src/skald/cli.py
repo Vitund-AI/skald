@@ -1244,6 +1244,7 @@ def cmd_projects(ws: Workspace, args) -> int:
         print(f"project '{name}' now points at {skald_dir}")
         return 0
     entries = ws.registry.entries()
+    _notice(ws.registry.notices)
     if args.json:
         for e in entries:
             for c in e["checkouts"]:

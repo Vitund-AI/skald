@@ -34,9 +34,12 @@ their own through `git worktree list`, and the board re-checks every thirty
 seconds, so they appear and disappear without any command being run in
 them; a separate clone is recorded the first time a command runs there,
 with a note saying where the primary is.
-Neither replaces the primary. Only when the primary's directory has gone does
-the next checkout to run a command take its place, which is what you want
-after moving a repository.
+Neither replaces the primary. Only when the primary's directory has gone
+does another checkout take its place: a surviving checkout is promoted the
+next time anything lists or opens the project, with a notice, and a moved
+repository takes over the next time a command runs in it. A project with
+no surviving checkout stays listed as missing, because an unmounted drive
+looks the same as a deletion; `skald projects rm` forgets it.
 
 ```sh
 skald projects                    # each project, then its checkouts with branch and dirty count

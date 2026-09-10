@@ -23,8 +23,9 @@ primary, the one `-p x` and the board open first.
 
 **The board shows a checkout I did not expect**
 The primary is the first checkout registered. `skald projects` lists them;
-`skald projects use` in the right one switches. If the old directory is
-gone, the next checkout to run a command takes over automatically.
+`skald projects use` in the right one switches. If the primary's directory
+is gone, a surviving checkout is promoted the next time anything lists or
+opens the project, and a notice says so.
 
 **A dependency warns `unavailable`**
 A `project:id` reference points at a project that is not registered here.
