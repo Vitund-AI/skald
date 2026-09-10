@@ -523,3 +523,20 @@ bar, a chip, a lane) and leaves drag and columns untouched. The History
 tab unions the children's commits for the same reason `commits` does on
 the CLI: the hand-kept table of pieces and hashes is the thing this
 replaces.
+
+### D60. `import` is driven by a mapping file, and has no MCP tool
+Backlogs differ in how they mark dates, priorities, and updates: bold
+lines, blockquoted updates, a filename prefix for state. A tool that
+guessed at those would guess wrong quietly, and a migration that is
+wrong quietly is worse than a script. So every extraction is a rule in a
+JSON mapping that lives beside the records, and the dry run shows what
+each rule produced before anything is written. JSON because the standard
+library reads it. The first corpus's mapping was measured over 184
+records before the command was built, which is why it was built rather
+than a script: the same mapping runs on the next bucket, and the next
+adopter writes their own. There is no MCP tool: a migration is a set-up
+step a person runs once from a shell, and the MCP surface is for the
+operations agents perform at run time. Sources are removed in the same
+operation as the stories are created so that one commit carries both and
+git's rename detection keeps the record's history reachable from the
+story.

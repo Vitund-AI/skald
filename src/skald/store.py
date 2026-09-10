@@ -627,7 +627,7 @@ class Store:
 
     def create(self, title: str, status: Optional[str] = None, tags=(), blocked_by=(), body: str = "",
                assignee: str = "", template: Optional[str] = None, parent: Optional[str] = None,
-               inherit: bool = True, created_at: Optional[str] = None) -> tuple[Story, list[str]]:
+               inherit: bool = True, created_at: Optional[str] = None, wrap: bool = True) -> tuple[Story, list[str]]:
         title = (title or "").strip()
         parent_story: Optional[Story] = None
         if parent:
@@ -653,8 +653,8 @@ class Store:
                 full_body += "\n"
             if body:
                 full_body += "\n" + body
-        elif body.lstrip().startswith("## Requirements"):
-            full_body = body.lstrip()  # the caller wrote the heading already
+        elif not wrap or body.lstrip().startswith("## Requirements"):
+            full_body = body.lstrip()  # the caller wrote the heading already, or asked for the body as is
         else:
             full_body = "## Requirements\n\n" + body
         stamp = now_iso()

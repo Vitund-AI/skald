@@ -1,7 +1,7 @@
-<!-- skald-render b0b7b75cd46bdcf3 -->
+<!-- skald-render d62a13ecad927af4 -->
 # skald backlog
 
-**5 open** · Idea 0 · Plan 0 · Ready 1 · In progress 0 · Review 4 · Done 0
+**6 open** · Idea 0 · Plan 0 · Ready 1 · In progress 0 · Review 5 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -23,7 +23,7 @@ _none_
 
 _none_
 
-## Review (4)
+## Review (5)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -31,6 +31,7 @@ _none_
 | [380af0](stories/380af0-version-guard-the-changelog-s-newest-release-must.md) | Version guard: the changelog's newest release must match __version__ | `packaging` | claude |  | 2/2 |
 | [01c403](stories/01c403-context-caps-waiting-on-a-human-at-five-stories.md) | context caps Waiting on a human at five stories | `agents` | claude |  | 2/2 |
 | [288335](stories/288335-review-notes-resume-map-one-heading-per-line-answe.md) | Review notes: resume map one heading per line, answer --question N | `agents` `cli` | claude |  | 2/2 |
+| [382a77](stories/382a77-skald-import-bring-a-markdown-backlog-folder-in-ma.md) | skald import: bring a Markdown backlog folder in, mapping-driven, reproducibly | `cli` `docs` | claude |  | 3/3 |
 
 <details><summary><strong>Done (0)</strong></summary>
 

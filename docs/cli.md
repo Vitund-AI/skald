@@ -26,6 +26,7 @@ error or not found, 2 corrupt story or configuration.
 - [`block`](#block) block <id> +id -id ... (project:id for other projects)
 - [`note`](#note) append a note to a story
 - [`answer`](#answer) answer a story's open questions: appends a decision note, which closes them
+- [`import`](#import) bring a folder of Markdown records into the backlog, driven by a mapping file
 - [`rm`](#rm) delete a story
 - [`log`](#log) git history of a story
 - [`archive`](#archive) move done and closed stories to .skald/archive/
@@ -284,6 +285,24 @@ Answer a story's open questions: appends a decision note, which closes them.
 | `text` | the decision, or - to read stdin |
 | `--as AUTHOR` | author label (default: agent) |
 | `--question N` | close only the Nth open question (1-based, as resume lists them); default: all of them |
+
+## import
+
+```
+skald import [--map FILE] [--status COLUMN] [--rewrite-links ROOT] [--rm] [--dry-run] [--as AUTHOR] PATH [PATH ...]
+```
+
+Bring a folder of Markdown records into the backlog, driven by a mapping file.
+
+| Argument | Description |
+| --- | --- |
+| `[PATH...]` | Markdown files, or directories searched recursively |
+| `--map FILE` | JSON mapping: created_at, status, tags, notes, strip, exclude rules (see docs/importing.md) |
+| `--status COLUMN` | column for every imported story; overrides the mapping's status rules |
+| `--rewrite-links ROOT` | rewrite references to each imported file across ROOT to the new story path |
+| `--rm` | delete each source file after importing it, so one commit carries removal and creation |
+| `--dry-run` | print what would be written, per file, and write nothing |
+| `--as AUTHOR` | author label for the extracted notes (default: import) |
 
 ## rm
 

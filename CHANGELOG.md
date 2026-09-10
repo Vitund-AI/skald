@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+- `skald import PATH... --map FILE` brings an existing folder of Markdown
+  records into the backlog: titles from the H1, bodies kept byte for byte,
+  dates, statuses, tags, and dated notes extracted by rules in a JSON mapping
+  file, links across the repository rewritten to the new story files with
+  `--rewrite-links`, sources removed with `--rm` so one commit keeps the
+  history, and `--dry-run` to see it all first. See docs/importing.md.
+
 ### Changed
 - `skald rm --force` clears the deleted story's id from other stories'
   `blocked_by` and the `parent` field of its children, printing each change,
