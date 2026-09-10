@@ -403,6 +403,9 @@ class TestGitCommands(SkaldTestCase):
         stop_cmds = [h["command"] for e in data["hooks"]["Stop"] for h in e["hooks"]]
         self.assertEqual(stop_cmds, ["echo bye", "skald check --hook"])
         self.assertEqual(len(data["hooks"]["SessionStart"]), 1)
+        self.assertEqual(data["hooks"]["SessionStart"][0]["hooks"][0]["command"], "skald context")
+        code, out, _ = self.run_cli("hooks", "claude", "--as", "claude")
+        self.assertEqual(json.loads(out)["hooks"]["SessionStart"][0]["hooks"][0]["command"], "skald context --as claude")
         self.run_cli("hooks", "claude", "--install")
         data = json.loads(settings.read_text())
         stop_cmds = [h["command"] for e in data["hooks"]["Stop"] for h in e["hooks"]]

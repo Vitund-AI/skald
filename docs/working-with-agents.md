@@ -65,12 +65,18 @@ unless asked, prefer `--json` when parsing.
 ## Claude Code
 
 ```sh
-skald hooks claude --install          # or --strict
+skald hooks claude --install --as claude   # or --strict
 ```
 
 This merges two hooks into `.claude/settings.json`: a SessionStart hook that
-runs `skald status && skald ls`, and a Stop hook that runs `skald check` so a
-session cannot end with a broken backlog. With `--strict` the Stop hook is
+runs `skald context --as claude`, and a Stop hook that runs `skald check` so
+a session cannot end with a broken backlog. The SessionStart hook is
+deliberately `context`, not `ls`: hook output is paid for on every session
+start, resume, clear, and compaction, so it has to stay bounded whatever the
+backlog size, and the agent runs `skald ls` itself when it wants the list.
+Without `--as`, the "assigned to me" section uses `SKALD_AUTHOR` from the
+environment, else `agent`; everything else in the block is the same for
+everyone. With `--strict` the Stop hook is
 `skald check --hook`, which also fails while story files are uncommitted,
 enforcing the commit-together rule. It also writes
 `.claude/skills/skald/SKILL.md` from the contract, so Claude Code loads the

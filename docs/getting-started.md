@@ -71,12 +71,14 @@ it reads `.skald/AGENTS.md` and follows the workflow there. For Claude Code,
 also run:
 
 ```sh
-skald hooks claude --install
+skald hooks claude --install --as claude
 ```
 
-That adds a SessionStart hook so every session begins oriented, a Stop hook
-that refuses to end with a broken backlog, and a skill so the contract loads
-when backlog work comes up. An agent's session then looks like this:
+That adds a SessionStart hook that runs `skald context --as claude`, so
+every session begins oriented without the whole backlog in its context, a
+Stop hook that refuses to end with a broken backlog, and a skill so the
+contract loads when backlog work comes up. An agent's session then looks
+like this:
 
 ```sh
 skald context --as claude         # mine, next, blockers, claims elsewhere, uncommitted

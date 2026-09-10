@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "skald status && skald ls"
+            "command": "skald context --as claude"
           }
         ]
       }

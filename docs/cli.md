@@ -504,7 +504,7 @@ Get or set a user setting.
 ## hooks
 
 ```
-skald hooks [--install] [--strict] {claude,git,github}
+skald hooks [--install] [--strict] [--as NAME] {claude,git,github}
 ```
 
 Print or install hooks: claude (agent), git (pre-commit), github (workflow).
@@ -514,6 +514,7 @@ Print or install hooks: claude (agent), git (pre-commit), github (workflow).
 | `target` | which hook to print or install One of: `claude`, `git`, `github`. |
 | `--install` | write the hook instead of printing it |
 | `--strict` | claude: stop hook also fails on uncommitted story changes |
+| `--as NAME` | claude: bake the agent's name into the SessionStart hook (skald context --as NAME) |
 
 ## render
 

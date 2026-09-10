@@ -374,3 +374,15 @@ Checkouts travel through the API as a hash of the path rather than the path
 itself, keeping the rule that the API never accepts a filesystem path. A
 working tree replaces the object scan of its own branch when counting
 claims, so a claim is never reported twice.
+
+### D50. Hooks that run on every session start must be bounded
+The first SessionStart hook ran `skald status && skald ls`, which is fine
+on a twenty-story backlog and hundreds of rows on a real one, injected
+into the agent's context not once but on every start, resume, clear, and
+compaction. Hook output is paid for every time, so it must not scale with
+the backlog. `skald context` was built for exactly this position and the
+docs already said so; the template simply contradicted them. The hook now
+runs `context`, and `ls` stays a command the agent runs when it wants the
+listing. Found by an agent adopting Skald in a repository with about 180
+open stories, which is the kind of thing the dogfood repository, with
+fifty, could not show.
