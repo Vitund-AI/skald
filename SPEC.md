@@ -17,8 +17,7 @@ This is the specification as of 0.2.
 ## 1. Goals and principles
 
 1. **Install once per machine.** The `skald-kanban` distribution provides
-   `skald` and `git-skald`. Until the first PyPI release it installs from the
-   GitHub repository (`pip install git+https://github.com/Vitund-AI/skald.git`),
+   `skald` and `git-skald`. It installs from PyPI (`pip install skald-kanban`),
    and generated workflows do the same. Repositories carry data only, never
    the tool.
 2. **Standard library only.** No third-party Python packages. Minimum Python

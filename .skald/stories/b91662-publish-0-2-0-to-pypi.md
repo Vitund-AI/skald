@@ -1,11 +1,12 @@
 ---
 title: "Publish to PyPI"
-status: "ready"
-rank: 10
+status: "done"
+rank: 20
 tags: ["packaging"]
 blocked_by: []
+assignee: "claude"
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-10T18:04:32Z"
+updated_at: "2026-09-10T20:41:20Z"
 ---
 ## Requirements
 
@@ -13,3 +14,6 @@ Human steps: create the pending trusted publisher on pypi.org (repository Vitund
 
 ## [claude] 2026-09-08 01:16 UTC
 Deferred by the maintainer until Skald has seen more real backlogs. Installs come from GitHub meanwhile; see story 1b15cc and INSTALL_SPEC in cli.py for the one-line switch back.
+
+## [claude] 2026-09-10 20:41 UTC · result
+Published 0.4.0 to PyPI as skald-kanban via the tag workflow (trusted publisher, pypi environment with a required reviewer); pip install from a clean venv gives skald 0.4.0. Switched INSTALL_SPEC to skald-kanban so generated workflows install the release, test_render now asserts no git URL in the workflow, and README, getting-started, SPEC goal 1, the AGENTS template and its two copies install from PyPI with the git URL kept as the way to run the unreleased head.

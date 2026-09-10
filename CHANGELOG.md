@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Skald is on PyPI as `skald-kanban`. The README, getting started guide,
+  agent contract, and the workflows `skald hooks github` generates install
+  `skald-kanban` instead of the repository; the git URL remains the way to
+  run the unreleased head.
+
 ## 0.4.0 (2026-09-10)
 
 ### Added

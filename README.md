@@ -84,20 +84,17 @@ GitHub issues (git-bug, git-issue).
 
 ## Install
 
-Skald is not on PyPI yet; it needs more time on real backlogs first. Install
-straight from this repository:
-
 ```sh
-pip install git+https://github.com/Vitund-AI/skald.git
-# or: pipx install git+https://github.com/Vitund-AI/skald.git
-# or: uv tool install git+https://github.com/Vitund-AI/skald.git
+pip install skald-kanban
+# or: pipx install skald-kanban
+# or: uv tool install skald-kanban
+# latest from source: pip install git+https://github.com/Vitund-AI/skald.git
 cd your-repo
 skald init
 ```
 
-Append `@main` or a tag such as `@v0.2.0` to the URL to pin a revision. The
-distribution name is `skald-kanban`; the command is `skald`, and `git skald`
-works too. `init` creates `.skald/`, writes the agent contract, registers the
+The distribution name is `skald-kanban`; the command is `skald`, and `git
+skald` works too. `init` creates `.skald/`, writes the agent contract, registers the
 project on your machine, and points your `CLAUDE.md` or `AGENTS.md` at the
 contract. Shell completion is one line in your rc file:
 

@@ -1666,8 +1666,9 @@ skald render --stage
 """
 
 
-# Until the first PyPI release, generated workflows install from the repository.
-INSTALL_SPEC = "git+https://github.com/Vitund-AI/skald.git"
+# Generated workflows install the released package; pin a version here if a
+# workflow must stay on an older release.
+INSTALL_SPEC = "skald-kanban"
 
 
 def github_workflow(default_branch: str, render_path: str) -> str:

@@ -8,14 +8,16 @@ Skald is one Python package with no dependencies beyond the standard
 library. Python 3.9 or newer, git, and a browser for the board.
 
 ```sh
-pip install git+https://github.com/Vitund-AI/skald.git
-# or: pipx install git+https://github.com/Vitund-AI/skald.git
-# or: uv tool install git+https://github.com/Vitund-AI/skald.git
+pip install skald-kanban
+# or: pipx install skald-kanban
+# or: uv tool install skald-kanban
 ```
 
-Skald is not on PyPI yet. Append `@main` or a tag such as `@v0.2.0` to pin
-a revision. Upgrade with the same command plus `--upgrade`, or `pipx upgrade
-skald-kanban` and `uv tool upgrade skald-kanban`. The distribution is named
+The package is on PyPI as [skald-kanban](https://pypi.org/project/skald-kanban/).
+Upgrade with the same command plus `--upgrade`, or `pipx upgrade skald-kanban`
+and `uv tool upgrade skald-kanban`. To run the unreleased head instead, install
+from the repository: `pip install git+https://github.com/Vitund-AI/skald.git`,
+with `@main` or a tag such as `@v0.4.0` appended to pin a revision. The distribution is named
 `skald-kanban` because `skald` was taken; the command is `skald`, and it also
 works as `git skald`.
 
