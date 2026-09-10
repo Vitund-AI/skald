@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (2026-09-10)
+## 0.4.0 (2026-09-10)
 
 ### Added
 - Questions: `skald note --kind question` records something only a human
