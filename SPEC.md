@@ -566,4 +566,5 @@ with `isError: true`, never as JSON-RPC errors, so the agent sees the message.
 
 - A dependency graph view.
 - Multi-select and bulk moves on the board.
-- Renaming a project with reference rewriting across registered projects.
+- Renaming a project that has cross-project references, by alias rather
+  than rewriting (D51).

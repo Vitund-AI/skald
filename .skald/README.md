@@ -1,15 +1,13 @@
-<!-- skald-render 52fdfca0ba1a0ba9 -->
+<!-- skald-render 2a4631a07173d12f -->
 # skald backlog
 
-**4 open** · Backlog 1 · Ready 1 · In progress 0 · Review 2 · Done 0
+**3 open** · Backlog 0 · Ready 1 · In progress 0 · Review 2 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Backlog (1)
+## Backlog (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [be447c](stories/be447c-rename-a-project-with-reference-rewriting.md) | Rename a project with reference rewriting | `cli` |  |  |  |
+_none_
 
 ## Ready (1)
 

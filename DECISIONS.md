@@ -386,3 +386,19 @@ runs `context`, and `ls` stays a command the agent runs when it wants the
 listing. Found by an agent adopting Skald in a repository with about 180
 open stories, which is the kind of thing the dogfood repository, with
 fifty, could not show.
+
+### D51. No rename command; a rename with references would be an alias
+A story proposed `skald rename NEW` that would update `config.json`, the
+registry, and every `blocked_by` reference in every registered project.
+Dropped. The common rename happens early, when the name chosen at `init`
+from the directory turns out wrong and no cross-project reference exists
+yet; that is one line in `config.json` plus `skald projects rm` for the
+stale row, both already available. The rewriting part is the only thing
+the command would add, and it cannot be done well: it would edit story
+files in other repositories on this machine, uncommitted, and leave every
+other clone, branch, and colleague still pointing at the old name. It
+would also be the one command that writes outside the repository it is
+run in. If a rename with live references ever comes up, the answer is an
+alias: `config.json` gains `"aliases": ["old-name"]`, the registry indexes
+aliases, and old references keep resolving on every clone with nothing
+rewritten. Not built until someone needs it.
