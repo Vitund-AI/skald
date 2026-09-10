@@ -1,7 +1,7 @@
-<!-- skald-render 49dc864d5f8caf81 -->
+<!-- skald-render bdeb988b530760e2 -->
 # skald backlog
 
-**13 open** · Idea 0 · Plan 0 · Ready 1 · In progress 0 · Review 12 · Done 0
+**1 open** · Idea 0 · Plan 0 · Ready 1 · In progress 0 · Review 0 · Done 12
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -17,13 +17,17 @@ _none_
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
-| [b91662](stories/b91662-publish-0-2-0-to-pypi.md) | Publish 0.2.0 to PyPI | `packaging` |  |  |  |
+| [b91662](stories/b91662-publish-0-2-0-to-pypi.md) | Publish to PyPI | `packaging` |  |  |  |
 
 ## In progress (0)
 
 _none_
 
-## Review (12)
+## Review (0)
+
+_none_
+
+<details><summary><strong>Done (12)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -39,9 +43,5 @@ _none_
 | [fe6d27](stories/fe6d27-parents-a-parent-field-so-an-epic-can-have-a-body.md) | Parents: a parent field so an epic can have a body and children | `cli` `core` | claude |  | 3/3 |
 | [fcecad](stories/fcecad-backdating-flags-note-at-and-new-created-at-for-mi.md) | Backdating flags: note --at and new --created-at for migration scripts | `cli` | claude |  | 2/2 |
 | [da2a34](stories/da2a34-parents-on-the-board-and-in-history-children-in-th.md) | Parents on the board and in history: children in the modal, epics merge, commits union | `git` `ui` | claude |  | 2/2 |
-
-<details><summary><strong>Done (0)</strong></summary>
-
-_none_
 
 </details>

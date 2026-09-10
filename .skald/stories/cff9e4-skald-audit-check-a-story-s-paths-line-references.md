@@ -1,12 +1,12 @@
 ---
 title: "skald audit: check a story's paths, line references, and commit hashes against the tree, and note it"
-status: "review"
+status: "done"
 rank: 90
 tags: ["agents", "cli"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T05:09:37Z"
-updated_at: "2026-09-10T05:40:24Z"
+updated_at: "2026-09-10T18:04:04Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "skald resume at the right altitude: requirements section only, table of contents, --section and --full"
-status: "review"
+status: "done"
 rank: 40
 tags: ["agents", "cli"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T05:09:37Z"
-updated_at: "2026-09-10T05:12:17Z"
+updated_at: "2026-09-10T18:04:03Z"
 ---
 ## Requirements
 

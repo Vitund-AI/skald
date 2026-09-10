@@ -1,12 +1,12 @@
 ---
 title: "Questions as a note kind: open until a later decision, surfaced in context, resume, ls, and the board with a waiting-on-a-human filter"
-status: "review"
+status: "done"
 rank: 50
 tags: ["agents", "core", "ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T05:09:37Z"
-updated_at: "2026-09-10T05:22:05Z"
+updated_at: "2026-09-10T18:04:03Z"
 ---
 ## Requirements
 

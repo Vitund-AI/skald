@@ -1,12 +1,12 @@
 ---
 title: "Parents: a parent field so an epic can have a body and children"
-status: "review"
+status: "done"
 rank: 100
 tags: ["cli", "core"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T05:09:38Z"
-updated_at: "2026-09-10T05:45:49Z"
+updated_at: "2026-09-10T18:04:04Z"
 ---
 ## Requirements
 

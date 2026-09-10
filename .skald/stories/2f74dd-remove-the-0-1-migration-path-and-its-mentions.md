@@ -1,12 +1,12 @@
 ---
 title: "Remove the 0.1 migration path and its mentions"
-status: "review"
+status: "done"
 rank: 30
 tags: ["cli", "docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T04:47:43Z"
-updated_at: "2026-09-10T04:48:17Z"
+updated_at: "2026-09-10T18:04:03Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "serve --port 0 falls back to the configured port"
-status: "review"
+status: "done"
 rank: 10
 tags: ["core"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T04:27:40Z"
-updated_at: "2026-09-10T04:29:09Z"
+updated_at: "2026-09-10T18:04:04Z"
 ---
 ## Requirements
 

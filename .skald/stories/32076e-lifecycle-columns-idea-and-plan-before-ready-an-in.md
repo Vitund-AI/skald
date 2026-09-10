@@ -1,12 +1,12 @@
 ---
 title: "Lifecycle columns: idea and plan before ready, an init preset, and a plan-to-ready warning on open questions"
-status: "review"
+status: "done"
 rank: 60
 tags: ["core", "docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T05:09:37Z"
-updated_at: "2026-09-10T05:24:18Z"
+updated_at: "2026-09-10T18:04:04Z"
 ---
 ## Requirements
 

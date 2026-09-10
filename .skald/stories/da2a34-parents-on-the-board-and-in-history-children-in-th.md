@@ -1,12 +1,12 @@
 ---
 title: "Parents on the board and in history: children in the modal, epics merge, commits union"
-status: "review"
+status: "done"
 rank: 120
 tags: ["git", "ui"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T05:09:38Z"
-updated_at: "2026-09-10T06:19:49Z"
+updated_at: "2026-09-10T18:04:04Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "Document the design-record layout: long stories, sections the tools understand, a template"
-status: "review"
+status: "done"
 rank: 70
 tags: ["docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T05:09:37Z"
-updated_at: "2026-09-10T05:25:10Z"
+updated_at: "2026-09-10T18:04:04Z"
 ---
 ## Requirements
 

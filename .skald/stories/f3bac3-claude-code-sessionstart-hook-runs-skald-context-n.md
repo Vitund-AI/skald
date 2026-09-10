@@ -1,12 +1,12 @@
 ---
 title: "Claude Code SessionStart hook runs skald context, not skald ls"
-status: "review"
+status: "done"
 rank: 20
 tags: ["agents"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T04:27:40Z"
-updated_at: "2026-09-10T04:29:09Z"
+updated_at: "2026-09-10T18:04:03Z"
 ---
 ## Requirements
 

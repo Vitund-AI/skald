@@ -1,12 +1,12 @@
 ---
 title: "Lanes: facet limits so stories that must not run concurrently are not picked together"
-status: "review"
+status: "done"
 rank: 80
 tags: ["agents", "core"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T05:09:37Z"
-updated_at: "2026-09-10T05:29:40Z"
+updated_at: "2026-09-10T18:04:04Z"
 ---
 ## Requirements
 
