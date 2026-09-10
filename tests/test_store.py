@@ -388,6 +388,7 @@ class TestRegistry(SkaldTestCase):
         # When the primary itself has gone, the next checkout to run a command takes over: a moved repository.
         moved = self.make_repo("moved", init_skald=False)
         (moved / ".skald" / "stories").mkdir(parents=True)
+        os.chdir(self.tmp)  # Windows cannot remove the current directory
         shutil.rmtree(self.repo)
         notice = r.register("alpha", moved / ".skald")
         self.assertIn("moved", notice)
@@ -403,6 +404,7 @@ class TestRegistry(SkaldTestCase):
         (other / ".skald" / "stories").mkdir(parents=True)
         ProjectConfig("alpha").save(other / ".skald" / "config.json")
         r.register("alpha", other / ".skald")
+        os.chdir(self.tmp)  # Windows cannot remove the current directory
         shutil.rmtree(self.repo)
         # Any listing promotes the survivor and says so; a fresh registry sees the new primary.
         cos = Registry(self.home).checkouts("alpha")
