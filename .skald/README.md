@@ -1,7 +1,7 @@
-<!-- skald-render 337d584f32ae8f4c -->
+<!-- skald-render 62534027c89845c3 -->
 # skald backlog
 
-**13 open** · Idea 1 · Plan 0 · Ready 6 · In progress 0 · Review 6 · Done 0
+**13 open** · Idea 1 · Plan 0 · Ready 5 · In progress 0 · Review 7 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -15,12 +15,11 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 _none_
 
-## Ready (6)
+## Ready (5)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b91662](stories/b91662-publish-0-2-0-to-pypi.md) | Publish 0.2.0 to PyPI | `packaging` |  |  |  |
-| [4798f4](stories/4798f4-document-the-design-record-layout-long-stories-sec.md) | Document the design-record layout: long stories, sections the tools understand, a template | `docs` |  |  | 0/2 |
 | [67f581](stories/67f581-lanes-facet-limits-so-stories-that-must-not-run-co.md) | Lanes: facet limits so stories that must not run concurrently are not picked together | `agents` `core` |  |  | 0/4 |
 | [cff9e4](stories/cff9e4-skald-audit-check-a-story-s-paths-line-references.md) | skald audit: check a story's paths, line references, and commit hashes against the tree, and note it | `agents` `cli` |  |  | 0/3 |
 | [fe6d27](stories/fe6d27-parents-a-parent-field-so-an-epic-can-have-a-body.md) | Parents: a parent field so an epic can have a body and children | `cli` `core` |  |  | 0/3 |
@@ -30,7 +29,7 @@ _none_
 
 _none_
 
-## Review (6)
+## Review (7)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -40,6 +39,7 @@ _none_
 | [45f306](stories/45f306-skald-resume-at-the-right-altitude-requirements-se.md) | skald resume at the right altitude: requirements section only, table of contents, --section and --full | `agents` `cli` | claude |  | 4/4 |
 | [cb3bd6](stories/cb3bd6-questions-as-a-note-kind-open-until-a-later-decisi.md) | Questions as a note kind: open until a later decision, surfaced in context, resume, ls, and the board with a waiting-on-a-human filter | `agents` `core` `ui` | claude |  | 4/4 |
 | [32076e](stories/32076e-lifecycle-columns-idea-and-plan-before-ready-an-in.md) | Lifecycle columns: idea and plan before ready, an init preset, and a plan-to-ready warning on open questions | `core` `docs` | claude |  | 3/3 |
+| [4798f4](stories/4798f4-document-the-design-record-layout-long-stories-sec.md) | Document the design-record layout: long stories, sections the tools understand, a template | `docs` | claude |  | 2/2 |
 
 <details><summary><strong>Done (0)</strong></summary>
 

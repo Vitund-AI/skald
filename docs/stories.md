@@ -1,7 +1,7 @@
 # Stories
 
-Everything about the files in `.skald/`: the story format, columns, facets,
-templates, archiving, and releases.
+Everything about the files in `.skald/`: the story format, design records,
+columns, facets, templates, archiving, and releases.
 
 ## A story file
 
@@ -80,6 +80,48 @@ Frontmatter fields:
   them), and as a badge and filter on the board. They are notes rather than
   a section because a note is dated, authored, and answerable by another
   dated note.
+
+## Long stories and design records
+
+A story can be a design record: requirements, the design, the options
+considered, what was left out, and the history, all in one file that lives
+for months. The tools cope with that because they read sections by heading
+and notes by their dated headings, so the layout below keeps a long body
+useful without any new format:
+
+```markdown
+## Requirements
+Two to ten lines: what must be true when this is done. This is what
+`skald resume` prints.
+
+## Acceptance
+- [ ] one checkable item per line; `resume` and the board count these,
+      and moving to done with any unchecked warns
+
+## Design
+Free-form. Options, the chosen one, why.
+
+## Residuals
+Work deliberately left out, each a candidate for its own story.
+
+## References
+Paths, commits, other stories. `skald audit` checks these.
+
+## Changelog
+One or two sentences for users; `skald release` uses them.
+```
+
+The history does not go in these sections. Questions (`--kind question`),
+decisions, handoffs, and audits are dated notes appended by `skald note`,
+which is what keeps the sections stable: a question is answered by a
+later decision note, not by editing the body, and `resume` reads the
+notes in the order that matters. `resume` prints the requirements and a
+one-line map of the other sections; `--section design` or `--full` reads
+the rest on request.
+
+Put the skeleton in `.skald/templates/design.md` and create records with
+`skald new "Title" --template design`. Templates stay project-owned; `init`
+does not write one.
 
 ## Columns and roles
 
