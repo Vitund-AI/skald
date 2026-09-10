@@ -38,8 +38,12 @@ tools from `skald mcp` (see the README).
    acceptance state, dependencies, decisions, and the latest handoff note,
    which is everything a previous session left for you. On a long story it
    ends with a map of the other sections; read one with `skald resume <id>
-   --section <name>` or all of them with `--full`. Use `skald show <id>`
-   only when you need the full history.
+   --section <name>` or all of them with `--full`. When the story cites
+   files or commits, run `skald audit <id>`: it checks that the cited
+   paths, lines, and hashes still exist and lists referenced files that
+   changed since the last audit, so you re-read those before building on
+   the story's premises. Use `skald show <id>` only when you need the full
+   history.
 4. **Warnings are advisory.** If a command prints a `WARNING:` about unmet
    dependencies, decide whether to stub the missing piece or work the blocker
    first. Record your decision with a note.

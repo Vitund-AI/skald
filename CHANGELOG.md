@@ -11,6 +11,11 @@
   on a human" filter, and an Answer button in the story dialog. MCP:
   `skald_answer`, and `waiting` and `open_questions` in context and resume.
 
+- `skald audit <id>` checks a story's cited paths, `path:line` references,
+  and commit hashes against the tree, lists referenced files changed since
+  the last audit, and appends an `audit` note with the summary. `resume`
+  shows when the story was last audited and how many referenced files
+  changed since. MCP: `skald_audit`.
 - Lanes: `"facet_limits": {"lane": 1}` in `config.json` means at most one
   story per `lane:` value may be active at once, counting claims on other
   branches and in other checkouts. `next` skips a story whose lane is busy

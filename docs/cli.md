@@ -15,6 +15,7 @@ error or not found, 2 corrupt story or configuration.
 - [`next`](#next) the story to pick up next
 - [`context`](#context) one orientation block for an agent: mine, next, blockers, uncommitted
 - [`resume`](#resume) requirements, checklist state, dependencies, and the latest handoff for a story
+- [`audit`](#audit) check a story's cited paths, path:line references, and commit hashes against the tree, and note the result
 - [`show`](#show) print a story file
 - [`branches`](#branches) story counts per branch and how they differ from the working tree
 - [`new`](#new) create a story
@@ -131,6 +132,22 @@ Requirements, checklist state, dependencies, and the latest handoff for a story.
 | `id` | story id or unique prefix |
 | `--section NAME` | print one section of the body instead, matched by prefix (e.g. design) |
 | `--full` | print the whole body, every section, instead of the requirements |
+| `--json` | print JSON |
+
+## audit
+
+```
+skald audit [--notes] [--no-note] [--as AUTHOR] [--json] id
+```
+
+Check a story's cited paths, path:line references, and commit hashes against the tree, and note the result.
+
+| Argument | Description |
+| --- | --- |
+| `id` | story id or unique prefix |
+| `--notes` | also check claims made in notes, not only the body above them |
+| `--no-note` | print the result without appending an audit note |
+| `--as AUTHOR` | author label for the audit note (default: agent) |
 | `--json` | print JSON |
 
 ## show

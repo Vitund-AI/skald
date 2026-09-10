@@ -245,6 +245,10 @@ the same story (`open_questions`, deliberately coarse); `story_dict` carries
 story with one under `waiting`, `resume` prints them after the decisions,
 `ls` shows `?N` in a `Q` column and `--questions` filters, and `answer` is
 `note --kind decision` with a count of what it closed.
+A note of kind `audit` is written by `audit` and holds the compact summary
+of what it checked; `resume` reports the newest one's date and how many
+referenced files changed since. The tool checks claims; the agent checks
+premises and records that as an ordinary note.
 `## Acceptance` (or `## Acceptance criteria`) introduces a section whose
 task-list items are the acceptance criteria; `acceptance_progress` counts
 them and `update` warns when a story moves into a terminal column, or forward
@@ -379,6 +383,7 @@ story or configuration. Commands that print stories take `--json`.
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
 | `note <id> "text"\|- [--as N] [--kind K]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. |
 | `answer <id> "text"\|- [--as N]` | `note --kind decision`; prints how many open questions it closed. |
+| `audit <id> [--notes] [--no-note] [--as N] [--json]` | Extracts paths, `path:line` references, and commit hashes from the prelude (plus notes with `--notes`); checks existence, line count, and `git cat-file -e`; lists referenced files changed since the newest `audit` note (else `created_at`); appends an `audit` note with the summary unless `--no-note`. `audit.py`. |
 | `rm <id> [--force]` | Delete; refuses while other stories depend on it. |
 | `log <id>` | `git log --follow` on the file. |
 | `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |

@@ -252,6 +252,13 @@ def build_parser() -> argparse.ArgumentParser:
     rs.add_argument("--full", action="store_true", help="print the whole body, every section, instead of the requirements")
     rs.add_argument("--json", action="store_true", help="print JSON")
 
+    au = sub.add_parser("audit", help="check a story's cited paths, path:line references, and commit hashes against the tree, and note the result")
+    au.add_argument("id", help="story id or unique prefix")
+    au.add_argument("--notes", action="store_true", help="also check claims made in notes, not only the body above them")
+    au.add_argument("--no-note", action="store_true", help="print the result without appending an audit note")
+    au.add_argument("--as", dest="author", help="author label for the audit note (default: agent)")
+    au.add_argument("--json", action="store_true", help="print JSON")
+
     sh = sub.add_parser("show", help="print a story file")
     sh.add_argument("id", help="story id or unique prefix")
     sh.add_argument("--branch", metavar="REF", help="read the story from a git ref")
@@ -757,13 +764,17 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
     d["decisions"] = [n for n in notes if n["kind"] == "decision"]
     d["blockers"] = [n for n in notes if n["kind"] == "blocker"]
     d["open_questions"] = story.open_questions()
+    from . import audit as au
+
+    d["audit"] = au.status_line(story, _repo_of(store))
     if args.json:
         print(json.dumps(d, indent=2))
         return 0
     print(f"{story.id}  {story.title}")
     print(f"status {story.status}" + (f" · assignee {story.assignee}" if story.assignee else "")
           + (f" · checklist {d['checklist']['done']}/{d['checklist']['total']}" if d["checklist"]["total"] else "")
-          + (f" · acceptance {d['acceptance']['done']}/{d['acceptance']['total']}" if d.get("acceptance") else ""))
+          + (f" · acceptance {d['acceptance']['done']}/{d['acceptance']['total']}" if d.get("acceptance") else "")
+          + f" · {d['audit']}")
     if d["deps"]:
         print("depends on: " + ", ".join(f"{x['ref']} ({x['state']}{'' if x['satisfied'] else ', unmet'})" for x in d["deps"]))
     if "section" in d:
@@ -796,6 +807,29 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
         print(latest["text"].rstrip())
     else:
         print("No notes yet.")
+    return 0
+
+
+def cmd_audit(ws: Workspace, store: Store, args) -> int:
+    """The tool checks claims; the agent checks premises. It lists what it could verify and never says the story is true."""
+    from . import audit as au
+
+    story = store.get(args.id)
+    repo = _repo_of(store)
+    result = au.run_audit(story, repo, include_notes=args.notes)
+    lines = au.summary_lines(result)
+    noted = None
+    if not args.no_note:
+        noted = store.append_note(story.id, "\n".join(lines), cli_identity(args.author), "audit")
+    if args.json:
+        result["noted"] = noted is not None
+        print(json.dumps(result, indent=2))
+        return 0
+    print(f"audit {story.id}  {story.title}")
+    for line in lines:
+        print(f"  {line}")
+    if noted is not None:
+        print(f"noted on {story.id} (audit)")
     return 0
 
 
@@ -1674,7 +1708,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
-    "commits", "diff", "activity", "graph", "release",
+    "commits", "diff", "activity", "graph", "release", "audit",
 }
 
 
@@ -1748,6 +1782,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_context(ws, store, args)
     if args.command == "resume":
         return cmd_resume(ws, store, args)
+    if args.command == "audit":
+        return cmd_audit(ws, store, args)
     if args.command == "next":
         return cmd_next(ws, args, store)
     if args.command == "show":

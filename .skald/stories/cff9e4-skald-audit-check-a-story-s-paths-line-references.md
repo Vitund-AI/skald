@@ -1,11 +1,12 @@
 ---
 title: "skald audit: check a story's paths, line references, and commit hashes against the tree, and note it"
-status: "ready"
-rank: 60
+status: "review"
+rank: 90
 tags: ["agents", "cli"]
 blocked_by: []
+assignee: "claude"
 created_at: "2026-09-10T05:09:37Z"
-updated_at: "2026-09-10T05:09:38Z"
+updated_at: "2026-09-10T05:40:24Z"
 ---
 ## Requirements
 
@@ -19,6 +20,9 @@ Design records cite file:line references and commit hashes that drift within day
 - Docs: SPEC 6 and 4.3 (audit kind); working-with-agents Keeping a design record true; AGENTS template step 3 (run audit when the story cites files or commits); cli.md; CHANGELOG; DECISIONS (the tool checks claims, the agent checks premises).
 
 ## Acceptance
-- [ ] Extraction unit-tested on a fixture body
-- [ ] Temp repo: a deleted file, a file shorter than a cited line, a bogus hash, a file changed after a backdated audit note
-- [ ] resume header line; MCP tool; docs synced
+- [x] Extraction unit-tested on a fixture body
+- [x] Temp repo: a deleted file, a file shorter than a cited line, a bogus hash, a file changed after a backdated audit note
+- [x] resume header line; MCP tool; docs synced
+
+## [claude] 2026-09-10 05:40 UTC · result
+src/skald/audit.py: extract (paths with a directory, bare files with a line ref, path:N and N-M, 7-40 hex hashes with a letter and a digit; URLs and story ids excluded), resolve_path (root, else a unique basename match), run_audit (existence, line count, git cat-file -e, changed since the newest audit note else created_at via git log --since --name-only), summary_lines, status_line. CLI: skald audit [--notes] [--no-note] [--as] [--json], appends an audit note by default; resume header shows last audited / never audited and how many referenced files changed since. MCP skald_audit. Identifier grepping and audit_days left out on purpose (D57). Tests: extraction fixture; temp repo with a deleted file, a file shorter than a cited line, a bogus hash, and a change after a backdated audit note; MCP. Docs: SPEC 4.3 and 6, working-with-agents Keeping a design record true, AGENTS step 3 and copies, cli.md, CHANGELOG, D57. 137 tests pass.

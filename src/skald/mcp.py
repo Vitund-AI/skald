@@ -53,6 +53,8 @@ TOOLS: list[dict] = [
     {"name": "skald_note", "description": "Append a timestamped note to a story's body. kind=handoff for end-of-session state, decision, or blocker.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"},
                              "kind": {"type": "string", "description": "handoff, decision, blocker, question (open until a later decision), or another short word"}}, ["id", "text"])},
+    {"name": "skald_audit", "description": "Check a story's cited paths, path:line references, and commit hashes against the tree, report referenced files changed since the last audit, and append an audit note (note=false to skip). Lists what it could check; judging the premises is yours.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "note": {"type": "boolean"}, "notes": {"type": "boolean", "description": "also check claims in notes"}}, ["id"])},
     {"name": "skald_answer", "description": "Answer a story's open questions: appends a decision note, which closes every question before it.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"}}, ["id", "text"])},
     {"name": "skald_context", "description": "Orientation for the caller: assigned stories with last notes, the next unblocked story, blocked ready stories, stories waiting on a human (open questions), claims on other branches, uncommitted story files.",
@@ -207,6 +209,21 @@ class McpServer:
         d = store.story_dict(story)
         d["body"] = story.body
         return d
+
+    def tool_skald_audit(self, args: dict) -> Any:
+        from . import audit as au
+        from .cli import _repo_of
+
+        store = self._store(args)
+        story = store.get(args["id"])
+        result = au.run_audit(story, _repo_of(store), include_notes=bool(args.get("notes")))
+        result["summary"] = au.summary_lines(result)
+        if args.get("note", True):
+            store.append_note(story.id, "\n".join(result["summary"]), self._actor(args), "audit")
+            result["noted"] = True
+        else:
+            result["noted"] = False
+        return result
 
     def tool_skald_answer(self, args: dict) -> Any:
         store = self._store(args)

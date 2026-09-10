@@ -466,3 +466,19 @@ other branches and in other checkouts is what makes it hold across
 agents, and that knowledge already existed for claims. A new relation or
 a new field would have needed its own syntax, validation, and rendering
 for something a tag and one config key express.
+
+### D57. `audit` checks claims; the agent checks premises
+Design records cite `path:line` references and commit hashes by the
+hundred, and both drift within days. Agents wrote hand-made "premise
+audit" blocks re-verifying every checkable claim, rarely, because the work
+is dull and the record is long. The dull half is mechanical: does the
+path exist, is the file that long, is the hash a commit, which cited
+files changed since the last look. That is the whole of `audit`. It
+deliberately does not judge whether the headline is still true, because a
+tool that says "still valid" will be believed, and the code can only show
+that nothing it can see has changed. The split keeps the command honest:
+it lists, the agent decides, and the decision goes in an ordinary note
+beside the audit note. Identifier grepping was proposed and left out: a
+backticked token with zero hits could be prose or a rename, so the result
+would have been "unverified" either way, and a fixed-string grep over a
+large tree is slow for an answer that decides nothing.
