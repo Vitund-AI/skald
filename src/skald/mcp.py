@@ -57,7 +57,7 @@ TOOLS: list[dict] = [
     {"name": "skald_audit", "description": "Check a story's cited paths, path:line references, and commit hashes against the tree, report referenced files changed since the last audit, and append an audit note (note=false to skip). Lists what it could check; judging the premises is yours.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "note": {"type": "boolean"}, "notes": {"type": "boolean", "description": "also check claims in notes"}}, ["id"])},
     {"name": "skald_answer", "description": "Answer a story's open questions: appends a decision note, which closes every question before it.",
-     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"}}, ["id", "text"])},
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"}, "question": {"type": "integer", "description": "close only the Nth open question (1-based); default all"}}, ["id", "text"])},
     {"name": "skald_context", "description": "Orientation for the caller: assigned stories with last notes, the next unblocked story, blocked ready stories, stories waiting on a human (open questions), claims on other branches, uncommitted story files.",
      "inputSchema": _schema({**PROJECT_PROP, **AS_PROP})},
     {"name": "skald_resume", "description": "A story's requirements (the ## Requirements section when there is one), the other sections' headings and sizes, checklist and acceptance state, dependencies, decisions, and its latest handoff note. Pass section to read one section, or full for the whole body.",
@@ -229,10 +229,18 @@ class McpServer:
 
     def tool_skald_answer(self, args: dict) -> Any:
         store = self._store(args)
-        before = len(store.get(args["id"]).open_questions())
-        story = store.append_note(args["id"], args.get("text", ""), self._actor(args), "decision")
+        open_qs = store.get(args["id"]).open_questions()
+        text = args.get("text", "")
+        which = args.get("question")
+        if which is not None:
+            if not isinstance(which, int) or not 1 <= which <= len(open_qs):
+                raise SkaldError(f"question must be between 1 and {len(open_qs)}")
+            from .store import answer_line
+
+            text = f"{answer_line(open_qs[which - 1])}\n{text}"
+        story = store.append_note(args["id"], text, self._actor(args), "decision")
         d = store.story_dict(story)
-        d["closed_questions"] = before
+        d["closed_questions"] = 1 if which is not None else len(open_qs)
         return d
 
     def tool_skald_set(self, args: dict) -> Any:

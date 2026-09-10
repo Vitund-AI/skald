@@ -67,18 +67,41 @@ def parse_notes(body: str) -> list[dict]:
     return notes
 
 
-def open_questions(notes: list[dict]) -> list[dict]:
-    """Question notes not yet answered: a question is open until a later ``decision`` note on the same story.
+ANSWERS_RE = re.compile(r"^answers \[(?P<author>[^\]\n]+)\] (?P<stamp>\d{4}-\d\d-\d\d \d\d:\d\d UTC)(?: · (?P<first>.*))?\s*$", re.I)
 
-    Deliberately coarse. One dated decision after the question closes it; a
-    decision naming the question it answers is a refinement for later.
+
+def answer_line(question: dict) -> str:
+    """The first line of a targeted decision: names the question by author, stamp, and its first line."""
+    first = question["text"].strip().splitlines()[0] if question["text"].strip() else ""
+    return f"Answers [{question['author']}] {question['stamp']}" + (f" · {first}" if first else "")
+
+
+def _answers(decision_first_line: str, question: dict) -> bool:
+    m = ANSWERS_RE.match(decision_first_line)
+    if not m or m.group("author") != question["author"] or m.group("stamp") != question["stamp"]:
+        return False
+    first = question["text"].strip().splitlines()[0] if question["text"].strip() else ""
+    return m.group("first") is None or m.group("first").strip() == first
+
+
+def open_questions(notes: list[dict]) -> list[dict]:
+    """Question notes not yet answered.
+
+    A question is open until a later ``decision`` note on the same story. A
+    decision whose first line is ``Answers [author] stamp`` (what ``answer
+    --question N`` writes) closes only that question; any other decision
+    closes every question before it.
     """
     out: list[dict] = []
     for n in notes:
         if n["kind"] == "question":
             out.append(n)
         elif n["kind"] == "decision":
-            out = []
+            first = n["text"].strip().splitlines()[0] if n["text"].strip() else ""
+            if ANSWERS_RE.match(first):
+                out = [q for q in out if not _answers(first, q)]
+            else:
+                out = []
     return out
 
 
@@ -604,7 +627,7 @@ class Store:
 
     def create(self, title: str, status: Optional[str] = None, tags=(), blocked_by=(), body: str = "",
                assignee: str = "", template: Optional[str] = None, parent: Optional[str] = None,
-               inherit: bool = True, created_at: Optional[str] = None) -> tuple[Story, list[str]]:
+               inherit: bool = True, created_at: Optional[str] = None, wrap: bool = True) -> tuple[Story, list[str]]:
         title = (title or "").strip()
         parent_story: Optional[Story] = None
         if parent:
@@ -630,8 +653,8 @@ class Store:
                 full_body += "\n"
             if body:
                 full_body += "\n" + body
-        elif body.lstrip().startswith("## Requirements"):
-            full_body = body.lstrip()  # the caller wrote the heading already
+        elif not wrap or body.lstrip().startswith("## Requirements"):
+            full_body = body.lstrip()  # the caller wrote the heading already, or asked for the body as is
         else:
             full_body = "## Requirements\n\n" + body
         stamp = now_iso()
@@ -952,7 +975,9 @@ class Store:
         stories, _ = self.load_all(include_archived=True)
         return [s for s in stories if any(split_ref(b) in ((None, story_id), (self.name, story_id)) for b in s.blocked_by)]
 
-    def delete(self, ref: str, force: bool = False) -> Story:
+    def delete(self, ref: str, force: bool = False, notes: Optional[list] = None) -> Story:
+        """Delete a story. With ``force``, references to it are cleared rather than left dangling,
+        and each change is described in ``notes``: the backlog is never left in a state ``check`` calls corrupt."""
         story = self.get(ref)
         deps = self.dependents(story.id)
         if deps and not force:
@@ -964,6 +989,17 @@ class Store:
             raise ConflictError(
                 f"{story.id} is the parent of {', '.join(k.id for k in kids)}; use --force to delete anyway"
             )
+        for d in deps:
+            keep = [b for b in d.blocked_by if split_ref(b)[1] != story.id or split_ref(b)[0] not in (None, self.name)]
+            d.fields["blocked_by"] = keep
+            self._write(d)
+            if notes is not None:
+                notes.append(f"removed {story.id} from blocked_by of {d.id}")
+        for k in kids:
+            k.fields.pop("parent", None)
+            self._write(k)
+            if notes is not None:
+                notes.append(f"cleared parent of {k.id}")
         os.unlink(story.path)
         return story
 

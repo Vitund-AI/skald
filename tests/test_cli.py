@@ -641,6 +641,43 @@ class TestAgentOrientation(SkaldTestCase):
         code, out, _ = self.run_cli("commits", epic, "--no-children", "--json")
         self.assertEqual([e["story"] for e in json.loads(out)], [epic])
 
+    def test_waiting_is_capped_and_answer_can_target_one_question(self):
+        ids = [self.new(f"q{i}", "--status", "ready") for i in range(7)]
+        for i, sid in enumerate(ids):
+            self.run_cli("note", sid, f"question {i}?", "--kind", "question", "--at", f"2026-01-0{i + 1} 10:00")
+        code, out, _ = self.run_cli("context", "--as", "claude")
+        self.assertIn("... and 2 more: skald ls --questions", out)
+        self.assertIn("q6", out)       # newest first
+        self.assertNotIn("question 0?", out)    # the oldest two are the ones held back
+        ctx = json.loads(self.run_cli("context", "--as", "claude", "--json")[1])
+        self.assertEqual((len(ctx["waiting"]), ctx["waiting_more"]), (5, 2))
+        # Two questions on one story: --question 2 closes only the second.
+        sid = ids[0]
+        self.run_cli("note", sid, "and the port?", "--kind", "question", "--as", "claude")
+        code, out, _ = self.run_cli("resume", sid)
+        self.assertIn("1. ", out)
+        self.assertIn("2. ", out)
+        code, out, err = self.run_cli("answer", sid, "5000", "--question", "2", "--as", "jon")
+        self.assertEqual(code, 0, err)
+        self.assertIn("1 question(s) closed", out)
+        d = json.loads(self.run_cli("resume", sid, "--json")[1])
+        self.assertEqual([q["text"] for q in d["open_questions"]], ["question 0?"])
+        self.assertTrue(d["decisions"][0]["text"].startswith("Answers [claude] "))
+        code, out, err = self.run_cli("answer", sid, "x", "--question", "3")
+        self.assertEqual(code, 1)
+        self.assertIn("--question must be between 1 and 1", err)
+        code, out, _ = self.run_cli("answer", sid, "SQLite, all of it.")
+        self.assertEqual(json.loads(self.run_cli("resume", sid, "--json")[1])["open_questions"], [])
+
+    def test_resume_map_wraps_above_four_sections(self):
+        body = "## Requirements\n\nr\n\n## A\n\na\n\n## B\n\nb\n\n## C\n\nc\n\n## D\n\nd\n\n## E\n\ne\n"
+        sid = self.new("Long", "--body", body)
+        code, out, _ = self.run_cli("resume", sid)
+        self.assertIn("Also in this story:\n  ## A (1 lines)\n  ## B (1 lines)", out)
+        short = self.new("Short", "--body", "## Requirements\n\nr\n\n## A\n\na\n")
+        code, out, _ = self.run_cli("resume", short)
+        self.assertIn("Also in this story: ## A (1 lines)", out)
+
     def test_lanes_in_columns_status_and_board_payload(self):
         cfg_path = self.skald_dir / "config.json"
         data = json.loads(cfg_path.read_text())

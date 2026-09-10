@@ -142,6 +142,7 @@ shell can use `skald mcp`.
 | [Stories](docs/stories.md) | You want the file format, the design-record layout for long stories, columns and roles, facets and epics, templates, archiving, and releases. |
 | [Git and CI](docs/git-and-ci.md) | You want commit trailers, reviewing what changed, the committed snapshot, hooks, the GitHub workflow, and the release flow. |
 | [Multiple projects](docs/multi-project.md) | You have more than one repository, or more than one checkout of one. |
+| [Importing](docs/importing.md) | You have an existing folder of Markdown records to bring in. |
 | [CLI reference](docs/cli.md) | You need the exact flags. Generated from the parser. |
 | [HTTP API](docs/api.md) | You are scripting against the board server. |
 | [Troubleshooting](docs/troubleshooting.md) | Something printed an error or looks wrong. |
