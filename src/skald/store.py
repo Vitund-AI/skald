@@ -17,7 +17,7 @@ from .config import ProjectConfig
 from .errors import ConflictError, CorruptStoryError, NotFoundError, SkaldError
 from .util import atomic_write, checklist_progress, note_stamp, now_iso, parse_iso, read_text, sha256_text, slugify
 
-KNOWN_FIELDS = ["title", "status", "rank", "tags", "blocked_by", "assignee", "released", "created_at", "updated_at"]
+KNOWN_FIELDS = ["title", "status", "rank", "tags", "blocked_by", "assignee", "parent", "released", "created_at", "updated_at"]
 RANK_STEP = 10
 
 ID_RE = re.compile(r"^[0-9a-f]{6}$")
@@ -205,6 +205,10 @@ class Story:
     def released(self) -> str:
         return self.fields.get("released", "") or ""
 
+    @property
+    def parent(self) -> str:
+        return self.fields.get("parent", "") or ""
+
     def to_dict(self, compact: bool = False) -> dict:
         d = {"id": self.id}
         if not compact:
@@ -273,6 +277,18 @@ def validate_fields(fields: dict, where: str) -> dict:
         out["assignee"] = assignee
     else:
         out.pop("assignee", None)
+    parent = out.get("parent", "")
+    if parent is None:
+        parent = ""
+    if not isinstance(parent, str):
+        raise CorruptStoryError(f"{where}: 'parent' must be a string")
+    parent = parent.strip().lower()
+    if parent and not ID_RE.match(parent):
+        raise CorruptStoryError(f"{where}: 'parent' must be a local story id, got {parent!r}")
+    if parent:
+        out["parent"] = parent
+    else:
+        out.pop("parent", None)
     for key in ("created_at", "updated_at"):
         val = out.get(key, "")
         if not isinstance(val, str):
@@ -586,8 +602,15 @@ class Store:
         return sorted(p.stem for p in self._paths(self.templates_dir))
 
     def create(self, title: str, status: Optional[str] = None, tags=(), blocked_by=(), body: str = "",
-               assignee: str = "", template: Optional[str] = None) -> tuple[Story, list[str]]:
+               assignee: str = "", template: Optional[str] = None, parent: Optional[str] = None,
+               inherit: bool = True) -> tuple[Story, list[str]]:
         title = (title or "").strip()
+        parent_story: Optional[Story] = None
+        if parent:
+            parent_story = self.get(self._local_parent(parent))
+            if inherit:
+                # A child belongs to its parent's epic, area, and lane unless told otherwise.
+                tags = [t for t in parent_story.tags if split_facet(t)] + list(tags or [])
         if not title:
             raise SkaldError("title is required")
         status = self._check_status(status or self.config.default_key)
@@ -621,6 +644,8 @@ class Store:
             "created_at": stamp,
             "updated_at": stamp,
         }
+        if parent_story is not None:
+            fields["parent"] = parent_story.id
         story = Story(story_id, self.stories_dir / filename, fields, full_body)
         self._write(story)
         warnings = []
@@ -630,8 +655,26 @@ class Store:
                 warnings.append(w)
         return story, warnings
 
+    def _local_parent(self, ref: str) -> str:
+        """A parent is local only: a cross-project reference is rejected rather than resolved."""
+        if ":" in (ref or ""):
+            raise SkaldError(f"a parent must be a story in this project, not '{ref}'")
+        return self.resolve(ref)
+
+    def children(self, story_id: str, stories: Optional[list[Story]] = None) -> list[Story]:
+        stories = stories if stories is not None else self.load_all()[0]
+        return [s for s in stories if s.parent == story_id]
+
+    def _parent_chain(self, start: str, idx: dict[str, Story]) -> list[str]:
+        """Ids from ``start`` upwards through parents, stopping at a missing story or a repeat."""
+        chain, cur = [], start
+        while cur and cur in idx and cur not in chain:
+            chain.append(cur)
+            cur = idx[cur].parent
+        return chain
+
     def update(self, ref: str, *, title=None, status=None, rank=None, tags=None, blocked_by=None,
-               assignee=None, order=None,
+               assignee=None, order=None, parent=None,
                elsewhere: Optional[dict] = None) -> tuple[Story, list[str]]:
         story = self.get(ref)
         if story.archived:
@@ -659,6 +702,13 @@ class Store:
                     warnings.append(
                         f"{story.id} moves to {status} with {a_total - a_done} of {a_total} acceptance criteria unchecked"
                     )
+                if self.config.is_terminal(status):
+                    open_children = [c for c in self.children(story.id, stories) if not self.config.is_terminal(c.status)]
+                    if open_children:
+                        warnings.append(
+                            f"{story.id} moves to {status} with {len(open_children)} child(ren) still open: "
+                            + ", ".join(c.id for c in open_children)
+                        )
                 # Leaving the backlog for ready is the human's gate; an open question means it is not decided yet.
                 if old_role == "backlog" and self.config.role(status) == "ready":
                     open_qs = story.open_questions()
@@ -666,6 +716,17 @@ class Store:
                         warnings.append(
                             f"{story.id} moves to {status} with {len(open_qs)} open question(s); answer them with skald answer"
                         )
+        if parent is not None:
+            if parent in ("", "-"):
+                story.fields.pop("parent", None)
+            else:
+                pid = self._local_parent(parent)
+                if pid == story.id:
+                    raise SkaldError(f"{story.id} cannot be its own parent")
+                idx_all = {s.id: s for s in stories}
+                if story.id in self._parent_chain(pid, idx_all):
+                    raise SkaldError(f"{pid} is a descendant of {story.id}; that would make a cycle")
+                story.fields["parent"] = pid
         if rank is not None:
             if isinstance(rank, bool) or not isinstance(rank, int):
                 raise SkaldError("rank must be an integer")
@@ -884,6 +945,11 @@ class Store:
             raise ConflictError(
                 f"{story.id} is a dependency of {', '.join(d.id for d in deps)}; use --force to delete anyway"
             )
+        kids = self.children(story.id)
+        if kids and not force:
+            raise ConflictError(
+                f"{story.id} is the parent of {', '.join(k.id for k in kids)}; use --force to delete anyway"
+            )
         os.unlink(story.path)
         return story
 
@@ -989,6 +1055,20 @@ class Store:
                         warnings.append(f"{s.path.name}: blocked_by references project '{project}', which is not registered on this machine")
                     elif other.get_or_none(sid) is None:
                         problems.append(f"{s.path.name}: blocked_by references missing story {project}:{sid}")
+        for s in stories:
+            if s.parent and s.parent not in idx:
+                problems.append(f"{s.path.name}: parent references missing story {s.parent}")
+            elif s.parent == s.id:
+                problems.append(f"{s.path.name}: is its own parent")
+        seen_parent_cycles = set()
+        for s in stories:
+            chain = self._parent_chain(s.id, idx)
+            last = idx[chain[-1]].parent if chain else ""
+            if last and last in chain:
+                key = frozenset(chain[chain.index(last):])
+                if key not in seen_parent_cycles:
+                    seen_parent_cycles.add(key)
+                    problems.append("parent cycle: " + " -> ".join(chain[chain.index(last):] + [last]))
         reported = set()
         for s in stories:
             cycle = self._cycle_through(s.id, s.blocked_by, idx)
@@ -1011,6 +1091,10 @@ class Store:
             d["role"] = self.config.role(story.status)
         d["unmet"] = [s.ref for s in states if not s.satisfied]
         d["blocked"] = bool(d["unmet"])
+        if idx is not None:
+            kids = [s for s in idx.values() if s.parent == story.id and not s.archived]
+            if kids:
+                d["children"] = {"total": len(kids), "done": sum(1 for k in kids if self.config.is_terminal(k.status))}
         d["stale"] = False
         if stale_days and self.config.role(story.status) == "active":
             updated = parse_iso(story.updated_at)

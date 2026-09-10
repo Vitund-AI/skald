@@ -25,7 +25,7 @@ ID_COMMANDS = {"show", "move", "claim", "set", "tag", "block", "note", "answer",
 FLAG_SOURCES = {
     "-p": "projects", "--project": "projects", "--status": "columns", "--template": "templates",
     "--branch": "refs", "--since": "refs", "--until": "refs", "--as": "authors", "--assignee": "authors",
-    "--tags": "tags", "--blocked-by": "ids", "--kind": "kinds", "--release": "releases",
+    "--tags": "tags", "--blocked-by": "ids", "--parent": "ids", "--kind": "kinds", "--release": "releases",
 }
 
 Candidate = tuple[str, str]

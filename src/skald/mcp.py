@@ -44,6 +44,7 @@ TOOLS: list[dict] = [
      "inputSchema": _schema({**PROJECT_PROP,
                              "title": {"type": "string"}, "status": {"type": "string"}, "body": {"type": "string"},
                              "tags": {"type": "array", "items": {"type": "string"}},
+                             "parent": {"type": "string", "description": "id of the parent story in this project; facet tags are inherited unless inherit=false"}, "inherit": {"type": "boolean"},
                              "blocked_by": {"type": "array", "items": {"type": "string"}, "description": "ids, or project:id"},
                              "assignee": {"type": "string"}, "template": {"type": "string"}}, ["title"])},
     {"name": "skald_move", "description": "Change a story's status. Warnings are advisory.",
@@ -61,9 +62,9 @@ TOOLS: list[dict] = [
      "inputSchema": _schema({**PROJECT_PROP, **AS_PROP})},
     {"name": "skald_resume", "description": "A story's requirements (the ## Requirements section when there is one), the other sections' headings and sizes, checklist and acceptance state, dependencies, decisions, and its latest handoff note. Pass section to read one section, or full for the whole body.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "section": {"type": "string"}, "full": {"type": "boolean"}}, ["id"])},
-    {"name": "skald_set", "description": "Update title, rank, tags, blocked_by, or assignee.",
+    {"name": "skald_set", "description": "Update title, rank, tags, blocked_by, assignee, or parent (\"-\" clears it).",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP,
-                             "title": {"type": "string"}, "rank": {"type": "integer"},
+                             "parent": {"type": "string"}, "title": {"type": "string"}, "rank": {"type": "integer"},
                              "tags": {"type": "array", "items": {"type": "string"}},
                              "blocked_by": {"type": "array", "items": {"type": "string"}},
                              "assignee": {"type": "string"}}, ["id"])},
@@ -166,6 +167,7 @@ class McpServer:
         story, warnings = store.create(
             args.get("title", ""), args.get("status"), args.get("tags", []), args.get("blocked_by", []),
             args.get("body", ""), args.get("assignee", ""), args.get("template"),
+            parent=args.get("parent"), inherit=args.get("inherit", True),
         )
         return self._with_warnings(store, story, warnings)
 
@@ -235,7 +237,7 @@ class McpServer:
 
     def tool_skald_set(self, args: dict) -> Any:
         store = self._store(args)
-        fields = {k: args[k] for k in ("title", "rank", "tags", "blocked_by", "assignee") if k in args}
+        fields = {k: args[k] for k in ("title", "rank", "tags", "blocked_by", "assignee", "parent") if k in args}
         if not fields:
             raise SkaldError("nothing to set")
         return self._with_warnings(store, *store.update(args["id"], **fields))

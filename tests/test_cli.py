@@ -567,6 +567,32 @@ class TestAgentOrientation(SkaldTestCase):
         code, _, err = self.run_cli("note", a, "x", "--kind", "Bad Kind")
         self.assertEqual(code, 1)
 
+    def test_parents_on_the_cli(self):
+        epic = self.new("Auth overhaul", "--tags", "epic:auth", "--body", "Everything about auth.")
+        code, out, err = self.run_cli("new", "Login form", "--parent", epic, "--status", "ready")
+        self.assertEqual(code, 0, err)
+        child = out.strip()
+        code, out, _ = self.run_cli("show", child, "--json")
+        d = json.loads(out)
+        self.assertEqual((d["parent"], d["tags"]), (epic, ["epic:auth"]))
+        code, out, _ = self.run_cli("ls")
+        self.assertIn(f"Auth overhaul  (children 0/1)", out)
+        self.assertIn(f"Login form  (child of {epic})", out)
+        code, out, _ = self.run_cli("ls", "--parent", epic, "--json")
+        self.assertEqual([s["id"] for s in json.loads(out)], [child])
+        code, out, _ = self.run_cli("resume", child)
+        self.assertIn(f"child of {epic}  Auth overhaul", out)
+        self.assertIn("Everything about auth.", out)
+        code, out, err = self.run_cli("set", child, "parent=-")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(self.run_cli("show", child, "--json")[1]).get("parent", ""), "")
+        code, out, err = self.run_cli("set", child, f"parent={epic}")
+        code, out, err = self.run_cli("rm", epic)
+        self.assertEqual(code, 1)
+        self.assertIn("is the parent of", err)
+        code, out, err = self.run_cli("move", epic, "done")
+        self.assertIn("child(ren) still open", err)
+
     def test_lanes_in_columns_status_and_board_payload(self):
         cfg_path = self.skald_dir / "config.json"
         data = json.loads(cfg_path.read_text())

@@ -224,6 +224,7 @@ updated_at: "2026-09-06T08:12:41Z"
 | `tags` | array of strings | Stored lowercase, sorted, unique. |
 | `blocked_by` | array of strings | `id` or `project:id`. Sorted, unique. |
 | `assignee` | string | Omitted from the file when empty. |
+| `parent` | string | A local story id: this story is one piece of that one. Omitted when empty. Local only; a cross-project parent is rejected at `set` time. |
 | `released` | string | Set by `release`; the version the story shipped in. Only on archived stories in practice. |
 | `created_at`, `updated_at` | string | ISO 8601 UTC with `Z`. `updated_at` set on every write. |
 
@@ -276,6 +277,13 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
   here or claimed elsewhere. `next` skips a ready story whose lane is at
   its limit, with a warning naming the holders; `claim` and a move into an
   active column warn the same way and proceed. Advisory, like column limits.
+- `children(id)` are the stories whose `parent` is `id`; `story_dict` carries
+  `children: {total, done}` on a parent. `new --parent` copies the parent's
+  facet tags unless `--no-inherit`. `check` reports a dangling parent, a
+  self-parent, and a parent cycle as problems. `rm` refuses while children
+  exist. Moving a parent into a terminal column with a non-terminal child
+  warns, and `release` warns the same way. `resume <child>` prints the
+  parent's title and requirements above the child's own.
 - `update` warns when a story leaves a `backlog` column for a `ready` column
   with an open question (section 4.3): that move is the human's gate.
 - `next` skips ready stories assigned to someone else unless the assignment
@@ -370,7 +378,7 @@ story or configuration. Commands that print stories take `--json`.
 | --- | --- |
 | `init [--name N]` | Section 2.4. Prints what it did and the CLAUDE.md line. |
 | `status [--json]` | Name, path, branch, per-column counts, unknown-status count, ready-and-unblocked count, uncommitted files under `.skald/`. |
-| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--questions] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED Q ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
+| `ls [--status C] [--tag T] [--assignee A] [--parent ID] [--unblocked] [--questions] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED Q ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
 | `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stories waiting on a human (open questions, not filtered to the actor), stale claims by others, claims on other branches, uncommitted files. |
 | `resume <id> [--section NAME] [--full] [--json]` | Compact story plus requirements (section 4.3), the other sections' headings and sizes, dependency states, decision and blocker notes, open questions, latest handoff (else latest note), note count. |
 | `next [--as N] [--all-projects] [--compact]` | First ready, unblocked story available to the actor per section 4.4. Exit 1 and a stderr message if none. |
@@ -382,6 +390,7 @@ story or configuration. Commands that print stories take `--json`.
 | `set <id> title=.. rank=N assignee=..` | Field edits. |
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
 | `note <id> "text"\|- [--as N] [--kind K]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. |
+| `new` accepts `--parent ID [--no-inherit]`; `set` accepts `parent=ID` and `parent=-`; `ls --parent ID` lists children; `ls` marks parents `(children done/total)` and children `(child of ID)`. |
 | `answer <id> "text"\|- [--as N]` | `note --kind decision`; prints how many open questions it closed. |
 | `audit <id> [--notes] [--no-note] [--as N] [--json]` | Extracts paths, `path:line` references, and commit hashes from the prelude (plus notes with `--notes`); checks existence, line count, and `git cat-file -e`; lists referenced files changed since the newest `audit` note (else `created_at`); appends an `audit` note with the summary unless `--no-note`. `audit.py`. |
 | `rm <id> [--force]` | Delete; refuses while other stories depend on it. |

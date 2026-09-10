@@ -56,7 +56,9 @@ tools from `skald mcp` (see the README).
    a story for it with `skald new "title" --body "..."` and link it with
    `--blocked-by <id>` or `skald block <id> +<other>` where a real dependency
    exists. A dependency on a story in another repository is written as
-   `project:id`. Do not silently expand the scope of the story you are on.
+   `project:id`. Work that belongs to the story you are on but is a piece
+   of its own becomes a child: `skald new "title" --parent <id>`. Do not
+   silently expand the scope of the story you are on.
 7. **Finish.** Move the story to the review column with a closing note that
    says what changed and how it was verified. A human moves stories to done.
    If the human has told you to close stories yourself, move to done instead.

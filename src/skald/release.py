@@ -45,6 +45,7 @@ class Release:
         self.date = date
         self.changes = changes
         self.closed = closed
+        self.warnings: list[str] = []
 
     @property
     def stories(self) -> list[Story]:
@@ -74,7 +75,12 @@ def plan(store: Store, version: str, date: Optional[str] = None) -> Release:
     closed = [s for s in stories if store.config.is_closed(s.status)]
     if not changes and not closed:
         raise SkaldError("nothing to release: no story is in a done or closed column")
-    return Release(version, date, changes, closed)
+    release = Release(version, date, changes, closed)
+    for s in release.stories:
+        open_kids = [c for c in stories if c.parent == s.id and not store.config.is_terminal(c.status)]
+        if open_kids:
+            release.warnings.append(f"{s.id} ships with {len(open_kids)} child(ren) still open: {', '.join(c.id for c in open_kids)}")
+    return release
 
 
 def merge_changelog(existing: Optional[str], release: Release) -> str:

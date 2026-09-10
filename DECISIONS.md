@@ -482,3 +482,20 @@ beside the audit note. Identifier grepping was proposed and left out: a
 backticked token with zero hits could be prose or a rename, so the result
 would have been "unverified" either way, and a fixed-string grep over a
 large tree is slow for an answer that decides nothing.
+
+### D58. A `parent` field beside the `epic:` tag, not instead of it
+D28 chose `epic:` as a tag so an epic needed no field and no body. On a
+design-record backlog the epic is the thing with the body: the record,
+whose pieces ship separately across sessions and agents. Five records
+kept a table of pieces with commit hashes by hand, which is exactly what
+`Skald-Story` trailers exist to make derived, and a tag cannot carry a
+body, a question, a decision, or an audit date. So a story gains an
+optional `parent`, a local id, and a child is an ordinary story with that
+one field. The tag stays: it costs nothing, it works across repositories,
+and most epics never need a body. The parent is local only, because
+cross-project references already carry the `unavailable` problem and a
+parent that may not be on this machine is worse than a tag that always
+resolves. `format` stays at 1: unknown fields are preserved, so an older
+tool reads a story with a parent and simply does not know what it means.
+The board, the `epics` merge, and the union of children's commits are a
+second story, once children exist in practice.

@@ -11,6 +11,13 @@
   on a human" filter, and an Answer button in the story dialog. MCP:
   `skald_answer`, and `waiting` and `open_questions` in context and resume.
 
+- Parents: a story can be one piece of another. `skald new --parent ID`
+  (facet tags inherited unless `--no-inherit`), `skald set ID parent=ID`
+  or `parent=-`, `skald ls --parent ID`; `ls` marks parents and children;
+  `resume` on a child prints the parent's requirements first; `check`
+  reports dangling parents and cycles; `rm` refuses while children exist;
+  moving a parent to done, or releasing it, with an open child warns. MCP
+  `skald_new` and `skald_set` take `parent`.
 - `skald audit <id>` checks a story's cited paths, `path:line` references,
   and commit hashes against the tree, lists referenced files changed since
   the last audit, and appends an `audit` note with the summary. `resume`

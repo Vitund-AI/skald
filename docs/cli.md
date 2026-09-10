@@ -21,7 +21,7 @@ error or not found, 2 corrupt story or configuration.
 - [`new`](#new) create a story
 - [`move`](#move) move a story to a column
 - [`claim`](#claim) assign a story to yourself and start it
-- [`set`](#set) set title=..., rank=N, or assignee=NAME
+- [`set`](#set) set title=..., rank=N, assignee=NAME, or parent=ID
 - [`tag`](#tag) tag <id> +tag -tag ...
 - [`block`](#block) block <id> +id -id ... (project:id for other projects)
 - [`note`](#note) append a note to a story
@@ -70,7 +70,7 @@ Create .skald/ here (or register an existing one).
 ## ls
 
 ```
-skald ls [--status COLUMN] [--tag TAG] [--assignee ASSIGNEE] [--unblocked] [--questions] [--all] [--archived] [--release VERSION] [--all-projects] [--branch REF] [--all-branches] [--json] [--compact]
+skald ls [--status COLUMN] [--tag TAG] [--assignee ASSIGNEE] [--unblocked] [--questions] [--parent ID] [--all] [--archived] [--release VERSION] [--all-projects] [--branch REF] [--all-branches] [--json] [--compact]
 ```
 
 List stories.
@@ -82,6 +82,7 @@ List stories.
 | `--assignee ASSIGNEE` | only stories assigned to this name |
 | `--unblocked` | only stories with no unmet dependencies |
 | `--questions` | only stories with an open question (waiting on a human) |
+| `--parent ID` | only the children of this story |
 | `--all` | include done and closed stories |
 | `--archived` | include archived stories |
 | `--release VERSION` | only stories shipped in this version (implies --archived and --all) |
@@ -179,7 +180,7 @@ Story counts per branch and how they differ from the working tree.
 ## new
 
 ```
-skald new [--status COLUMN] [--tags TAGS] [--blocked-by BLOCKED_BY] [--body BODY] [--template TEMPLATE] [--assignee ASSIGNEE] [--json] title
+skald new [--status COLUMN] [--tags TAGS] [--blocked-by BLOCKED_BY] [--body BODY] [--template TEMPLATE] [--assignee ASSIGNEE] [--parent ID] [--no-inherit] [--json] title
 ```
 
 Create a story.
@@ -193,6 +194,8 @@ Create a story.
 | `--body BODY` | requirements text, or - to read stdin |
 | `--template TEMPLATE` | a template from .skald/templates/ |
 | `--assignee ASSIGNEE` | assign on creation |
+| `--parent ID` | make this a child of another story in this project; its facet tags are inherited |
+| `--no-inherit` | with --parent: do not copy the parent's facet tags |
 | `--json` | print the story as JSON instead of its id |
 
 ## move
@@ -227,12 +230,12 @@ Assign a story to yourself and start it.
 skald set id key=value [key=value ...]
 ```
 
-Set title=..., rank=N, or assignee=NAME.
+Set title=..., rank=N, assignee=NAME, or parent=ID.
 
 | Argument | Description |
 | --- | --- |
 | `id` | story id or unique prefix |
-| `[key=value...]` | title=..., rank=N, assignee=NAME (assignee= clears it) |
+| `[key=value...]` | title=..., rank=N, assignee=NAME (assignee= clears it), parent=ID (parent=- clears it) |
 
 ## tag
 
