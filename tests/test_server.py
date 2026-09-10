@@ -321,6 +321,19 @@ class TestBranchAPI(ServerTestCase):
         self.assertEqual(cos["current"], wt_id)
 
 
+class TestHostPort(SkaldTestCase):
+    def test_port_zero_is_not_unset(self):
+        import argparse
+
+        ws = self.workspace()
+        ws.user.set("port", "9123")
+        ws.user.set("host", "127.0.0.1")
+        self.assertEqual(srv._host_port(ws, argparse.Namespace(host=None, port=None)), ("127.0.0.1", 9123))
+        self.assertEqual(srv._host_port(ws, argparse.Namespace(host=None, port=0)), ("127.0.0.1", 0))
+        self.assertEqual(srv._host_port(ws, argparse.Namespace(host="0.0.0.0", port=8000)), ("0.0.0.0", 8000))
+        self.assertEqual(srv._host_port(ws, argparse.Namespace()), ("127.0.0.1", 9123))
+
+
 class TestAuth(ServerTestCase):
     def test_token_required_except_health(self):
         self.assertEqual(self.call("GET", "/api/health", auth=False)[0], 200)
