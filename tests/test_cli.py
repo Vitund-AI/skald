@@ -11,7 +11,7 @@ from skald.registry import Registry
 
 from .helpers import SAMPLE_CONFIG_COLUMNS, SkaldTestCase, git
 
-HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "ASSIGNEE", "TAGS", "TITLE"]
+HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "Q", "ASSIGNEE", "TAGS", "TITLE"]
 
 
 class TestInit(SkaldTestCase):
@@ -34,6 +34,28 @@ class TestInit(SkaldTestCase):
         self.assertEqual((repo / ".skald" / "AGENTS.md").read_text(), "custom")
         code, out, _ = self.run_cli("init", "--name", "Renamed Thing", cwd=repo)
         self.assertIn("renamed project to 'renamed-thing'", out)
+
+    def test_init_lifecycle_columns(self):
+        repo = self.make_repo("life", init_skald=False)
+        code, out, err = self.run_cli("init", "--columns", "lifecycle", cwd=repo)
+        self.assertEqual(code, 0, err)
+        cfg = ProjectConfig.load(repo / ".skald" / "config.json")
+        self.assertEqual([c.key for c in cfg.columns], ["idea", "plan", "ready", "in_progress", "review", "done"])
+        self.assertEqual([c.role for c in cfg.columns][:3], ["backlog", "backlog", "ready"])
+        code, out, err = self.run_cli("init", "--columns", "lifecycle", cwd=repo)
+        self.assertIn("columns unchanged", out)
+        # next never picks from idea or plan; moving plan to ready with an open question warns.
+        code, out, _ = self.run_cli("new", "Thing", "--status", "plan", cwd=repo)
+        sid = out.strip()
+        self.assertEqual(self.run_cli("next", cwd=repo)[0], 1)
+        self.run_cli("note", sid, "Which API?", "--kind", "question", cwd=repo)
+        code, out, err = self.run_cli("move", sid, "ready", cwd=repo)
+        self.assertEqual(code, 0)
+        self.assertIn("1 open question(s); answer them with skald answer", err)
+        self.run_cli("answer", sid, "The v2 one.", cwd=repo)
+        code, out, err = self.run_cli("move", sid, "plan", cwd=repo)
+        code, out, err = self.run_cli("move", sid, "ready", cwd=repo)
+        self.assertNotIn("open question", err)
 
     def test_init_from_subdirectory(self):
         sub = self.repo / "src"
@@ -544,6 +566,60 @@ class TestAgentOrientation(SkaldTestCase):
         self.assertIn("acceptance criteria unchecked", err)
         code, _, err = self.run_cli("note", a, "x", "--kind", "Bad Kind")
         self.assertEqual(code, 1)
+
+    def test_lanes_in_columns_status_and_board_payload(self):
+        cfg_path = self.skald_dir / "config.json"
+        data = json.loads(cfg_path.read_text())
+        data["facet_limits"] = {"lane": 1}
+        cfg_path.write_text(json.dumps(data))
+        a = self.new("part 1", "--status", "ready", "--tags", "lane:alembic")
+        b = self.new("part 2", "--status", "ready", "--tags", "lane:alembic")
+        code, out, _ = self.run_cli("columns")
+        self.assertIn("Lanes (at most N active stories per value):", out)
+        self.assertIn("lane: 1", out)
+        self.run_cli("claim", a, "--as", "one")
+        code, out, _ = self.run_cli("status")
+        self.assertIn("lanes busy: lane:alembic 1/1", out)
+        code, out, _ = self.run_cli("status", "--json")
+        self.assertEqual(json.loads(out)["lanes"], {"lane:alembic": {"active": 1, "limit": 1}})
+        code, out, err = self.run_cli("move", b, "in_progress")
+        self.assertEqual(code, 0)
+        self.assertIn("enters a busy lane", err)
+        code, out, err = self.run_cli("next", "--as", "two")
+        self.assertEqual(code, 1)
+
+    def test_questions_in_context_resume_ls_and_answer(self):
+        a = self.new("Pick a database", "--status", "ready")
+        b = self.new("Unrelated", "--status", "ready")
+        code, out, _ = self.run_cli("context", "--as", "claude")
+        self.assertNotIn("Waiting on a human", out)
+        self.run_cli("note", a, "Postgres or SQLite?\nSQLite is simpler.", "--as", "claude", "--kind", "question")
+        code, out, _ = self.run_cli("context", "--as", "claude")
+        self.assertIn("Waiting on a human (answer with skald answer <id> \"...\"):", out)
+        self.assertIn(f"{a}  Pick a database", out)
+        self.assertIn("claude asked: Postgres or SQLite?", out)
+        code, out, _ = self.run_cli("context", "--as", "claude", "--json")
+        w = json.loads(out)["waiting"]
+        self.assertEqual([(x["id"], x["open"], x["question"]) for x in w], [(a, 1, "Postgres or SQLite?")])
+        code, out, _ = self.run_cli("resume", a)
+        self.assertIn("Open questions (waiting on a human", out)
+        self.assertIn("Postgres or SQLite?", out)
+        code, out, _ = self.run_cli("ls")
+        row = next(l for l in out.splitlines() if l.startswith(a))
+        self.assertIn("?1", row.split())
+        code, out, _ = self.run_cli("ls", "--questions", "--json")
+        self.assertEqual([s["id"] for s in json.loads(out)], [a])
+        code, out, _ = self.run_cli("answer", a, "SQLite.", "--as", "jon")
+        self.assertIn("answered on", out)
+        self.assertIn("1 question(s) closed", out)
+        code, out, _ = self.run_cli("ls", "--questions", "--json")
+        self.assertEqual(json.loads(out), [])
+        code, out, _ = self.run_cli("resume", a, "--json")
+        d = json.loads(out)
+        self.assertEqual((d["open_questions"], len(d["decisions"])), ([], 1))
+        self.assertEqual(d["decisions"][0]["author"], "jon")
+        code, out, _ = self.run_cli("answer", b, "Nothing asked.")
+        self.assertIn("no open question", out)
 
     def test_ls_and_next_compact(self):
         a = self.new("a", "--status", "ready")

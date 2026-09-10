@@ -27,7 +27,10 @@ tools from `skald mcp` (see the README).
    other branches, and uncommitted story files. `skald columns` shows this project's columns.
 2. **Pick work.** `skald context` names the next story; `skald next --json
    --compact` prints it. Stories claimed by another agent in another
-   checkout or on another branch, even before they commit, are skipped. If nothing is ready, run `skald ls --json --compact` and
+   checkout or on another branch, even before they commit, are skipped, and
+   so is a story whose `lane:` tag names a lane that is busy; do not take
+   one by hand, and tag work that must not run alongside other work with
+   the same `lane:` value. If nothing is ready, run `skald ls --json --compact` and
    either pick an unblocked ready story or ask the human.
 3. **Claim it.** Run `skald claim <id> --as <your-name>`. That assigns the
    story to you and moves it into the first active column. Then run
@@ -43,7 +46,10 @@ tools from `skald mcp` (see the README).
 5. **Record progress.** Use `skald note <id> "text" --as <your-name>`, or
    `skald note <id> - --as <your-name>` with the text on stdin. Give notes a
    kind when it fits: `--kind decision` for a choice and why, `--kind blocker`
-   for something you cannot get past. Task-list items (`- [ ]` / `- [x]`) in
+   for something you cannot get past, `--kind question` for something only
+   the human can decide. A question stays open until a later decision note
+   on the same story; keep working on whatever does not depend on it, and
+   `skald context` lists every story waiting on a human. Task-list items (`- [ ]` / `- [x]`) in
    the body show up as progress on the board. Put acceptance criteria under a
    `## Acceptance` heading as a checklist and tick them as you verify each;
    moving to review or done with unchecked items prints a warning.

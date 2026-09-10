@@ -1,11 +1,11 @@
 ---
 title: "Parents on the board and in history: children in the modal, epics merge, commits union"
-status: "backlog"
-rank: 90
+status: "idea"
+rank: 10
 tags: ["git", "ui"]
 blocked_by: []
 created_at: "2026-09-10T05:09:38Z"
-updated_at: "2026-09-10T05:09:38Z"
+updated_at: "2026-09-10T05:24:18Z"
 ---
 ## Requirements
 

@@ -67,6 +67,21 @@ def parse_notes(body: str) -> list[dict]:
     return notes
 
 
+def open_questions(notes: list[dict]) -> list[dict]:
+    """Question notes not yet answered: a question is open until a later ``decision`` note on the same story.
+
+    Deliberately coarse. One dated decision after the question closes it; a
+    decision naming the question it answers is a refinement for later.
+    """
+    out: list[dict] = []
+    for n in notes:
+        if n["kind"] == "question":
+            out.append(n)
+        elif n["kind"] == "decision":
+            out = []
+    return out
+
+
 def prelude_of(body: str) -> str:
     """The body before the first note heading: every section the author wrote, none of the notes."""
     m = NOTE_HEADING_RE.search(body)
@@ -205,6 +220,10 @@ class Story:
         a_done, a_total = acceptance_progress(self.body)
         if a_total:
             d["acceptance"] = {"done": a_done, "total": a_total}
+        questions = self.open_questions()
+        d["questions"] = {"open": len(questions)}
+        if not compact and questions:
+            d["questions"]["items"] = questions
         return d
 
     def notes(self) -> list[dict]:
@@ -215,6 +234,10 @@ class Story:
             if kind is None or n["kind"] == kind:
                 return n
         return None
+
+    def open_questions(self) -> list[dict]:
+        """Questions waiting on a human: question notes with no later decision note."""
+        return open_questions(self.notes())
 
 
 def validate_fields(fields: dict, where: str) -> dict:
@@ -608,7 +631,8 @@ class Store:
         return story, warnings
 
     def update(self, ref: str, *, title=None, status=None, rank=None, tags=None, blocked_by=None,
-               assignee=None, order=None) -> tuple[Story, list[str]]:
+               assignee=None, order=None,
+               elsewhere: Optional[dict] = None) -> tuple[Story, list[str]]:
         story = self.get(ref)
         if story.archived:
             raise ConflictError(f"{story.id} is archived; unarchive it first")
@@ -626,6 +650,7 @@ class Store:
             self._check_status(status)
             if status != story.status:
                 old_index = self.config.index(story.status)
+                old_role = self.config.role(story.status)
                 story.fields["status"] = status
                 story.fields["rank"] = self._bottom_rank(status, stories)
                 status_changed = True
@@ -634,6 +659,13 @@ class Store:
                     warnings.append(
                         f"{story.id} moves to {status} with {a_total - a_done} of {a_total} acceptance criteria unchecked"
                     )
+                # Leaving the backlog for ready is the human's gate; an open question means it is not decided yet.
+                if old_role == "backlog" and self.config.role(status) == "ready":
+                    open_qs = story.open_questions()
+                    if open_qs:
+                        warnings.append(
+                            f"{story.id} moves to {status} with {len(open_qs)} open question(s); answer them with skald answer"
+                        )
         if rank is not None:
             if isinstance(rank, bool) or not isinstance(rank, int):
                 raise SkaldError("rank must be an integer")
@@ -665,6 +697,10 @@ class Store:
             if w:
                 warnings.append(w)
         column = self.config.column(story.status)
+        if status_changed and self.config.role(status) == "active" and self.config.facet_limits:
+            busy = self.busy_lanes(stories, elsewhere)
+            for c in self.lane_conflicts(story, busy):
+                warnings.append(f"{story.id} enters a busy lane: {c}")
         if status_changed and column and column.limit:
             count = sum(1 for s in self.index(include_archived=False).values() if s.status == column.key)
             if count > column.limit:
@@ -701,8 +737,45 @@ class Store:
         target = self.config.first_active_key
         if role in ("backlog", "ready") and target:
             kwargs["status"] = target
-        updated, warnings = self.update(story.id, **kwargs)
+        updated, warnings = self.update(story.id, elsewhere=elsewhere, **kwargs)
         return updated, pre + warnings
+
+    def busy_lanes(self, stories: Optional[list[Story]] = None, elsewhere: Optional[dict] = None) -> dict[str, dict[str, list[str]]]:
+        """For each limited facet key, the ids holding each value: active here, or claimed elsewhere.
+
+        ``{key: {value: [ids]}}``. A story counts once, whether it is active in
+        this working tree or active with an assignee on another branch or in
+        another checkout (``elsewhere``).
+        """
+        limits = self.config.facet_limits
+        if not limits:
+            return {}
+        stories = stories if stories is not None else self.load_all()[0]
+        held = set(elsewhere or {})
+        out: dict[str, dict[str, list[str]]] = {k: {} for k in limits}
+        for s in stories:
+            active = self.config.role(s.status) == "active" or s.id in held
+            if not active:
+                continue
+            for tag in s.tags:
+                parts = split_facet(tag)
+                if parts and parts[0] in limits:
+                    out[parts[0]].setdefault(parts[1], []).append(s.id)
+        return out
+
+    def lane_conflicts(self, story: Story, busy: dict[str, dict[str, list[str]]]) -> list[str]:
+        """Warnings for each lane of ``story`` that is already at its limit, not counting the story itself."""
+        out = []
+        for tag in story.tags:
+            parts = split_facet(tag)
+            if not parts or parts[0] not in self.config.facet_limits:
+                continue
+            key, value = parts
+            holders = [i for i in busy.get(key, {}).get(value, []) if i != story.id]
+            limit = self.config.facet_limits[key]
+            if len(holders) >= limit:
+                out.append(f"lane {key}:{value} is busy ({len(holders)}/{limit}: {', '.join(holders)})")
+        return out
 
     def next_story(self, for_author: Optional[str] = None, stale_days: Optional[int] = None,
                    elsewhere: Optional[dict] = None, warnings: Optional[list] = None) -> Optional[Story]:
@@ -717,6 +790,7 @@ class Store:
         idx = {s.id: s for s in stories}
         ready = set(self.config.keys_with_role("ready"))
         notes = warnings if warnings is not None else []
+        busy = self.busy_lanes(stories, elsewhere)
         for s in stories:
             if s.status not in ready:
                 continue
@@ -726,6 +800,11 @@ class Store:
             if claims:
                 c = claims[0]
                 notes.append(f"skipping {s.id}: claimed by {c['assignee']} on branch {c['branch']} ({c['status']})")
+                continue
+            conflicts = self.lane_conflicts(s, busy)
+            if conflicts:
+                # Order is what dependencies express; a lane says two stories must not run at once.
+                notes.append(f"skipping {s.id}: " + "; ".join(conflicts))
                 continue
             if s.assignee and s.assignee != for_author:
                 if _is_stale(s, stale_days):

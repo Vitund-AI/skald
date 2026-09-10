@@ -76,11 +76,13 @@ def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False) 
     for s in stories:
         unmet = store.unmet(s, idx)
         sid = f"{store.name}:{s.id}" if qualify else s.id
-        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", s.assignee or "-", ",".join(s.tags) or "-", s.title])
+        q = len(s.open_questions())
+        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", f"?{q}" if q else "-", s.assignee or "-",
+                     ",".join(s.tags) or "-", s.title])
     return rows
 
 
-STORY_HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "ASSIGNEE", "TAGS", "TITLE"]
+STORY_HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "Q", "ASSIGNEE", "TAGS", "TITLE"]
 
 
 def _read_text_arg(value: Optional[str]) -> str:
@@ -216,12 +218,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     init = sub.add_parser("init", help="create .skald/ here (or register an existing one)")
     init.add_argument("--name", help="project name (default: the directory name)")
+    init.add_argument("--columns", choices=["default", "lifecycle"], default="default",
+                      help="column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (idea, plan, ready, in_progress, review, done)")
 
     ls = sub.add_parser("ls", help="list stories")
     ls.add_argument("--status", metavar="COLUMN", help="only this column")
     ls.add_argument("--tag", help="only stories with this tag (facets such as epic:auth work)")
     ls.add_argument("--assignee", help="only stories assigned to this name")
     ls.add_argument("--unblocked", action="store_true", help="only stories with no unmet dependencies")
+    ls.add_argument("--questions", action="store_true", help="only stories with an open question (waiting on a human)")
     ls.add_argument("--all", action="store_true", help="include done and closed stories")
     ls.add_argument("--archived", action="store_true", help="include archived stories")
     ls.add_argument("--release", metavar="VERSION", help="only stories shipped in this version (implies --archived and --all)")
@@ -284,7 +289,12 @@ def build_parser() -> argparse.ArgumentParser:
     note.add_argument("id", help="story id or unique prefix")
     note.add_argument("text", help="note text, or - to read stdin")
     note.add_argument("--as", dest="author", help="author label (default: agent)")
-    note.add_argument("--kind", help="handoff, decision, blocker, or any short word; shown in the heading")
+    note.add_argument("--kind", help="handoff, decision, blocker, question (open until a later decision), or any short word; shown in the heading")
+
+    ans = sub.add_parser("answer", help="answer a story's open questions: appends a decision note, which closes them")
+    ans.add_argument("id", help="story id or unique prefix")
+    ans.add_argument("text", help="the decision, or - to read stdin")
+    ans.add_argument("--as", dest="author", help="author label (default: agent)")
 
     rm = sub.add_parser("rm", help="delete a story")
     rm.add_argument("id", help="story id or unique prefix")
@@ -431,6 +441,8 @@ def cmd_init(ws: Workspace, args) -> int:
     cfg_path = skald_dir / "config.json"
     if cfg_path.exists():
         config = ProjectConfig.load(cfg_path)
+        if getattr(args, "columns", "default") != "default":
+            lines.append(f"columns unchanged: {cfg_path.name} already exists; edit its columns list by hand")
         if args.name and args.name != config.name:
             config.name = slugify_name(args.name)
             config.save(cfg_path)
@@ -439,7 +451,10 @@ def cmd_init(ws: Workspace, args) -> int:
             lines.append(f"kept {cfg_path.name} (project '{config.name}')")
     else:
         name = slugify_name(args.name) if args.name else slugify_name(skald_dir.parent.name)
-        config = ProjectConfig(name)
+        from .config import COLUMN_PRESETS, Column
+
+        preset = getattr(args, "columns", None) or "default"
+        config = ProjectConfig(name, [Column(**c) for c in COLUMN_PRESETS[preset]])
         config.save(cfg_path)
         lines.append(f"wrote {cfg_path.name} (project '{name}', columns: {config.describe()})")
 
@@ -512,6 +527,8 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
         _warn(load_warnings)
         idx = {s.id: s for s in stories}
         sel = _filtered(st, args, stories, idx)
+        if getattr(args, "questions", False):
+            sel = [s for s in sel if s.open_questions()]
         rows.extend(_story_rows(st, sel, idx, qualify=args.all_projects))
         dicts.extend(st.story_dict(s, idx, ws.user.get("stale_days"), compact=args.compact) for s in sel)
     if args.json:
@@ -624,6 +641,16 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
 
     stale_claims = [s for s in stories if s.assignee and s.assignee != author
                     and store.config.role(s.status) == "active" and _is_stale(s, stale_days)]
+    # Not filtered to the actor: an agent needs to know a story it is about to pick is stalled on a
+    # decision, and the human running context needs the whole list.
+    waiting = []
+    for s in stories:
+        qs = s.open_questions()
+        if qs:
+            newest = qs[-1]
+            waiting.append({"id": s.id, "title": s.title, "status": s.status, "open": len(qs),
+                            "question": newest["text"].strip().splitlines()[0] if newest["text"].strip() else "",
+                            "stamp": newest["stamp"], "author": newest["author"]})
 
     def entry(s: Story) -> dict:
         d = store.story_dict(s, idx, ws.user.get("stale_days"), compact=True)
@@ -640,6 +667,7 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
         "mine": [entry(s) for s in mine],
         "next": entry(nxt) if nxt else None,
         "ready_blocked": [{"id": s.id, "title": s.title, "unmet": store.unmet(s, idx)} for s in ready_blocked],
+        "waiting": waiting,
         "stale_claims": [{"id": s.id, "title": s.title, "assignee": s.assignee, "status": s.status, "updated_at": s.updated_at}
                          for s in stale_claims],
         "claimed_elsewhere": elsewhere,
@@ -677,6 +705,11 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
         print("\nReady but blocked:")
         for b in ctx["ready_blocked"]:
             print(f"  {b['id']}  {b['title']}  waiting on {', '.join(b['unmet'])}")
+    if ctx["waiting"]:
+        print("\nWaiting on a human (answer with skald answer <id> \"...\"):")
+        for w in ctx["waiting"]:
+            more = f" (+{w['open'] - 1} more)" if w["open"] > 1 else ""
+            print(f"  {w['id']}  {w['title']}\n          {w['author']} asked: {w['question']}{more}")
     if ctx["stale_claims"]:
         print(f"\nStale claims (no update for {ws.user.get('stale_days')}+ days; take over with skald claim <id>):")
         for c in ctx["stale_claims"]:
@@ -723,6 +756,7 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
     d["note_count"] = len(notes)
     d["decisions"] = [n for n in notes if n["kind"] == "decision"]
     d["blockers"] = [n for n in notes if n["kind"] == "blocker"]
+    d["open_questions"] = story.open_questions()
     if args.json:
         print(json.dumps(d, indent=2))
         return 0
@@ -749,6 +783,11 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
         print("Decisions:")
         for n in d["decisions"]:
             print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip().splitlines()[0]}")
+        print()
+    if d["open_questions"]:
+        print("Open questions (waiting on a human; work on what does not depend on them):")
+        for n in d["open_questions"]:
+            print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip()}")
         print()
     if latest:
         label = "Latest handoff" if handoff else "Latest note"
@@ -928,6 +967,9 @@ def cmd_status(ws: Workspace, store: Store, args) -> int:
         else:
             unknown += 1
     ready = [s for s in stories if store.config.role(s.status) == "ready" and not store.unmet(s, idx)]
+    busy = store.busy_lanes(stories, _elsewhere(ws, store)) if store.config.facet_limits else {}
+    lanes = {f"{k}:{v}": {"active": len(ids), "limit": store.config.facet_limits[k]}
+             for k, values in busy.items() for v, ids in values.items()}
     info = {
         "project": store.name,
         "path": str(store.dir),
@@ -935,6 +977,7 @@ def cmd_status(ws: Workspace, store: Store, args) -> int:
         "counts": counts,
         "unknown_status": unknown,
         "ready_unblocked": len(ready),
+        "lanes": lanes,
         "uncommitted": [c["path"] for c in uncommitted],
         "warnings": load_warnings,
     }
@@ -946,6 +989,9 @@ def cmd_status(ws: Workspace, store: Store, args) -> int:
         print(f"branch:   {info['branch']}")
     print("columns:  " + "  ".join(f"{k}={v}" for k, v in counts.items()) + (f"  unknown={unknown}" if unknown else ""))
     print(f"ready and unblocked: {len(ready)}")
+    if info["lanes"]:
+        busy_l = [f"{k} {d['active']}/{d['limit']}" for k, d in info["lanes"].items() if d["active"] >= d["limit"]]
+        print("lanes busy: " + (", ".join(busy_l) if busy_l else "none"))
     if uncommitted:
         print(f"uncommitted story changes: {len(uncommitted)} file(s) under .skald/")
     else:
@@ -1347,6 +1393,10 @@ def cmd_columns(store: Store, args) -> int:
         return 0
     rows = [[c.key, c.label, c.role, str(c.limit) if c.limit else "-"] for c in store.config.columns]
     _print_table(rows, ["KEY", "LABEL", "ROLE", "LIMIT"])
+    if store.config.facet_limits:
+        print("\nLanes (at most N active stories per value):")
+        for key, n in store.config.facet_limits.items():
+            print(f"  {key}: {n}")
     return 0
 
 
@@ -1623,7 +1673,7 @@ def claude_skill() -> str:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume",
+    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
     "commits", "diff", "activity", "graph", "release",
 }
 
@@ -1705,7 +1755,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     if args.command == "new":
         return cmd_new(ws, args, store)
     if args.command in ("move", "mv"):
-        story, warnings = store.update(args.id, status=args.status)
+        story, warnings = store.update(args.id, status=args.status, elsewhere=_elsewhere(ws, store))
         _warn(warnings)
         print(f"moved {story.id} to {story.status}")
         return 0
@@ -1719,6 +1769,11 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     if args.command == "note":
         story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), args.kind)
         print(f"noted on {story.id}" + (f" ({args.kind})" if args.kind else ""))
+        return 0
+    if args.command == "answer":
+        before = len(store.get(args.id).open_questions())
+        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), "decision")
+        print(f"answered on {story.id} (decision; {before} question(s) closed)" if before else f"noted on {story.id} (decision; no open question)")
         return 0
     if args.command == "rm":
         story = store.delete(args.id, force=args.force)

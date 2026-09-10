@@ -619,6 +619,81 @@ class TestNotesAndAcceptance(SkaldTestCase):
         with self.assertRaises(SkaldError):
             s.append_note(a.id, "x", "claude", kind="Not Valid")
 
+    def test_lanes_skip_next_and_warn_on_claim_and_move(self):
+        import json as _json
+        cfg_path = self.skald_dir / "config.json"
+        data = _json.loads(cfg_path.read_text())
+        data["facet_limits"] = {"lane": 1}
+        cfg_path.write_text(_json.dumps(data))
+        s = self.store()
+        self.assertEqual(s.config.facet_limits, {"lane": 1})
+        a, _ = s.create("Rewrite baseline, part 1", status="ready", tags=["lane:alembic"])
+        b, _ = s.create("Rewrite baseline, part 2", status="ready", tags=["lane:alembic"])
+        c, _ = s.create("Unrelated", status="ready", tags=["lane:docs"])
+        # Nothing active: a is next.
+        self.assertEqual(s.next_story().id, a.id)
+        # a active locally: b is skipped with a warning, c is offered.
+        _, w = s.claim(a.id, "one")
+        self.assertEqual(w, [])
+        notes = []
+        self.assertEqual(s.next_story(for_author="two", warnings=notes).id, c.id)
+        self.assertTrue(any(f"skipping {b.id}: lane lane:alembic is busy (1/1: {a.id})" in n for n in notes))
+        # claim and move into an active column warn but proceed.
+        _, w = s.claim(b.id, "two")
+        self.assertTrue(any("enters a busy lane" in x for x in w), w)
+        s.update(b.id, status="ready")
+        _, w = s.update(b.id, status="in_progress")
+        self.assertTrue(any("enters a busy lane: lane lane:alembic is busy" in x for x in w), w)
+        s.update(b.id, status="ready")
+        s.update(a.id, status="ready", assignee="")
+        # A claim on another branch or in another checkout holds the lane too.
+        elsewhere = {a.id: [{"branch": "feat/x", "assignee": "one", "status": "in_progress"}]}
+        self.assertEqual(s.busy_lanes(elsewhere=elsewhere), {"lane": {"alembic": [a.id]}})
+        self.assertEqual(s.lane_conflicts(s.get(b.id), s.busy_lanes(elsewhere=elsewhere)),
+                         [f"lane lane:alembic is busy (1/1: {a.id})"])
+        s.update(c.id, status="backlog")
+        notes = []
+        self.assertIsNone(s.next_story(for_author="two", elsewhere=elsewhere, warnings=notes))
+        self.assertTrue(any(f"skipping {b.id}: lane lane:alembic is busy" in n for n in notes), notes)
+        s.update(c.id, status="ready")
+        # A limit of 2 admits two.
+        data["facet_limits"] = {"lane": 2}
+        cfg_path.write_text(_json.dumps(data))
+        s = self.store()
+        s.claim(a.id, "one")
+        _, w = s.claim(b.id, "two")
+        self.assertFalse(any("busy lane" in x for x in w), w)
+        self.assertEqual(s.busy_lanes(), {"lane": {"alembic": [a.id, b.id]}})
+        # Validation.
+        from skald.config import ProjectConfig
+        from skald.errors import ConfigError
+        for bad in ({"lane": 0}, {"lane": "1"}, {"Bad Key": 1}, ["lane"]):
+            data["facet_limits"] = bad
+            cfg_path.write_text(_json.dumps(data))
+            with self.assertRaises(ConfigError):
+                ProjectConfig.load(cfg_path)
+
+    def test_questions_open_until_a_later_decision(self):
+        s = self.store()
+        a, _ = s.create("a")
+        self.assertEqual(s.get(a.id).open_questions(), [])
+        s.append_note(a.id, "Postgres or SQLite?", "claude", kind="question")
+        s.append_note(a.id, "progress", "claude")
+        s.append_note(a.id, "Also: which port?", "claude", kind="question")
+        qs = s.get(a.id).open_questions()
+        self.assertEqual([q["text"] for q in qs], ["Postgres or SQLite?", "Also: which port?"])
+        d = s.story_dict(s.get(a.id))
+        self.assertEqual(d["questions"]["open"], 2)
+        self.assertEqual(len(d["questions"]["items"]), 2)
+        self.assertEqual(s.story_dict(s.get(a.id), compact=True)["questions"], {"open": 2})
+        # One dated decision after the questions closes them, whatever it says.
+        s.append_note(a.id, "SQLite, port 5000", "jon", kind="decision")
+        self.assertEqual(s.get(a.id).open_questions(), [])
+        self.assertEqual(s.story_dict(s.get(a.id))["questions"], {"open": 0})
+        # A question after the decision is open again.
+        s.append_note(a.id, "And auth?", "claude", kind="question")
+        self.assertEqual(len(s.get(a.id).open_questions()), 1)
+
     def test_acceptance_gate_warns_on_forward_moves(self):
         s = self.store()
         a, _ = s.create("a", body="## Acceptance\n\n- [ ] renders\n")

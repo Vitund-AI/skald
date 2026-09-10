@@ -1,7 +1,7 @@
 # Stories
 
-Everything about the files in `.skald/`: the story format, columns, facets,
-templates, archiving, and releases.
+Everything about the files in `.skald/`: the story format, design records,
+columns, facets, templates, archiving, and releases.
 
 ## A story file
 
@@ -71,7 +71,57 @@ Frontmatter fields:
   is the fallback.
 - **Notes** are headings of the form `## [author] YYYY-MM-DD HH:MM UTC`,
   optionally followed by `· kind`. `skald note` writes them; `resume` shows
-  every `decision` and the latest `handoff`.
+  every `decision`, every open `question`, and the latest `handoff`.
+- **Questions** are notes with `--kind question`: something only a human
+  can decide. A question is open until a later `decision` note on the same
+  story, whoever writes it; `skald answer <id> "..."` is the human's verb
+  for that. Open questions show in `skald context` under "Waiting on a
+  human", as `?N` in the `Q` column of `skald ls` (`--questions` filters to
+  them), and as a badge and filter on the board. They are notes rather than
+  a section because a note is dated, authored, and answerable by another
+  dated note.
+
+## Long stories and design records
+
+A story can be a design record: requirements, the design, the options
+considered, what was left out, and the history, all in one file that lives
+for months. The tools cope with that because they read sections by heading
+and notes by their dated headings, so the layout below keeps a long body
+useful without any new format:
+
+```markdown
+## Requirements
+Two to ten lines: what must be true when this is done. This is what
+`skald resume` prints.
+
+## Acceptance
+- [ ] one checkable item per line; `resume` and the board count these,
+      and moving to done with any unchecked warns
+
+## Design
+Free-form. Options, the chosen one, why.
+
+## Residuals
+Work deliberately left out, each a candidate for its own story.
+
+## References
+Paths, commits, other stories. `skald audit` checks these.
+
+## Changelog
+One or two sentences for users; `skald release` uses them.
+```
+
+The history does not go in these sections. Questions (`--kind question`),
+decisions, handoffs, and audits are dated notes appended by `skald note`,
+which is what keeps the sections stable: a question is answered by a
+later decision note, not by editing the body, and `resume` reads the
+notes in the order that matters. `resume` prints the requirements and a
+one-line map of the other sections; `--section design` or `--full` reads
+the rest on request.
+
+Put the skeleton in `.skald/templates/design.md` and create records with
+`skald new "Title" --template design`. Templates stay project-owned; `init`
+does not write one.
 
 ## Columns and roles
 
@@ -99,6 +149,31 @@ closed blocker satisfies with a warning), and `archive` and `release` act on
 them. Moving into `ready`, `active`, or `done` warns about unmet
 dependencies. A `limit` is a WIP limit; exceeding it warns and turns the
 column count red on the board.
+
+### The lifecycle set
+
+`skald init --columns lifecycle` writes a set that covers ideation and
+planning as well as execution:
+
+| Column | Role | Meaning |
+| --- | --- | --- |
+| `idea` | backlog | captured; nobody has thought about it yet |
+| `plan` | backlog | someone is writing the requirements and design |
+| `ready` | ready | decided; `next` picks from here |
+| `in_progress` | active | |
+| `review` | active | |
+| `done` | done | |
+
+Two backlog-role columns give a gate with no new rule: not in ready means
+not schedulable, so an agent can capture an idea or draft a plan and nothing
+starts until a person moves it on. Moving from a backlog column into ready
+while the story has an open question warns, the same way unchecked
+acceptance warns on the move to done. "Waiting on a human" is not a column,
+because it is a condition that can hold at any stage: it is the question
+badge and filter, so a story keeps its place while it waits. Any project can
+adopt the set by editing its `columns` list; existing stories keep their
+status, and a status that no longer matches a column shows as unknown until
+you move it.
 
 Renaming or removing a column does not break stories: a status that matches
 no column still lists, shows in an "Unknown status" column, and is reported
@@ -135,6 +210,29 @@ skald facets                              # every key and value with done/open c
 
 The board shows one filter per facet key and can split into swimlanes by
 any of them.
+
+### Lanes
+
+Dependencies express order. Some work has no order but must not run at the
+same time: four stories that each rewrite the same migration file, say,
+which collide semantically rather than as clean merge conflicts when two
+agents take them in parallel worktrees. A lane is a facet with a limit:
+
+```json
+{
+  "facet_limits": {"lane": 1}
+}
+```
+
+in `config.json` means at most one story per `lane:` value may be active
+at once, counting stories active in this checkout and stories claimed on
+other branches or in other checkouts. Tag the stories that share a
+resource with the same value, `lane:alembic-baseline`, and `skald next`
+skips the second while the first is active, saying who holds the lane;
+`claim` and a move into an active column warn and proceed. Any facet key
+can carry a limit; `lane` is the convention. `skald columns` lists the
+limits, `skald status` reports busy lanes, and the board's swimlane header
+shows `1/1 active` in red when a lane is full.
 
 ## Templates
 

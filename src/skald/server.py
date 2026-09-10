@@ -440,6 +440,7 @@ class Handler(BaseHTTPRequestHandler):
                     "columns": [c.to_dict() for c in store.config.columns],
                     "stories": [store.story_dict(s, idx, ws.user.get("stale_days")) for s in stories],
                     "facets": compute_facets(stories, store.config),
+                    "facet_limits": store.config.facet_limits,
                     "warnings": warnings + ws.notices,
                     "git": git,
                     "identity": self._identity(ws, store),
@@ -535,7 +536,8 @@ class Handler(BaseHTTPRequestHandler):
                 if sub == ["notes"] and method == "POST":
                     data = self._read_json()
                     author = (data.get("author") or "").strip() or self._identity(ws, store)
-                    story = store.append_note(ref, data.get("text", ""), author)
+                    kind = (data.get("kind") or "").strip() or None
+                    story = store.append_note(ref, data.get("text", ""), author, kind)
                     self._json(201, self._story_json(ws, store, story, body=True))
                     return
                 if sub == ["history"] and method == "GET":

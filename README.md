@@ -139,7 +139,7 @@ shell can use `skald mcp`.
 | [Getting started](docs/getting-started.md) | You are installing Skald or adding it to a repository. |
 | [Working with agents](docs/working-with-agents.md) | You want to know what the contract asks for and why, and how to hook Claude Code or any MCP client up to it. |
 | [The board](docs/board.md) | You want every board feature in one place. |
-| [Stories](docs/stories.md) | You want the file format, columns and roles, facets and epics, templates, archiving, and releases. |
+| [Stories](docs/stories.md) | You want the file format, the design-record layout for long stories, columns and roles, facets and epics, templates, archiving, and releases. |
 | [Git and CI](docs/git-and-ci.md) | You want commit trailers, reviewing what changed, the committed snapshot, hooks, the GitHub workflow, and the release flow. |
 | [Multiple projects](docs/multi-project.md) | You have more than one repository, or more than one checkout of one. |
 | [CLI reference](docs/cli.md) | You need the exact flags. Generated from the parser. |

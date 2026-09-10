@@ -51,6 +51,12 @@ unless asked, prefer `--json` when parsing.
   agent may be a different model. Dated notes with kinds turn a story file
   into a log a fresh session can resume from. `resume` reads exactly that log
   in the order that matters.
+- **Questions are how an agent asks without stopping.** `--kind question`
+  records something only you can decide; the agent carries on with whatever
+  does not depend on it. `skald context` lists every story waiting on you,
+  the board has a "Waiting on a human" filter, and `skald answer <id> "..."`
+  (or the Answer button in the story dialog) closes them with a decision
+  note the next session will read.
 - **Warnings, not walls.** An agent that hits a hard error stops or works
   around it in ways you did not intend. A warning plus a recorded decision
   keeps the agent moving and leaves you a trail to review.
@@ -122,6 +128,11 @@ again with a warning.
 
 Dependencies never resolve across branches: a blocker done on `feature/x`
 does not unblock anything on `main` until it merges.
+
+Work that must not run in parallel, as opposed to work that must run in
+order, gets a lane: tag the stories with the same `lane:` value and put
+`"facet_limits": {"lane": 1}` in `config.json`. `next` then hands out one
+at a time, across worktrees too. See [Stories](stories.md#lanes).
 
 ## Reading what an agent did
 

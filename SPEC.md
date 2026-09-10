@@ -147,6 +147,15 @@ the pointer when neither exists.
   `closed`. At least one column must be `done` or `closed`. `limit` is an
   optional positive integer. Several columns may share a role.
 - Unknown top-level keys are preserved.
+- `facet_limits` (optional): `{"<facet key>": N}`. At most N stories per
+  value of that key may be active at once, counting stories active here and
+  stories claimed on other branches or in other checkouts. `lane` is the
+  conventional key. Keys match the column-key pattern; values are positive
+  integers.
+- `init --columns default|lifecycle` chooses the initial set for a new
+  `config.json` (`COLUMN_PRESETS`); the lifecycle set is `idea` and `plan`
+  (both `backlog`), then `ready`, `in_progress`, `review`, `done`. An
+  existing `config.json` is never rewritten.
 
 **Role semantics:**
 
@@ -230,6 +239,12 @@ not a length limit, decides what `resume` prints. `sections_of` lists the
 prelude's H2 headings with line counts and `section_of` returns one by
 case-insensitive prefix; `resume --section NAME` and `--full` expose them,
 and the default output ends with a one-line map of the other sections.
+A note of kind `question` is open until a later note of kind `decision` on
+the same story (`open_questions`, deliberately coarse); `story_dict` carries
+`questions: {open}` (plus `items` when not compact), `context` lists every
+story with one under `waiting`, `resume` prints them after the decisions,
+`ls` shows `?N` in a `Q` column and `--questions` filters, and `answer` is
+`note --kind decision` with a count of what it closed.
 `## Acceptance` (or `## Acceptance criteria`) introduces a section whose
 task-list items are the acceptance criteria; `acceptance_progress` counts
 them and `update` warns when a story moves into a terminal column, or forward
@@ -253,6 +268,12 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
   references.
 - A story is stale when its role is `active` and `updated_at` is at least
   `stale_days` old.
+- `busy_lanes` counts, per limited facet key and value, the stories active
+  here or claimed elsewhere. `next` skips a ready story whose lane is at
+  its limit, with a warning naming the holders; `claim` and a move into an
+  active column warn the same way and proceed. Advisory, like column limits.
+- `update` warns when a story leaves a `backlog` column for a `ready` column
+  with an open question (section 4.3): that move is the human's gate.
 - `next` skips ready stories assigned to someone else unless the assignment
   is stale, in which case it offers them with a warning; it also skips
   stories that are active with a different assignee on any other local
@@ -345,9 +366,9 @@ story or configuration. Commands that print stories take `--json`.
 | --- | --- |
 | `init [--name N]` | Section 2.4. Prints what it did and the CLAUDE.md line. |
 | `status [--json]` | Name, path, branch, per-column counts, unknown-status count, ready-and-unblocked count, uncommitted files under `.skald/`. |
-| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
-| `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stale claims by others, claims on other branches, uncommitted files. |
-| `resume <id> [--json]` | Compact story plus requirements, dependency states, decision and blocker notes, latest handoff (else latest note), note count. |
+| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--questions] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED Q ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
+| `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stories waiting on a human (open questions, not filtered to the actor), stale claims by others, claims on other branches, uncommitted files. |
+| `resume <id> [--section NAME] [--full] [--json]` | Compact story plus requirements (section 4.3), the other sections' headings and sizes, dependency states, decision and blocker notes, open questions, latest handoff (else latest note), note count. |
 | `next [--as N] [--all-projects] [--compact]` | First ready, unblocked story available to the actor per section 4.4. Exit 1 and a stderr message if none. |
 | `show <id> [--branch REF]` | Raw file. `--json` adds derived fields, `body`, `body_sha256`. |
 | `branches [--json]` | Every local and remote branch with story count and diff counts against the working tree. |
@@ -357,6 +378,7 @@ story or configuration. Commands that print stories take `--json`.
 | `set <id> title=.. rank=N assignee=..` | Field edits. |
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
 | `note <id> "text"\|- [--as N] [--kind K]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. |
+| `answer <id> "text"\|- [--as N]` | `note --kind decision`; prints how many open questions it closed. |
 | `rm <id> [--force]` | Delete; refuses while other stories depend on it. |
 | `log <id>` | `git log --follow` on the file. |
 | `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |
@@ -369,7 +391,7 @@ story or configuration. Commands that print stories take `--json`.
 | `activity [--since REF] [--until REF] [--json]` | For each commit touching `.skald/` in the range, `diff_states(parent, commit)` rendered as events. Default range is 20 commits. |
 | `changelog --since REF [--until REF]` | Stories terminal at `until` that were absent or non-terminal at `since`, read from git objects. |
 | `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
-| `columns`, `templates`, `projects [rm NAME \| use [PATH]]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. `projects` lists each project's other checkouts beneath it with branch and dirty count; `use` makes a checkout the primary. |
+| `columns`, `templates`, `projects [rm NAME \| use [PATH]]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. `columns` prints facet limits beneath the table; `status` reports busy lanes (`lanes` in JSON). `projects` lists each project's other checkouts beneath it with branch and dirty count; `use` makes a checkout the primary. |
 | `hooks claude [--install] [--strict] [--as NAME]` | Prints or merges into `.claude/settings.json`: SessionStart `skald context` (`--as NAME` when given), never a full listing, because hook output is paid for on every session start; Stop `skald check` (or `skald check --hook` with `--strict`). |
 | `hooks git [--install]`, `hooks github [--install]` | Section 10b. `hooks claude --install` also writes `.claude/skills/skald/SKILL.md` from the contract template. |
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |

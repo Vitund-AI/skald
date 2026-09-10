@@ -81,6 +81,7 @@
   <span id="elsewhere" class="hidden text-xs rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-2 py-0.5 cursor-default"></span>
   <input id="search" type="search" placeholder="Filter (title, id, tag, assignee)  /" class="flex-1 min-w-[12rem] max-w-md rounded border border-strong px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
   <span id="facet-filters" class="flex items-center gap-2"></span>
+  <button id="waiting-btn" class="toggle hidden rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover" title="Only stories with an open question" aria-pressed="false">Waiting on a human</button>
   <select id="group-by" class="hidden rounded border border-strong px-2 py-1 text-xs" title="Group the board into swimlanes by a facet"></select>
   <button id="graph-btn" class="toggle rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover" title="Dependency graph (g)" aria-pressed="false">Graph</button>
   <span id="conn" class="text-xs text-faint"></span>
@@ -171,10 +172,15 @@
         <span id="m-dirty" class="text-xs text-amber-600 dark:text-amber-400"></span>
         <button id="m-delete" class="ml-auto rounded px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950">Delete</button>
       </div>
+      <div id="m-questions" class="hidden border-t border-line pt-4 text-sm">
+        <div class="text-amber-700 dark:text-amber-300 font-medium mb-1">Waiting on a human</div>
+        <ul id="m-questions-list" class="grid gap-1 text-sm"></ul>
+      </div>
       <div id="m-note-wrap" class="grid gap-2 border-t border-line pt-4 text-sm">
         <span class="text-muted">Add a note</span>
         <textarea id="m-note" rows="3" class="rounded border border-strong px-2 py-1.5 text-sm" placeholder="Appended to the bottom of the story with a timestamp and your name"></textarea>
-        <div><button id="m-note-btn" class="rounded border border-strong px-3 py-1.5 text-sm hover:bg-hover">Append note</button></div>
+        <div class="flex gap-2"><button id="m-note-btn" class="rounded border border-strong px-3 py-1.5 text-sm hover:bg-hover">Append note</button>
+          <button id="m-answer-btn" class="hidden rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700" title="Append the text as a decision note, which answers the open questions">Answer</button></div>
       </div>
     </div>
 
@@ -217,6 +223,7 @@
         <div><span class="inline-block w-1 h-3 bg-red-500 align-middle mr-1"></span> Red edge: blocked by an unmet dependency</div>
         <div><span class="inline-block w-1 h-3 bg-amber-400 align-middle mr-1"></span> Amber edge: stale, no update for a while</div>
         <div><span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5">also x@branch</span> Claimed by someone on another branch or in another checkout</div>
+        <div><span class="text-[10px] rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-1.5">? 2</span> Open questions, waiting on a human; the modal lists them and Answer closes them with a decision note</div>
         <div><span class="inline-block h-1.5 w-8 rounded bg-slate-300 dark:bg-slate-600 overflow-hidden align-middle"><span class="block h-full w-1/2 bg-emerald-500"></span></span> Acceptance checklist progress</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Header</div>
         <div><b>Branch</b> shows a read-only view of the backlog on another branch, or another checkout of this project (a worktree or clone): its working tree, editable, uncommitted changes included</div>
@@ -263,7 +270,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false,
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false,
     lastWrite: 0, help: false, helpCli: null,
     sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
   };
@@ -490,7 +497,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   }
 
   // ---- Board -----------------------------------------------------------
+  const openQuestions = (story) => (story.questions && story.questions.open) || 0;
   function matches(story) {
+    if (state.waitingOnly && !openQuestions(story)) return false;
     for (const [k, v] of Object.entries(state.facetFilters)) {
       if (v && !story.tags.includes(`${k}:${v}`)) return false;
     }
@@ -541,11 +550,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const claims = (state.branches && state.branches.claims && state.branches.claims[story.id]) || [];
     const other = claims.filter(c => c.assignee !== story.assignee);
     const claimBadge = other.length ? `<span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5" title="${esc(other.map(c => `${c.assignee} on ${c.branch} (${c.status})`).join('\n'))}">also ${esc(other[0].assignee)}@${esc(other[0].branch)}</span>` : '';
+    const nq = openQuestions(story);
+    const qBadge = nq ? `<span class="text-[10px] rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-1.5" title="Waiting on a human: ${nq} open question(s)">? ${nq}</span>` : '';
     el.innerHTML = `
       <div class="flex items-start gap-1.5">${mark}
         <div class="text-sm font-medium leading-snug flex-1">${esc(story.title)}</div>${lock}
       </div>
-      <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}${claimBadge}</div>
+      <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}${qBadge}${claimBadge}</div>
       <div class="mt-1.5 flex justify-between gap-2 text-[11px] text-faint font-mono">
         <span>${story.id}</span>${who}<span class="font-sans ml-auto">${ago(story.updated_at)}</span>
       </div>`;
@@ -699,8 +710,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       for (const g of groups) {
         const lane = document.createElement('section');
         const pct = g.meta && g.meta.total ? Math.round(100 * g.meta.done / g.meta.total) : null;
+        // A limited facet is a lane: at most N of its stories may be active at once. Like a column limit, red when full.
+        const limit = g.meta ? (state.facetLimits || {})[key] : null;
+        const activeCols = new Set(state.columns.filter(c => c.role === 'active').map(c => c.key));
+        const active = limit ? g.stories.filter(s => activeCols.has(s.status)).length : 0;
+        const laneTag = limit ? `<span class="text-xs font-normal ${active >= limit ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-muted'}" title="Lane: at most ${limit} active at once">${active}/${limit} active</span>` : '';
         lane.innerHTML = `<div class="flex items-center gap-3 mb-2 text-sm font-semibold text-muted">${esc(g.label)}
-          ${pct === null ? '' : `<span class="inline-block h-1.5 w-24 rounded bg-chip overflow-hidden"><span class="block h-full bg-emerald-500" style="width:${pct}%"></span></span><span class="text-xs font-normal text-muted">${g.meta.done}/${g.meta.total}</span>`}</div>`;
+          ${pct === null ? '' : `<span class="inline-block h-1.5 w-24 rounded bg-chip overflow-hidden"><span class="block h-full bg-emerald-500" style="width:${pct}%"></span></span><span class="text-xs font-normal text-muted">${g.meta.done}/${g.meta.total}</span>`}${laneTag}</div>`;
         const row = document.createElement('div');
         row.className = 'flex flex-col sm:flex-row gap-3 overflow-x-auto';
         renderColumns(row, g.stories);
@@ -973,6 +989,10 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.modal = s.id; state.loaded = s;
       $('m-id').textContent = `${s.project}:${s.id}  ${s.filename}`;
       $('m-meta').textContent = `created ${s.created_at} · updated ${s.updated_at}${s.archived ? ' · archived' : ''}`;
+      const qs = (s.questions && s.questions.items) || [];
+      $('m-questions').classList.toggle('hidden', !qs.length);
+      $('m-answer-btn').classList.toggle('hidden', !qs.length || state.readonly);
+      $('m-questions-list').innerHTML = qs.map(q => `<li class="rounded bg-amber-50 dark:bg-amber-950 px-2 py-1"><span class="text-muted text-xs">${esc(q.stamp)} · ${esc(q.author)}</span><br>${esc(q.text)}</li>`).join('');
       $('m-title').value = s.title; $('m-status').value = s.status; $('m-assignee').value = s.assignee || '';
       $('m-tags').value = s.tags.join(', '); $('m-blockers').value = s.blocked_by.join(', ');
       $('m-body').value = s.body; $('m-dirty').textContent = '';
@@ -1032,12 +1052,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       await openModal(s.id);
     } catch (err) { toast(err.message, 'error'); }
   }
-  async function addNote() {
+  async function addNote(kind) {
     const text = $('m-note').value.trim();
     if (!text || state.modal === 'new') return;
     try {
-      await api('POST', `${P()}/stories/${state.modal}/notes`, { text });
+      await api('POST', `${P()}/stories/${state.modal}/notes`, kind ? { text, kind } : { text });
       $('m-note').value = '';
+      if (kind === 'decision') toast('Answered');
       await openModal(state.modal);
     } catch (err) { toast(err.message, 'error'); }
   }
@@ -1110,8 +1131,12 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.columns = data.columns; state.stories = data.stories; state.settings = data.settings;
       state.identity = data.identity; state.git = data.git; state.version = data.version;
       state.facets = data.facets || {};
+      state.facetLimits = data.facet_limits || {};
       if (prevHead && data.git.head && data.git.head !== prevHead && Date.now() - state.lastWrite > 3000) toast(`New commit ${data.git.head} on ${data.git.branch}`, 'info');
       renderFacetControls();
+      const waiting = state.stories.filter(openQuestions).length;
+      $('waiting-btn').classList.toggle('hidden', !waiting && !state.waitingOnly);
+      $('waiting-btn').textContent = waiting ? `Waiting on a human (${waiting})` : 'Waiting on a human';
       const co = $('co-banner');
       if (!state.ref && data.checkout && !data.checkout.primary) {
         co.textContent = `Working tree at ${data.checkout.path.replace(/[\\/]\.skald$/, '')} on ${data.git.branch || 'HEAD'}. Edits and commits go there.`;
@@ -1145,6 +1170,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('project').addEventListener('change', (e) => switchProject(e.target.value));
   $('branch').addEventListener('change', (e) => { const v = e.target.value; if (v.startsWith('co:')) setCheckout(v.slice(3)); else setRef(v); describeBranchChoice(); });
   $('group-by').addEventListener('change', (e) => { state.groupBy = e.target.value; render(); });
+  $('waiting-btn').addEventListener('click', () => { state.waitingOnly = !state.waitingOnly; $('waiting-btn').setAttribute('aria-pressed', String(state.waitingOnly)); render(); });
   $('graph-btn').addEventListener('click', () => setGraph(!state.graph));
   setInterval(() => { if (document.visibilityState === 'visible' && !state.modal) loadBranches(); }, 30000);
   $('search').addEventListener('input', (e) => { state.filter = e.target.value.trim().toLowerCase(); render(); });
@@ -1156,7 +1182,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('m-close').addEventListener('click', hideModal);
   $('m-save').addEventListener('click', saveModal);
   $('m-reload').addEventListener('click', () => state.modal && state.modal !== 'new' && openModal(state.modal));
-  $('m-note-btn').addEventListener('click', addNote);
+  $('m-note-btn').addEventListener('click', () => addNote());
+  $('m-answer-btn').addEventListener('click', () => addNote('decision'));
   $('m-claim').addEventListener('click', claimStory);
   $('m-delete').addEventListener('click', deleteStory);
   $('m-preview-btn').addEventListener('click', () => {

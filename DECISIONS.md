@@ -422,3 +422,47 @@ agent pays for a section only when it asks. Bodies without the heading are
 unchanged, so nothing existing prints differently unless its author put
 the heading there on purpose. `release` reads the changelog section from
 the prelude, not the requirements, so it is unaffected.
+
+### D54. A question is a note, not a section, and any later decision closes it
+Design records carried a section of open questions for the owner,
+invisible until an agent reread the record, and answered by hand with
+strikethrough. A section has no date, no author, and no way to be
+answered by something with a date and an author, which is why the
+strikethrough convention grew. A note has all three, so a question is
+`note --kind question` and an answer is `note --kind decision`; nothing
+new in the file format. The closing rule is coarse on purpose: one dated
+decision after the question closes every question before it, whatever it
+says. A decision that names the question it answers is a refinement to
+build only if the coarse rule proves noisy. "Waiting on a human" is
+derived from that, never a column, because it is a condition that can
+hold at any stage; a column would lose where the story was.
+
+### D55. The lifecycle is two backlog columns, and waiting is not one of them
+A full lifecycle from idea through plan and discussion to execution needs
+no new role: two columns with the `backlog` role before `ready` are the
+whole gate, because "not in ready means not schedulable" is already the
+rule `next` follows. A `plan` role or a `design` role would have added a
+concept for a distinction the roles already make. The one thing the
+lifecycle needed from the code is a warning on the move that matters,
+backlog to ready with an open question, which is the human's gate in the
+same sense that acceptance is the gate to done. "Waiting on a human" was
+proposed as a column between plan and ready and rejected: it is a
+condition that can hold in plan, in progress, or in review, and a column
+can hold only one state, so moving a story there loses where it was and
+moving it back is a step someone forgets. The question badge and filter
+show the same set without the loss. The preset is opt-in at `init`; the
+default set is unchanged so nothing existing moves.
+
+### D56. Mutual exclusion is a facet limit, not a new relation
+Four stories that each rewrote one migration file had no order between
+them, so `blocked_by` could not say "not at the same time", and running
+them in parallel worktrees produced an enum that silently went missing
+rather than a merge conflict anyone would notice. The only tool was a
+note saying "serial". The constraint is about concurrency of a resource,
+and facets already name resources, so a lane is a facet key with a limit
+in `config.json`, and the rule is the one column limits already follow:
+`next` skips, `claim` and `move` warn, nothing refuses. Counting claims on
+other branches and in other checkouts is what makes it hold across
+agents, and that knowledge already existed for claims. A new relation or
+a new field would have needed its own syntax, validation, and rendering
+for something a tag and one config key express.

@@ -21,7 +21,7 @@ NOTE_KINDS = ["handoff", "decision", "blocker", "result", "progress"]
 SET_KEYS = {"title=": "new title", "rank=": "position in the column", "assignee=": "who owns it (empty to clear)"}
 CONFIG_KEYS = {"author": "name for notes and claims from the board", "push": "push after committing from the board",
                "port": "board server port", "host": "board server host", "stale_days": "days before an active story is stale"}
-ID_COMMANDS = {"show", "move", "claim", "set", "tag", "block", "note", "rm", "log", "resume", "commits", "archive", "unarchive"}
+ID_COMMANDS = {"show", "move", "claim", "set", "tag", "block", "note", "answer", "rm", "log", "resume", "commits", "archive", "unarchive"}
 FLAG_SOURCES = {
     "-p": "projects", "--project": "projects", "--status": "columns", "--template": "templates",
     "--branch": "refs", "--since": "refs", "--until": "refs", "--as": "authors", "--assignee": "authors",

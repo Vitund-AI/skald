@@ -26,6 +26,20 @@ DEFAULT_COLUMNS = [
     {"key": "done", "label": "Done", "role": "done"},
 ]
 
+# The lifecycle set: two backlog-role columns before ready, so a story is captured (idea), then
+# designed (plan), and only becomes schedulable when a person moves it to ready. Waiting on a human
+# is a condition, not a stage, so it is a derived flag (open questions) rather than a column.
+LIFECYCLE_COLUMNS = [
+    {"key": "idea", "label": "Idea", "role": "backlog"},
+    {"key": "plan", "label": "Plan", "role": "backlog"},
+    {"key": "ready", "label": "Ready", "role": "ready"},
+    {"key": "in_progress", "label": "In progress", "role": "active"},
+    {"key": "review", "label": "Review", "role": "active"},
+    {"key": "done", "label": "Done", "role": "done"},
+]
+
+COLUMN_PRESETS = {"default": DEFAULT_COLUMNS, "lifecycle": LIFECYCLE_COLUMNS}
+
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 
@@ -62,6 +76,7 @@ class ProjectConfig:
         self.columns = columns or [Column(**c) for c in DEFAULT_COLUMNS]
         self.extra = dict(extra or {})
         self._validate_columns()
+        self.facet_limits = self._parse_facet_limits(self.extra.get("facet_limits"))
 
     # -- construction ----------------------------------------------------
 
@@ -130,6 +145,22 @@ class ProjectConfig:
         atomic_write(path, json.dumps(self.to_dict(), indent=2) + "\n")
 
     # -- queries ---------------------------------------------------------
+
+    @staticmethod
+    def _parse_facet_limits(raw) -> dict[str, int]:
+        """``facet_limits``: at most N stories per value of a facet key may be active at once (a lane)."""
+        if raw is None:
+            return {}
+        if not isinstance(raw, dict):
+            raise ConfigError("'facet_limits' must be an object of facet key to positive integer")
+        out: dict[str, int] = {}
+        for key, value in raw.items():
+            if not isinstance(key, str) or not KEY_RE.match(key):
+                raise ConfigError(f"facet_limits: key must match {KEY_RE.pattern} (got {key!r})")
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ConfigError(f"facet_limits[{key!r}] must be a positive integer")
+            out[key] = value
+        return out
 
     def _validate_columns(self) -> None:
         seen = set()
