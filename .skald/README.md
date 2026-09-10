@@ -1,7 +1,7 @@
-<!-- skald-render 166ea8e99253c995 -->
+<!-- skald-render 628de4ea98256597 -->
 # skald backlog
 
-**34 open** · Backlog 1 · Ready 1 · In progress 0 · Review 32 · Done 15
+**35 open** · Backlog 1 · Ready 1 · In progress 0 · Review 33 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (32)
+## Review (33)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -73,6 +73,7 @@ _none_
 | [b2f19e](stories/b2f19e-render-workflow-commits-as-github-actions-bot-not.md) | Render workflow commits as github-actions[bot], not a real user's noreply address | `git` `packaging` | claude |  | 2/2 |
 | [8c4d2c](stories/8c4d2c-checkouts-see-every-worktree-s-working-tree-on-the.md) | Checkouts: see every worktree's working tree on the board, claims visible before commit | `agents` `core` `ui` | claude |  | 6/6 |
 | [43641e](stories/43641e-branch-dropdown-say-worktree-or-clone-on-working-t.md) | Branch dropdown: say worktree or clone on working-tree entries, mark branches that have one as committed only | `ui` | claude |  | 3/3 |
+| [b1ef9b](stories/b1ef9b-docs-sweep-for-checkouts-readme-bullets-and-index.md) | Docs sweep for checkouts: README bullets and index rows, agent contract, Help panel legend, git-and-ci | `docs` | claude |  | 4/4 |
 
 <details><summary><strong>Done (15)</strong></summary>
 

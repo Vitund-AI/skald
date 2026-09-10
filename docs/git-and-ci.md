@@ -52,7 +52,10 @@ skald show a3f9c2 --branch origin/main
 ```
 
 Skald reads `.skald/` from any branch straight from git objects without
-touching your working tree. The board has the same view in its branch
+touching your working tree, so these views show committed state only; for
+the uncommitted state of another worktree, the board's working-tree
+entries are the tool (see [The board](board.md#working-trees-and-branches)).
+The board has the same view in its branch
 dropdown. Dependencies never resolve across branches.
 
 ## The committed snapshot
