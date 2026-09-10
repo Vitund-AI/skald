@@ -264,6 +264,20 @@ def commits_for(repo: Path, story_id: str, limit: int = 50, all_branches: bool =
     return out
 
 
+def commits_for_family(repo: Path, story_id: str, child_ids: list[str], limit: int = 50, all_branches: bool = False) -> list[dict]:
+    """Commits referencing a story or any of its children, newest first, each tagged with the story it names."""
+    out: list[dict] = []
+    seen: set = set()
+    for sid in [story_id, *child_ids]:
+        for e in commits_for(repo, sid, limit=limit, all_branches=all_branches):
+            if e["sha"] in seen:
+                continue
+            seen.add(e["sha"])
+            out.append({**e, "story": sid})
+    out.sort(key=lambda e: e["date"], reverse=True)
+    return out
+
+
 def commits_touching(repo: Path, since: Optional[str], until: str, subpath: str, limit: int = 200) -> list[dict]:
     """Commits in ``since..until`` (or up to ``until``) that touch ``subpath``, oldest first."""
     rng = f"{since}..{until}" if since else until

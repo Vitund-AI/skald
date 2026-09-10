@@ -62,7 +62,9 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Filter** matches title, id, tag, or assignee. `/` focuses it.
 - **Facet filters and swimlanes** appear when stories carry `key:value`
   tags. One dropdown per key filters; "swimlanes by" splits the board into
-  one lane per value with a progress bar per lane.
+  one lane per value with a progress bar per lane. When any story has a
+  parent, "swimlanes by parent" gives one lane per parent, titled, with its
+  children's progress.
 - **Waiting on a human** appears when any story has an open question and
   filters the board to those stories; the count is in the label.
 - **Graph** (`g`) draws the dependency graph.
@@ -92,6 +94,8 @@ Markers:
   `stale_days`.
 - **"also name@branch"**: the story is claimed by someone else on another
   branch.
+- **"1/3 children" with a blue bar**: a parent story, with its children
+  done over total. The dialog lists them.
 - **"? N" in amber**: N open questions, waiting on a human. The dialog lists
   them, and its Answer button appends your text as a decision note, which
   closes them.
@@ -101,9 +105,13 @@ reaches cards and Enter opens them. Clicking a card opens it.
 
 ## The story dialog
 
-Title, status, assignee, tags, and blockers are editable fields. Dependency
-chips below them show each blocker's state and open it on click, switching
-project if it lives elsewhere. The body is Markdown with a Preview toggle;
+Title, status, assignee, tags, blockers, and parent are editable fields.
+Dependency chips below them show each blocker's state and open it on click,
+switching project if it lives elsewhere. A parent shows as a chip that opens
+it; a parent's children are listed with their state, struck through when
+done, and "+ child" opens a new story with this one already set as its
+parent. The History tab on a parent includes commits that reference its
+children, each tagged with the child's id. The body is Markdown with a Preview toggle;
 Save writes it back and refuses with a message if the file changed on disk
 while you were editing, so nothing is silently overwritten. Add a note
 appends a dated note under your identity. Claim assigns the story to you and

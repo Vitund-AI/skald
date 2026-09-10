@@ -278,7 +278,8 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
   its limit, with a warning naming the holders; `claim` and a move into an
   active column warn the same way and proceed. Advisory, like column limits.
 - `children(id)` are the stories whose `parent` is `id`; `story_dict` carries
-  `children: {total, done}` on a parent. `new --parent` copies the parent's
+  `children: {total, done}` on a parent; the single-story API adds
+  `children` (id, title, status, done) and `parent_story`. `new --parent` copies the parent's
   facet tags unless `--no-inherit`. `check` reports a dangling parent, a
   self-parent, and a parent cycle as problems. `rm` refuses while children
   exist. Moving a parent into a terminal column with a non-terminal child
@@ -400,11 +401,11 @@ story or configuration. Commands that print stories take `--json`.
 | `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
-| `commits <id> [--all-branches] [--json]` | `git log --grep` for the trailer or `[id]`. |
+| `commits <id> [--all-branches] [--no-children] [--json]` | `git log --grep` for the trailer or `[id]`, plus the same for each child, de-duplicated, newest first, each entry tagged with the story it names (`commits_for_family`). |
 | `diff --since REF [--until REF] [--markdown] [--json]` | `diff_states` between two snapshots (or the working tree): added, removed, and changed stories with field deltas, notes added, body edits. Markdown output starts with `<!-- skald-diff -->` for comment upserts. |
 | `activity [--since REF] [--until REF] [--json]` | For each commit touching `.skald/` in the range, `diff_states(parent, commit)` rendered as events. Default range is 20 commits. |
 | `changelog --since REF [--until REF]` | Stories terminal at `until` that were absent or non-terminal at `since`, read from git objects. |
-| `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
+| `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. `epics` also lists structural parents under key `parent`, titled, with children counts. |
 | `columns`, `templates`, `projects [rm NAME \| use [PATH]]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. `columns` prints facet limits beneath the table; `status` reports busy lanes (`lanes` in JSON). `projects` lists each project's other checkouts beneath it with branch and dirty count; `use` makes a checkout the primary. |
 | `hooks claude [--install] [--strict] [--as NAME]` | Prints or merges into `.claude/settings.json`: SessionStart `skald context` (`--as NAME` when given), never a full listing, because hook output is paid for on every session start; Stop `skald check` (or `skald check --hook` with `--strict`). |
 | `hooks git [--install]`, `hooks github [--install]` | Section 10b. `hooks claude --install` also writes `.claude/skills/skald/SKILL.md` from the contract template. |
@@ -473,7 +474,11 @@ name (with its parent when two share a name), branch, `primary`, and dirty
 count, so the closed control cannot read as a branch; a read-only branch
 that a working tree is on is suffixed `committed only`, and the control's
 tooltip describes the current choice;
-choosing one shows and edits that working tree (every request carries
+A parent card shows children done over total; the dialog has a Parent
+field, a chip for the parent, chips for the children, and a "+ child"
+button that opens a new story with the parent set; the History tab unions
+the children's commits; "swimlanes by parent" is offered when any story
+has one. Choosing a checkout shows and edits that working tree (every request carries
 `?checkout=ID`, including the event stream, and the id is kept in the URL),
 with a banner naming the path when it is not the primary.
 Modal: title, status, assignee, tags, blockers, dependency chips that open

@@ -499,3 +499,17 @@ resolves. `format` stays at 1: unknown fields are preserved, so an older
 tool reads a story with a parent and simply does not know what it means.
 The board, the `epics` merge, and the union of children's commits are a
 second story, once children exist in practice.
+
+### D59. Children on the board are chips in the dialog and lanes, not nested cards
+With a `parent` field the board had to show the family somewhere. Nesting
+child cards inside the parent's card was rejected: a card is a drag
+target and a column is a list, and a card that contains a list breaks
+both, besides needing every column to know about every other. Instead a
+parent card carries one number, children done over total, the dialog
+lists the children as chips that open them and has a "+ child" button,
+and "swimlanes by parent" gives a lane per parent when you want the
+overview. That reuses the three things the board already had (a progress
+bar, a chip, a lane) and leaves drag and columns untouched. The History
+tab unions the children's commits for the same reason `commits` does on
+the CLI: the hand-kept table of pieces and hashes is the thing this
+replaces.

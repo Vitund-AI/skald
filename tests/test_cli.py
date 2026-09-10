@@ -613,6 +613,34 @@ class TestAgentOrientation(SkaldTestCase):
         code, out, err = self.run_cli("move", epic, "done")
         self.assertIn("child(ren) still open", err)
 
+    def test_parents_epics_merge_and_commits_union(self):
+        epic = self.new("Auth overhaul", "--tags", "epic:auth")
+        a = self.new("Login form", "--parent", epic, "--status", "done")
+        b = self.new("Session cookie", "--parent", epic)
+        loose = self.new("Loose", "--tags", "epic:auth")
+        code, out, _ = self.run_cli("epics")
+        self.assertIn("parent", out)
+        self.assertIn(f"{epic}  Auth overhaul", out)
+        code, out, _ = self.run_cli("epics", "--json")
+        d = json.loads(out)
+        self.assertEqual(d["parent"][epic]["total"], 2)
+        self.assertEqual(d["parent"][epic]["done"], 1)
+        self.assertEqual(d["parent"][epic]["title"], "Auth overhaul")
+        self.assertEqual(d["epic"]["auth"]["total"], 4)  # the tag: the epic itself, the two children that inherited it, and loose
+        # Commits referencing children show on the parent, tagged, unless --no-children.
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", f"child work\n\nSkald-Story: {a}")
+        (self.repo / "f.txt").write_text("x")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", f"parent work\n\nSkald-Story: {epic}")
+        code, out, _ = self.run_cli("commits", epic, "--json")
+        entries = json.loads(out)
+        self.assertEqual(sorted(e["story"] for e in entries), sorted([epic, a]))
+        code, out, _ = self.run_cli("commits", epic)
+        self.assertIn(f"[{a}]", out)
+        code, out, _ = self.run_cli("commits", epic, "--no-children", "--json")
+        self.assertEqual([e["story"] for e in json.loads(out)], [epic])
+
     def test_lanes_in_columns_status_and_board_payload(self):
         cfg_path = self.skald_dir / "config.json"
         data = json.loads(cfg_path.read_text())

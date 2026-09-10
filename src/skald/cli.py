@@ -345,6 +345,7 @@ def build_parser() -> argparse.ArgumentParser:
     cmts = sub.add_parser("commits", help="commits that reference a story (Skald-Story trailer or [id])")
     cmts.add_argument("id", help="story id or unique prefix")
     cmts.add_argument("--all-branches", action="store_true", help="search every branch, not just the current one")
+    cmts.add_argument("--no-children", action="store_true", help="on a parent, do not include commits that reference its children")
     cmts.add_argument("--json", action="store_true", help="print JSON")
 
     df = sub.add_parser("diff", help="backlog changes between two git refs")
@@ -1089,7 +1090,8 @@ def cmd_commits(store: Store, args) -> int:
     repo = _repo_of(store)
     if repo is None:
         raise GitError(f"{store.dir} is not inside a git repository")
-    entries = gitutil.commits_for(repo, story.id, all_branches=args.all_branches)
+    kids = [] if getattr(args, "no_children", False) else [k.id for k in store.children(story.id)]
+    entries = gitutil.commits_for_family(repo, story.id, kids, all_branches=args.all_branches)
     if args.json:
         print(json.dumps(entries, indent=2))
         return 0
@@ -1097,7 +1099,8 @@ def cmd_commits(store: Store, args) -> int:
         print(f"no commits reference {story.id} (add a '{gitutil.TRAILER}: {story.id}' trailer or [{story.id}] to commit messages)")
         return 0
     for e in entries:
-        print(f"{e['sha']}  {e['date'][:16].replace('T', ' ')}  {e['author']:<20}  {e['subject']}")
+        via = f"  [{e['story']}]" if e.get("story") != story.id else ""
+        print(f"{e['sha']}  {e['date'][:16].replace('T', ' ')}  {e['author']:<20}  {e['subject']}{via}")
     return 0
 
 
@@ -1436,18 +1439,37 @@ def cmd_facets(ws: Workspace, store: Optional[Store], args, key: Optional[str]) 
                 m["done"] += b["done"]
                 m["open"] += b["open"]
                 m["ids"].extend(f"{st.name}:{i}" if args.all_projects else i for i in b["ids"])
+    if key == "epic":
+        # Structural epics too: a parent with children counts as one, keyed by its id and titled.
+        for st in stores:
+            stories, _ = st.load_all(include_archived=True)
+            by_parent: dict = {}
+            for s in stories:
+                if s.parent:
+                    by_parent.setdefault(s.parent, []).append(s)
+            for pid, kids in by_parent.items():
+                p = next((s for s in stories if s.id == pid), None)
+                label = f"{st.name}:{pid}" if args.all_projects else pid
+                m = merged.setdefault("parent", {}).setdefault(label, {"total": 0, "done": 0, "open": 0, "ids": [],
+                                                                      "title": p.title if p else "(missing)"})
+                for k in kids:
+                    m["total"] += 1
+                    m["done" if st.config.is_terminal(k.status) else "open"] += 1
+                    m["ids"].append(f"{st.name}:{k.id}" if args.all_projects else k.id)
     if args.json:
         print(json.dumps(merged, indent=2))
         return 0
     if not merged:
-        print(f"no {key + ' ' if key else ''}facet tags; tag stories like {key or 'epic'}:name to create one")
+        print(f"no {key + ' ' if key else ''}facet tags; tag stories like {key or 'epic'}:name to create one"
+              + (", or give stories a parent" if key == "epic" else ""))
         return 0
     rows = []
     for k in sorted(merged):
         for v in sorted(merged[k]):
             b = merged[k][v]
             pct = int(round(100 * b["done"] / b["total"])) if b["total"] else 0
-            rows.append([k, v, str(b["total"]), str(b["done"]), str(b["open"]), f"{pct}%"])
+            label = f"{v}  {b['title']}" if k == "parent" and b.get("title") else v
+            rows.append([k, label, str(b["total"]), str(b["done"]), str(b["open"]), f"{pct}%"])
     _print_table(rows, ["KEY", "VALUE", "TOTAL", "DONE", "OPEN", "PROGRESS"])
     return 0
 
