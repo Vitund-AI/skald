@@ -157,6 +157,14 @@
           <input id="m-blockers" class="min-w-0 w-full rounded border border-strong px-2 py-1.5 font-mono" placeholder="id, project:id"></label>
       </div>
       <div id="m-deps" class="text-xs hidden flex flex-wrap gap-2"></div>
+      <div class="grid sm:grid-cols-[auto_1fr] gap-x-4 gap-y-1 items-start text-sm">
+        <label class="grid gap-1 min-w-0"><span class="text-muted">Parent</span>
+          <input id="m-parent" class="min-w-0 w-32 rounded border border-strong px-2 py-1.5 font-mono" placeholder="id" title="This story is one piece of the parent; empty for none"></label>
+        <div id="m-family" class="hidden grid gap-1 min-w-0 self-end">
+          <div id="m-parent-chip" class="text-xs"></div>
+          <div id="m-children" class="flex flex-wrap gap-1 text-xs"></div>
+        </div>
+      </div>
       <div class="grid gap-1 text-sm">
         <div class="flex items-center gap-3">
           <span class="text-muted">Body (Markdown)</span>
@@ -224,6 +232,7 @@
         <div><span class="inline-block w-1 h-3 bg-amber-400 align-middle mr-1"></span> Amber edge: stale, no update for a while</div>
         <div><span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5">also x@branch</span> Claimed by someone on another branch or in another checkout</div>
         <div><span class="text-[10px] rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-1.5">? 2</span> Open questions, waiting on a human; the modal lists them and Answer closes them with a decision note</div>
+        <div><span class="inline-block h-1.5 w-8 rounded bg-slate-300 dark:bg-slate-600 overflow-hidden align-middle"><span class="block h-full w-1/3 bg-sky-500"></span></span> Children done over total, on a parent story; the dialog lists them and can add one</div>
         <div><span class="inline-block h-1.5 w-8 rounded bg-slate-300 dark:bg-slate-600 overflow-hidden align-middle"><span class="block h-full w-1/2 bg-emerald-500"></span></span> Acceptance checklist progress</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Header</div>
         <div><b>Branch</b> shows a read-only view of the backlog on another branch, or another checkout of this project (a worktree or clone): its working tree, editable, uncommitted changes included</div>
@@ -522,9 +531,11 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.facetFilters[sel.dataset.facet] = e.target.value; render();
     }));
     const gb = $('group-by');
-    if (!keys.length) { gb.classList.add('hidden'); state.groupBy = ''; return; }
-    gb.innerHTML = `<option value="">no swimlanes</option>` + keys.map(k => `<option value="${esc(k)}" ${state.groupBy === k ? 'selected' : ''}>swimlanes by ${esc(k)}</option>`).join('');
-    if (!keys.includes(state.groupBy)) state.groupBy = '';
+    const hasParents = state.stories.some(s => s.parent);
+    if (!keys.length && !hasParents) { gb.classList.add('hidden'); state.groupBy = ''; return; }
+    gb.innerHTML = `<option value="">no swimlanes</option>` + keys.map(k => `<option value="${esc(k)}" ${state.groupBy === k ? 'selected' : ''}>swimlanes by ${esc(k)}</option>`).join('')
+      + (hasParents ? `<option value="__parent__" ${state.groupBy === '__parent__' ? 'selected' : ''}>swimlanes by parent</option>` : '');
+    if (!keys.includes(state.groupBy) && !(state.groupBy === '__parent__' && hasParents)) state.groupBy = '';
     gb.classList.remove('hidden');
   }
   function depTitle(story) {
@@ -550,13 +561,15 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const claims = (state.branches && state.branches.claims && state.branches.claims[story.id]) || [];
     const other = claims.filter(c => c.assignee !== story.assignee);
     const claimBadge = other.length ? `<span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5" title="${esc(other.map(c => `${c.assignee} on ${c.branch} (${c.status})`).join('\n'))}">also ${esc(other[0].assignee)}@${esc(other[0].branch)}</span>` : '';
+    const kids = story.children && story.children.total ? `<span class="text-[11px] text-muted" title="Children done/total">${story.children.done}/${story.children.total} children</span>
+      <span class="inline-block h-1.5 w-12 rounded bg-chip overflow-hidden align-middle"><span class="block h-full bg-sky-500" style="width:${Math.round(100 * story.children.done / story.children.total)}%"></span></span>` : '';
     const nq = openQuestions(story);
     const qBadge = nq ? `<span class="text-[10px] rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-1.5" title="Waiting on a human: ${nq} open question(s)">? ${nq}</span>` : '';
     el.innerHTML = `
       <div class="flex items-start gap-1.5">${mark}
         <div class="text-sm font-medium leading-snug flex-1">${esc(story.title)}</div>${lock}
       </div>
-      <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}${qBadge}${claimBadge}</div>
+      <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}${kids}${qBadge}${claimBadge}</div>
       <div class="mt-1.5 flex justify-between gap-2 text-[11px] text-faint font-mono">
         <span>${story.id}</span>${who}<span class="font-sans ml-auto">${ago(story.updated_at)}</span>
       </div>`;
@@ -703,15 +716,28 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (state.groupBy) {
       board.classList.remove('flex', 'flex-col', 'sm:flex-row'); board.classList.add('grid', 'gap-4', 'content-start');
       const key = state.groupBy;
-      const values = Object.keys(state.facets[key] || {});
-      const groups = values.map(v => ({ label: `${key}:${v}`, stories: state.stories.filter(s => facetOf(s, key) === v), meta: state.facets[key][v] }));
-      const rest = state.stories.filter(s => facetOf(s, key) === null);
-      if (rest.length) groups.push({ label: `no ${key}`, stories: rest, meta: null });
+      let groups, rest;
+      if (key === '__parent__') {
+        // One lane per parent, titled; the parent's own progress is its children done over total.
+        const parents = [...new Set(state.stories.filter(s => s.parent).map(s => s.parent))];
+        groups = parents.map(pid => {
+          const p = state.stories.find(s => s.id === pid);
+          const kids = state.stories.filter(s => s.parent === pid);
+          return { label: `${pid}  ${p ? p.title : ''}`, stories: kids, meta: { total: kids.length, done: (p && p.children) ? p.children.done : 0 } };
+        });
+        rest = state.stories.filter(s => !s.parent);
+        if (rest.length) groups.push({ label: 'no parent', stories: rest, meta: null });
+      } else {
+        const values = Object.keys(state.facets[key] || {});
+        groups = values.map(v => ({ label: `${key}:${v}`, stories: state.stories.filter(s => facetOf(s, key) === v), meta: state.facets[key][v] }));
+        rest = state.stories.filter(s => facetOf(s, key) === null);
+        if (rest.length) groups.push({ label: `no ${key}`, stories: rest, meta: null });
+      }
       for (const g of groups) {
         const lane = document.createElement('section');
         const pct = g.meta && g.meta.total ? Math.round(100 * g.meta.done / g.meta.total) : null;
         // A limited facet is a lane: at most N of its stories may be active at once. Like a column limit, red when full.
-        const limit = g.meta ? (state.facetLimits || {})[key] : null;
+        const limit = g.meta && key !== '__parent__' ? (state.facetLimits || {})[key] : null;
         const activeCols = new Set(state.columns.filter(c => c.role === 'active').map(c => c.key));
         const active = limit ? g.stories.filter(s => activeCols.has(s.status)).length : 0;
         const laneTag = limit ? `<span class="text-xs font-normal ${active >= limit ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-muted'}" title="Lane: at most ${limit} active at once">${active}/${limit} active</span>` : '';
@@ -953,6 +979,24 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (window.marked) el.innerHTML = sanitize(marked.parse(text, { gfm: true, breaks: false }));
     else el.innerHTML = `<pre class="whitespace-pre-wrap">${esc(text)}</pre>`;
   }
+  // The family: a chip for the parent, a chip per child with its state, and a way to add one.
+  function renderFamily(s) {
+    const box = $('m-family');
+    const kids = s.children || [];
+    if (!s.parent_story && !kids.length && state.readonly) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const chipCls = 'inline-flex items-center gap-1 rounded-full border border-line bg-chip px-2 py-0.5 cursor-pointer hover:bg-hover';
+    $('m-parent-chip').innerHTML = s.parent_story
+      ? `child of <span class="${chipCls}" data-open="${esc(s.parent_story.id)}"><span class="font-mono">${esc(s.parent_story.id)}</span> ${esc(s.parent_story.title)}${s.parent_story.status ? ` <span class="text-muted">(${esc(s.parent_story.status)})</span>` : ''}</span>`
+      : '';
+    const done = kids.filter(k => k.done).length;
+    $('m-children').innerHTML = (kids.length ? `<span class="text-muted self-center">children ${done}/${kids.length}:</span>` : '')
+      + kids.map(k => `<span class="${chipCls} ${k.done ? 'line-through text-muted' : ''}" data-open="${esc(k.id)}" title="${esc(k.status)}"><span class="font-mono">${esc(k.id)}</span> ${esc(k.title)}</span>`).join('')
+      + (state.readonly ? '' : `<button id="m-new-child" class="rounded border border-strong px-2 py-0.5 text-xs hover:bg-hover" title="New story with this one as its parent">+ child</button>`);
+    box.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => openModal(el.dataset.open)));
+    const nb = $('m-new-child');
+    if (nb) nb.addEventListener('click', () => { state.newParent = s.id; openModal(null); });
+  }
   function renderDeps(s) {
     const box = $('m-deps');
     if (!s.deps || !s.deps.length) { box.classList.add('hidden'); return; }
@@ -975,8 +1019,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       $('m-id').textContent = 'new story'; $('m-meta').textContent = '';
       $('m-title').value = ''; $('m-status').value = (state.columns.find(c => c.role === 'backlog') || state.columns[0] || {}).key;
       $('m-tags').value = ''; $('m-blockers').value = ''; $('m-assignee').value = '';
+      $('m-parent').value = state.newParent || ''; $('m-family').classList.add('hidden');
       $('m-body').value = ''; $('m-deps').classList.add('hidden'); $('m-dirty').textContent = '';
-      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-body'].forEach(i => { $(i).disabled = false; });
+      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = false; });
       $('m-save').classList.remove('hidden');
       $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden');
       ['m-note-wrap', 'm-delete', 'm-reload', 'm-claim', 'tab-history'].forEach(i => $(i).classList.add('hidden'));
@@ -995,12 +1040,14 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       $('m-questions-list').innerHTML = qs.map(q => `<li class="rounded bg-amber-50 dark:bg-amber-950 px-2 py-1"><span class="text-muted text-xs">${esc(q.stamp)} · ${esc(q.author)}</span><br>${esc(q.text)}</li>`).join('');
       $('m-title').value = s.title; $('m-status').value = s.status; $('m-assignee').value = s.assignee || '';
       $('m-tags').value = s.tags.join(', '); $('m-blockers').value = s.blocked_by.join(', ');
+      $('m-parent').value = s.parent || '';
       $('m-body').value = s.body; $('m-dirty').textContent = '';
       renderDeps(s);
+      renderFamily(s);
       if (!$('m-preview').classList.contains('hidden')) renderPreview();
       $('m-note').value = '';
       ['m-note-wrap', 'm-delete', 'm-reload', 'm-claim', 'tab-history'].forEach(i => $(i).classList.remove('hidden'));
-      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-body'].forEach(i => { $(i).disabled = state.readonly; });
+      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = state.readonly; });
       ['m-save', 'm-claim', 'm-delete', 'm-note-wrap', 'm-reload'].forEach(i => $(i).classList.toggle('hidden', state.readonly));
       if (state.readonly) $('m-meta').textContent += ` · read-only (${state.ref})`;
       if (!modal.classList.contains('flex')) showModal();
@@ -1012,9 +1059,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     box.innerHTML = '<div class="text-faint">loading…</div>';
     try {
       const data = await api('GET', `${P()}/stories/${state.modal}/history`);
-      const row = h => `<div class="flex gap-3"><span class="text-faint">${esc(h.sha)}</span><span class="text-muted w-32 shrink-0">${esc(h.date.slice(0, 16).replace('T', ' '))}</span><span class="text-muted w-28 shrink-0 truncate">${esc(h.author)}</span><span class="font-sans">${esc(h.subject)}</span></div>`;
+      const row = h => `<div class="flex gap-3"><span class="text-faint">${esc(h.sha)}</span><span class="text-muted w-32 shrink-0">${esc(h.date.slice(0, 16).replace('T', ' '))}</span><span class="text-muted w-28 shrink-0 truncate">${esc(h.author)}</span><span class="font-sans">${esc(h.subject)}</span>${h.story && h.story !== state.modal ? `<span class="text-faint" title="via child ${esc(h.story)}">[${esc(h.story)}]</span>` : ''}</div>`;
       let html = '';
-      html += '<div class="font-sans font-semibold text-muted mb-1">Code commits referencing this story</div>';
+      html += `<div class="font-sans font-semibold text-muted mb-1">Code commits referencing this story${data.children && data.children.length ? ' or its children' : ''}</div>`;
       html += data.commits.length ? data.commits.map(row).join('') : '<div class="text-faint font-sans mb-2">None yet. Add a <code>Skald-Story: ' + esc(state.modal) + '</code> trailer to commits.</div>';
       html += '<div class="font-sans font-semibold text-muted mt-3 mb-1">Story file history</div>';
       html += data.history.length ? data.history.map(row).join('') : '<div class="text-faint font-sans">No commits yet. Story changes are committed with the code they describe.</div>';
@@ -1027,15 +1074,20 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const title = $('m-title').value, status = $('m-status').value, assignee = $('m-assignee').value.trim();
     const tags = splitList($('m-tags').value), blocked_by = splitList($('m-blockers').value), body = $('m-body').value;
     try {
+      const parent = $('m-parent').value.trim();
       if (state.modal === 'new') {
-        const res = await api('POST', `${P()}/stories`, { title, status, tags, blocked_by, body, assignee });
+        const payload = { title, status, tags, blocked_by, body, assignee };
+        if (parent) payload.parent = parent;
+        const res = await api('POST', `${P()}/stories`, payload);
         showWarnings(res.warnings); toast(`Created ${res.story.id}`);
+        state.newParent = null;
         hideModal();
         return;
       }
       const s = state.loaded;
       const patch = {};
       if (title !== s.title) patch.title = title;
+      if (parent !== (s.parent || '')) patch.parent = parent || '-';
       if (status !== s.status) patch.status = status;
       if (assignee !== (s.assignee || '')) patch.assignee = assignee;
       if (tags.join(',') !== s.tags.join(',')) patch.tags = tags;
@@ -1174,7 +1226,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('graph-btn').addEventListener('click', () => setGraph(!state.graph));
   setInterval(() => { if (document.visibilityState === 'visible' && !state.modal) loadBranches(); }, 30000);
   $('search').addEventListener('input', (e) => { state.filter = e.target.value.trim().toLowerCase(); render(); });
-  $('new-btn').addEventListener('click', () => openModal(null));
+  $('new-btn').addEventListener('click', () => { state.newParent = null; openModal(null); });
   $('git-btn').addEventListener('click', openGit);
   $('git-cancel').addEventListener('click', () => $('git-pop').classList.add('hidden'));
   $('git-commit').addEventListener('click', () => commit(false));

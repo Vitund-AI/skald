@@ -45,13 +45,13 @@ as errors.
 | `GET /api/projects/<p>/branches` | | `{current, branches: [{name, sha, remote, stories, only_there, only_here, differ}], elsewhere, claims}`; `claims` includes uncommitted claims in other checkouts, each with `checkout` |
 | `GET /api/projects/<p>/version` | | a hash that changes whenever any story file changes |
 | `GET /api/projects/<p>/events` | | server-sent events: `hello` on connect, `change` whenever the hash changes |
-| `POST /api/projects/<p>/stories` | `{title, status?, tags?, blocked_by?, body?, assignee?, template?}` | 201, `{story, warnings}` |
-| `GET /api/projects/<p>/stories/<id>[?ref=REF]` | | story with `body`, `body_sha256`, and `deps`; with `ref`, as it is on that branch |
-| `PATCH /api/projects/<p>/stories/<id>` | any of `{title, status, rank, tags, blocked_by, assignee, order}` | `{story, warnings}` |
+| `POST /api/projects/<p>/stories` | `{title, status?, tags?, blocked_by?, body?, assignee?, template?, parent?, inherit?}` | 201, `{story, warnings}`; with `parent`, the parent's facet tags are copied unless `inherit` is false |
+| `GET /api/projects/<p>/stories/<id>[?ref=REF]` | | story with `body`, `body_sha256`, `deps`, `children` (`[{id, title, status, done}]`), and `parent_story` (`{id, title, status}`) when it has one; with `ref`, as it is on that branch |
+| `PATCH /api/projects/<p>/stories/<id>` | any of `{title, status, rank, tags, blocked_by, assignee, parent, order}` | `{story, warnings}`; `parent: "-"` clears it |
 | `PUT /api/projects/<p>/stories/<id>/body` | `{body, base_sha256}` | story, or 409 if the body changed on disk |
 | `POST /api/projects/<p>/stories/<id>/notes` | `{text, author?, kind?}` | 201, story with body |
 | `POST /api/projects/<p>/stories/<id>/claim` | `{author?}` | `{story, warnings}` |
-| `GET /api/projects/<p>/stories/<id>/history` | | `{history: [{sha, date, author, subject}], commits: [...]}` |
+| `GET /api/projects/<p>/stories/<id>/history[?children=0]` | | `{history: [{sha, date, author, subject}], commits: [{..., story}], children}`; `commits` include those referencing the story's children, each tagged with `story`, unless `children=0` |
 | `DELETE /api/projects/<p>/stories/<id>[?force=1]` | | 204, or 409 if other stories depend on it |
 | `GET /api/projects/<p>/git` | | `{branch, changes, push_enabled, identity}` |
 | `POST /api/projects/<p>/git/commit` | `{message?, push?}` | `{sha, message, pushed, output}` |

@@ -22,7 +22,14 @@
   `resume` on a child prints the parent's requirements first; `check`
   reports dangling parents and cycles; `rm` refuses while children exist;
   moving a parent to done, or releasing it, with an open child warns. MCP
-  `skald_new` and `skald_set` take `parent`.
+  `skald_new` and `skald_set` take `parent`. `skald epics` lists structural
+  parents beside the `epic:` facet; `skald commits <parent>` includes the
+  children's commits, tagged (`--no-children` to turn off). On the board a
+  parent card shows its children's progress, the dialog has a Parent field,
+  lists the children, and adds one with "+ child", the History tab unions
+  the children's commits, and swimlanes can split by parent. The API takes
+  `parent` and `inherit` on create and `parent` on patch, returns `children`
+  and `parent_story` on a story, and unions children in history.
 - `skald audit <id>` checks a story's cited paths, `path:line` references,
   and commit hashes against the tree, lists referenced files changed since
   the last audit, and appends an `audit` note with the summary. `resume`

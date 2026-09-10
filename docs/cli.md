@@ -377,7 +377,7 @@ Commit everything under .skald/ with Skald-Story trailers.
 ## commits
 
 ```
-skald commits [--all-branches] [--json] id
+skald commits [--all-branches] [--no-children] [--json] id
 ```
 
 Commits that reference a story (Skald-Story trailer or [id]).
@@ -386,6 +386,7 @@ Commits that reference a story (Skald-Story trailer or [id]).
 | --- | --- |
 | `id` | story id or unique prefix |
 | `--all-branches` | search every branch, not just the current one |
+| `--no-children` | on a parent, do not include commits that reference its children |
 | `--json` | print JSON |
 
 ## diff

@@ -495,7 +495,7 @@ class Handler(BaseHTTPRequestHandler):
                 story, warnings = store.create(
                     data.get("title", ""), data.get("status"), data.get("tags", []),
                     data.get("blocked_by", []), data.get("body", ""), data.get("assignee", ""),
-                    data.get("template"),
+                    data.get("template"), parent=data.get("parent") or None, inherit=data.get("inherit", True),
                 )
                 self._json(201, {"story": self._story_json(ws, store, story), "warnings": warnings})
                 return
@@ -512,11 +512,20 @@ class Handler(BaseHTTPRequestHandler):
                         self._json(200, d)
                         return
                     story = store.get(ref)
-                    self._json(200, self._story_json(ws, store, story, body=True))
+                    d = self._story_json(ws, store, story, body=True)
+                    # The family, for the dialog: the parent by title, the children with their state.
+                    kids = store.children(story.id)
+                    d["children"] = [{"id": k.id, "title": k.title, "status": k.status,
+                                      "done": store.config.is_terminal(k.status)} for k in kids]
+                    if story.parent:
+                        p = store.get_or_none(story.parent)
+                        d["parent_story"] = {"id": story.parent, "title": p.title if p else "(missing)",
+                                             "status": p.status if p else None}
+                    self._json(200, d)
                     return
                 if not sub and method == "PATCH":
                     data = self._read_json()
-                    allowed = {"title", "status", "rank", "tags", "blocked_by", "assignee", "order"}
+                    allowed = {"title", "status", "rank", "tags", "blocked_by", "assignee", "order", "parent"}
                     unknown = set(data) - allowed
                     if unknown:
                         raise SkaldError(f"unknown fields: {', '.join(sorted(unknown))}")
@@ -544,8 +553,10 @@ class Handler(BaseHTTPRequestHandler):
                     story = store.get(ref)
                     repo = gitutil.root(store.dir)
                     entries = gitutil.log_file(repo, story.path) if repo else []
-                    commits = gitutil.commits_for(repo, story.id) if repo else []
-                    self._json(200, {"history": entries, "commits": commits})
+                    with_children = (query.get("children") or ["1"])[0] not in ("0", "false", "no")
+                    kids = [k.id for k in store.children(story.id)] if with_children else []
+                    commits = gitutil.commits_for_family(repo, story.id, kids) if repo else []
+                    self._json(200, {"history": entries, "commits": commits, "children": kids})
                     return
                 if sub == ["claim"] and method == "POST":
                     data = self._read_json()

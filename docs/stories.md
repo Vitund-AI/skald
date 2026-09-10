@@ -233,13 +233,20 @@ skald resume 7b21e0                             # shows the parent's requirement
 ```
 
 `ls` marks a parent with `(children 1/3)` and a child with `(child of
-a3f9c2)`. A parent is local to the project; `check` reports a missing
-parent or a cycle; `rm` refuses while children exist; moving a parent to
-done with a child still open warns, as does `release`. `next` treats
-children as ordinary stories, so a parent usually sits in a backlog column
-while its children move. The tag stays the lightweight option and works
-across repositories; the parent carries a body, questions, decisions, and
-an audit date, which a tag cannot.
+a3f9c2)`. `skald epics` lists structural parents beside the `epic:` facet,
+titled, with children done over total. `skald commits <parent>` includes
+the commits that reference its children, each tagged with the child's id,
+so the hand-kept table of pieces and hashes is derived (`--no-children`
+turns that off). On the board a parent card shows its children's progress,
+the dialog lists the children and has a "+ child" button, the Parent field
+sets or clears it, and swimlanes can split by parent. A parent is local to
+the project; `check` reports a missing parent or a cycle; `rm` refuses
+while children exist; moving a parent to done with a child still open
+warns, as does `release`. `next` treats children as ordinary stories, so a
+parent usually sits in a backlog column while its children move. The tag
+stays the lightweight option and works across repositories; the parent
+carries a body, questions, decisions, and an audit date, which a tag
+cannot.
 
 ### Lanes
 

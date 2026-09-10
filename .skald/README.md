@@ -1,15 +1,13 @@
-<!-- skald-render 9f0e4ea45a721350 -->
+<!-- skald-render 49dc864d5f8caf81 -->
 # skald backlog
 
-**13 open** · Idea 1 · Plan 0 · Ready 1 · In progress 0 · Review 11 · Done 0
+**13 open** · Idea 0 · Plan 0 · Ready 1 · In progress 0 · Review 12 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Idea (1)
+## Idea (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [da2a34](stories/da2a34-parents-on-the-board-and-in-history-children-in-th.md) | Parents on the board and in history: children in the modal, epics merge, commits union | `git` `ui` |  |  | 0/2 |
+_none_
 
 ## Plan (0)
 
@@ -25,7 +23,7 @@ _none_
 
 _none_
 
-## Review (11)
+## Review (12)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -40,6 +38,7 @@ _none_
 | [cff9e4](stories/cff9e4-skald-audit-check-a-story-s-paths-line-references.md) | skald audit: check a story's paths, line references, and commit hashes against the tree, and note it | `agents` `cli` | claude |  | 3/3 |
 | [fe6d27](stories/fe6d27-parents-a-parent-field-so-an-epic-can-have-a-body.md) | Parents: a parent field so an epic can have a body and children | `cli` `core` | claude |  | 3/3 |
 | [fcecad](stories/fcecad-backdating-flags-note-at-and-new-created-at-for-mi.md) | Backdating flags: note --at and new --created-at for migration scripts | `cli` | claude |  | 2/2 |
+| [da2a34](stories/da2a34-parents-on-the-board-and-in-history-children-in-th.md) | Parents on the board and in history: children in the modal, epics merge, commits union | `git` `ui` | claude |  | 2/2 |
 
 <details><summary><strong>Done (0)</strong></summary>
 
