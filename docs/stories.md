@@ -123,6 +123,12 @@ Put the skeleton in `.skald/templates/design.md` and create records with
 `skald new "Title" --template design`. Templates stay project-owned; `init`
 does not write one.
 
+Bringing existing records in is a script's job, and two flags keep their
+history honest: `skald new --created-at "2024-03-01 09:30"` sets the
+creation stamps, and `skald note <id> "..." --at "2024-03-02 10:00" --kind
+decision` backdates a note. Both take `YYYY-MM-DD HH:MM` in UTC, an ISO
+instant, or a bare date, and both default to now.
+
 ## Columns and roles
 
 Each project defines its columns in `.skald/config.json`:

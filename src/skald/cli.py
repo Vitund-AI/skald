@@ -286,6 +286,7 @@ def build_parser() -> argparse.ArgumentParser:
     new.add_argument("--assignee", default="", help="assign on creation")
     new.add_argument("--parent", metavar="ID", help="make this a child of another story in this project; its facet tags are inherited")
     new.add_argument("--no-inherit", action="store_true", help="with --parent: do not copy the parent's facet tags")
+    new.add_argument("--created-at", metavar="WHEN", help="backdate created_at and updated_at: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now")
     new.add_argument("--json", action="store_true", help="print the story as JSON instead of its id")
 
     mv = sub.add_parser("move", aliases=["mv"], help="move a story to a column")
@@ -308,6 +309,7 @@ def build_parser() -> argparse.ArgumentParser:
     note.add_argument("text", help="note text, or - to read stdin")
     note.add_argument("--as", dest="author", help="author label (default: agent)")
     note.add_argument("--kind", help="handoff, decision, blocker, question (open until a later decision), or any short word; shown in the heading")
+    note.add_argument("--at", metavar="WHEN", help="backdate the note heading: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now")
 
     ans = sub.add_parser("answer", help="answer a story's open questions: appends a decision note, which closes them")
     ans.add_argument("id", help="story id or unique prefix")
@@ -876,7 +878,8 @@ def cmd_new(ws: Workspace, args, store: Store) -> int:
     blockers = [b for b in args.blocked_by.split(",") if b.strip()]
     body = _read_text_arg(args.body)
     story, warnings = store.create(args.title, args.status, tags, blockers, body, args.assignee, args.template,
-                                   parent=getattr(args, "parent", None), inherit=not getattr(args, "no_inherit", False))
+                                   parent=getattr(args, "parent", None), inherit=not getattr(args, "no_inherit", False),
+                                   created_at=getattr(args, "created_at", None))
     _warn(warnings)
     if args.json:
         print(json.dumps(store.story_dict(story), indent=2))
@@ -1831,7 +1834,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     if args.command == "set":
         return cmd_set(store, args)
     if args.command == "note":
-        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), args.kind)
+        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), args.kind, at=getattr(args, "at", None))
         print(f"noted on {story.id}" + (f" ({args.kind})" if args.kind else ""))
         return 0
     if args.command == "answer":

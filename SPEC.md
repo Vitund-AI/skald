@@ -389,7 +389,7 @@ story or configuration. Commands that print stories take `--json`.
 | `claim <id> [--as N]` | Section 5. |
 | `set <id> title=.. rank=N assignee=..` | Field edits. |
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
-| `note <id> "text"\|- [--as N] [--kind K]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. |
+| `note <id> "text"\|- [--as N] [--kind K] [--at WHEN]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. `--at` backdates the heading (`YYYY-MM-DD HH:MM` UTC, an ISO instant, or a date); `new --created-at WHEN` likewise sets both stamps and skips the touch. Migration primitives; the default stays now. |
 | `new` accepts `--parent ID [--no-inherit]`; `set` accepts `parent=ID` and `parent=-`; `ls --parent ID` lists children; `ls` marks parents `(children done/total)` and children `(child of ID)`. |
 | `answer <id> "text"\|- [--as N]` | `note --kind decision`; prints how many open questions it closed. |
 | `audit <id> [--notes] [--no-note] [--as N] [--json]` | Extracts paths, `path:line` references, and commit hashes from the prelude (plus notes with `--notes`); checks existence, line count, and `git cat-file -e`; lists referenced files changed since the newest `audit` note (else `created_at`); appends an `audit` note with the summary unless `--no-note`. `audit.py`. |

@@ -1,7 +1,7 @@
-<!-- skald-render 6c86a06784518466 -->
+<!-- skald-render 9f0e4ea45a721350 -->
 # skald backlog
 
-**13 open** · Idea 1 · Plan 0 · Ready 2 · In progress 0 · Review 10 · Done 0
+**13 open** · Idea 1 · Plan 0 · Ready 1 · In progress 0 · Review 11 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -15,18 +15,17 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 _none_
 
-## Ready (2)
+## Ready (1)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b91662](stories/b91662-publish-0-2-0-to-pypi.md) | Publish 0.2.0 to PyPI | `packaging` |  |  |  |
-| [fcecad](stories/fcecad-backdating-flags-note-at-and-new-created-at-for-mi.md) | Backdating flags: note --at and new --created-at for migration scripts | `cli` |  |  | 0/2 |
 
 ## In progress (0)
 
 _none_
 
-## Review (10)
+## Review (11)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -40,6 +39,7 @@ _none_
 | [67f581](stories/67f581-lanes-facet-limits-so-stories-that-must-not-run-co.md) | Lanes: facet limits so stories that must not run concurrently are not picked together | `agents` `core` | claude |  | 4/4 |
 | [cff9e4](stories/cff9e4-skald-audit-check-a-story-s-paths-line-references.md) | skald audit: check a story's paths, line references, and commit hashes against the tree, and note it | `agents` `cli` | claude |  | 3/3 |
 | [fe6d27](stories/fe6d27-parents-a-parent-field-so-an-epic-can-have-a-body.md) | Parents: a parent field so an epic can have a body and children | `cli` `core` | claude |  | 3/3 |
+| [fcecad](stories/fcecad-backdating-flags-note-at-and-new-created-at-for-mi.md) | Backdating flags: note --at and new --created-at for migration scripts | `cli` | claude |  | 2/2 |
 
 <details><summary><strong>Done (0)</strong></summary>
 

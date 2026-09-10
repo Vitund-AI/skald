@@ -44,7 +44,7 @@ TOOLS: list[dict] = [
      "inputSchema": _schema({**PROJECT_PROP,
                              "title": {"type": "string"}, "status": {"type": "string"}, "body": {"type": "string"},
                              "tags": {"type": "array", "items": {"type": "string"}},
-                             "parent": {"type": "string", "description": "id of the parent story in this project; facet tags are inherited unless inherit=false"}, "inherit": {"type": "boolean"},
+                             "parent": {"type": "string", "description": "id of the parent story in this project; facet tags are inherited unless inherit=false"}, "inherit": {"type": "boolean"}, "created_at": {"type": "string", "description": "backdate created_at: YYYY-MM-DD HH:MM (UTC) or an ISO instant"},
                              "blocked_by": {"type": "array", "items": {"type": "string"}, "description": "ids, or project:id"},
                              "assignee": {"type": "string"}, "template": {"type": "string"}}, ["title"])},
     {"name": "skald_move", "description": "Change a story's status. Warnings are advisory.",
@@ -52,7 +52,7 @@ TOOLS: list[dict] = [
     {"name": "skald_claim", "description": "Assign a story to the caller and move it into the first active column.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP}, ["id"])},
     {"name": "skald_note", "description": "Append a timestamped note to a story's body. kind=handoff for end-of-session state, decision, or blocker.",
-     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"},
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"}, "at": {"type": "string", "description": "backdate the note: YYYY-MM-DD HH:MM (UTC) or an ISO instant"},
                              "kind": {"type": "string", "description": "handoff, decision, blocker, question (open until a later decision), or another short word"}}, ["id", "text"])},
     {"name": "skald_audit", "description": "Check a story's cited paths, path:line references, and commit hashes against the tree, report referenced files changed since the last audit, and append an audit note (note=false to skip). Lists what it could check; judging the premises is yours.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "note": {"type": "boolean"}, "notes": {"type": "boolean", "description": "also check claims in notes"}}, ["id"])},
@@ -167,7 +167,7 @@ class McpServer:
         story, warnings = store.create(
             args.get("title", ""), args.get("status"), args.get("tags", []), args.get("blocked_by", []),
             args.get("body", ""), args.get("assignee", ""), args.get("template"),
-            parent=args.get("parent"), inherit=args.get("inherit", True),
+            parent=args.get("parent"), inherit=args.get("inherit", True), created_at=args.get("created_at"),
         )
         return self._with_warnings(store, story, warnings)
 
@@ -207,7 +207,7 @@ class McpServer:
 
     def tool_skald_note(self, args: dict) -> Any:
         store = self._store(args)
-        story = store.append_note(args["id"], args.get("text", ""), self._actor(args), args.get("kind"))
+        story = store.append_note(args["id"], args.get("text", ""), self._actor(args), args.get("kind"), at=args.get("at"))
         d = store.story_dict(story)
         d["body"] = story.body
         return d

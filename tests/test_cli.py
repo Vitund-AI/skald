@@ -567,6 +567,26 @@ class TestAgentOrientation(SkaldTestCase):
         code, _, err = self.run_cli("note", a, "x", "--kind", "Bad Kind")
         self.assertEqual(code, 1)
 
+    def test_backdating_flags(self):
+        code, out, err = self.run_cli("new", "Old record", "--created-at", "2024-03-01 09:30")
+        self.assertEqual(code, 0, err)
+        sid = out.strip()
+        d = json.loads(self.run_cli("show", sid, "--json")[1])
+        self.assertEqual((d["created_at"], d["updated_at"]), ("2024-03-01T09:30:00Z", "2024-03-01T09:30:00Z"))
+        code, out, err = self.run_cli("note", sid, "Filed by the owner.", "--as", "jon", "--at", "2024-03-02T10:00:00Z", "--kind", "decision")
+        self.assertEqual(code, 0, err)
+        code, out, _ = self.run_cli("show", sid)
+        self.assertIn("## [jon] 2024-03-02 10:00 UTC · decision", out)
+        code, out, err = self.run_cli("note", sid, "x", "--at", "yesterday")
+        self.assertEqual(code, 1)
+        self.assertIn("--at must be", err)
+        code, out, err = self.run_cli("new", "Bad", "--created-at", "03/01/2024")
+        self.assertEqual(code, 1)
+        self.assertIn("--created-at must be", err)
+        # A date alone is midnight UTC; a normal note after a backdated one still stamps now.
+        code, out, _ = self.run_cli("new", "Dated", "--created-at", "2024-05-05")
+        self.assertEqual(json.loads(self.run_cli("show", out.strip(), "--json")[1])["created_at"], "2024-05-05T00:00:00Z")
+
     def test_parents_on_the_cli(self):
         epic = self.new("Auth overhaul", "--tags", "epic:auth", "--body", "Everything about auth.")
         code, out, err = self.run_cli("new", "Login form", "--parent", epic, "--status", "ready")

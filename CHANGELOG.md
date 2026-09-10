@@ -11,6 +11,11 @@
   on a human" filter, and an Answer button in the story dialog. MCP:
   `skald_answer`, and `waiting` and `open_questions` in context and resume.
 
+- Backdating for migrations: `skald note --at WHEN` stamps the note heading
+  with a given instant and `skald new --created-at WHEN` sets `created_at`
+  and `updated_at`, so a script bringing an existing Markdown backlog into
+  Skald keeps its history. Both default to now. MCP `skald_note` takes `at`
+  and `skald_new` takes `created_at`.
 - Parents: a story can be one piece of another. `skald new --parent ID`
   (facet tags inherited unless `--no-inherit`), `skald set ID parent=ID`
   or `parent=-`, `skald ls --parent ID`; `ls` marks parents and children;

@@ -180,7 +180,7 @@ Story counts per branch and how they differ from the working tree.
 ## new
 
 ```
-skald new [--status COLUMN] [--tags TAGS] [--blocked-by BLOCKED_BY] [--body BODY] [--template TEMPLATE] [--assignee ASSIGNEE] [--parent ID] [--no-inherit] [--json] title
+skald new [--status COLUMN] [--tags TAGS] [--blocked-by BLOCKED_BY] [--body BODY] [--template TEMPLATE] [--assignee ASSIGNEE] [--parent ID] [--no-inherit] [--created-at WHEN] [--json] title
 ```
 
 Create a story.
@@ -196,6 +196,7 @@ Create a story.
 | `--assignee ASSIGNEE` | assign on creation |
 | `--parent ID` | make this a child of another story in this project; its facet tags are inherited |
 | `--no-inherit` | with --parent: do not copy the parent's facet tags |
+| `--created-at WHEN` | backdate created_at and updated_at: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now |
 | `--json` | print the story as JSON instead of its id |
 
 ## move
@@ -256,7 +257,7 @@ Block <id> +id -id ... (project:id for other projects).
 ## note
 
 ```
-skald note [--as AUTHOR] [--kind KIND] id text
+skald note [--as AUTHOR] [--kind KIND] [--at WHEN] id text
 ```
 
 Append a note to a story.
@@ -267,6 +268,7 @@ Append a note to a story.
 | `text` | note text, or - to read stdin |
 | `--as AUTHOR` | author label (default: agent) |
 | `--kind KIND` | handoff, decision, blocker, question (open until a later decision), or any short word; shown in the heading |
+| `--at WHEN` | backdate the note heading: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now |
 
 ## answer
 

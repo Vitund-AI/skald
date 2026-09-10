@@ -15,7 +15,7 @@ from typing import Optional
 
 from .config import ProjectConfig
 from .errors import ConflictError, CorruptStoryError, NotFoundError, SkaldError
-from .util import atomic_write, checklist_progress, note_stamp, now_iso, parse_iso, read_text, sha256_text, slugify
+from .util import atomic_write, checklist_progress, note_stamp, now_iso, parse_iso, parse_when, read_text, sha256_text, slugify
 
 KNOWN_FIELDS = ["title", "status", "rank", "tags", "blocked_by", "assignee", "parent", "released", "created_at", "updated_at"]
 RANK_STEP = 10
@@ -542,9 +542,10 @@ class Store:
 
     # -- writing ---------------------------------------------------------
 
-    def _write(self, story: Story) -> None:
+    def _write(self, story: Story, touch: bool = True) -> None:
         story.fields = validate_fields(story.fields, story.path.name)
-        story.fields["updated_at"] = now_iso()
+        if touch:
+            story.fields["updated_at"] = now_iso()
         atomic_write(story.path, serialise_story(story.fields, story.body))
 
     def _new_id(self) -> str:
@@ -603,7 +604,7 @@ class Store:
 
     def create(self, title: str, status: Optional[str] = None, tags=(), blocked_by=(), body: str = "",
                assignee: str = "", template: Optional[str] = None, parent: Optional[str] = None,
-               inherit: bool = True) -> tuple[Story, list[str]]:
+               inherit: bool = True, created_at: Optional[str] = None) -> tuple[Story, list[str]]:
         title = (title or "").strip()
         parent_story: Optional[Story] = None
         if parent:
@@ -634,6 +635,11 @@ class Store:
         else:
             full_body = "## Requirements\n\n" + body
         stamp = now_iso()
+        if created_at:
+            when = parse_when(created_at)
+            if when is None:
+                raise SkaldError("--created-at must be YYYY-MM-DD HH:MM (UTC), YYYY-MM-DDTHH:MM:SSZ, or YYYY-MM-DD")
+            stamp = when.strftime("%Y-%m-%dT%H:%M:%SZ")
         fields = {
             "title": title,
             "status": status,
@@ -647,7 +653,7 @@ class Store:
         if parent_story is not None:
             fields["parent"] = parent_story.id
         story = Story(story_id, self.stories_dir / filename, fields, full_body)
-        self._write(story)
+        self._write(story, touch=not created_at)  # a backdated story keeps its given stamps
         warnings = []
         if self.config.warns_on(status):
             w = self.unmet_warning(story)
@@ -902,7 +908,9 @@ class Store:
                 changed.append(s)
         return changed
 
-    def append_note(self, ref: str, text: str, author: str = "agent", kind: Optional[str] = None) -> Story:
+    def append_note(self, ref: str, text: str, author: str = "agent", kind: Optional[str] = None,
+                    at: Optional[str] = None) -> Story:
+        """Append a dated note. ``at`` backdates the heading (a migration primitive); the default is now."""
         text = (text or "").strip()
         if not text:
             raise SkaldError("note text is required")
@@ -915,10 +923,16 @@ class Store:
         story = self.get(ref)
         if story.archived:
             raise ConflictError(f"{story.id} is archived; unarchive it first")
+        stamp = note_stamp()
+        if at:
+            when = parse_when(at)
+            if when is None:
+                raise SkaldError("--at must be YYYY-MM-DD HH:MM (UTC), YYYY-MM-DDTHH:MM:SSZ, or YYYY-MM-DD")
+            stamp = when.strftime("%Y-%m-%d %H:%M UTC")
         body = story.body.rstrip("\n")
         body = body + "\n\n" if body.strip() else ""
         suffix = f" · {kind}" if kind and kind != "note" else ""
-        body += f"## [{author}] {note_stamp()}{suffix}\n{text}\n"
+        body += f"## [{author}] {stamp}{suffix}\n{text}\n"
         story.body = body
         self._write(story)
         return story
