@@ -19,6 +19,10 @@ A project keeps one name. A second checkout of the same repository (a git worktr
 - skald context, next, and claim count claims in other checkouts' working trees as claims elsewhere, so two agents in worktrees cannot both take a story before either commits. A checkout's working tree replaces the committed view of its branch, so nothing is counted twice.
 - README comparison row for work in progress across worktrees.
 
+## Changelog
+
+A project with several working trees on one machine keeps one primary and knows the others: git worktrees are discovered automatically and a second clone is recorded when a command runs there, without replacing the primary. The board's branch dropdown lists every working tree and shows the chosen one, uncommitted changes included and editable; `skald projects` lists checkouts and `skald projects use` picks the primary; `next`, `claim`, and `context` see claims made in other checkouts before they are committed.
+
 ## Acceptance
 - [x] A second checkout does not replace the primary; a moved repository still does; projects use switches
 - [x] Worktrees appear without registration; missing checkouts disappear

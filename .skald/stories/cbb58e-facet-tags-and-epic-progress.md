@@ -17,5 +17,9 @@ Tags of the form key:value are facets. epic:auth is an epic with no schema chang
 - [ ] Board: one filter dropdown per facet key, group-by facet swimlanes, epic progress bars
 - [ ] ls --all-projects --tag epic:x documented as the cross-repo epic view
 
+## Changelog
+
+Tags of the form `key:value` are facets. `skald facets` and `skald epics` show values with progress, the board offers a filter per facet key and swimlanes by facet, and `epic:name` tags work across projects because tags are plain strings.
+
 ## [claude] 2026-09-06 17:49 UTC
 Implemented. store.facets groups key:value tags with done/open counts; skald facets [KEY], skald epics, both with --all-projects; board carries facets, shows a filter per facet key and a swimlane control with progress bars; drag works inside lanes. Verified in Chromium. See D28.

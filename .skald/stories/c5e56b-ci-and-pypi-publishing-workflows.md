@@ -11,5 +11,9 @@ updated_at: "2026-09-08T17:24:21Z"
 
 GitHub Actions: unittest on 3.9-3.13 Linux plus macOS and Windows 3.12, wheel build; publish.yml uses trusted publishing on v* tags and checks the tag matches __version__.
 
+## Changelog
+
+GitHub Actions run the test suite on Linux for Python 3.9 to 3.13 and on macOS and Windows, build the wheel, and publish to PyPI from `v*` tags with trusted publishing after checking the tag matches the package version.
+
 ## [claude] 2026-09-06 07:04 UTC
 Implemented. One-time human step: add the pending publisher on pypi.org for this repo, workflow publish.yml, environment pypi.

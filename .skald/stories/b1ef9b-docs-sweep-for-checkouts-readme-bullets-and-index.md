@@ -12,6 +12,10 @@ updated_at: "2026-09-10T00:26:11Z"
 
 The checkouts feature landed with its own pages, but the surfaces that summarise the board and multi-project features still describe only branches.
 
+## Changelog
+
+The README, docs index, agent contract, board Help panel, and git guide now describe working trees of several checkouts alongside branches.
+
 ## Acceptance
 - [x] README board bullet and Multiple projects row mention working trees of several checkouts
 - [x] docs/README.md rows likewise

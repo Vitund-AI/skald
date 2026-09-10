@@ -11,5 +11,9 @@ updated_at: "2026-09-08T17:24:21Z"
 
 skald mcp exposing the store as MCP tools over stdio (list, next, show, new, mv, claim, note, tag, block) so agents without shell access can use it. Stdlib JSON-RPC only.
 
+## Changelog
+
+`skald mcp` serves the backlog as MCP tools over stdio (list, next, show, new, move, claim, note, tag, block), so agents without shell access can work from it. Standard library JSON-RPC only.
+
 ## [claude] 2026-09-06 07:08 UTC
 Implemented: skald mcp serves JSON-RPC over stdio with initialize, ping, tools/list, tools/call and batches. Thirteen tools mirror the CLI (D26). Register with: claude mcp add skald -- skald mcp.

@@ -12,6 +12,10 @@ updated_at: "2026-09-09T23:05:41Z"
 
 The workflow written by skald hooks github --install commits the rendered board as skald <skald@users.noreply.github.com>. GitHub maps USERNAME@users.noreply.github.com to the account with that username, so an unrelated GitHub user named skald is credited as a contributor on every repository that installs the workflow. Commit as github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>, the identity GitHub attributes to the Actions bot.
 
+## Changelog
+
+The workflow written by `skald hooks github --install` commits the rendered board as `github-actions[bot]`. It used to commit as `skald@users.noreply.github.com`, an address GitHub attributes to the unrelated account named `skald`; re-run the install to update an existing workflow.
+
 ## Acceptance
 - [x] The template in cli.py and the committed .github/workflows/skald.yml use the Actions bot identity
 - [x] CHANGELOG entry; troubleshooting note on how to fix an installed workflow

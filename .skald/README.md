@@ -1,7 +1,7 @@
-<!-- skald-render 628de4ea98256597 -->
+<!-- skald-render cc5e97035c1f21ff -->
 # skald backlog
 
-**35 open** · Backlog 1 · Ready 1 · In progress 0 · Review 33 · Done 15
+**36 open** · Backlog 1 · Ready 1 · In progress 0 · Review 34 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -17,8 +17,8 @@ flowchart LR
     n_9a1da4 --> n_bae374
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_9a1da4,n_bae374 done
     class n_46b5d3,n_cbb58e active
+    class n_9a1da4,n_bae374 done
 ```
 
 ## Backlog (1)
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (33)
+## Review (34)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -74,6 +74,7 @@ _none_
 | [8c4d2c](stories/8c4d2c-checkouts-see-every-worktree-s-working-tree-on-the.md) | Checkouts: see every worktree's working tree on the board, claims visible before commit | `agents` `core` `ui` | claude |  | 6/6 |
 | [43641e](stories/43641e-branch-dropdown-say-worktree-or-clone-on-working-t.md) | Branch dropdown: say worktree or clone on working-tree entries, mark branches that have one as committed only | `ui` | claude |  | 3/3 |
 | [b1ef9b](stories/b1ef9b-docs-sweep-for-checkouts-readme-bullets-and-index.md) | Docs sweep for checkouts: README bullets and index rows, agent contract, Help panel legend, git-and-ci | `docs` | claude |  | 4/4 |
+| [2a929c](stories/2a929c-changelog-text-on-every-story-before-the-0-2-0-rel.md) | Changelog text on every story before the 0.2.0 release | `docs` | claude |  | 2/2 |
 
 <details><summary><strong>Done (15)</strong></summary>
 

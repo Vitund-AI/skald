@@ -12,6 +12,10 @@ updated_at: "2026-09-08T17:33:27Z"
 
 Multi-select cards and move, tag, or archive them together.
 
+## Changelog
+
+Select several cards with press-and-hold or `x`, drag the whole batch between columns, and use the bar at the bottom to move, tag, or archive the selection. `skald archive` and the API accept specific ids.
+
 ## [human] 2026-09-08 04:24 UTC
 A long mouse press could enable selection mode, a circle icon apears on the stories in the column of the selected story. The selected story has a check mark in a circle. Now when other stories are single clicked they become selected rather than opening the detail.
 

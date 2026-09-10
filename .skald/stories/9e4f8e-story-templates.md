@@ -11,5 +11,9 @@ updated_at: "2026-09-08T17:24:21Z"
 
 .skald/templates/<name>.md used by skald new --template name; skald templates lists them.
 
+## Changelog
+
+Story templates live in `.skald/templates/<name>.md`; `skald new --template NAME` starts from one and `skald templates` lists them.
+
 ## [claude] 2026-09-06 07:04 UTC
 Implemented. Template body first, then any --body text.

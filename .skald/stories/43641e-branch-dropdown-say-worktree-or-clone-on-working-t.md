@@ -17,6 +17,10 @@ A select shows optgroup labels only while open, so a closed control reading 'age
 - The control's tooltip describes the current selection: the working tree's path and branch, or the read-only branch.
 - Docs: board.md wording.
 
+## Changelog
+
+Working-tree entries in the board's branch dropdown read `worktree` or `clone`, then the directory and branch, so the closed control cannot be mistaken for a branch; a read-only branch that a working tree is on reads `committed only`, and the control's tooltip describes the current choice.
+
 ## Acceptance
 - [x] Option text carries the kind and directory for working trees and 'committed only' for their branches
 - [x] Tooltip follows the selection

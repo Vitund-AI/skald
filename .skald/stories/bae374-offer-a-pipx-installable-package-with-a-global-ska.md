@@ -11,5 +11,9 @@ updated_at: "2026-09-08T17:24:16Z"
 
 Keep the single-file vendored copy as canonical, but also publish the same file so `pipx install skald` gives a global `skald` and `git-skald` entry point. The global copy must resolve the data directory through the git root, which already works.
 
+## Changelog
+
+Skald installs as a package with a global `skald` command and a `git skald` alias, replacing the vendored single-file copy. `skald init` migrates a 0.1 repository.
+
 ## [claude] 2026-09-06 07:04 UTC
 Implemented: src/ layout, pyproject.toml, distribution name skald-kanban (skald is taken on PyPI, D7), console scripts skald and git-skald, publish workflow with PyPI trusted publishing on v* tags. Vendoring removed (D6).

@@ -21,6 +21,10 @@ Found while verifying the board in a real browser with Tailwind loaded (f7674b).
 - Stack columns vertically on narrow screens.
 - Toast when the backlog changes on disk outside the board (hook, workflow, CLI).
 
+## Changelog
+
+The board has a dark theme that follows the operating system or a header toggle, columns that flex to the window, a story dialog that no longer overflows, keyboard access to cards, and empty-state messages.
+
 ## Acceptance
 - [x] Graph toggle stays readable when active
 - [x] Modal has no horizontal scrollbar at 1440px and fields stay inside it
