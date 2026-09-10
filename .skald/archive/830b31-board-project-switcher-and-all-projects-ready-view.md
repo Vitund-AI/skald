@@ -1,0 +1,20 @@
+---
+title: "Board: project switcher and all-projects ready view"
+status: "done"
+rank: 450
+tags: ["ui"]
+blocked_by: []
+released: "0.2.0"
+created_at: "2026-09-06T07:04:41Z"
+updated_at: "2026-09-10T00:56:31Z"
+---
+## Requirements
+
+One server for all registered projects. Switcher in the header, All projects option lists ready unblocked work across repos and opens stories in their project.
+
+## Changelog
+
+One server shows every registered project. The header has a project switcher, and "All projects: ready work" lists ready, unblocked stories across all of them, opening each in its own project.
+
+## [claude] 2026-09-06 07:04 UTC
+Implemented. Last project remembered in localStorage and the URL.

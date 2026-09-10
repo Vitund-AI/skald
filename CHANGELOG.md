@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (unreleased)
+## 0.2.0 (2026-09-09)
 
 The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
@@ -112,6 +112,59 @@ repository to migrate; story files are unchanged.
   board as `github-actions[bot]`. It used to commit as
   `skald@users.noreply.github.com`, which GitHub attributes to the unrelated
   account named `skald`. Re-run the install to update an existing workflow.
+
+### Stories
+
+- The board draws the dependency graph, including cross-project edges, so long chains of blockers are visible at a glance. (9bf832)
+- Columns are defined per project in `config.json` with roles (backlog, ready, active, done, closed) and optional WIP limits. A story with an unknown status shows in an Unknown column and is reported by `skald check`. (b5d7d7)
+- A `blocked_by` entry can name a story in another registered project as `project:id`. It resolves through the machine-local index; a project not registered here counts as unmet with a warning rather than an error. (058512)
+- `skald hooks claude --install` adds Claude Code hooks: SessionStart runs `skald status` and `skald ls` so every session begins oriented, and Stop runs `skald check`; `--strict` makes the stop hook fail on uncommitted story files. (aab06f)
+- Story templates live in `.skald/templates/<name>.md`; `skald new --template NAME` starts from one and `skald templates` lists them. (9e4f8e)
+- Select several cards with press-and-hold or `x`, drag the whole batch between columns, and use the bar at the bottom to move, tag, or archive the selection. `skald archive` and the API accept specific ids. (c78e01)
+- GitHub Actions run the test suite on Linux for Python 3.9 to 3.13 and on macOS and Windows, build the wheel, and publish to PyPI from `v*` tags with trusted publishing after checking the tag matches the package version. (c5e56b)
+- The board updates live over a server-sent event stream when story files change, with polling as the fallback. A toast announces changes made outside the board. (883a6a)
+- `skald mcp` serves the backlog as MCP tools over stdio (list, next, show, new, move, claim, note, tag, block), so agents without shell access can work from it. Standard library JSON-RPC only. (862dae)
+- Any branch's backlog can be read without touching the working tree: `skald branches`, `skald ls --branch REF`, `skald show <id> --branch REF`, and a read-only branch view on the board. The checked-out branch stays the truth. (d8a25c)
+- Tags of the form `key:value` are facets. `skald facets` and `skald epics` show values with progress, the board offers a filter per facet key and swimlanes by facet, and `epic:name` tags work across projects because tags are plain strings. (cbb58e)
+- `skald render` writes a Markdown or HTML snapshot of the board, by default `.skald/README.md`, so GitHub shows the backlog in place at any commit. `skald render --enable` re-renders on commit, `skald hooks git --install` adds a pre-commit hook, and `skald hooks github --install` writes a workflow that checks the backlog and refreshes the snapshot. (46b5d3)
+- Notes can carry a kind: `--kind handoff`, `decision`, or `blocker` stamps the heading. `skald resume <id>` prints a story's requirements, checklist state, dependencies, and only the latest handoff, so the next session starts from the state of play. (04625a)
+- A `## Acceptance` checklist in the body is an advisory gate: moving a story past the first active column or into done warns while items are unchecked, and the board shows acceptance progress on the card. (aa1ade)
+- `skald context --as NAME` prints one orientation block: your assigned stories with their last note, the next unblocked story, blockers, stale claims, claims elsewhere, and uncommitted story files. `--compact` on `ls` and `next` trims the JSON. (dea072)
+- `skald next` skips, and `skald claim` warns about, stories claimed by someone else on another local branch. A claim on an active story untouched for `stale_days` counts as free again, with a warning. (654c29)
+- Commits link to stories through a `Skald-Story` trailer. `skald commit` writes it for the stories it touches, the contract asks agents to add it to code commits, and `skald commits <id>` and the board's History tab list the commits that reference a story. (5c4f0c)
+- `skald diff --since REF --until REF` lists stories that were created, moved, claimed, or archived between two refs, as text, JSON, or Markdown. The GitHub workflow posts the Markdown as a comment on pull requests. (610eef)
+- `skald activity --since REF --until REF` lists every new story, status change, claim, and note between two refs, one line per event with commit, author, and date, so a person can review what agents did overnight. (f4fa85)
+- `skald hooks claude --install` also writes a Claude Code skill from the contract template, and `skald init` appends the one-line pointer to `.skald/AGENTS.md` to the root `CLAUDE.md` and `AGENTS.md`, creating `AGENTS.md` when neither exists. (419b5c)
+- The dependency graph is drawn three ways: a Mermaid block in the rendered snapshot that GitHub draws, `skald graph --format mermaid|dot|json`, and a layered SVG on the board (`g`) with click-to-open. Only stories with a dependency appear. (12c4d1)
+- The test suite runs on Linux for Python 3.9 to 3.13 and on macOS and Windows for 3.12, and the background server and git path handling were fixed where those platforms differed. (68a39b)
+- The board has a dark theme that follows the operating system or a header toggle, columns that flex to the window, a story dialog that no longer overflows, keyboard access to cards, and empty-state messages. (c5f90f)
+- The board has a Help panel (`?`): keyboard shortcuts, what the card markers mean, the story file format, and the full CLI reference generated from the same parser as `skald --help`. (bd9aca)
+- The board was verified in a real browser with its stylesheet loaded, and the layout problems found were fixed. (f7674b)
+- `skald mv` is now `skald move <id> <column>`, the Kanban verb. `mv` still works as a hidden alias for this release. (d3c39e)
+- Skald is not on PyPI yet. The README, contract, skill, and generated workflow install from `git+https://github.com/Vitund-AI/skald.git`; the distribution is named `skald-kanban`, the command is `skald`. (1b15cc)
+- `skald completion bash|zsh|fish` prints a shell script to eval. Tab completes commands, flags, story ids with their titles, columns, tags, blockers, projects, templates, branches, and note kinds; `git skald` completes the same way. (61b53c)
+- The README shows the board, a story, a terminal session, shell completion, the dependency graph, and multi-select, in light and dark, with the images under `docs/images`. (664976)
+- skald release VERSION turns the done column into a changelog section and archives those stories with the version they shipped in. Stories can carry a ## Changelog section written for users; ls --release VERSION shows what went out. (95e3a5)
+- A docs/ folder with guides for getting started, working with agents, the board, story files, git and CI, multiple projects, and troubleshooting, plus a CLI reference generated by skald docs so it cannot drift. (71f880)
+- The board server now requires a per-machine token. skald open handles it for you; scripts pass Authorization: Bearer with the value from skald server token. This closes cross-site requests from web pages and other local users. (43a999)
+- The workflow written by `skald hooks github --install` commits the rendered board as `github-actions[bot]`. It used to commit as `skald@users.noreply.github.com`, an address GitHub attributes to the unrelated account named `skald`; re-run the install to update an existing workflow. (b2f19e)
+- A project with several working trees on one machine keeps one primary and knows the others: git worktrees are discovered automatically and a second clone is recorded when a command runs there, without replacing the primary. The board's branch dropdown lists every working tree and shows the chosen one, uncommitted changes included and editable; `skald projects` lists checkouts and `skald projects use` picks the primary; `next`, `claim`, and `context` see claims made in other checkouts before they are committed. (8c4d2c)
+- Working-tree entries in the board's branch dropdown read `worktree` or `clone`, then the directory and branch, so the closed control cannot be mistaken for a branch; a read-only branch that a working tree is on reads `committed only`, and the control's tooltip describes the current choice. (43641e)
+- The README, docs index, agent contract, board Help panel, and git guide now describe working trees of several checkouts alongside branches. (b1ef9b)
+- Every story that ships in 0.2.0 carries a user-facing changelog entry, so the generated release section reads as release notes rather than a list of titles. (2a929c)
+- When a project's primary directory has gone and another checkout of it survives, the survivor is promoted the next time anything lists or opens the project, with a notice, instead of waiting for a command to run inside it. A project with no surviving checkout stays listed as missing. (8ffede)
+- Each project carries a committed `.skald/config.json` with its name, used by cross-project references, and a format version so newer tools can refuse or migrate cleanly. (63898e)
+- The story dialog renders the body as Markdown with a Preview toggle beside the editor. (e0cc9f)
+- A pre-commit hook and a GitHub Actions step run `skald check`, so corrupt story files and dangling blockers never land on the main branch. (92086e)
+- Notes and claims carry an identity: the CLI defaults to `agent`, overridable with `--as` or `SKALD_AUTHOR`; the board uses `SKALD_AUTHOR`, then `skald config author`, then your git `user.name`. (4ed498)
+- Cards show checklist progress and mark active stories untouched for `stale_days`; the header shows the git branch; the story dialog has a History tab from git log; `n`, `/`, and `Esc` are keyboard shortcuts. (0b108f)
+- `skald status` shows uncommitted story files, `skald commit` stages only `.skald/`, the board has a Commit button for changed story files, and pushing from the board is opt-in with `skald config push true`. (8d081d)
+- One server shows every registered project. The header has a project switcher, and "All projects: ready work" lists ready, unblocked stories across all of them, opening each in its own project. (830b31)
+- `skald archive` moves done and closed stories into `.skald/archive/` so the board and listings stay small; archived stories still satisfy `blocked_by` links and `skald unarchive` brings one back. (9a1da4)
+- The board server runs in the background: `skald server start`, `status`, and `stop`, and `skald open` starts it if needed before opening the browser. `skald serve` still runs it in the foreground. (670177)
+- Skald installs as a package with a global `skald` command and a `git skald` alias, replacing the vendored single-file copy. `skald init` migrates a 0.1 repository. (bae374)
+- Stories have an optional `assignee`. `skald next` skips stories assigned to someone else and cards show who holds them, so several agents can share one repository. (3da635)
+- Every command registers the current project in a machine-local index, so one board and `-p NAME` reach every repository you use Skald in. `skald projects` lists them, `skald projects rm` forgets one, and `--all-projects` acts across all of them. (189d1b)
 
 ## 0.1.0
 

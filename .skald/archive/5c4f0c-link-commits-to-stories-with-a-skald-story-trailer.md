@@ -1,0 +1,21 @@
+---
+title: "Link commits to stories with a Skald-Story trailer"
+status: "done"
+rank: 170
+tags: ["git"]
+blocked_by: []
+assignee: "claude"
+released: "0.2.0"
+created_at: "2026-09-06T19:01:42Z"
+updated_at: "2026-09-10T00:56:31Z"
+---
+## Requirements
+
+skald commit writes Skald-Story trailers for the stories it touches; the contract tells agents to add the trailer to code commits; skald commits <id> and the History tab list commits referencing a story.
+
+## Changelog
+
+Commits link to stories through a `Skald-Story` trailer. `skald commit` writes it for the stories it touches, the contract asks agents to add it to code commits, and `skald commits <id>` and the board's History tab list the commits that reference a story.
+
+## [claude] 2026-09-06 19:09 UTC
+Implemented: skald commit appends Skald-Story trailers for touched stories (--no-trailers to skip); skald commits <id> greps for the trailer or [id]; History tab lists referencing commits above file history; contract tells agents to add the trailer (D35).
