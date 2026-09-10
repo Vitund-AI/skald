@@ -1,12 +1,12 @@
 ---
 title: "rm --force clears the references it would orphan"
-status: "review"
+status: "done"
 rank: 10
 tags: ["cli", "core"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T18:21:55Z"
-updated_at: "2026-09-10T18:26:30Z"
+updated_at: "2026-09-10T20:18:26Z"
 ---
 ## Requirements
 

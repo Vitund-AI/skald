@@ -1,12 +1,12 @@
 ---
 title: "Review notes: resume map one heading per line, answer --question N"
-status: "review"
-rank: 40
+status: "done"
+rank: 50
 tags: ["agents", "cli"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T18:21:55Z"
-updated_at: "2026-09-10T18:26:30Z"
+updated_at: "2026-09-10T20:18:26Z"
 ---
 ## Requirements
 

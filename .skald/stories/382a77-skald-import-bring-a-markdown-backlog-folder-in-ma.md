@@ -1,12 +1,12 @@
 ---
 title: "skald import: bring a Markdown backlog folder in, mapping-driven, reproducibly"
-status: "review"
-rank: 50
+status: "done"
+rank: 40
 tags: ["cli", "docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T18:49:53Z"
-updated_at: "2026-09-10T18:54:00Z"
+updated_at: "2026-09-10T20:18:26Z"
 ---
 ## Requirements
 

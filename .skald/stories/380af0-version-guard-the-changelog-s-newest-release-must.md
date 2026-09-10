@@ -1,12 +1,12 @@
 ---
 title: "Version guard: the changelog's newest release must match __version__"
-status: "review"
+status: "done"
 rank: 20
 tags: ["packaging"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T18:21:55Z"
-updated_at: "2026-09-10T18:26:30Z"
+updated_at: "2026-09-10T20:18:26Z"
 ---
 ## Requirements
 
