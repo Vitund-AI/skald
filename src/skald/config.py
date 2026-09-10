@@ -26,6 +26,20 @@ DEFAULT_COLUMNS = [
     {"key": "done", "label": "Done", "role": "done"},
 ]
 
+# The lifecycle set: two backlog-role columns before ready, so a story is captured (idea), then
+# designed (plan), and only becomes schedulable when a person moves it to ready. Waiting on a human
+# is a condition, not a stage, so it is a derived flag (open questions) rather than a column.
+LIFECYCLE_COLUMNS = [
+    {"key": "idea", "label": "Idea", "role": "backlog"},
+    {"key": "plan", "label": "Plan", "role": "backlog"},
+    {"key": "ready", "label": "Ready", "role": "ready"},
+    {"key": "in_progress", "label": "In progress", "role": "active"},
+    {"key": "review", "label": "Review", "role": "active"},
+    {"key": "done", "label": "Done", "role": "done"},
+]
+
+COLUMN_PRESETS = {"default": DEFAULT_COLUMNS, "lifecycle": LIFECYCLE_COLUMNS}
+
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 

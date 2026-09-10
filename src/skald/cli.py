@@ -218,6 +218,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     init = sub.add_parser("init", help="create .skald/ here (or register an existing one)")
     init.add_argument("--name", help="project name (default: the directory name)")
+    init.add_argument("--columns", choices=["default", "lifecycle"], default="default",
+                      help="column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (idea, plan, ready, in_progress, review, done)")
 
     ls = sub.add_parser("ls", help="list stories")
     ls.add_argument("--status", metavar="COLUMN", help="only this column")
@@ -439,6 +441,8 @@ def cmd_init(ws: Workspace, args) -> int:
     cfg_path = skald_dir / "config.json"
     if cfg_path.exists():
         config = ProjectConfig.load(cfg_path)
+        if getattr(args, "columns", "default") != "default":
+            lines.append(f"columns unchanged: {cfg_path.name} already exists; edit its columns list by hand")
         if args.name and args.name != config.name:
             config.name = slugify_name(args.name)
             config.save(cfg_path)
@@ -447,7 +451,10 @@ def cmd_init(ws: Workspace, args) -> int:
             lines.append(f"kept {cfg_path.name} (project '{config.name}')")
     else:
         name = slugify_name(args.name) if args.name else slugify_name(skald_dir.parent.name)
-        config = ProjectConfig(name)
+        from .config import COLUMN_PRESETS, Column
+
+        preset = getattr(args, "columns", None) or "default"
+        config = ProjectConfig(name, [Column(**c) for c in COLUMN_PRESETS[preset]])
         config.save(cfg_path)
         lines.append(f"wrote {cfg_path.name} (project '{name}', columns: {config.describe()})")
 

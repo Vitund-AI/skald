@@ -56,7 +56,7 @@ error or not found, 2 corrupt story or configuration.
 ## init
 
 ```
-skald init [--name NAME]
+skald init [--name NAME] [--columns {default,lifecycle}]
 ```
 
 Create .skald/ here (or register an existing one).
@@ -64,6 +64,7 @@ Create .skald/ here (or register an existing one).
 | Argument | Description |
 | --- | --- |
 | `--name NAME` | project name (default: the directory name) |
+| `--columns COLUMNS` | column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (idea, plan, ready, in_progress, review, done) One of: `default`, `lifecycle`. |
 
 ## ls
 

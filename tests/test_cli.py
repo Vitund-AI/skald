@@ -35,6 +35,28 @@ class TestInit(SkaldTestCase):
         code, out, _ = self.run_cli("init", "--name", "Renamed Thing", cwd=repo)
         self.assertIn("renamed project to 'renamed-thing'", out)
 
+    def test_init_lifecycle_columns(self):
+        repo = self.make_repo("life", init_skald=False)
+        code, out, err = self.run_cli("init", "--columns", "lifecycle", cwd=repo)
+        self.assertEqual(code, 0, err)
+        cfg = ProjectConfig.load(repo / ".skald" / "config.json")
+        self.assertEqual([c.key for c in cfg.columns], ["idea", "plan", "ready", "in_progress", "review", "done"])
+        self.assertEqual([c.role for c in cfg.columns][:3], ["backlog", "backlog", "ready"])
+        code, out, err = self.run_cli("init", "--columns", "lifecycle", cwd=repo)
+        self.assertIn("columns unchanged", out)
+        # next never picks from idea or plan; moving plan to ready with an open question warns.
+        code, out, _ = self.run_cli("new", "Thing", "--status", "plan", cwd=repo)
+        sid = out.strip()
+        self.assertEqual(self.run_cli("next", cwd=repo)[0], 1)
+        self.run_cli("note", sid, "Which API?", "--kind", "question", cwd=repo)
+        code, out, err = self.run_cli("move", sid, "ready", cwd=repo)
+        self.assertEqual(code, 0)
+        self.assertIn("1 open question(s); answer them with skald answer", err)
+        self.run_cli("answer", sid, "The v2 one.", cwd=repo)
+        code, out, err = self.run_cli("move", sid, "plan", cwd=repo)
+        code, out, err = self.run_cli("move", sid, "ready", cwd=repo)
+        self.assertNotIn("open question", err)
+
     def test_init_from_subdirectory(self):
         sub = self.repo / "src"
         sub.mkdir()

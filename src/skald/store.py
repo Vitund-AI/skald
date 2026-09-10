@@ -649,6 +649,7 @@ class Store:
             self._check_status(status)
             if status != story.status:
                 old_index = self.config.index(story.status)
+                old_role = self.config.role(story.status)
                 story.fields["status"] = status
                 story.fields["rank"] = self._bottom_rank(status, stories)
                 status_changed = True
@@ -657,6 +658,13 @@ class Store:
                     warnings.append(
                         f"{story.id} moves to {status} with {a_total - a_done} of {a_total} acceptance criteria unchecked"
                     )
+                # Leaving the backlog for ready is the human's gate; an open question means it is not decided yet.
+                if old_role == "backlog" and self.config.role(status) == "ready":
+                    open_qs = story.open_questions()
+                    if open_qs:
+                        warnings.append(
+                            f"{story.id} moves to {status} with {len(open_qs)} open question(s); answer them with skald answer"
+                        )
         if rank is not None:
             if isinstance(rank, bool) or not isinstance(rank, int):
                 raise SkaldError("rank must be an integer")

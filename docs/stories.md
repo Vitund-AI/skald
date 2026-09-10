@@ -108,6 +108,31 @@ them. Moving into `ready`, `active`, or `done` warns about unmet
 dependencies. A `limit` is a WIP limit; exceeding it warns and turns the
 column count red on the board.
 
+### The lifecycle set
+
+`skald init --columns lifecycle` writes a set that covers ideation and
+planning as well as execution:
+
+| Column | Role | Meaning |
+| --- | --- | --- |
+| `idea` | backlog | captured; nobody has thought about it yet |
+| `plan` | backlog | someone is writing the requirements and design |
+| `ready` | ready | decided; `next` picks from here |
+| `in_progress` | active | |
+| `review` | active | |
+| `done` | done | |
+
+Two backlog-role columns give a gate with no new rule: not in ready means
+not schedulable, so an agent can capture an idea or draft a plan and nothing
+starts until a person moves it on. Moving from a backlog column into ready
+while the story has an open question warns, the same way unchecked
+acceptance warns on the move to done. "Waiting on a human" is not a column,
+because it is a condition that can hold at any stage: it is the question
+badge and filter, so a story keeps its place while it waits. Any project can
+adopt the set by editing its `columns` list; existing stories keep their
+status, and a status that no longer matches a column shows as unknown until
+you move it.
+
 Renaming or removing a column does not break stories: a status that matches
 no column still lists, shows in an "Unknown status" column, and is reported
 by `skald check`. `skald columns` prints the current set. The project `name`

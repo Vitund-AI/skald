@@ -436,3 +436,19 @@ says. A decision that names the question it answers is a refinement to
 build only if the coarse rule proves noisy. "Waiting on a human" is
 derived from that, never a column, because it is a condition that can
 hold at any stage; a column would lose where the story was.
+
+### D55. The lifecycle is two backlog columns, and waiting is not one of them
+A full lifecycle from idea through plan and discussion to execution needs
+no new role: two columns with the `backlog` role before `ready` are the
+whole gate, because "not in ready means not schedulable" is already the
+rule `next` follows. A `plan` role or a `design` role would have added a
+concept for a distinction the roles already make. The one thing the
+lifecycle needed from the code is a warning on the move that matters,
+backlog to ready with an open question, which is the human's gate in the
+same sense that acceptance is the gate to done. "Waiting on a human" was
+proposed as a column between plan and ready and rejected: it is a
+condition that can hold in plan, in progress, or in review, and a column
+can hold only one state, so moving a story there loses where it was and
+moving it back is a step someone forgets. The question badge and filter
+show the same set without the loss. The preset is opt-in at `init`; the
+default set is unchanged so nothing existing moves.

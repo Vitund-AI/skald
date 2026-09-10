@@ -147,6 +147,10 @@ the pointer when neither exists.
   `closed`. At least one column must be `done` or `closed`. `limit` is an
   optional positive integer. Several columns may share a role.
 - Unknown top-level keys are preserved.
+- `init --columns default|lifecycle` chooses the initial set for a new
+  `config.json` (`COLUMN_PRESETS`); the lifecycle set is `idea` and `plan`
+  (both `backlog`), then `ready`, `in_progress`, `review`, `done`. An
+  existing `config.json` is never rewritten.
 
 **Role semantics:**
 
@@ -259,6 +263,8 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
   references.
 - A story is stale when its role is `active` and `updated_at` is at least
   `stale_days` old.
+- `update` warns when a story leaves a `backlog` column for a `ready` column
+  with an open question (section 4.3): that move is the human's gate.
 - `next` skips ready stories assigned to someone else unless the assignment
   is stale, in which case it offers them with a warning; it also skips
   stories that are active with a different assignee on any other local

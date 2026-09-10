@@ -11,6 +11,11 @@
   on a human" filter, and an Answer button in the story dialog. MCP:
   `skald_answer`, and `waiting` and `open_questions` in context and resume.
 
+- Lifecycle columns: `skald init --columns lifecycle` writes `idea`, `plan`,
+  `ready`, `in_progress`, `review`, `done`, so ideation and planning have a
+  place before anything is schedulable. Moving a story from a backlog
+  column into ready with an open question warns.
+
 ### Changed
 - `skald resume` prints the `## Requirements` section when the body has
   one, then a one-line map of the other sections with their sizes; `--section

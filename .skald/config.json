@@ -3,8 +3,13 @@
   "name": "skald",
   "columns": [
     {
-      "key": "backlog",
-      "label": "Backlog",
+      "key": "idea",
+      "label": "Idea",
+      "role": "backlog"
+    },
+    {
+      "key": "plan",
+      "label": "Plan",
       "role": "backlog"
     },
     {
