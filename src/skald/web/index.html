@@ -710,8 +710,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       for (const g of groups) {
         const lane = document.createElement('section');
         const pct = g.meta && g.meta.total ? Math.round(100 * g.meta.done / g.meta.total) : null;
+        // A limited facet is a lane: at most N of its stories may be active at once. Like a column limit, red when full.
+        const limit = g.meta ? (state.facetLimits || {})[key] : null;
+        const activeCols = new Set(state.columns.filter(c => c.role === 'active').map(c => c.key));
+        const active = limit ? g.stories.filter(s => activeCols.has(s.status)).length : 0;
+        const laneTag = limit ? `<span class="text-xs font-normal ${active >= limit ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-muted'}" title="Lane: at most ${limit} active at once">${active}/${limit} active</span>` : '';
         lane.innerHTML = `<div class="flex items-center gap-3 mb-2 text-sm font-semibold text-muted">${esc(g.label)}
-          ${pct === null ? '' : `<span class="inline-block h-1.5 w-24 rounded bg-chip overflow-hidden"><span class="block h-full bg-emerald-500" style="width:${pct}%"></span></span><span class="text-xs font-normal text-muted">${g.meta.done}/${g.meta.total}</span>`}</div>`;
+          ${pct === null ? '' : `<span class="inline-block h-1.5 w-24 rounded bg-chip overflow-hidden"><span class="block h-full bg-emerald-500" style="width:${pct}%"></span></span><span class="text-xs font-normal text-muted">${g.meta.done}/${g.meta.total}</span>`}${laneTag}</div>`;
         const row = document.createElement('div');
         row.className = 'flex flex-col sm:flex-row gap-3 overflow-x-auto';
         renderColumns(row, g.stories);
@@ -1126,6 +1131,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.columns = data.columns; state.stories = data.stories; state.settings = data.settings;
       state.identity = data.identity; state.git = data.git; state.version = data.version;
       state.facets = data.facets || {};
+      state.facetLimits = data.facet_limits || {};
       if (prevHead && data.git.head && data.git.head !== prevHead && Date.now() - state.lastWrite > 3000) toast(`New commit ${data.git.head} on ${data.git.branch}`, 'info');
       renderFacetControls();
       const waiting = state.stories.filter(openQuestions).length;

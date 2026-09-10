@@ -440,6 +440,7 @@ class Handler(BaseHTTPRequestHandler):
                     "columns": [c.to_dict() for c in store.config.columns],
                     "stories": [store.story_dict(s, idx, ws.user.get("stale_days")) for s in stories],
                     "facets": compute_facets(stories, store.config),
+                    "facet_limits": store.config.facet_limits,
                     "warnings": warnings + ws.notices,
                     "git": git,
                     "identity": self._identity(ws, store),

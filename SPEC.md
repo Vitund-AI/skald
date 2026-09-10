@@ -147,6 +147,11 @@ the pointer when neither exists.
   `closed`. At least one column must be `done` or `closed`. `limit` is an
   optional positive integer. Several columns may share a role.
 - Unknown top-level keys are preserved.
+- `facet_limits` (optional): `{"<facet key>": N}`. At most N stories per
+  value of that key may be active at once, counting stories active here and
+  stories claimed on other branches or in other checkouts. `lane` is the
+  conventional key. Keys match the column-key pattern; values are positive
+  integers.
 - `init --columns default|lifecycle` chooses the initial set for a new
   `config.json` (`COLUMN_PRESETS`); the lifecycle set is `idea` and `plan`
   (both `backlog`), then `ready`, `in_progress`, `review`, `done`. An
@@ -263,6 +268,10 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
   references.
 - A story is stale when its role is `active` and `updated_at` is at least
   `stale_days` old.
+- `busy_lanes` counts, per limited facet key and value, the stories active
+  here or claimed elsewhere. `next` skips a ready story whose lane is at
+  its limit, with a warning naming the holders; `claim` and a move into an
+  active column warn the same way and proceed. Advisory, like column limits.
 - `update` warns when a story leaves a `backlog` column for a `ready` column
   with an open question (section 4.3): that move is the human's gate.
 - `next` skips ready stories assigned to someone else unless the assignment
@@ -382,7 +391,7 @@ story or configuration. Commands that print stories take `--json`.
 | `activity [--since REF] [--until REF] [--json]` | For each commit touching `.skald/` in the range, `diff_states(parent, commit)` rendered as events. Default range is 20 commits. |
 | `changelog --since REF [--until REF]` | Stories terminal at `until` that were absent or non-terminal at `since`, read from git objects. |
 | `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
-| `columns`, `templates`, `projects [rm NAME \| use [PATH]]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. `projects` lists each project's other checkouts beneath it with branch and dirty count; `use` makes a checkout the primary. |
+| `columns`, `templates`, `projects [rm NAME \| use [PATH]]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. `columns` prints facet limits beneath the table; `status` reports busy lanes (`lanes` in JSON). `projects` lists each project's other checkouts beneath it with branch and dirty count; `use` makes a checkout the primary. |
 | `hooks claude [--install] [--strict] [--as NAME]` | Prints or merges into `.claude/settings.json`: SessionStart `skald context` (`--as NAME` when given), never a full listing, because hook output is paid for on every session start; Stop `skald check` (or `skald check --hook` with `--strict`). |
 | `hooks git [--install]`, `hooks github [--install]` | Section 10b. `hooks claude --install` also writes `.claude/skills/skald/SKILL.md` from the contract template. |
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |

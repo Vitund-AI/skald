@@ -76,6 +76,7 @@ class ProjectConfig:
         self.columns = columns or [Column(**c) for c in DEFAULT_COLUMNS]
         self.extra = dict(extra or {})
         self._validate_columns()
+        self.facet_limits = self._parse_facet_limits(self.extra.get("facet_limits"))
 
     # -- construction ----------------------------------------------------
 
@@ -144,6 +145,22 @@ class ProjectConfig:
         atomic_write(path, json.dumps(self.to_dict(), indent=2) + "\n")
 
     # -- queries ---------------------------------------------------------
+
+    @staticmethod
+    def _parse_facet_limits(raw) -> dict[str, int]:
+        """``facet_limits``: at most N stories per value of a facet key may be active at once (a lane)."""
+        if raw is None:
+            return {}
+        if not isinstance(raw, dict):
+            raise ConfigError("'facet_limits' must be an object of facet key to positive integer")
+        out: dict[str, int] = {}
+        for key, value in raw.items():
+            if not isinstance(key, str) or not KEY_RE.match(key):
+                raise ConfigError(f"facet_limits: key must match {KEY_RE.pattern} (got {key!r})")
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ConfigError(f"facet_limits[{key!r}] must be a positive integer")
+            out[key] = value
+        return out
 
     def _validate_columns(self) -> None:
         seen = set()

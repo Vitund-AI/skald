@@ -11,6 +11,12 @@
   on a human" filter, and an Answer button in the story dialog. MCP:
   `skald_answer`, and `waiting` and `open_questions` in context and resume.
 
+- Lanes: `"facet_limits": {"lane": 1}` in `config.json` means at most one
+  story per `lane:` value may be active at once, counting claims on other
+  branches and in other checkouts. `next` skips a story whose lane is busy
+  and says who holds it; `claim` and a move into an active column warn.
+  `columns` lists the limits, `status` reports busy lanes, and the board's
+  swimlane header shows the count in red when a lane is full.
 - Lifecycle columns: `skald init --columns lifecycle` writes `idea`, `plan`,
   `ready`, `in_progress`, `review`, `done`, so ideation and planning have a
   place before anything is schedulable. Moving a story from a backlog

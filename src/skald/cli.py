@@ -967,6 +967,9 @@ def cmd_status(ws: Workspace, store: Store, args) -> int:
         else:
             unknown += 1
     ready = [s for s in stories if store.config.role(s.status) == "ready" and not store.unmet(s, idx)]
+    busy = store.busy_lanes(stories, _elsewhere(ws, store)) if store.config.facet_limits else {}
+    lanes = {f"{k}:{v}": {"active": len(ids), "limit": store.config.facet_limits[k]}
+             for k, values in busy.items() for v, ids in values.items()}
     info = {
         "project": store.name,
         "path": str(store.dir),
@@ -974,6 +977,7 @@ def cmd_status(ws: Workspace, store: Store, args) -> int:
         "counts": counts,
         "unknown_status": unknown,
         "ready_unblocked": len(ready),
+        "lanes": lanes,
         "uncommitted": [c["path"] for c in uncommitted],
         "warnings": load_warnings,
     }
@@ -985,6 +989,9 @@ def cmd_status(ws: Workspace, store: Store, args) -> int:
         print(f"branch:   {info['branch']}")
     print("columns:  " + "  ".join(f"{k}={v}" for k, v in counts.items()) + (f"  unknown={unknown}" if unknown else ""))
     print(f"ready and unblocked: {len(ready)}")
+    if info["lanes"]:
+        busy_l = [f"{k} {d['active']}/{d['limit']}" for k, d in info["lanes"].items() if d["active"] >= d["limit"]]
+        print("lanes busy: " + (", ".join(busy_l) if busy_l else "none"))
     if uncommitted:
         print(f"uncommitted story changes: {len(uncommitted)} file(s) under .skald/")
     else:
@@ -1386,6 +1393,10 @@ def cmd_columns(store: Store, args) -> int:
         return 0
     rows = [[c.key, c.label, c.role, str(c.limit) if c.limit else "-"] for c in store.config.columns]
     _print_table(rows, ["KEY", "LABEL", "ROLE", "LIMIT"])
+    if store.config.facet_limits:
+        print("\nLanes (at most N active stories per value):")
+        for key, n in store.config.facet_limits.items():
+            print(f"  {key}: {n}")
     return 0
 
 
@@ -1744,7 +1755,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     if args.command == "new":
         return cmd_new(ws, args, store)
     if args.command in ("move", "mv"):
-        story, warnings = store.update(args.id, status=args.status)
+        story, warnings = store.update(args.id, status=args.status, elsewhere=_elsewhere(ws, store))
         _warn(warnings)
         print(f"moved {story.id} to {story.status}")
         return 0

@@ -452,3 +452,17 @@ can hold only one state, so moving a story there loses where it was and
 moving it back is a step someone forgets. The question badge and filter
 show the same set without the loss. The preset is opt-in at `init`; the
 default set is unchanged so nothing existing moves.
+
+### D56. Mutual exclusion is a facet limit, not a new relation
+Four stories that each rewrote one migration file had no order between
+them, so `blocked_by` could not say "not at the same time", and running
+them in parallel worktrees produced an enum that silently went missing
+rather than a merge conflict anyone would notice. The only tool was a
+note saying "serial". The constraint is about concurrency of a resource,
+and facets already name resources, so a lane is a facet key with a limit
+in `config.json`, and the rule is the one column limits already follow:
+`next` skips, `claim` and `move` warn, nothing refuses. Counting claims on
+other branches and in other checkouts is what makes it hold across
+agents, and that knowledge already existed for claims. A new relation or
+a new field would have needed its own syntax, validation, and rendering
+for something a tag and one config key express.

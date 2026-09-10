@@ -567,6 +567,27 @@ class TestAgentOrientation(SkaldTestCase):
         code, _, err = self.run_cli("note", a, "x", "--kind", "Bad Kind")
         self.assertEqual(code, 1)
 
+    def test_lanes_in_columns_status_and_board_payload(self):
+        cfg_path = self.skald_dir / "config.json"
+        data = json.loads(cfg_path.read_text())
+        data["facet_limits"] = {"lane": 1}
+        cfg_path.write_text(json.dumps(data))
+        a = self.new("part 1", "--status", "ready", "--tags", "lane:alembic")
+        b = self.new("part 2", "--status", "ready", "--tags", "lane:alembic")
+        code, out, _ = self.run_cli("columns")
+        self.assertIn("Lanes (at most N active stories per value):", out)
+        self.assertIn("lane: 1", out)
+        self.run_cli("claim", a, "--as", "one")
+        code, out, _ = self.run_cli("status")
+        self.assertIn("lanes busy: lane:alembic 1/1", out)
+        code, out, _ = self.run_cli("status", "--json")
+        self.assertEqual(json.loads(out)["lanes"], {"lane:alembic": {"active": 1, "limit": 1}})
+        code, out, err = self.run_cli("move", b, "in_progress")
+        self.assertEqual(code, 0)
+        self.assertIn("enters a busy lane", err)
+        code, out, err = self.run_cli("next", "--as", "two")
+        self.assertEqual(code, 1)
+
     def test_questions_in_context_resume_ls_and_answer(self):
         a = self.new("Pick a database", "--status", "ready")
         b = self.new("Unrelated", "--status", "ready")

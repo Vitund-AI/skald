@@ -138,6 +138,7 @@ class TestAPI(ServerTestCase):
         self.assertEqual(data["questions"]["open"], 1)
         status, board = self.call("GET", f"{P}/board")
         self.assertEqual(next(s for s in board["stories"] if s["id"] == a)["questions"]["open"], 1)
+        self.assertEqual(board["facet_limits"], {})
         status, data = self.call("POST", f"{P}/stories/{a}/notes", {"text": "5000", "kind": "decision"})
         self.assertEqual(data["questions"]["open"], 0)
         self.assertIn(" · decision\n", data["body"])

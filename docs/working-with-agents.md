@@ -129,6 +129,11 @@ again with a warning.
 Dependencies never resolve across branches: a blocker done on `feature/x`
 does not unblock anything on `main` until it merges.
 
+Work that must not run in parallel, as opposed to work that must run in
+order, gets a lane: tag the stories with the same `lane:` value and put
+`"facet_limits": {"lane": 1}` in `config.json`. `next` then hands out one
+at a time, across worktrees too. See [Stories](stories.md#lanes).
+
 ## Reading what an agent did
 
 ```sh

@@ -211,6 +211,29 @@ skald facets                              # every key and value with done/open c
 The board shows one filter per facet key and can split into swimlanes by
 any of them.
 
+### Lanes
+
+Dependencies express order. Some work has no order but must not run at the
+same time: four stories that each rewrite the same migration file, say,
+which collide semantically rather than as clean merge conflicts when two
+agents take them in parallel worktrees. A lane is a facet with a limit:
+
+```json
+{
+  "facet_limits": {"lane": 1}
+}
+```
+
+in `config.json` means at most one story per `lane:` value may be active
+at once, counting stories active in this checkout and stories claimed on
+other branches or in other checkouts. Tag the stories that share a
+resource with the same value, `lane:alembic-baseline`, and `skald next`
+skips the second while the first is active, saying who holds the lane;
+`claim` and a move into an active column warn and proceed. Any facet key
+can carry a limit; `lane` is the convention. `skald columns` lists the
+limits, `skald status` reports busy lanes, and the board's swimlane header
+shows `1/1 active` in red when a lane is full.
+
 ## Templates
 
 Put Markdown files in `.skald/templates/` and create stories from them:
