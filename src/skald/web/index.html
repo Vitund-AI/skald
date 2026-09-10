@@ -385,7 +385,23 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     refresh(true);
     loadBranches();
   }
-  const shortPath = (p) => { const parts = p.replace(/[\\/]\.skald$/, '').split(/[\\/]/).filter(Boolean); return parts.slice(-2).join('/'); };
+  const repoDir = (p) => p.replace(/[\\/]\.skald$/, '');
+  // The directory name alone, unless two checkouts share one; then the parent too.
+  const treeLabel = (c, all) => {
+    const parts = repoDir(c.path).split(/[\\/]/).filter(Boolean);
+    const twin = all.some(o => o !== c && repoDir(o.path).split(/[\\/]/).filter(Boolean).slice(-1)[0] === parts.slice(-1)[0]);
+    return parts.slice(twin ? -2 : -1).join('/');
+  };
+  // What the closed control means, since optgroup labels only show while the list is open.
+  function describeBranchChoice() {
+    const sel = $('branch');
+    if (state.ref) { sel.title = `Read-only view of what is committed on ${state.ref}.`; return; }
+    const cos = state.checkouts && state.checkouts.checkouts;
+    const c = cos && cos.find(x => x.id === (state.checkout || state.checkouts.current));
+    sel.title = c
+      ? `Working tree at ${repoDir(c.path)}, on ${c.branch || 'HEAD'}, editable.${c.primary ? ' This is the primary checkout.' : ''}`
+      : 'The working tree, editable. Other branches are read-only views.';
+  }
   async function loadBranches() {
     if (state.allView || !state.project) return;
     try {
@@ -396,19 +412,24 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       const several = cos && cos.checkouts.filter(c => c.exists).length > 1;
       if (!data.available && !several) { sel.classList.add('hidden'); return; }
       const cur = data.current || 'HEAD';
+      const live = several ? cos.checkouts.filter(c => c.exists) : [];
+      const onDisk = new Set(live.map(c => c.branch));
+      // A branch that a working tree is on is listed too: it is the committed state, minus what is on disk there.
       const branchOpts = data.available
-        ? data.branches.filter(b => !b.current).map(b => `<option value="${esc(b.name)}">${esc(b.name)}${b.only_there || b.differ ? ` (+${b.only_there} / ~${b.differ})` : ''}</option>`).join('')
+        ? data.branches.filter(b => !b.current).map(b => `<option value="${esc(b.name)}">${esc(b.name)}${onDisk.has(b.name) ? ' · committed only' : ''}${b.only_there || b.differ ? ` (+${b.only_there} / ~${b.differ})` : ''}</option>`).join('')
         : '';
       if (several) {
         // Every working tree of the project is editable; the one shown is selected. Ids, never paths, travel in URLs.
-        const trees = cos.checkouts.filter(c => c.exists).map(c =>
-          `<option value="co:${esc(c.id)}">${esc(c.branch || 'HEAD')} · ${esc(shortPath(c.path))}${c.primary ? ' (primary)' : ''}${c.changes ? ` · ${c.changes} uncommitted` : ''}</option>`).join('');
-        sel.innerHTML = `<optgroup label="Working trees">${trees}</optgroup>` + (branchOpts ? `<optgroup label="Branches, read-only">${branchOpts}</optgroup>` : '');
+        // The word comes first so the closed control cannot be mistaken for a branch name.
+        const trees = live.map(c =>
+          `<option value="co:${esc(c.id)}" title="${esc(repoDir(c.path))}">${c.worktree || c.primary ? 'worktree' : 'clone'} ${esc(treeLabel(c, live))} · ${esc(c.branch || 'HEAD')}${c.primary ? ' · primary' : ''}${c.changes ? ` · ${c.changes} uncommitted` : ''}</option>`).join('');
+        sel.innerHTML = `<optgroup label="Working trees, editable">${trees}</optgroup>` + (branchOpts ? `<optgroup label="Branches, read-only">${branchOpts}</optgroup>` : '');
         sel.value = state.ref || `co:${cos.current}`;
       } else {
         sel.innerHTML = `<option value="">${esc(cur)} (working tree)</option>` + branchOpts;
         sel.value = state.ref;
       }
+      describeBranchChoice();
       sel.classList.remove('hidden');
       const el = $('elsewhere');
       if (data.elsewhere.length) {
@@ -1122,7 +1143,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (!list || list.dataset.status !== state.sel.column) clearSelection();
   });
   $('project').addEventListener('change', (e) => switchProject(e.target.value));
-  $('branch').addEventListener('change', (e) => { const v = e.target.value; if (v.startsWith('co:')) setCheckout(v.slice(3)); else setRef(v); });
+  $('branch').addEventListener('change', (e) => { const v = e.target.value; if (v.startsWith('co:')) setCheckout(v.slice(3)); else setRef(v); describeBranchChoice(); });
   $('group-by').addEventListener('change', (e) => { state.groupBy = e.target.value; render(); });
   $('graph-btn').addEventListener('click', () => setGraph(!state.graph));
   setInterval(() => { if (document.visibilityState === 'visible' && !state.modal) loadBranches(); }, 30000);

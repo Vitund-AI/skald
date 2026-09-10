@@ -1,7 +1,7 @@
-<!-- skald-render 1b0711aadc649ef7 -->
+<!-- skald-render 166ea8e99253c995 -->
 # skald backlog
 
-**33 open** · Backlog 1 · Ready 1 · In progress 0 · Review 31 · Done 15
+**34 open** · Backlog 1 · Ready 1 · In progress 0 · Review 32 · Done 15
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -37,7 +37,7 @@ flowchart LR
 
 _none_
 
-## Review (31)
+## Review (32)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -72,6 +72,7 @@ _none_
 | [43a999](stories/43a999-board-server-authentication-machine-local-token-se.md) | Board server authentication: machine-local token, session cookie, bearer header | `core` `ui` | claude |  | 5/5 |
 | [b2f19e](stories/b2f19e-render-workflow-commits-as-github-actions-bot-not.md) | Render workflow commits as github-actions[bot], not a real user's noreply address | `git` `packaging` | claude |  | 2/2 |
 | [8c4d2c](stories/8c4d2c-checkouts-see-every-worktree-s-working-tree-on-the.md) | Checkouts: see every worktree's working tree on the board, claims visible before commit | `agents` `core` `ui` | claude |  | 6/6 |
+| [43641e](stories/43641e-branch-dropdown-say-worktree-or-clone-on-working-t.md) | Branch dropdown: say worktree or clone on working-tree entries, mark branches that have one as committed only | `ui` | claude |  | 3/3 |
 
 <details><summary><strong>Done (15)</strong></summary>
 
