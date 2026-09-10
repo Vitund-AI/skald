@@ -116,10 +116,15 @@ class TestStoreBasics(SkaldTestCase):
         b, _ = s.create("b", blocked_by=[a.id])
         with self.assertRaises(ConflictError):
             s.delete(a.id)
-        s.delete(a.id, force=True)
+        # --force clears the references it would otherwise orphan, and says so.
+        kid, _ = s.create("kid", parent=a.id)
+        notes = []
+        s.delete(a.id, force=True, notes=notes)
         self.assertFalse(a.path.exists())
-        problems, _ = s.check()
-        self.assertTrue(any("missing story" in p for p in problems))
+        self.assertEqual(sorted(notes), sorted([f"removed {a.id} from blocked_by of {b.id}", f"cleared parent of {kid.id}"]))
+        self.assertEqual(s.get(b.id).blocked_by, [])
+        self.assertEqual(s.get(kid.id).parent, "")
+        self.assertEqual(s.check(), ([], []))
         s.delete(b.id)
         self.assertEqual(s.check(), ([], []))
 

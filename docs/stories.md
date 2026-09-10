@@ -75,9 +75,12 @@ Frontmatter fields:
 - **Questions** are notes with `--kind question`: something only a human
   can decide. A question is open until a later `decision` note on the same
   story, whoever writes it; `skald answer <id> "..."` is the human's verb
-  for that. Open questions show in `skald context` under "Waiting on a
+  for that, and `skald answer <id> "..." --question 2` closes only the
+  second open question (as `resume` numbers them) when the others still
+  stand. Open questions show in `skald context` under "Waiting on a
   human", as `?N` in the `Q` column of `skald ls` (`--questions` filters to
-  them), and as a badge and filter on the board. They are notes rather than
+  them; `context` shows the newest five and counts the rest), and as a
+  badge and filter on the board. They are notes rather than
   a section because a note is dated, authored, and answerable by another
   dated note.
 
@@ -231,6 +234,10 @@ skald set 7b21e0 parent=a3f9c2                  # parent=- clears it
 skald ls --parent a3f9c2                        # the children
 skald resume 7b21e0                             # shows the parent's requirements first
 ```
+
+`skald rm --force` on a parent clears the children's `parent` field and
+prints each one, as it removes the id from other stories' `blocked_by`, so
+nothing is left pointing at a story that no longer exists.
 
 `ls` marks a parent with `(children 1/3)` and a child with `(child of
 a3f9c2)`. `skald epics` lists structural parents beside the `epic:` facet,

@@ -241,7 +241,9 @@ prelude's H2 headings with line counts and `section_of` returns one by
 case-insensitive prefix; `resume --section NAME` and `--full` expose them,
 and the default output ends with a one-line map of the other sections.
 A note of kind `question` is open until a later note of kind `decision` on
-the same story (`open_questions`, deliberately coarse); `story_dict` carries
+the same story (`open_questions`, deliberately coarse), unless the
+decision's first line is `Answers [author] stamp · first line`, in which
+case it closes only that question; `story_dict` carries
 `questions: {open}` (plus `items` when not compact), `context` lists every
 story with one under `waiting`, `resume` prints them after the decisions,
 `ls` shows `?N` in a `Q` column and `--questions` filters, and `answer` is
@@ -380,7 +382,7 @@ story or configuration. Commands that print stories take `--json`.
 | `init [--name N]` | Section 2.4. Prints what it did and the CLAUDE.md line. |
 | `status [--json]` | Name, path, branch, per-column counts, unknown-status count, ready-and-unblocked count, uncommitted files under `.skald/`. |
 | `ls [--status C] [--tag T] [--assignee A] [--parent ID] [--unblocked] [--questions] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED Q ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
-| `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stories waiting on a human (open questions, not filtered to the actor), stale claims by others, claims on other branches, uncommitted files. |
+| `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stories waiting on a human (open questions, not filtered to the actor; newest five, with `waiting_more` counting the rest, because hook output is paid for on every session start), stale claims by others, claims on other branches, uncommitted files. |
 | `resume <id> [--section NAME] [--full] [--json]` | Compact story plus requirements (section 4.3), the other sections' headings and sizes, dependency states, decision and blocker notes, open questions, latest handoff (else latest note), note count. |
 | `next [--as N] [--all-projects] [--compact]` | First ready, unblocked story available to the actor per section 4.4. Exit 1 and a stderr message if none. |
 | `show <id> [--branch REF]` | Raw file. `--json` adds derived fields, `body`, `body_sha256`. |
@@ -392,9 +394,9 @@ story or configuration. Commands that print stories take `--json`.
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
 | `note <id> "text"\|- [--as N] [--kind K] [--at WHEN]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. `--at` backdates the heading (`YYYY-MM-DD HH:MM` UTC, an ISO instant, or a date); `new --created-at WHEN` likewise sets both stamps and skips the touch. Migration primitives; the default stays now. |
 | `new` accepts `--parent ID [--no-inherit]`; `set` accepts `parent=ID` and `parent=-`; `ls --parent ID` lists children; `ls` marks parents `(children done/total)` and children `(child of ID)`. |
-| `answer <id> "text"\|- [--as N]` | `note --kind decision`; prints how many open questions it closed. |
+| `answer <id> "text"\|- [--as N] [--question N]` | `note --kind decision`; prints how many open questions it closed. `--question N` closes only the Nth open question (as `resume` numbers them) by writing `Answers [author] stamp · first line of the question` as the decision's first line. |
 | `audit <id> [--notes] [--no-note] [--as N] [--json]` | Extracts paths, `path:line` references, and commit hashes from the prelude (plus notes with `--notes`); checks existence, line count, and `git cat-file -e`; lists referenced files changed since the newest `audit` note (else `created_at`); appends an `audit` note with the summary unless `--no-note`. `audit.py`. |
-| `rm <id> [--force]` | Delete; refuses while other stories depend on it. |
+| `rm <id> [--force]` | Delete a story file. Refuses while other stories depend on it or are its children; with `--force`, removes the id from their `blocked_by` and clears their `parent`, printing each change, so no dangling reference is left. |
 | `log <id>` | `git log --follow` on the file. |
 | `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |
 | `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit]` | Section 4.5b. |

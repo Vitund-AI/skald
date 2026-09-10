@@ -437,6 +437,16 @@ build only if the coarse rule proves noisy. "Waiting on a human" is
 derived from that, never a column, because it is a condition that can
 hold at any stage; a column would lose where the story was.
 
+*Addendum, after the first adoption review.* Design records carry several
+unrelated questions, so a decision about one silently closed the others.
+The refinement is `answer --question N`: the decision's first line names
+the question it answers (`Answers [author] stamp · its first line`, since
+two questions can share an author and a minute), and `open_questions`
+closes only that one. A decision without that line still closes
+everything, so the coarse rule remains the default and the file format is
+unchanged. The `context` section that lists waiting stories is capped at
+five, newest first, for the reason in D50: it runs on every session start.
+
 ### D55. The lifecycle is two backlog columns, and waiting is not one of them
 A full lifecycle from idea through plan and discussion to execution needs
 no new role: two columns with the `backlog` role before `ready` are the

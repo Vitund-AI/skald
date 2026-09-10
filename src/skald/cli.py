@@ -315,10 +315,11 @@ def build_parser() -> argparse.ArgumentParser:
     ans.add_argument("id", help="story id or unique prefix")
     ans.add_argument("text", help="the decision, or - to read stdin")
     ans.add_argument("--as", dest="author", help="author label (default: agent)")
+    ans.add_argument("--question", type=int, metavar="N", help="close only the Nth open question (1-based, as resume lists them); default: all of them")
 
     rm = sub.add_parser("rm", help="delete a story")
     rm.add_argument("id", help="story id or unique prefix")
-    rm.add_argument("--force", action="store_true", help="delete even if other stories depend on it")
+    rm.add_argument("--force", action="store_true", help="delete even if other stories depend on it or are its children; their references are cleared")
 
     lg = sub.add_parser("log", help="git history of a story")
     lg.add_argument("id", help="story id or unique prefix")
@@ -651,6 +652,9 @@ def _note_line(n: Optional[dict]) -> str:
     return f"{n['stamp']} [{n['author']}]{kind} {first}"
 
 
+WAITING_CAP = 5
+
+
 def build_context(ws: Workspace, store: Store, author: str) -> dict:
     stories, load_warnings = store.load_all()
     idx = {s.id: s for s in stories}
@@ -675,6 +679,10 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
             waiting.append({"id": s.id, "title": s.title, "status": s.status, "open": len(qs),
                             "question": newest["text"].strip().splitlines()[0] if newest["text"].strip() else "",
                             "stamp": newest["stamp"], "author": newest["author"]})
+    # Hook output is paid for on every session start (D50), so this section is bounded: newest first, five at most.
+    waiting.sort(key=lambda w: w["stamp"], reverse=True)
+    waiting_more = max(0, len(waiting) - WAITING_CAP)
+    waiting = waiting[:WAITING_CAP]
 
     def entry(s: Story) -> dict:
         d = store.story_dict(s, idx, ws.user.get("stale_days"), compact=True)
@@ -692,6 +700,7 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
         "next": entry(nxt) if nxt else None,
         "ready_blocked": [{"id": s.id, "title": s.title, "unmet": store.unmet(s, idx)} for s in ready_blocked],
         "waiting": waiting,
+        "waiting_more": waiting_more,
         "stale_claims": [{"id": s.id, "title": s.title, "assignee": s.assignee, "status": s.status, "updated_at": s.updated_at}
                          for s in stale_claims],
         "claimed_elsewhere": elsewhere,
@@ -734,6 +743,8 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
         for w in ctx["waiting"]:
             more = f" (+{w['open'] - 1} more)" if w["open"] > 1 else ""
             print(f"  {w['id']}  {w['title']}\n          {w['author']} asked: {w['question']}{more}")
+        if ctx.get("waiting_more"):
+            print(f"  ... and {ctx['waiting_more']} more: skald ls --questions")
     if ctx["stale_claims"]:
         print(f"\nStale claims (no update for {ws.user.get('stale_days')}+ days; take over with skald claim <id>):")
         for c in ctx["stale_claims"]:
@@ -814,7 +825,12 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
         shown = d["requirements"].splitlines()[0].lstrip("# ").strip().lower() if d["requirements"].startswith("## ") else None
         others = [s for s in d["sections"] if s["heading"].lower() != shown]
         if others and shown is not None:
-            print("Also in this story: " + " · ".join(f"## {s['heading']} ({s['lines']} lines)" for s in others))
+            if len(others) > 4:
+                print("Also in this story:")
+                for s in others:
+                    print(f"  ## {s['heading']} ({s['lines']} lines)")
+            else:
+                print("Also in this story: " + " · ".join(f"## {s['heading']} ({s['lines']} lines)" for s in others))
             first = others[0]["heading"].split()[0].lower()
             print(f"  skald resume {story.id} --section {first}   |   skald resume {story.id} --full\n")
     if d["decisions"]:
@@ -823,9 +839,9 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
             print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip().splitlines()[0]}")
         print()
     if d["open_questions"]:
-        print("Open questions (waiting on a human; work on what does not depend on them):")
-        for n in d["open_questions"]:
-            print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip()}")
+        print("Open questions (waiting on a human; work on what does not depend on them; skald answer <id> --question N):")
+        for i, n in enumerate(d["open_questions"], 1):
+            print(f"  {i}. {n['stamp']} [{n['author']}] {n['text'].strip()}")
         print()
     if latest:
         label = "Latest handoff" if handoff else "Latest note"
@@ -1860,12 +1876,25 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         print(f"noted on {story.id}" + (f" ({args.kind})" if args.kind else ""))
         return 0
     if args.command == "answer":
-        before = len(store.get(args.id).open_questions())
-        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), "decision")
-        print(f"answered on {story.id} (decision; {before} question(s) closed)" if before else f"noted on {story.id} (decision; no open question)")
+        open_qs = store.get(args.id).open_questions()
+        text = _read_text_arg(args.text)
+        which = getattr(args, "question", None)
+        if which is not None:
+            if not 1 <= which <= len(open_qs):
+                raise SkaldError(f"--question must be between 1 and {len(open_qs)} (open questions on this story)" if open_qs
+                                 else "this story has no open question")
+            from .store import answer_line
+
+            text = f"{answer_line(open_qs[which - 1])}\n{text}"
+        story = store.append_note(args.id, text, cli_identity(args.author), "decision")
+        closed = 1 if which is not None else len(open_qs)
+        print(f"answered on {story.id} (decision; {closed} question(s) closed)" if closed else f"noted on {story.id} (decision; no open question)")
         return 0
     if args.command == "rm":
-        story = store.delete(args.id, force=args.force)
+        cleared: list[str] = []
+        story = store.delete(args.id, force=args.force, notes=cleared)
+        for line in cleared:
+            print(line)
         print(f"deleted {story.id} ({story.path.name})")
         return 0
     if args.command == "log":

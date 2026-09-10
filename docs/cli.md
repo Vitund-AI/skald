@@ -273,7 +273,7 @@ Append a note to a story.
 ## answer
 
 ```
-skald answer [--as AUTHOR] id text
+skald answer [--as AUTHOR] [--question N] id text
 ```
 
 Answer a story's open questions: appends a decision note, which closes them.
@@ -283,6 +283,7 @@ Answer a story's open questions: appends a decision note, which closes them.
 | `id` | story id or unique prefix |
 | `text` | the decision, or - to read stdin |
 | `--as AUTHOR` | author label (default: agent) |
+| `--question N` | close only the Nth open question (1-based, as resume lists them); default: all of them |
 
 ## rm
 
@@ -295,7 +296,7 @@ Delete a story.
 | Argument | Description |
 | --- | --- |
 | `id` | story id or unique prefix |
-| `--force` | delete even if other stories depend on it |
+| `--force` | delete even if other stories depend on it or are its children; their references are cleared |
 
 ## log
 
