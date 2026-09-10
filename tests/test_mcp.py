@@ -81,6 +81,13 @@ class TestMcp(SkaldTestCase):
         self.assertIn("body", res)
         _, err = self.call(server, "skald_resume", id=a, section="nope")
         self.assertIn("no section", err)
+        self.call(server, "skald_note", id=a, text="Which port?", kind="question")
+        ctx, _ = self.call(server, "skald_context", **{"as": "claude"})
+        self.assertEqual([w["id"] for w in ctx["waiting"]], [a])
+        res, _ = self.call(server, "skald_resume", id=a)
+        self.assertEqual(len(res["open_questions"]), 1)
+        ans, _ = self.call(server, "skald_answer", id=a, text="5000", **{"as": "jon"})
+        self.assertEqual((ans["closed_questions"], ans["questions"]["open"]), (1, 0))
 
         _, err = self.call(server, "skald_show", id="zzz")
         self.assertIn("ERROR: no story matches", err)

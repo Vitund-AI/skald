@@ -11,7 +11,7 @@ from skald.registry import Registry
 
 from .helpers import SAMPLE_CONFIG_COLUMNS, SkaldTestCase, git
 
-HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "ASSIGNEE", "TAGS", "TITLE"]
+HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "Q", "ASSIGNEE", "TAGS", "TITLE"]
 
 
 class TestInit(SkaldTestCase):
@@ -544,6 +544,39 @@ class TestAgentOrientation(SkaldTestCase):
         self.assertIn("acceptance criteria unchecked", err)
         code, _, err = self.run_cli("note", a, "x", "--kind", "Bad Kind")
         self.assertEqual(code, 1)
+
+    def test_questions_in_context_resume_ls_and_answer(self):
+        a = self.new("Pick a database", "--status", "ready")
+        b = self.new("Unrelated", "--status", "ready")
+        code, out, _ = self.run_cli("context", "--as", "claude")
+        self.assertNotIn("Waiting on a human", out)
+        self.run_cli("note", a, "Postgres or SQLite?\nSQLite is simpler.", "--as", "claude", "--kind", "question")
+        code, out, _ = self.run_cli("context", "--as", "claude")
+        self.assertIn("Waiting on a human (answer with skald answer <id> \"...\"):", out)
+        self.assertIn(f"{a}  Pick a database", out)
+        self.assertIn("claude asked: Postgres or SQLite?", out)
+        code, out, _ = self.run_cli("context", "--as", "claude", "--json")
+        w = json.loads(out)["waiting"]
+        self.assertEqual([(x["id"], x["open"], x["question"]) for x in w], [(a, 1, "Postgres or SQLite?")])
+        code, out, _ = self.run_cli("resume", a)
+        self.assertIn("Open questions (waiting on a human", out)
+        self.assertIn("Postgres or SQLite?", out)
+        code, out, _ = self.run_cli("ls")
+        row = next(l for l in out.splitlines() if l.startswith(a))
+        self.assertIn("?1", row.split())
+        code, out, _ = self.run_cli("ls", "--questions", "--json")
+        self.assertEqual([s["id"] for s in json.loads(out)], [a])
+        code, out, _ = self.run_cli("answer", a, "SQLite.", "--as", "jon")
+        self.assertIn("answered on", out)
+        self.assertIn("1 question(s) closed", out)
+        code, out, _ = self.run_cli("ls", "--questions", "--json")
+        self.assertEqual(json.loads(out), [])
+        code, out, _ = self.run_cli("resume", a, "--json")
+        d = json.loads(out)
+        self.assertEqual((d["open_questions"], len(d["decisions"])), ([], 1))
+        self.assertEqual(d["decisions"][0]["author"], "jon")
+        code, out, _ = self.run_cli("answer", b, "Nothing asked.")
+        self.assertIn("no open question", out)
 
     def test_ls_and_next_compact(self):
         a = self.new("a", "--status", "ready")

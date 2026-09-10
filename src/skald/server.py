@@ -535,7 +535,8 @@ class Handler(BaseHTTPRequestHandler):
                 if sub == ["notes"] and method == "POST":
                     data = self._read_json()
                     author = (data.get("author") or "").strip() or self._identity(ws, store)
-                    story = store.append_note(ref, data.get("text", ""), author)
+                    kind = (data.get("kind") or "").strip() or None
+                    story = store.append_note(ref, data.get("text", ""), author, kind)
                     self._json(201, self._story_json(ws, store, story, body=True))
                     return
                 if sub == ["history"] and method == "GET":

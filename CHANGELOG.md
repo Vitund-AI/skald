@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+- Questions: `skald note --kind question` records something only a human
+  can decide, open until a later decision note on the story. `skald answer
+  <id> "..."` closes them. `skald context` lists every story waiting on a
+  human, `resume` prints the open ones, `ls` shows `?N` in a new `Q` column
+  and `--questions` filters, and the board has an amber badge, a "Waiting
+  on a human" filter, and an Answer button in the story dialog. MCP:
+  `skald_answer`, and `waiting` and `open_questions` in context and resume.
+
 ### Changed
 - `skald resume` prints the `## Requirements` section when the body has
   one, then a one-line map of the other sections with their sizes; `--section

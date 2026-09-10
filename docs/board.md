@@ -63,6 +63,8 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Facet filters and swimlanes** appear when stories carry `key:value`
   tags. One dropdown per key filters; "swimlanes by" splits the board into
   one lane per value with a progress bar per lane.
+- **Waiting on a human** appears when any story has an open question and
+  filters the board to those stories; the count is in the label.
 - **Graph** (`g`) draws the dependency graph.
 - **Identity** is the name notes and commits from the board will carry.
 - **Commit N changes** appears when story files are uncommitted. It commits
@@ -90,6 +92,9 @@ Markers:
   `stale_days`.
 - **"also name@branch"**: the story is claimed by someone else on another
   branch.
+- **"? N" in amber**: N open questions, waiting on a human. The dialog lists
+  them, and its Answer button appends your text as a decision note, which
+  closes them.
 
 Drag a card to move it between columns or reorder it within one. Tab
 reaches cards and Enter opens them. Clicking a card opens it.

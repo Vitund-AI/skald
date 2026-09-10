@@ -67,6 +67,21 @@ def parse_notes(body: str) -> list[dict]:
     return notes
 
 
+def open_questions(notes: list[dict]) -> list[dict]:
+    """Question notes not yet answered: a question is open until a later ``decision`` note on the same story.
+
+    Deliberately coarse. One dated decision after the question closes it; a
+    decision naming the question it answers is a refinement for later.
+    """
+    out: list[dict] = []
+    for n in notes:
+        if n["kind"] == "question":
+            out.append(n)
+        elif n["kind"] == "decision":
+            out = []
+    return out
+
+
 def prelude_of(body: str) -> str:
     """The body before the first note heading: every section the author wrote, none of the notes."""
     m = NOTE_HEADING_RE.search(body)
@@ -205,6 +220,10 @@ class Story:
         a_done, a_total = acceptance_progress(self.body)
         if a_total:
             d["acceptance"] = {"done": a_done, "total": a_total}
+        questions = self.open_questions()
+        d["questions"] = {"open": len(questions)}
+        if not compact and questions:
+            d["questions"]["items"] = questions
         return d
 
     def notes(self) -> list[dict]:
@@ -215,6 +234,10 @@ class Story:
             if kind is None or n["kind"] == kind:
                 return n
         return None
+
+    def open_questions(self) -> list[dict]:
+        """Questions waiting on a human: question notes with no later decision note."""
+        return open_questions(self.notes())
 
 
 def validate_fields(fields: dict, where: str) -> dict:

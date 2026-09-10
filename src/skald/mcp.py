@@ -52,8 +52,10 @@ TOOLS: list[dict] = [
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP}, ["id"])},
     {"name": "skald_note", "description": "Append a timestamped note to a story's body. kind=handoff for end-of-session state, decision, or blocker.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"},
-                             "kind": {"type": "string", "description": "handoff, decision, blocker, or another short word"}}, ["id", "text"])},
-    {"name": "skald_context", "description": "Orientation for the caller: assigned stories with last notes, the next unblocked story, blocked ready stories, claims on other branches, uncommitted story files.",
+                             "kind": {"type": "string", "description": "handoff, decision, blocker, question (open until a later decision), or another short word"}}, ["id", "text"])},
+    {"name": "skald_answer", "description": "Answer a story's open questions: appends a decision note, which closes every question before it.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, **AS_PROP, "text": {"type": "string"}}, ["id", "text"])},
+    {"name": "skald_context", "description": "Orientation for the caller: assigned stories with last notes, the next unblocked story, blocked ready stories, stories waiting on a human (open questions), claims on other branches, uncommitted story files.",
      "inputSchema": _schema({**PROJECT_PROP, **AS_PROP})},
     {"name": "skald_resume", "description": "A story's requirements (the ## Requirements section when there is one), the other sections' headings and sizes, checklist and acceptance state, dependencies, decisions, and its latest handoff note. Pass section to read one section, or full for the whole body.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "section": {"type": "string"}, "full": {"type": "boolean"}}, ["id"])},
@@ -195,6 +197,7 @@ class McpServer:
         d["latest"] = story.last_note("handoff") or (notes[-1] if notes else None)
         d["decisions"] = [n for n in notes if n["kind"] == "decision"]
         d["blockers"] = [n for n in notes if n["kind"] == "blocker"]
+        d["open_questions"] = story.open_questions()
         d["note_count"] = len(notes)
         return d
 
@@ -203,6 +206,14 @@ class McpServer:
         story = store.append_note(args["id"], args.get("text", ""), self._actor(args), args.get("kind"))
         d = store.story_dict(story)
         d["body"] = story.body
+        return d
+
+    def tool_skald_answer(self, args: dict) -> Any:
+        store = self._store(args)
+        before = len(store.get(args["id"]).open_questions())
+        story = store.append_note(args["id"], args.get("text", ""), self._actor(args), "decision")
+        d = store.story_dict(story)
+        d["closed_questions"] = before
         return d
 
     def tool_skald_set(self, args: dict) -> Any:

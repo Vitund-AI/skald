@@ -76,11 +76,13 @@ def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False) 
     for s in stories:
         unmet = store.unmet(s, idx)
         sid = f"{store.name}:{s.id}" if qualify else s.id
-        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", s.assignee or "-", ",".join(s.tags) or "-", s.title])
+        q = len(s.open_questions())
+        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", f"?{q}" if q else "-", s.assignee or "-",
+                     ",".join(s.tags) or "-", s.title])
     return rows
 
 
-STORY_HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "ASSIGNEE", "TAGS", "TITLE"]
+STORY_HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "Q", "ASSIGNEE", "TAGS", "TITLE"]
 
 
 def _read_text_arg(value: Optional[str]) -> str:
@@ -222,6 +224,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--tag", help="only stories with this tag (facets such as epic:auth work)")
     ls.add_argument("--assignee", help="only stories assigned to this name")
     ls.add_argument("--unblocked", action="store_true", help="only stories with no unmet dependencies")
+    ls.add_argument("--questions", action="store_true", help="only stories with an open question (waiting on a human)")
     ls.add_argument("--all", action="store_true", help="include done and closed stories")
     ls.add_argument("--archived", action="store_true", help="include archived stories")
     ls.add_argument("--release", metavar="VERSION", help="only stories shipped in this version (implies --archived and --all)")
@@ -284,7 +287,12 @@ def build_parser() -> argparse.ArgumentParser:
     note.add_argument("id", help="story id or unique prefix")
     note.add_argument("text", help="note text, or - to read stdin")
     note.add_argument("--as", dest="author", help="author label (default: agent)")
-    note.add_argument("--kind", help="handoff, decision, blocker, or any short word; shown in the heading")
+    note.add_argument("--kind", help="handoff, decision, blocker, question (open until a later decision), or any short word; shown in the heading")
+
+    ans = sub.add_parser("answer", help="answer a story's open questions: appends a decision note, which closes them")
+    ans.add_argument("id", help="story id or unique prefix")
+    ans.add_argument("text", help="the decision, or - to read stdin")
+    ans.add_argument("--as", dest="author", help="author label (default: agent)")
 
     rm = sub.add_parser("rm", help="delete a story")
     rm.add_argument("id", help="story id or unique prefix")
@@ -512,6 +520,8 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
         _warn(load_warnings)
         idx = {s.id: s for s in stories}
         sel = _filtered(st, args, stories, idx)
+        if getattr(args, "questions", False):
+            sel = [s for s in sel if s.open_questions()]
         rows.extend(_story_rows(st, sel, idx, qualify=args.all_projects))
         dicts.extend(st.story_dict(s, idx, ws.user.get("stale_days"), compact=args.compact) for s in sel)
     if args.json:
@@ -624,6 +634,16 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
 
     stale_claims = [s for s in stories if s.assignee and s.assignee != author
                     and store.config.role(s.status) == "active" and _is_stale(s, stale_days)]
+    # Not filtered to the actor: an agent needs to know a story it is about to pick is stalled on a
+    # decision, and the human running context needs the whole list.
+    waiting = []
+    for s in stories:
+        qs = s.open_questions()
+        if qs:
+            newest = qs[-1]
+            waiting.append({"id": s.id, "title": s.title, "status": s.status, "open": len(qs),
+                            "question": newest["text"].strip().splitlines()[0] if newest["text"].strip() else "",
+                            "stamp": newest["stamp"], "author": newest["author"]})
 
     def entry(s: Story) -> dict:
         d = store.story_dict(s, idx, ws.user.get("stale_days"), compact=True)
@@ -640,6 +660,7 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
         "mine": [entry(s) for s in mine],
         "next": entry(nxt) if nxt else None,
         "ready_blocked": [{"id": s.id, "title": s.title, "unmet": store.unmet(s, idx)} for s in ready_blocked],
+        "waiting": waiting,
         "stale_claims": [{"id": s.id, "title": s.title, "assignee": s.assignee, "status": s.status, "updated_at": s.updated_at}
                          for s in stale_claims],
         "claimed_elsewhere": elsewhere,
@@ -677,6 +698,11 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
         print("\nReady but blocked:")
         for b in ctx["ready_blocked"]:
             print(f"  {b['id']}  {b['title']}  waiting on {', '.join(b['unmet'])}")
+    if ctx["waiting"]:
+        print("\nWaiting on a human (answer with skald answer <id> \"...\"):")
+        for w in ctx["waiting"]:
+            more = f" (+{w['open'] - 1} more)" if w["open"] > 1 else ""
+            print(f"  {w['id']}  {w['title']}\n          {w['author']} asked: {w['question']}{more}")
     if ctx["stale_claims"]:
         print(f"\nStale claims (no update for {ws.user.get('stale_days')}+ days; take over with skald claim <id>):")
         for c in ctx["stale_claims"]:
@@ -723,6 +749,7 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
     d["note_count"] = len(notes)
     d["decisions"] = [n for n in notes if n["kind"] == "decision"]
     d["blockers"] = [n for n in notes if n["kind"] == "blocker"]
+    d["open_questions"] = story.open_questions()
     if args.json:
         print(json.dumps(d, indent=2))
         return 0
@@ -749,6 +776,11 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
         print("Decisions:")
         for n in d["decisions"]:
             print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip().splitlines()[0]}")
+        print()
+    if d["open_questions"]:
+        print("Open questions (waiting on a human; work on what does not depend on them):")
+        for n in d["open_questions"]:
+            print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip()}")
         print()
     if latest:
         label = "Latest handoff" if handoff else "Latest note"
@@ -1623,7 +1655,7 @@ def claude_skill() -> str:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume",
+    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
     "commits", "diff", "activity", "graph", "release",
 }
 
@@ -1719,6 +1751,11 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
     if args.command == "note":
         story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), args.kind)
         print(f"noted on {story.id}" + (f" ({args.kind})" if args.kind else ""))
+        return 0
+    if args.command == "answer":
+        before = len(store.get(args.id).open_questions())
+        story = store.append_note(args.id, _read_text_arg(args.text), cli_identity(args.author), "decision")
+        print(f"answered on {story.id} (decision; {before} question(s) closed)" if before else f"noted on {story.id} (decision; no open question)")
         return 0
     if args.command == "rm":
         story = store.delete(args.id, force=args.force)

@@ -51,6 +51,12 @@ unless asked, prefer `--json` when parsing.
   agent may be a different model. Dated notes with kinds turn a story file
   into a log a fresh session can resume from. `resume` reads exactly that log
   in the order that matters.
+- **Questions are how an agent asks without stopping.** `--kind question`
+  records something only you can decide; the agent carries on with whatever
+  does not depend on it. `skald context` lists every story waiting on you,
+  the board has a "Waiting on a human" filter, and `skald answer <id> "..."`
+  (or the Answer button in the story dialog) closes them with a decision
+  note the next session will read.
 - **Warnings, not walls.** An agent that hits a hard error stops or works
   around it in ways you did not intend. A warning plus a recorded decision
   keeps the agent moving and leaves you a trail to review.

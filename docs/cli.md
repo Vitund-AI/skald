@@ -24,6 +24,7 @@ error or not found, 2 corrupt story or configuration.
 - [`tag`](#tag) tag <id> +tag -tag ...
 - [`block`](#block) block <id> +id -id ... (project:id for other projects)
 - [`note`](#note) append a note to a story
+- [`answer`](#answer) answer a story's open questions: appends a decision note, which closes them
 - [`rm`](#rm) delete a story
 - [`log`](#log) git history of a story
 - [`archive`](#archive) move done and closed stories to .skald/archive/
@@ -67,7 +68,7 @@ Create .skald/ here (or register an existing one).
 ## ls
 
 ```
-skald ls [--status COLUMN] [--tag TAG] [--assignee ASSIGNEE] [--unblocked] [--all] [--archived] [--release VERSION] [--all-projects] [--branch REF] [--all-branches] [--json] [--compact]
+skald ls [--status COLUMN] [--tag TAG] [--assignee ASSIGNEE] [--unblocked] [--questions] [--all] [--archived] [--release VERSION] [--all-projects] [--branch REF] [--all-branches] [--json] [--compact]
 ```
 
 List stories.
@@ -78,6 +79,7 @@ List stories.
 | `--tag TAG` | only stories with this tag (facets such as epic:auth work) |
 | `--assignee ASSIGNEE` | only stories assigned to this name |
 | `--unblocked` | only stories with no unmet dependencies |
+| `--questions` | only stories with an open question (waiting on a human) |
 | `--all` | include done and closed stories |
 | `--archived` | include archived stories |
 | `--release VERSION` | only stories shipped in this version (implies --archived and --all) |
@@ -243,7 +245,21 @@ Append a note to a story.
 | `id` | story id or unique prefix |
 | `text` | note text, or - to read stdin |
 | `--as AUTHOR` | author label (default: agent) |
-| `--kind KIND` | handoff, decision, blocker, or any short word; shown in the heading |
+| `--kind KIND` | handoff, decision, blocker, question (open until a later decision), or any short word; shown in the heading |
+
+## answer
+
+```
+skald answer [--as AUTHOR] id text
+```
+
+Answer a story's open questions: appends a decision note, which closes them.
+
+| Argument | Description |
+| --- | --- |
+| `id` | story id or unique prefix |
+| `text` | the decision, or - to read stdin |
+| `--as AUTHOR` | author label (default: agent) |
 
 ## rm
 

@@ -619,6 +619,27 @@ class TestNotesAndAcceptance(SkaldTestCase):
         with self.assertRaises(SkaldError):
             s.append_note(a.id, "x", "claude", kind="Not Valid")
 
+    def test_questions_open_until_a_later_decision(self):
+        s = self.store()
+        a, _ = s.create("a")
+        self.assertEqual(s.get(a.id).open_questions(), [])
+        s.append_note(a.id, "Postgres or SQLite?", "claude", kind="question")
+        s.append_note(a.id, "progress", "claude")
+        s.append_note(a.id, "Also: which port?", "claude", kind="question")
+        qs = s.get(a.id).open_questions()
+        self.assertEqual([q["text"] for q in qs], ["Postgres or SQLite?", "Also: which port?"])
+        d = s.story_dict(s.get(a.id))
+        self.assertEqual(d["questions"]["open"], 2)
+        self.assertEqual(len(d["questions"]["items"]), 2)
+        self.assertEqual(s.story_dict(s.get(a.id), compact=True)["questions"], {"open": 2})
+        # One dated decision after the questions closes them, whatever it says.
+        s.append_note(a.id, "SQLite, port 5000", "jon", kind="decision")
+        self.assertEqual(s.get(a.id).open_questions(), [])
+        self.assertEqual(s.story_dict(s.get(a.id))["questions"], {"open": 0})
+        # A question after the decision is open again.
+        s.append_note(a.id, "And auth?", "claude", kind="question")
+        self.assertEqual(len(s.get(a.id).open_questions()), 1)
+
     def test_acceptance_gate_warns_on_forward_moves(self):
         s = self.store()
         a, _ = s.create("a", body="## Acceptance\n\n- [ ] renders\n")

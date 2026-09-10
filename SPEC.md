@@ -230,6 +230,12 @@ not a length limit, decides what `resume` prints. `sections_of` lists the
 prelude's H2 headings with line counts and `section_of` returns one by
 case-insensitive prefix; `resume --section NAME` and `--full` expose them,
 and the default output ends with a one-line map of the other sections.
+A note of kind `question` is open until a later note of kind `decision` on
+the same story (`open_questions`, deliberately coarse); `story_dict` carries
+`questions: {open}` (plus `items` when not compact), `context` lists every
+story with one under `waiting`, `resume` prints them after the decisions,
+`ls` shows `?N` in a `Q` column and `--questions` filters, and `answer` is
+`note --kind decision` with a count of what it closed.
 `## Acceptance` (or `## Acceptance criteria`) introduces a section whose
 task-list items are the acceptance criteria; `acceptance_progress` counts
 them and `update` warns when a story moves into a terminal column, or forward
@@ -345,9 +351,9 @@ story or configuration. Commands that print stories take `--json`.
 | --- | --- |
 | `init [--name N]` | Section 2.4. Prints what it did and the CLAUDE.md line. |
 | `status [--json]` | Name, path, branch, per-column counts, unknown-status count, ready-and-unblocked count, uncommitted files under `.skald/`. |
-| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
-| `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stale claims by others, claims on other branches, uncommitted files. |
-| `resume <id> [--json]` | Compact story plus requirements, dependency states, decision and blocker notes, latest handoff (else latest note), note count. |
+| `ls [--status C] [--tag T] [--assignee A] [--unblocked] [--questions] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED Q ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
+| `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stories waiting on a human (open questions, not filtered to the actor), stale claims by others, claims on other branches, uncommitted files. |
+| `resume <id> [--section NAME] [--full] [--json]` | Compact story plus requirements (section 4.3), the other sections' headings and sizes, dependency states, decision and blocker notes, open questions, latest handoff (else latest note), note count. |
 | `next [--as N] [--all-projects] [--compact]` | First ready, unblocked story available to the actor per section 4.4. Exit 1 and a stderr message if none. |
 | `show <id> [--branch REF]` | Raw file. `--json` adds derived fields, `body`, `body_sha256`. |
 | `branches [--json]` | Every local and remote branch with story count and diff counts against the working tree. |
@@ -357,6 +363,7 @@ story or configuration. Commands that print stories take `--json`.
 | `set <id> title=.. rank=N assignee=..` | Field edits. |
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
 | `note <id> "text"\|- [--as N] [--kind K]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. |
+| `answer <id> "text"\|- [--as N]` | `note --kind decision`; prints how many open questions it closed. |
 | `rm <id> [--force]` | Delete; refuses while other stories depend on it. |
 | `log <id>` | `git log --follow` on the file. |
 | `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |

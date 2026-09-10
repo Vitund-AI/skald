@@ -38,7 +38,10 @@ tools from `skald mcp` (see the README).
 5. **Record progress.** Use `skald note <id> "text" --as <your-name>`, or
    `skald note <id> - --as <your-name>` with the text on stdin. Give notes a
    kind when it fits: `--kind decision` for a choice and why, `--kind blocker`
-   for something you cannot get past. Task-list items (`- [ ]` / `- [x]`) in
+   for something you cannot get past, `--kind question` for something only
+   the human can decide. A question stays open until a later decision note
+   on the same story; keep working on whatever does not depend on it, and
+   `skald context` lists every story waiting on a human. Task-list items (`- [ ]` / `- [x]`) in
    the body show up as progress on the board. Put acceptance criteria under a
    `## Acceptance` heading as a checklist and tick them as you verify each;
    moving to review or done with unchecked items prints a warning.

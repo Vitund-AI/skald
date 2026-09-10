@@ -422,3 +422,17 @@ agent pays for a section only when it asks. Bodies without the heading are
 unchanged, so nothing existing prints differently unless its author put
 the heading there on purpose. `release` reads the changelog section from
 the prelude, not the requirements, so it is unaffected.
+
+### D54. A question is a note, not a section, and any later decision closes it
+Design records carried a section of open questions for the owner,
+invisible until an agent reread the record, and answered by hand with
+strikethrough. A section has no date, no author, and no way to be
+answered by something with a date and an author, which is why the
+strikethrough convention grew. A note has all three, so a question is
+`note --kind question` and an answer is `note --kind decision`; nothing
+new in the file format. The closing rule is coarse on purpose: one dated
+decision after the question closes every question before it, whatever it
+says. A decision that names the question it answers is a refinement to
+build only if the coarse rule proves noisy. "Waiting on a human" is
+derived from that, never a column, because it is a condition that can
+hold at any stage; a column would lose where the story was.

@@ -71,7 +71,15 @@ Frontmatter fields:
   is the fallback.
 - **Notes** are headings of the form `## [author] YYYY-MM-DD HH:MM UTC`,
   optionally followed by `· kind`. `skald note` writes them; `resume` shows
-  every `decision` and the latest `handoff`.
+  every `decision`, every open `question`, and the latest `handoff`.
+- **Questions** are notes with `--kind question`: something only a human
+  can decide. A question is open until a later `decision` note on the same
+  story, whoever writes it; `skald answer <id> "..."` is the human's verb
+  for that. Open questions show in `skald context` under "Waiting on a
+  human", as `?N` in the `Q` column of `skald ls` (`--questions` filters to
+  them), and as a badge and filter on the board. They are notes rather than
+  a section because a note is dated, authored, and answerable by another
+  dated note.
 
 ## Columns and roles
 
