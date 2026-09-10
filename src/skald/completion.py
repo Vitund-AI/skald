@@ -273,7 +273,8 @@ class Completer:
             return []
         if command == "projects":
             if n == 0:
-                return [("rm", "forget a project (files are untouched)")]
+                return [("rm", "forget a project (files are untouched)"),
+                        ("use", "make this checkout the project's primary")]
             if pos[0] == "rm" and n == 1:
                 return self.projects()
             return []

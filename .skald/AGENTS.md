@@ -18,11 +18,11 @@ tools from `skald mcp` (see the README).
 
 1. **Orient.** Run `skald context --as <your-name>` at the start of a
    session. It shows what is assigned to you with the last note on each, the
-   next unblocked story, blocked work, claims on other branches, and
-   uncommitted story files. `skald columns` shows this project's columns.
+   next unblocked story, blocked work, claims in other checkouts or on
+   other branches, and uncommitted story files. `skald columns` shows this project's columns.
 2. **Pick work.** `skald context` names the next story; `skald next --json
-   --compact` prints it. Stories claimed by another agent on another branch
-   are skipped. If nothing is ready, run `skald ls --json --compact` and
+   --compact` prints it. Stories claimed by another agent in another
+   checkout or on another branch, even before they commit, are skipped. If nothing is ready, run `skald ls --json --compact` and
    either pick an unblocked ready story or ask the human.
 3. **Claim it.** Run `skald claim <id> --as <your-name>`. That assigns the
    story to you and moves it into the first active column. Then run

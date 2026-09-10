@@ -15,6 +15,18 @@ The index does not know that project yet. Run any `skald` command inside
 its repository once; that registers it. `skald projects` lists what is
 known.
 
+**`project 'x' is registered at A; this checkout at B is recorded beside it`**
+You ran a command in a second checkout of a repository, a worktree or
+another clone. Nothing is wrong: commands act where you run them, and the
+board can show this checkout too. `skald projects use` here makes it the
+primary, the one `-p x` and the board open first.
+
+**The board shows a checkout I did not expect**
+The primary is the first checkout registered. `skald projects` lists them;
+`skald projects use` in the right one switches. If the primary's directory
+is gone, a surviving checkout is promoted the next time anything lists or
+opens the project, and a notice says so.
+
 **A dependency warns `unavailable`**
 A `project:id` reference points at a project that is not registered here.
 Clone and register it, or accept the warning: it counts as unmet and blocks
@@ -54,6 +66,20 @@ not show in `resume`.
 
 ## The board
 
+**The page says it needs its key**
+You opened the board by typing the address. Run `skald open` inside the
+repository; it opens the board with the key and the page keeps a session
+cookie from then on. If you rotated the token with `skald server token
+--rotate`, every open tab needs a fresh `skald open`.
+
+**A script gets 401**
+Send the token: `-H "Authorization: Bearer $(skald server token)"`. Only
+`/api/health` is open.
+
+**A request gets 403**
+The `Host` header was not this machine. Use `127.0.0.1` or `localhost` in
+the URL, not a DNS name.
+
 **The page is unstyled or the preview does not render**
 Tailwind and marked load from CDNs. Without internet access the board works
 but looks plain. Nothing else depends on the network.
@@ -87,6 +113,13 @@ Run `skald render`. To stop remembering, `skald render --enable` makes
 There is already a pre-commit hook it did not write. Merge the two by hand;
 the hook body is one line each for `skald check` and `skald render
 --stage`.
+
+**A stranger named `skald` appears among the contributors**
+A workflow written before 0.2.0 committed the rendered board as
+`skald@users.noreply.github.com`, an address GitHub attributes to the
+account with that username. Re-run `skald hooks github --install`; the
+workflow now commits as `github-actions[bot]`. Commits already made keep
+their attribution unless history is rewritten.
 
 **The GitHub workflow's diff job cannot check out the repository**
 The job needs `contents: read` alongside `pull-requests: write`. Regenerate

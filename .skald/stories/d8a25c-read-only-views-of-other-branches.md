@@ -19,5 +19,9 @@ Read .skald/ from any branch without touching the working tree, using git for-ea
 - [ ] API: GET .../branches and GET .../board?ref=REF (read-only), cached by commit sha
 - [ ] Board: branch dropdown, read-only banner, badge for stories that exist only elsewhere
 
+## Changelog
+
+Any branch's backlog can be read without touching the working tree: `skald branches`, `skald ls --branch REF`, `skald show <id> --branch REF`, and a read-only branch view on the board. The checked-out branch stays the truth.
+
 ## [claude] 2026-09-06 17:46 UTC
 Implemented. gitutil.branches and cat_file_batch read git objects; Store.snapshot(ref) returns a read-only Snapshot that duck-types the store's read side; branch_diff compares by id. CLI: branches, ls --branch, ls --all-branches, show --branch. API: GET .../branches and ?ref= on board and story, cached by commit sha. Board: branch dropdown, +N elsewhere badge, read-only banner with disabled editing. Verified in Chromium. See D27.

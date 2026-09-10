@@ -1027,17 +1027,36 @@ def _branch_diff(store: "Store", snap: Snapshot) -> dict:
     return {"only_there": only_there, "only_here": only_here, "differ": differ}
 
 
-def _claims_elsewhere(store: "Store", include_remote: bool = False) -> dict[str, list[dict]]:
-    """Active stories with an assignee on other branches: ``{id: [{branch, assignee, status}]}``."""
+def _claims_elsewhere(store: "Store", include_remote: bool = False, checkouts=None) -> dict[str, list[dict]]:
+    """Active stories with an assignee on other branches: ``{id: [{branch, assignee, status}]}``.
+
+    ``checkouts`` are stores for other working trees of the same project. Their
+    claims are read from disk, so an agent that claimed in a worktree is seen
+    before it commits; such entries carry ``checkout`` (the path). A working
+    tree stands in for its branch, so the branch is not scanned a second time.
+    """
     from . import gitutil
 
+    out: dict[str, list[dict]] = {}
+    covered: set = set()
+    for co in checkouts or []:
+        co_repo = gitutil.root(co.dir)
+        label = (gitutil.branch(co_repo) if co_repo else None) or "working tree"
+        covered.add(label)
+        try:
+            stories = co.load_all()[0]
+        except SkaldError:
+            continue
+        for st in stories:
+            if st.assignee and co.config.role(st.status) == "active":
+                out.setdefault(st.id, []).append(
+                    {"branch": label, "assignee": st.assignee, "status": st.status, "checkout": str(co.dir)})
     repo = gitutil.root(store.dir)
     if repo is None:
-        return {}
+        return out
     current = gitutil.branch(repo)
-    out: dict[str, list[dict]] = {}
     for b in gitutil.branches(repo):
-        if b["name"] == current or (b["remote"] and not include_remote):
+        if b["name"] == current or b["name"] in covered or (b["remote"] and not include_remote):
             continue
         try:
             snap = store.snapshot(b["name"])

@@ -123,7 +123,7 @@ Story files are unchanged.
 | `.skald/archive/*.md` | Archived stories | Yes |
 | `.skald/templates/*.md` | Optional story templates | Yes |
 | `.skald/README.md` | The rendered snapshot, when enabled | Yes |
-| `~/.config/skald/` | Project index, your settings, server state and log | Never |
+| `~/.config/skald/` | Project index, your settings, the board's access token, server state and log | Never |
 
 On Windows the machine-local directory is `%APPDATA%\skald`; `$SKALD_HOME`
 overrides it anywhere.

@@ -11,5 +11,9 @@ updated_at: "2026-09-08T17:24:16Z"
 
 Committed .skald/config.json carries the project name used by cross-project references and a format number so newer tools can refuse or migrate cleanly.
 
+## Changelog
+
+Each project carries a committed `.skald/config.json` with its name, used by cross-project references, and a format version so newer tools can refuse or migrate cleanly.
+
 ## [claude] 2026-09-06 07:04 UTC
 Implemented in config.py. Missing config.json is created lazily with a notice (D9). Format newer than supported raises ConfigError with an upgrade hint.

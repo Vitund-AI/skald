@@ -79,7 +79,9 @@ Console scripts: `skald` and `git-skald`, both `skald.cli:main`. Git finds
 The config home is `$SKALD_HOME` if set, else `%APPDATA%\skald` on Windows,
 else `$XDG_CONFIG_HOME/skald` defaulting to `~/.config/skald`. It holds:
 
-- `projects.json`: `{"projects": {"<name>": {"path": "<abs .skald dir>", "registered_at": "..."}}}`
+- `projects.json`: `{"projects": {"<name>": {"path": "<abs .skald dir>", "registered_at": "...", "checkouts": ["<abs .skald dir>", ...]}}}`.
+  `path` is the primary; `checkouts` (optional) are other working trees of
+  the same project recorded when a command ran there.
 - `config.json`: user settings with defaults `author ""`, `push false`,
   `port 8321`, `host "127.0.0.1"`, `stale_days 3`.
 - `server.json` and `server.log`: the background server's pid, host, port.
@@ -92,9 +94,25 @@ the first `.skald` directory found walking up from the current directory.
 
 Opening a project has two side effects: if `config.json` is missing it is
 written with a name derived from the parent directory and a notice is
-printed, and the project is registered (or its path updated) in
-`projects.json`. So a colleague who clones a repository and runs any command
-is registered without a separate step.
+printed, and the project is registered in `projects.json`. So a colleague
+who clones a repository and runs any command is registered without a
+separate step.
+
+Registration keeps one primary path per name. A command run in another
+checkout of the same project while the primary's directory still exists
+records that checkout beside it and prints a notice; it never replaces the
+primary. The primary moves only when its directory has gone: a moved
+repository takes over when a command runs there, and a surviving recorded
+checkout is promoted by `Registry.checkouts` on any listing or open, with a
+notice in `Registry.notices` that `Workspace` and `projects` surface. A
+project with no surviving checkout stays listed as missing. `projects use`
+makes the current checkout the primary.
+`Registry.checkouts(name)` lists the primary, the recorded checkouts, and
+the git worktrees of the primary (from `git worktree list`), each with an
+opaque id (a hash of the path) so the HTTP API never carries paths; recorded
+checkouts whose directory has gone are forgotten. `Workspace.open_checkout`
+opens one by id; `Workspace.other_checkouts(store)` opens every other working
+tree of a store's project.
 
 `init` creates the layout when absent and is otherwise non-destructive. It
 also migrates the 0.1 layout: it deletes `.skald/skald.py` and removes a git
@@ -288,6 +306,12 @@ server caches snapshots by the commit a ref resolves to.
 `branch_diff` compares a snapshot with the working tree by id: stories only
 there, only here, and those whose status, title, or archived flag differ.
 
+`claims_elsewhere(checkouts=...)` also reads the other working trees of the
+project, so a claim made in a worktree counts before it is committed; such
+entries carry `checkout`. A working tree stands in for its branch, which is
+then not scanned from objects, so nothing is counted twice. The CLI passes
+`Workspace.other_checkouts(store)` from `next`, `claim`, and `context`.
+
 ### 4.7 Concurrency and git
 
 Writes go to a temp file then `os.replace`. Board body edits carry the SHA-256
@@ -341,7 +365,7 @@ story or configuration. Commands that print stories take `--json`.
 | `activity [--since REF] [--until REF] [--json]` | For each commit touching `.skald/` in the range, `diff_states(parent, commit)` rendered as events. Default range is 20 commits. |
 | `changelog --since REF [--until REF]` | Stories terminal at `until` that were absent or non-terminal at `since`, read from git objects. |
 | `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. |
-| `columns`, `templates`, `projects [rm NAME]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. |
+| `columns`, `templates`, `projects [rm NAME \| use [PATH]]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. `projects` lists each project's other checkouts beneath it with branch and dirty count; `use` makes a checkout the primary. |
 | `hooks claude [--install] [--strict]` | Prints or merges into `.claude/settings.json`: SessionStart `skald status && skald ls`; Stop `skald check` (or `skald check --hook` with `--strict`). |
 | `hooks git [--install]`, `hooks github [--install]` | Section 10b. `hooks claude --install` also writes `.claude/skills/skald/SKILL.md` from the contract template. |
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |
@@ -356,9 +380,25 @@ story or configuration. Commands that print stories take `--json`.
 
 ## 7. HTTP API
 
-`ThreadingHTTPServer`, bound to `127.0.0.1` by default, no authentication.
-Project names in URLs are resolved through the registry; the API never
-accepts a filesystem path. A fresh `Workspace` is built per request so
+`ThreadingHTTPServer`, bound to `127.0.0.1` by default. Project names in
+URLs are resolved through the registry; the API never accepts a filesystem
+path.
+
+Access: `serve` generates a 32-byte hex token on first start, stored as
+`token` in the machine-local directory with mode 0600 (directory 0700), and
+re-reads it whenever the file's mtime changes so `server token --rotate`
+takes effect immediately. Every `/api/` route except `GET /api/health` and
+`/api/session` requires the token as `Authorization: Bearer` or as the
+`skald_session` cookie, compared in constant time; failures are 401. Before
+that, every `/api/` route except health checks the `Host` header against
+`localhost`, `127.0.0.1`, `::1`, or the bound address, and refuses with 403
+otherwise (DNS rebinding); the check is skipped when bound to all
+interfaces, where the token is the only gate. `POST /api/session {token}`
+sets the cookie (`HttpOnly`, `SameSite=Strict`, `Path=/`) and `DELETE`
+clears it. `skald open` and `serve --open` put the key in the URL fragment
+(`/#key=…`), which browsers never send to the server; the page posts it to
+`/api/session` and rewrites the URL. The CLI and MCP server read files
+directly and are unaffected. A fresh `Workspace` is built per request so
 registry and config edits are picked up immediately. See the README for the
 endpoint table; it is the reference.
 
@@ -386,7 +426,16 @@ One filter dropdown per facet key and a swimlane control that splits the
 board by a facet's values with a progress bar per lane.
 A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
-stories that exist only on other branches.
+stories that exist only on other branches. When the project has more than
+one checkout on the machine the dropdown starts with a "Working trees"
+group, one entry per checkout reading `worktree` or `clone`, the directory
+name (with its parent when two share a name), branch, `primary`, and dirty
+count, so the closed control cannot read as a branch; a read-only branch
+that a working tree is on is suffixed `committed only`, and the control's
+tooltip describes the current choice;
+choosing one shows and edits that working tree (every request carries
+`?checkout=ID`, including the event stream, and the id is kept in the URL),
+with a banner naming the path when it is not the primary.
 Modal: title, status, assignee, tags, blockers, dependency chips that open
 the target (switching project if needed), body with Markdown preview, save
 with conflict detection, reload, claim, delete, notes, history tab. Toasts

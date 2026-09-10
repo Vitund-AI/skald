@@ -1,7 +1,7 @@
 # The board
 
 One local web page that shows every registered project, updates live, and
-never needs a login.
+needs no account: `skald open` carries the key.
 
 ```sh
 skald open              # ensure the background server is running, open this project
@@ -12,20 +12,53 @@ skald serve             # run in the foreground instead
 ```
 
 The server binds to `127.0.0.1` on port 8321 by default (`skald config port`
-changes it). It has no authentication and every write endpoint changes
-files, so only expose it on other interfaces deliberately. The page loads
-Tailwind and marked from CDNs, so styling and Markdown preview need internet
-access; without it the board still works, unstyled.
+changes it). The page loads Tailwind and marked from CDNs, so styling and
+Markdown preview need internet access; without it the board still works,
+unstyled.
+
+## Access
+
+The server requires a key. `skald open` handles it: the first server start
+generates a random token in your machine-local directory (a private file,
+never committed), and `skald open` opens the board with the key in the URL
+fragment. The page trades it for a session cookie and drops it from the
+address bar. A board opened by typing the address shows one line asking you
+to run `skald open`.
+
+Why: a localhost bind keeps the network out, but not other users on the
+machine, and not the web pages you visit, which can send requests to
+`127.0.0.1` from your own browser. The cookie is `HttpOnly` and
+`SameSite=Strict`, and the server refuses requests whose `Host` header is
+not this machine, so neither a hostile page nor a DNS name pointing at
+127.0.0.1 can ride your session.
+
+Scripts send the same token as a header, from `skald server token`:
+
+```sh
+curl -H "Authorization: Bearer $(skald server token)" http://127.0.0.1:8321/api/projects
+skald server token --rotate      # new token; browser sessions and scripts must reconnect
+```
+
+`/api/health` is the only open endpoint. Exposing the server on another
+interface still means plaintext HTTP, so do that deliberately.
 
 ## Header
 
 - **Project** switches between registered projects. "All projects: ready
   work" is a single list of ready, unblocked stories everywhere; click one to
   open it in its project.
-- **Branch** shows the working tree by default. Choosing another branch,
-  local or remote, shows a read-only view of the backlog as it is there,
-  with a banner and no editing. A badge counts stories that exist only on
-  other branches.
+- **Branch** shows the working tree by default. When the project has more
+  than one checkout on this machine, the dropdown starts with a "Working
+  trees" group: one entry per checkout reading `worktree` or `clone`, then
+  the directory, the branch, and a count of uncommitted story files, such
+  as `worktree skald-agent-two · agent-two · 2 uncommitted`. Choosing one
+  shows that working tree, edits and all, and it is editable; a banner
+  names the path. Below that, choosing a branch, local or remote, shows a
+  read-only view of the backlog as it is committed there, with a banner and
+  no editing; a branch that one of the working trees is on reads
+  `committed only`, because the working tree above it has the rest. A badge
+  counts stories that exist only on other branches. See
+  [Working trees and branches](#working-trees-and-branches).
 - **Filter** matches title, id, tag, or assignee. `/` focuses it.
 - **Facet filters and swimlanes** appear when stories carry `key:value`
   tags. One dropdown per key filters; "swimlanes by" splits the board into
@@ -84,6 +117,32 @@ tag to each story, or archives them when the column is done or closed.
 Clicking in another column or pressing `Esc` ends the selection.
 
 <img src="images/multi-select.png" alt="Three cards selected in the Review column with the bulk action bar offering Move to, a tag box, and Clear" width="100%">
+
+## Working trees and branches
+
+The dropdown offers two different things. A **working tree** is a checkout
+of the project on this machine: the primary, a git worktree, or another
+clone. Its view is the files on disk, so an agent working in a worktree
+shows up mid-task, claims and notes included, before it commits anything.
+Everything works there: drag, edit, notes, claims, and the commit button,
+which commits in that checkout on its branch. Cards claimed in another
+working tree show the "also name@branch" badge, so two agents in two
+worktrees cannot both take a story.
+
+A **branch** is a read-only snapshot of what is committed there. Use it to
+review a branch you do not have checked out, or to compare. It cannot show
+uncommitted work, which is why worktrees get their own entries, and why a
+branch with a working tree on it is marked `committed only`. Hovering the
+control says which of the two the current choice is.
+
+Worktrees are found from `git worktree list` each time the list is
+refreshed, which the board does every thirty seconds while the tab is
+visible, so a new worktree appears within half a minute of `git worktree
+add` and leaves when it is removed; nothing needs to run inside it. A
+separate clone is the one case that needs a `skald` command run inside it
+once, because nothing else can find it. The address bar carries an opaque
+id for the checkout shown, never a path. See [Multiple projects](multi-project.md#several-checkouts-of-one-repository)
+for how the primary is chosen.
 
 ## The graph
 

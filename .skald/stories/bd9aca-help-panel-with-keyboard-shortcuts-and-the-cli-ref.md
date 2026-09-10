@@ -14,6 +14,10 @@ Add a Help panel to the board (header button and the ? key) so a person can look
 
 The CLI reference must be generated from the argparse parser via GET /api/help, not hand-copied into the page, so it cannot drift from the real commands.
 
+## Changelog
+
+The board has a Help panel (`?`): keyboard shortcuts, what the card markers mean, the story file format, and the full CLI reference generated from the same parser as `skald --help`.
+
 ## Acceptance
 - [x] ? opens Help; Esc closes it
 - [x] Shortcuts tab lists every board shortcut

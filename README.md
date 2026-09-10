@@ -44,8 +44,9 @@ the branch and shows up in pull request diffs.
   as `decision` and `handoff`, and acceptance checklists gate the move to
   done. The contract is one Markdown file that `init` writes for you.
 - **A board for the human.** Every registered project in one page, live
-  updates, drag, multi-select, dependency graph, read-only views of other
-  branches, dark mode, and a Help panel with the full CLI reference.
+  updates, drag, multi-select, dependency graph, the working tree of every
+  worktree on the machine, read-only views of other branches, dark mode,
+  and a Help panel with the full CLI reference.
 - **Git as the database.** Story changes commit with the code they describe
   and carry `Skald-Story` trailers. `diff`, `activity`, and `changelog` read
   history back; `render` commits a snapshot GitHub shows in place; `release`
@@ -69,6 +70,7 @@ each project's README in September 2026; follow the links for current detail.
 | Agent interface | CLI, MCP server, Claude Code hooks and skill, `AGENTS.md` | CLI, MCP server, `AGENTS.md` | CLI with JSON output, MCP server, `AGENTS.md` | CLI | CLI |
 | Human interface | Local web board across all projects on the machine | Terminal board and local web board | CLI | CLI, TUI, web UI | CLI |
 | More than one repository | Yes: one board, `project:id` references | One project per workspace | Separate repos with routing and sync | Per repository, pushed to remotes | Per repository |
+| Work in progress across worktrees | Board shows each checkout's working tree; a claim in a worktree is seen before it is committed | Files per checkout; the MCP server follows the current worktree | Not documented | Shared: issues are git objects, not files | Files per checkout |
 | Committed snapshot | `skald render` writes Markdown or HTML with a dependency graph | `backlog board export` writes a Markdown report | No | No | No |
 | Sync with hosted trackers | No | No | No | Bridges to GitHub and GitLab | Import and export with GitHub and GitLab |
 | Runtime | Python, standard library only | TypeScript on Bun or Node | Go | Go | Shell, `jq`, `curl` |
@@ -137,7 +139,7 @@ the contract. Agents without a shell can use `skald mcp`.
 | [The board](docs/board.md) | You want every board feature in one place. |
 | [Stories](docs/stories.md) | You want the file format, columns and roles, facets and epics, templates, archiving, and releases. |
 | [Git and CI](docs/git-and-ci.md) | You want commit trailers, reviewing what changed, the committed snapshot, hooks, the GitHub workflow, and the release flow. |
-| [Multiple projects](docs/multi-project.md) | You have more than one repository. |
+| [Multiple projects](docs/multi-project.md) | You have more than one repository, or more than one checkout of one. |
 | [CLI reference](docs/cli.md) | You need the exact flags. Generated from the parser. |
 | [HTTP API](docs/api.md) | You are scripting against the board server. |
 | [Troubleshooting](docs/troubleshooting.md) | Something printed an error or looks wrong. |

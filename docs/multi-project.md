@@ -24,6 +24,40 @@ The project name comes from `.skald/config.json`, so it is the same on every
 clone. If you move a repository, the next command run inside it updates the
 path.
 
+## Several checkouts of one repository
+
+A project has one name and one primary path: the checkout that `-p NAME`,
+cross-project references, and the board open by default. Any other checkout
+of the same repository, a git worktree or a second clone, is a checkout of
+that project, not a second project. Worktrees of the primary are found on
+their own through `git worktree list`, and the board re-checks every thirty
+seconds, so they appear and disappear without any command being run in
+them; a separate clone is recorded the first time a command runs there,
+with a note saying where the primary is.
+Neither replaces the primary. Only when the primary's directory has gone
+does another checkout take its place: a surviving checkout is promoted the
+next time anything lists or opens the project, with a notice, and a moved
+repository takes over the next time a command runs in it. A project with
+no surviving checkout stays listed as missing, because an unmounted drive
+looks the same as a deletion; `skald projects rm` forgets it.
+
+```sh
+skald projects                    # each project, then its checkouts with branch and dirty count
+skald projects use                # make this checkout the primary
+skald projects use ../other-clone
+```
+
+Commands always act on the checkout you run them in. What the primary
+decides is what `-p NAME` means from elsewhere and which working tree the
+board shows first. On the board, the branch dropdown lists every working
+tree of the project; picking one shows and edits that tree, uncommitted
+changes included. See [The board](board.md#working-trees-and-branches).
+
+Claims count across checkouts. `skald next`, `skald claim`, and `skald
+context` read the other working trees, so an agent that claimed a story in
+its worktree holds it for everyone the moment the file is written, not when
+it commits.
+
 ## Cross-project dependencies
 
 A `blocked_by` entry written as `project:id` points at a story in another
@@ -53,7 +87,7 @@ The board server shows every registered project. Switch with the dropdown,
 or choose "All projects: ready work" for a single list of ready, unblocked
 stories across all of them; clicking one opens it in its project. The
 server is started once with `skald open` or `skald server start` and serves
-whichever project you ask for.
+whichever project, and whichever of its checkouts, you ask for.
 
 ## Your settings
 
@@ -68,6 +102,6 @@ skald config author --unset
 ```
 
 Settings live in the same machine-local directory and apply to every
-project. Identity works like this: notes from the CLI are labelled `agent`
+project, as does the board's access token (`skald server token`). Identity works like this: notes from the CLI are labelled `agent`
 unless you pass `--as NAME` or set `SKALD_AUTHOR`; notes from the board use
 `SKALD_AUTHOR`, then the configured `author`, then your git `user.name`.

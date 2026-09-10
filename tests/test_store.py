@@ -1,6 +1,7 @@
 """Store behaviour: ranks, dependencies, cross-project refs, columns, archive, registry."""
 import json
 import os
+import shutil
 from pathlib import Path
 
 from skald.config import ProjectConfig
@@ -361,15 +362,98 @@ class TestRegistry(SkaldTestCase):
         r = Registry(self.home)
         self.assertEqual([e["name"] for e in r.entries()], ["alpha"])
         self.assertIsNone(r.register("alpha", self.skald_dir))
-        other = self.make_repo("moved", init_skald=False)
+        # A second checkout while the primary still exists is recorded beside it, not in its place.
+        other = self.make_repo("second", init_skald=False)
         (other / ".skald" / "stories").mkdir(parents=True)
         notice = r.register("alpha", other / ".skald")
-        self.assertIn("moved", notice)
+        self.assertIn("recorded beside", notice)
+        self.assertEqual(Registry(self.home).path_of("alpha"), self.skald_dir.resolve())
+        self.assertIsNone(r.register("alpha", other / ".skald"))
+        cos = r.checkouts("alpha")
+        self.assertEqual([c["primary"] for c in cos], [True, False])
+        self.assertEqual(Path(cos[1]["path"]), (other / ".skald").resolve())
+        self.assertFalse(cos[1]["worktree"])
+        self.assertEqual(len(set(c["id"] for c in cos)), 2)
+        self.assertEqual(r.entries()[0]["checkouts"][0]["path"], cos[1]["path"])
+        # `use` swaps them.
+        r.use("alpha", other / ".skald")
         self.assertEqual(Registry(self.home).path_of("alpha"), (other / ".skald").resolve())
+        self.assertEqual(Path(r.checkouts("alpha")[1]["path"]), self.skald_dir.resolve())
+        r.use("alpha", self.skald_dir)
+        self.assertEqual(r.path_of("alpha"), self.skald_dir.resolve())
+        # A checkout whose directory has gone is forgotten on the next listing.
+        shutil.rmtree(other)
+        self.assertEqual([c["primary"] for c in r.checkouts("alpha")], [True])
+        self.assertNotIn("checkouts", Registry(self.home).projects["alpha"])
+        # When the primary itself has gone, the next checkout to run a command takes over: a moved repository.
+        moved = self.make_repo("moved", init_skald=False)
+        (moved / ".skald" / "stories").mkdir(parents=True)
+        shutil.rmtree(self.repo)
+        notice = r.register("alpha", moved / ".skald")
+        self.assertIn("moved", notice)
+        self.assertEqual(Registry(self.home).path_of("alpha"), (moved / ".skald").resolve())
         r.remove("alpha")
         with self.assertRaises(NotFoundError):
             r.remove("alpha")
         self.assertEqual(r.entries(), [])
+
+    def test_missing_primary_promotes_a_surviving_checkout(self):
+        r = Registry(self.home)
+        other = self.make_repo("second", init_skald=False)
+        (other / ".skald" / "stories").mkdir(parents=True)
+        ProjectConfig("alpha").save(other / ".skald" / "config.json")
+        r.register("alpha", other / ".skald")
+        shutil.rmtree(self.repo)
+        # Any listing promotes the survivor and says so; a fresh registry sees the new primary.
+        cos = Registry(self.home).checkouts("alpha")
+        self.assertEqual([(c["primary"], c["exists"]) for c in cos], [(True, True)])
+        self.assertEqual(Path(cos[0]["path"]), (other / ".skald").resolve())
+        fresh = Registry(self.home)
+        self.assertEqual(fresh.path_of("alpha"), (other / ".skald").resolve())
+        self.assertNotIn("checkouts", fresh.projects["alpha"])
+        # Opening by name through a registry that still holds the stale path also promotes, with a notice.
+        stale = Registry(self.home)
+        stale.projects["alpha"]["path"] = str(self.skald_dir)
+        stale.projects["alpha"]["checkouts"] = [str((other / ".skald").resolve())]
+        ws = Workspace(stale, UserConfig(self.home))
+        self.assertEqual(ws.open("alpha").dir, (other / ".skald").resolve())
+        self.assertTrue(any("moved from" in n and "gone" in n for n in ws.notices))
+        # With no survivor the project stays, listed as missing.
+        shutil.rmtree(other)
+        entries = Registry(self.home).entries()
+        self.assertEqual([(e["name"], e["exists"]) for e in entries], [("alpha", False)])
+
+    def test_worktrees_are_checkouts_and_claims_there_are_seen(self):
+        st = self.store()
+        st.create("On main", status="ready")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "seed")
+        wt = self.tmp / "alpha-wt"
+        git(self.repo, "worktree", "add", "-q", "-b", "feature", str(wt))
+        r = Registry(self.home)
+        cos = r.checkouts("alpha")
+        self.assertEqual([(c["primary"], c["worktree"]) for c in cos], [(True, False), (False, True)])
+        self.assertEqual(Path(cos[1]["path"]), (wt / ".skald").resolve())
+        # An uncommitted claim in the worktree is a claim elsewhere, before any commit.
+        ws = self.workspace()
+        wt_store = ws.open_checkout("alpha", cos[1]["id"])
+        self.assertEqual(wt_store.dir, (wt / ".skald").resolve())
+        sid = st.load_all()[0][0].id
+        wt_store.claim(sid, "other")
+        others = ws.other_checkouts(st)
+        self.assertEqual([o.dir for o in others], [wt_store.dir])
+        claims = st.claims_elsewhere(checkouts=others)
+        self.assertEqual(claims[sid], [{"branch": "feature", "assignee": "other", "status": "in_progress",
+                                        "checkout": str(wt_store.dir)}])
+        # The primary is untouched and still open by name; the worktree store is not cached under the name.
+        self.assertEqual(ws.open("alpha").dir, self.skald_dir.resolve())
+        self.assertIsNone(ws.open_checkout("alpha", "nope"))
+        # Committing in the worktree does not double-count: the working tree stands in for its branch.
+        git(wt, "add", "-A")
+        git(wt, "commit", "-qm", "claim")
+        claims = st.claims_elsewhere(checkouts=ws.other_checkouts(st))
+        self.assertEqual(len(claims[sid]), 1)
+        self.assertEqual(len(st.claims_elsewhere()[sid]), 1)
 
     def test_user_config_types(self):
         u = UserConfig(self.home)

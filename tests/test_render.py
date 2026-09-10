@@ -140,6 +140,12 @@ class TestHookInstallers(SkaldTestCase):
         self.assertIn("skald diff --since \"origin/${{ github.base_ref }}\" --until HEAD --markdown", text)
         self.assertIn("pull-requests: write", text)
         self.assertIn("contents: read", text)
+        # The render commit must be attributed to the Actions bot: a bare
+        # USERNAME@users.noreply.github.com address credits whoever owns that
+        # GitHub username.
+        self.assertIn('git config user.name "github-actions[bot]"', text)
+        self.assertIn("41898282+github-actions[bot]@users.noreply.github.com", text)
+        self.assertNotIn("skald@users.noreply.github.com", text)
         code, out, err = self.run_cli("hooks", "github", "--install")
         self.assertEqual(code, 1)
         self.assertIn("not overwriting", err)

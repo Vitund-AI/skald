@@ -165,6 +165,28 @@ def ls_tree(repo: Path, ref: str, rel_dir: str) -> list[str]:
     return [p for p in proc.stdout.splitlines() if p.endswith(".md")]
 
 
+def worktrees(repo: Path) -> list[Path]:
+    """Other working trees of this repository (``git worktree list``), resolved, excluding ``repo`` itself."""
+    try:
+        proc = _run(["worktree", "list", "--porcelain"], cwd=repo)
+    except GitError:
+        return []
+    if proc.returncode != 0:
+        return []
+    here = Path(repo).resolve()
+    out = []
+    for line in proc.stdout.splitlines():
+        if line.startswith("worktree "):
+            p = Path(line[len("worktree "):].strip())
+            try:
+                p = p.resolve()
+            except OSError:
+                continue
+            if p != here and p not in out:
+                out.append(p)
+    return out
+
+
 def rev_parse(repo: Path, ref: str) -> Optional[str]:
     proc = _run(["rev-parse", "--verify", "--quiet", ref], cwd=repo)
     return proc.stdout.strip() if proc.returncode == 0 else None

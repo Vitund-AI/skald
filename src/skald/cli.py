@@ -352,6 +352,8 @@ def build_parser() -> argparse.ArgumentParser:
     prs = pr.add_subparsers(dest="projects_cmd")
     prm = prs.add_parser("rm", help="forget a project (files are untouched)")
     prm.add_argument("name", help="the project name from its config.json")
+    pru = prs.add_parser("use", help="make this checkout the project's primary: the one -p NAME and the board open")
+    pru.add_argument("path", nargs="?", help="a checkout of the project; default: the current directory")
 
     cf = sub.add_parser("config", help="get or set a user setting")
     cf.add_argument("key", nargs="?", help="author, push, port, host, or stale_days")
@@ -383,6 +385,8 @@ def build_parser() -> argparse.ArgumentParser:
     ss.add_argument("--port", type=int, help="port (default: from skald config port)")
     srvs.add_parser("stop", help="stop the background server")
     srvs.add_parser("status", help="show whether the background server is running")
+    tk = srvs.add_parser("token", help="print the board's access token (scripts send it as Authorization: Bearer)")
+    tk.add_argument("--rotate", action="store_true", help="replace it; existing browser sessions stop working")
 
     sub.add_parser("open", help="start the server if needed and open the board for this project")
     rl = sub.add_parser("release", help="record a version: a changelog section from the done column, then archive those stories")
@@ -525,13 +529,18 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
     return 0
 
 
+def _elsewhere(ws: Workspace, store: Store) -> dict:
+    """Claims on other branches and in other checkouts' working trees (see Store.claims_elsewhere)."""
+    return store.claims_elsewhere(checkouts=ws.other_checkouts(store))
+
+
 def cmd_next(ws: Workspace, args, store: Optional[Store]) -> int:
     author = cli_identity(args.author)
     stores = ws.open_all()[0] if args.all_projects else [store]
     stale_days = ws.user.get("stale_days")
     for st in stores:
         notes: list[str] = []
-        s = st.next_story(for_author=author, stale_days=stale_days, elsewhere=st.claims_elsewhere(), warnings=notes)
+        s = st.next_story(for_author=author, stale_days=stale_days, elsewhere=_elsewhere(ws, st), warnings=notes)
         _warn(notes)
         if s:
             if args.json:
@@ -614,7 +623,7 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
     idx = {s.id: s for s in stories}
     repo, uncommitted = _uncommitted(store)
     mine = [s for s in stories if s.assignee == author and not store.config.is_terminal(s.status)]
-    elsewhere = store.claims_elsewhere()
+    elsewhere = _elsewhere(ws, store)
     stale_days = ws.user.get("stale_days")
     next_notes: list[str] = []
     nxt = store.next_story(for_author=author, stale_days=stale_days, elsewhere=elsewhere, warnings=next_notes)
@@ -681,9 +690,11 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
         for c in ctx["stale_claims"]:
             print(f"  {c['id']}  {c['status']:<12} {c['title']}  ({c['assignee']}, {c['updated_at'][:10]})")
     if ctx["claimed_elsewhere"]:
-        print("\nClaimed on other branches:")
+        print("\nClaimed on other branches or in other checkouts:")
         for sid, claims in ctx["claimed_elsewhere"].items():
-            print(f"  {sid}  " + "; ".join(f"{c['assignee']} on {c['branch']} ({c['status']})" for c in claims))
+            print(f"  {sid}  " + "; ".join(
+                f"{c['assignee']} on {c['branch']} ({c['status']})" + (f", uncommitted in {c['checkout']}" if c.get("checkout") else "")
+                for c in claims))
     if ctx["uncommitted"]:
         print(f"\nUncommitted story files: {len(ctx['uncommitted'])} (commit them with your code)")
     _warn(ctx["warnings"])
@@ -1220,14 +1231,42 @@ def cmd_projects(ws: Workspace, args) -> int:
         ws.registry.remove(args.name)
         print(f"forgot project '{args.name}' (files untouched)")
         return 0
+    if args.projects_cmd == "use":
+        start = Path(args.path).expanduser().resolve() if args.path else None
+        skald_dir = find_skald_dir(start)
+        if skald_dir is None or not (skald_dir / "stories").is_dir():
+            raise NotFoundError(f"no Skald project at {start or Path.cwd()}")
+        cfg = skald_dir / "config.json"
+        if not cfg.exists():
+            raise NotFoundError(f"{skald_dir} has no config.json; run any skald command there first")
+        name = ProjectConfig.load(cfg).name
+        ws.registry.use(name, skald_dir)
+        print(f"project '{name}' now points at {skald_dir}")
+        return 0
     entries = ws.registry.entries()
+    _notice(ws.registry.notices)
     if args.json:
+        for e in entries:
+            for c in e["checkouts"]:
+                repo = gitutil.root(Path(c["path"]))
+                c["branch"] = gitutil.branch(repo) if repo else None
         print(json.dumps(entries, indent=2))
         return 0
     if not entries:
         print("no projects registered; run `skald init` inside a repository")
         return 0
-    rows = [[e["name"], "ok" if e["exists"] else "missing", e["path"]] for e in entries]
+    rows = []
+    for e in entries:
+        rows.append([e["name"], "ok" if e["exists"] else "missing", e["path"]])
+        for c in e["checkouts"]:
+            repo = gitutil.root(Path(c["path"]))
+            branch = (gitutil.branch(repo) if repo else None) or "-"
+            try:
+                dirty = len(gitutil.changes(repo, str(Path(c["path"]).relative_to(repo)))) if repo else 0
+            except (GitError, ValueError):
+                dirty = 0
+            kind = "worktree" if c["worktree"] else "checkout"
+            rows.append(["", f"{kind} on {branch}" + (f", {dirty} uncommitted" if dirty else ""), c["path"]])
     _print_table(rows, ["NAME", "STATE", "PATH"])
     return 0
 
@@ -1442,8 +1481,8 @@ jobs:
       - name: Commit the rendered board if it changed
         run: |
           if ! git diff --quiet -- {render_path}; then
-            git config user.name "skald"
-            git config user.email "skald@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -- {render_path}
             git commit -m "skald: refresh rendered board [skip ci]"
             git push
@@ -1649,7 +1688,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         print(f"moved {story.id} to {story.status}")
         return 0
     if args.command == "claim":
-        story, warnings = store.claim(args.id, cli_identity(args.author), ws.user.get("stale_days"), store.claims_elsewhere())
+        story, warnings = store.claim(args.id, cli_identity(args.author), ws.user.get("stale_days"), _elsewhere(ws, store))
         _warn(warnings)
         print(f"{story.id} claimed by {story.assignee}, now {story.status}")
         return 0

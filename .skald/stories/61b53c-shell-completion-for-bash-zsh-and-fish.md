@@ -14,6 +14,10 @@ skald completion bash|zsh|fish prints a script to eval from the shell rc file. T
 
 Standard library only; no argcomplete. Each Tab spawns Python once.
 
+## Changelog
+
+`skald completion bash|zsh|fish` prints a shell script to eval. Tab completes commands, flags, story ids with their titles, columns, tags, blockers, projects, templates, branches, and note kinds; `git skald` completes the same way.
+
 ## Acceptance
 - [x] eval "$(skald completion zsh)" completes subcommands, flags, ids with titles, columns, tags, projects, templates, branches
 - [x] bash and fish scripts work the same, bash without descriptions

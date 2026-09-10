@@ -6,6 +6,22 @@ The single-file tool became a package. Run `skald init` once in each existing
 repository to migrate; story files are unchanged.
 
 ### Added
+- Checkouts: a project with several working trees on one machine (git
+  worktrees, or a second clone) keeps one primary and knows the others.
+  The board's branch dropdown lists every working tree (`worktree` or
+  `clone`, directory, branch) and shows the chosen one, uncommitted changes
+  included, editable; a branch a working tree is on is marked `committed
+  only`. `skald projects` lists
+  checkouts with branch and dirty count; `skald projects use` picks the
+  primary. `next`, `claim`, and `context` see claims made in other checkouts
+  before they are committed. A second checkout no longer replaces the
+  registered path each time a command runs there; when the primary's
+  directory has gone, a surviving checkout is promoted on the next listing.
+- The board server requires a per-machine token. `skald open` handles the
+  handshake through a session cookie; scripts send `Authorization: Bearer`
+  with the value from `skald server token`. Requests from a non-local `Host`
+  are refused. This closes cross-site requests from web pages and other
+  local users.
 - User guides under `docs/`: getting started, working with agents, the
   board, stories, git and CI, multiple projects, the HTTP API, and
   troubleshooting. `skald docs` generates `docs/cli.md` from the parser and
@@ -90,6 +106,12 @@ repository to migrate; story files are unchanged.
 ### Removed
 - The vendored `.skald/skald.py` and the `git config alias.skald` shim.
   `init` removes both.
+
+### Fixed
+- The workflow written by `skald hooks github --install` commits the rendered
+  board as `github-actions[bot]`. It used to commit as
+  `skald@users.noreply.github.com`, which GitHub attributes to the unrelated
+  account named `skald`. Re-run the install to update an existing workflow.
 
 ## 0.1.0
 

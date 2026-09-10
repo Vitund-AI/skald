@@ -268,6 +268,56 @@ class TestProjectsAndConfig(SkaldTestCase):
         self.assertEqual(code, 0)
         self.assertIn("not registered", err)
 
+    def test_projects_checkouts_use_and_claims_elsewhere(self):
+        a = self.new("Shared", "--status", "ready")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "base")
+        wt = self.tmp / "alpha-wt"
+        git(self.repo, "worktree", "add", "-q", "-b", "feature", str(wt))
+        code, out, _ = self.run_cli("projects")
+        self.assertIn("worktree on feature", out)
+        self.assertIn(str((wt / ".skald").resolve()), out)
+        code, out, _ = self.run_cli("projects", "--json")
+        cos = json.loads(out)[0]["checkouts"]
+        self.assertEqual([(c["worktree"], c["branch"]) for c in cos], [(True, "feature")])
+        # A command in the worktree does not move the project; it says where the primary is.
+        code, out, err = self.run_cli("ls", cwd=wt)
+        self.assertEqual(code, 0)
+        self.assertIn("recorded beside", err)
+        self.assertEqual(Registry(self.home).path_of("alpha"), self.skald_dir.resolve())
+        # Claim in the worktree without committing: the primary sees it.
+        code, out, err = self.run_cli("claim", a, "--as", "worker", cwd=wt)
+        self.assertEqual(code, 0, err)
+        code, out, _ = self.run_cli("context", "--as", "claude")
+        self.assertIn("Claimed on other branches or in other checkouts:", out)
+        self.assertIn(f"worker on feature (in_progress), uncommitted in {(wt / '.skald').resolve()}", out)
+        code, out, err = self.run_cli("next", "--json")
+        self.assertEqual((code, out.strip()), (1, ""))
+        self.assertIn("worker", err)
+        code, out, err = self.run_cli("claim", a, "--as", "claude")
+        self.assertIn("worker", err)
+        # use: the worktree becomes the primary, then back.
+        code, out, _ = self.run_cli("projects", "use", cwd=wt)
+        self.assertIn("now points at", out)
+        self.assertEqual(Registry(self.home).path_of("alpha"), (wt / ".skald").resolve())
+        code, out, _ = self.run_cli("-p", "alpha", "show", a, "--json", cwd=self.tmp)
+        self.assertEqual(json.loads(out)["assignee"], "worker")
+        code, out, _ = self.run_cli("projects", "use", str(self.repo))
+        self.assertEqual(Registry(self.home).path_of("alpha"), self.skald_dir.resolve())
+        code, out, _ = self.run_cli("projects", "use", str(self.tmp / "nowhere"))
+        self.assertEqual(code, 1)
+        # The primary goes away: the listing promotes the worktree and -p works from anywhere.
+        code, out, _ = self.run_cli("projects", "use", cwd=wt)  # worktree is primary; the main checkout is recorded
+        code, out, _ = self.run_cli("projects", "use", str(self.repo))
+        import shutil
+        shutil.rmtree(self.repo / ".skald")
+        code, out, err = self.run_cli("projects", cwd=self.tmp)
+        self.assertIn("moved from", err)
+        self.assertIn("gone", err)
+        self.assertEqual(Registry(self.home).path_of("alpha"), (wt / ".skald").resolve())
+        code, out, err = self.run_cli("-p", "alpha", "show", a, "--json", cwd=self.tmp)
+        self.assertEqual(code, 0, err)
+
     def test_config_command(self):
         code, out, _ = self.run_cli("config")
         self.assertIn('port = 8321', out)

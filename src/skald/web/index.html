@@ -77,7 +77,7 @@
 <header class="flex items-center gap-3 px-4 py-2 bg-surface border-b border-line flex-wrap">
   <h1 class="text-lg font-semibold tracking-tight">Skald</h1>
   <select id="project" class="rounded border border-strong px-2 py-1 text-sm"></select>
-  <select id="branch" class="hidden rounded border border-strong px-2 py-1 text-xs font-mono" title="Branch. Other branches are read-only views."></select>
+  <select id="branch" class="hidden rounded border border-strong px-2 py-1 text-xs font-mono" title="Working trees of this project are editable; other branches are read-only views."></select>
   <span id="elsewhere" class="hidden text-xs rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-2 py-0.5 cursor-default"></span>
   <input id="search" type="search" placeholder="Filter (title, id, tag, assignee)  /" class="flex-1 min-w-[12rem] max-w-md rounded border border-strong px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
   <span id="facet-filters" class="flex items-center gap-2"></span>
@@ -103,6 +103,7 @@
 </header>
 
 <div id="ro-banner" class="hidden bg-violet-50 border-b border-violet-200 text-violet-900 dark:bg-violet-950 dark:border-violet-800 dark:text-violet-100 text-sm px-4 py-1.5"></div>
+<div id="co-banner" class="hidden bg-amber-50 border-b border-amber-200 text-amber-900 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-100 text-sm px-4 py-1.5"></div>
 <div id="empty" class="hidden mx-3 mt-3 rounded-lg border border-dashed border-strong bg-surface px-4 py-3 text-sm text-muted"></div>
 <main id="board" class="flex-1 flex flex-col sm:flex-row gap-3 p-3 overflow-auto"></main>
 <main id="ready-view" class="hidden flex-1 overflow-y-auto p-4"></main>
@@ -114,6 +115,14 @@
   <input id="bulk-tag" class="rounded border border-strong px-2 py-1 text-xs w-28" placeholder="+tag" title="Add a tag to the selected stories (Enter)">
   <button id="bulk-archive" class="rounded border border-strong px-2 py-1 text-xs hover:bg-hover" title="Move the selected done or closed stories to .skald/archive/">Archive</button>
   <button id="bulk-clear" class="text-muted hover:text-ink text-xs" title="Clear selection (Esc)">Clear</button>
+</div>
+<div id="locked" class="hidden fixed inset-0 z-50 bg-canvas flex items-center justify-center p-6">
+  <div class="max-w-md text-center">
+    <div class="text-lg font-semibold mb-2">This board needs its key</div>
+    <p class="text-muted text-sm">Open it from a terminal inside the repository:</p>
+    <pre class="mt-3 rounded bg-chip px-4 py-3 text-sm text-left">skald open</pre>
+    <p class="text-faint text-xs mt-3">The key lives on this machine only. Scripts send it as <code>Authorization: Bearer</code>, from <code>skald server token</code>.</p>
+  </div>
 </div>
 <div id="toasts" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
 
@@ -207,10 +216,10 @@
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Cards</div>
         <div><span class="inline-block w-1 h-3 bg-red-500 align-middle mr-1"></span> Red edge: blocked by an unmet dependency</div>
         <div><span class="inline-block w-1 h-3 bg-amber-400 align-middle mr-1"></span> Amber edge: stale, no update for a while</div>
-        <div><span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5">also x@branch</span> Claimed by someone on another branch</div>
+        <div><span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5">also x@branch</span> Claimed by someone on another branch or in another checkout</div>
         <div><span class="inline-block h-1.5 w-8 rounded bg-slate-300 dark:bg-slate-600 overflow-hidden align-middle"><span class="block h-full w-1/2 bg-emerald-500"></span></span> Acceptance checklist progress</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Header</div>
-        <div><b>Branch</b> shows a read-only view of the backlog on another branch</div>
+        <div><b>Branch</b> shows a read-only view of the backlog on another branch, or another checkout of this project (a worktree or clone): its working tree, editable, uncommitted changes included</div>
         <div><b>Commit</b> appears when story files have uncommitted changes</div>
         <div><b>Swimlanes</b> group the board by a <code>key:value</code> tag such as <code>epic:auth</code></div>
         <div><b>All projects</b> lists ready, unblocked work across every registered project</div>
@@ -254,9 +263,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, facets: {}, facetFilters: {}, groupBy: '', graph: false,
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false,
     lastWrite: 0, help: false, helpCli: null,
-    sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false,
+    sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal'), help = $('help');
   const ALL = '__all__';
@@ -266,7 +275,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const opts = { method, headers: {} };
     if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
     if (method !== 'GET') state.lastWrite = Date.now();
-    const res = await fetch(path, opts);
+    const res = await fetch(withCheckout(path), opts);
+    if (res.status === 401) { lock(); const err = new Error('not authorised'); err.status = 401; throw err; }
     if (res.status === 204) return null;
     let data = null;
     try { data = await res.json(); } catch (e) { data = null; }
@@ -274,6 +284,29 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     return data;
   }
   const P = () => `/api/projects/${encodeURIComponent(state.project)}`;
+  // Viewing another checkout (a worktree or a second clone) of the project: every request to it says so.
+  function withCheckout(path) {
+    if (!state.checkout || !path.startsWith('/api/projects/')) return path;
+    return path + (path.includes('?') ? '&' : '?') + 'checkout=' + encodeURIComponent(state.checkout);
+  }
+
+  // ---- Access ----------------------------------------------------------
+  // `skald open` puts the key in the URL fragment, which never reaches the server. Trade it for a
+  // session cookie once, then drop it from the address bar.
+  async function establishSession() {
+    const m = (location.hash || '').match(/^#key=([A-Za-z0-9]+)$/);
+    if (!m) return;
+    try {
+      await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: m[1] }) });
+    } catch (e) {}
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  function lock() {
+    if (state.locked) return;
+    state.locked = true;
+    if (state.es) { state.es.close(); state.es = null; }
+    $('locked').classList.remove('hidden');
+  }
 
   // ---- Toasts ----------------------------------------------------------
   function toast(msg, kind) {
@@ -319,6 +352,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       return;
     }
     const fromUrl = new URLSearchParams(location.search).get('project');
+    state.pendingCheckout = new URLSearchParams(location.search).get('checkout') || null;
     let saved = null; try { saved = localStorage.getItem('skald.project'); } catch (e) {}
     const wanted = fromUrl || saved;
     const ok = (n) => n === ALL || state.projects.some(p => p.name === n && p.exists);
@@ -342,24 +376,60 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     $('empty').classList.add('hidden');
     clearSelection();
     state.ref = ''; state.readonly = false; state.branches = null;
+    state.checkout = state.pendingCheckout || ''; state.pendingCheckout = null; state.checkouts = null;
     state.facetFilters = {}; state.groupBy = ''; state.facets = {};
     $('ro-banner').classList.add('hidden');
+    $('co-banner').classList.add('hidden');
     state.version = null; state.git = { changes: [] };
     subscribe();
     refresh(true);
     loadBranches();
   }
+  const repoDir = (p) => p.replace(/[\\/]\.skald$/, '');
+  // The directory name alone, unless two checkouts share one; then the parent too.
+  const treeLabel = (c, all) => {
+    const parts = repoDir(c.path).split(/[\\/]/).filter(Boolean);
+    const twin = all.some(o => o !== c && repoDir(o.path).split(/[\\/]/).filter(Boolean).slice(-1)[0] === parts.slice(-1)[0]);
+    return parts.slice(twin ? -2 : -1).join('/');
+  };
+  // What the closed control means, since optgroup labels only show while the list is open.
+  function describeBranchChoice() {
+    const sel = $('branch');
+    if (state.ref) { sel.title = `Read-only view of what is committed on ${state.ref}.`; return; }
+    const cos = state.checkouts && state.checkouts.checkouts;
+    const c = cos && cos.find(x => x.id === (state.checkout || state.checkouts.current));
+    sel.title = c
+      ? `Working tree at ${repoDir(c.path)}, on ${c.branch || 'HEAD'}, editable.${c.primary ? ' This is the primary checkout.' : ''}`
+      : 'The working tree, editable. Other branches are read-only views.';
+  }
   async function loadBranches() {
     if (state.allView || !state.project) return;
     try {
-      const data = await api('GET', `${P()}/branches`);
+      const [data, cos] = await Promise.all([api('GET', `${P()}/branches`), api('GET', `${P()}/checkouts`).catch(() => null)]);
       state.branches = data;
+      state.checkouts = cos;
       const sel = $('branch');
-      if (!data.available) { sel.classList.add('hidden'); return; }
+      const several = cos && cos.checkouts.filter(c => c.exists).length > 1;
+      if (!data.available && !several) { sel.classList.add('hidden'); return; }
       const cur = data.current || 'HEAD';
-      sel.innerHTML = `<option value="">${esc(cur)} (working tree)</option>` +
-        data.branches.filter(b => !b.current).map(b => `<option value="${esc(b.name)}">${esc(b.name)}${b.only_there || b.differ ? ` (+${b.only_there} / ~${b.differ})` : ''}</option>`).join('');
-      sel.value = state.ref;
+      const live = several ? cos.checkouts.filter(c => c.exists) : [];
+      const onDisk = new Set(live.map(c => c.branch));
+      // A branch that a working tree is on is listed too: it is the committed state, minus what is on disk there.
+      const branchOpts = data.available
+        ? data.branches.filter(b => !b.current).map(b => `<option value="${esc(b.name)}">${esc(b.name)}${onDisk.has(b.name) ? ' · committed only' : ''}${b.only_there || b.differ ? ` (+${b.only_there} / ~${b.differ})` : ''}</option>`).join('')
+        : '';
+      if (several) {
+        // Every working tree of the project is editable; the one shown is selected. Ids, never paths, travel in URLs.
+        // The word comes first so the closed control cannot be mistaken for a branch name.
+        const trees = live.map(c =>
+          `<option value="co:${esc(c.id)}" title="${esc(repoDir(c.path))}">${c.worktree || c.primary ? 'worktree' : 'clone'} ${esc(treeLabel(c, live))} · ${esc(c.branch || 'HEAD')}${c.primary ? ' · primary' : ''}${c.changes ? ` · ${c.changes} uncommitted` : ''}</option>`).join('');
+        sel.innerHTML = `<optgroup label="Working trees, editable">${trees}</optgroup>` + (branchOpts ? `<optgroup label="Branches, read-only">${branchOpts}</optgroup>` : '');
+        sel.value = state.ref || `co:${cos.current}`;
+      } else {
+        sel.innerHTML = `<option value="">${esc(cur)} (working tree)</option>` + branchOpts;
+        sel.value = state.ref;
+      }
+      describeBranchChoice();
       sel.classList.remove('hidden');
       const el = $('elsewhere');
       if (data.elsewhere.length) {
@@ -370,6 +440,21 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       } else el.classList.add('hidden');
       if (!state.modal && !state.dragging) render();
     } catch (e) { $('branch').classList.add('hidden'); }
+  }
+  function setCheckout(id) {
+    const primary = state.checkouts && (state.checkouts.checkouts.find(c => c.primary) || {}).id;
+    state.checkout = id === primary ? '' : id;
+    state.ref = ''; state.readonly = false; state.version = null; state.branches = null;
+    const url = new URL(location.href);
+    if (state.checkout) url.searchParams.set('checkout', state.checkout); else url.searchParams.delete('checkout');
+    history.replaceState(null, '', url);
+    $('ro-banner').classList.add('hidden');
+    $('co-banner').classList.add('hidden');
+    $('new-btn').classList.toggle('hidden', state.allView);
+    clearSelection();
+    subscribe();
+    refresh(true);
+    loadBranches();
   }
   function setRef(ref) {
     state.ref = ref; state.readonly = !!ref; state.version = null;
@@ -387,7 +472,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     state.live = false;
     if (state.allView || state.readonly || !window.EventSource) return;
     try {
-      const es = new EventSource(`${P()}/events`);
+      const es = new EventSource(withCheckout(`${P()}/events`));
       es.addEventListener('hello', () => { state.live = true; });
       es.addEventListener('change', () => {
         state.live = true;
@@ -1027,6 +1112,11 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.facets = data.facets || {};
       if (prevHead && data.git.head && data.git.head !== prevHead && Date.now() - state.lastWrite > 3000) toast(`New commit ${data.git.head} on ${data.git.branch}`, 'info');
       renderFacetControls();
+      const co = $('co-banner');
+      if (!state.ref && data.checkout && !data.checkout.primary) {
+        co.textContent = `Working tree at ${data.checkout.path.replace(/[\\/]\.skald$/, '')} on ${data.git.branch || 'HEAD'}. Edits and commits go there.`;
+        co.classList.remove('hidden');
+      } else co.classList.add('hidden');
       $('identity').textContent = data.identity;
       $('conn').textContent = data.warnings.length ? `${data.warnings.length} notice(s), see terminal` : '';
       if (!state.readonly) renderGit();
@@ -1053,7 +1143,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (!list || list.dataset.status !== state.sel.column) clearSelection();
   });
   $('project').addEventListener('change', (e) => switchProject(e.target.value));
-  $('branch').addEventListener('change', (e) => setRef(e.target.value));
+  $('branch').addEventListener('change', (e) => { const v = e.target.value; if (v.startsWith('co:')) setCheckout(v.slice(3)); else setRef(v); describeBranchChoice(); });
   $('group-by').addEventListener('change', (e) => { state.groupBy = e.target.value; render(); });
   $('graph-btn').addEventListener('click', () => setGraph(!state.graph));
   setInterval(() => { if (document.visibilityState === 'visible' && !state.modal) loadBranches(); }, 30000);
@@ -1090,12 +1180,15 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   let tick = 0;
   setInterval(() => {
     tick += 1;
-    if (document.visibilityState !== 'visible') return;
+    if (state.locked || document.visibilityState !== 'visible') return;
     // With a live event stream, poll only every 15s as a safety net; otherwise every 1.5s.
     if (state.live && tick % 10 !== 0) return;
     refresh(false);
   }, 1500);
-  loadProjects().catch(err => { $('conn').textContent = 'disconnected'; toast(err.message, 'error'); });
+  establishSession().then(loadProjects).catch(err => {
+    if (err.status === 401) return;
+    $('conn').textContent = 'disconnected'; toast(err.message, 'error');
+  });
 })();
 </script>
 </body>
