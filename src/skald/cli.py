@@ -321,7 +321,8 @@ def build_parser() -> argparse.ArgumentParser:
     imp.add_argument("paths", nargs="+", metavar="PATH", help="Markdown files, or directories searched recursively")
     imp.add_argument("--map", metavar="FILE", help="JSON mapping: created_at, status, tags, notes, strip, exclude rules (see docs/importing.md)")
     imp.add_argument("--status", metavar="COLUMN", help="column for every imported story; overrides the mapping's status rules")
-    imp.add_argument("--rewrite-links", metavar="ROOT", help="rewrite references to each imported file across ROOT to the new story path")
+    imp.add_argument("--tag", dest="tags", action="append", default=[], metavar="TAG", help="add this tag to every imported story (repeatable), e.g. --tag area:fleet")
+    imp.add_argument("--rewrite-links", metavar="ROOT", help="rewrite references to each imported file across ROOT (normally the repository root) and in the new stories")
     imp.add_argument("--rm", action="store_true", help="delete each source file after importing it, so one commit carries removal and creation")
     imp.add_argument("--dry-run", action="store_true", help="print what would be written, per file, and write nothing")
     imp.add_argument("--as", dest="author", help="author label for the extracted notes (default: import)")
@@ -889,6 +890,14 @@ def cmd_import(ws: Workspace, store: Store, args) -> int:
     from . import importer as imp
 
     mapping = imp.load_mapping(Path(args.map)) if args.map else {}
+    bad = imp.validate_mapping(mapping, columns=list(store.config.keys))
+    if bad:
+        for x in bad:
+            print(f"ERROR: {args.map}: {x}", file=sys.stderr)
+        raise SkaldError(f"{len(bad)} problem(s) in the mapping; nothing read")
+    if any(not tag.strip() for tag in args.tags):
+        raise SkaldError("--tag needs a tag such as area:fleet")
+    project_root = store.dir.parent.resolve()
     files = imp.collect([Path(p) for p in args.paths], mapping)
     if not files:
         print("nothing to import: no Markdown files under the given paths (after the mapping's exclude rules)")
@@ -899,7 +908,12 @@ def cmd_import(ws: Workspace, store: Store, args) -> int:
     plans = []
     for source, rel in files:
         text = read_text(source)
-        plan = imp.plan_text(text, rel, source, mapping, default_status=args.status)
+        try:
+            under_root = source.resolve().relative_to(project_root).as_posix()
+        except ValueError:
+            under_root = None
+        plan = imp.plan_text(text, rel, source, mapping, default_status=args.status, path=under_root,
+                             extra_tags=args.tags)
         if args.status:
             plan.status = args.status
         if plan.status is not None:
@@ -921,7 +935,8 @@ def cmd_import(ws: Workspace, store: Store, args) -> int:
             print(f"  title:      {p.title}")
             print(f"  status:     {p.status or '(first backlog column)'}")
             print(f"  tags:       {', '.join(p.tags) or '-'}")
-            print(f"  created_at: {p.created_at or '(now)'}")
+            origin = {"regex": "from the mapping", "git": "from git, the commit that added the file", "now": "no rule matched"}[p.created_from]
+            print(f"  created_at: {p.created_at or '(now)'}  ({origin})")
             print(f"  body:       {len(p.body.splitlines())} lines")
             for n in p.notes:
                 first = n.text.splitlines()[0] if n.text else ""
@@ -929,7 +944,7 @@ def cmd_import(ws: Workspace, store: Store, args) -> int:
         if root is not None:
             # Count what a real run would rewrite, without knowing the ids yet: map each source to a stand-in.
             fake = {src: store.stories_dir / f"000000-{Path(rel).stem}.md" for src, rel in files}
-            counts = imp.rewrite_links(root, fake, write=False)
+            counts = imp.rewrite_links(root, fake, write=False, project_root=project_root, also=(store.stories_dir,))
             total = sum(counts.values())
             print(f"\nlinks: {total} reference(s) in {len(counts)} file(s) would be rewritten")
             for f, n in sorted(counts.items()):
@@ -945,7 +960,7 @@ def cmd_import(ws: Workspace, store: Store, args) -> int:
         moved[p.source] = story.path
         print(f"imported {story.id}  {p.title}  ({len(p.notes)} note(s); {', '.join(p.tags) or 'no tags'})")
     if root is not None:
-        counts = imp.rewrite_links(root, moved, write=True)
+        counts = imp.rewrite_links(root, moved, write=True, project_root=project_root, also=(store.stories_dir,))
         total = sum(counts.values())
         print(f"links: rewrote {total} reference(s) in {len(counts)} file(s)")
         for f, n in sorted(counts.items()):
@@ -1666,8 +1681,9 @@ skald render --stage
 """
 
 
-# Until the first PyPI release, generated workflows install from the repository.
-INSTALL_SPEC = "git+https://github.com/Vitund-AI/skald.git"
+# Generated workflows install the released package; pin a version here if a
+# workflow must stay on an older release.
+INSTALL_SPEC = "skald-kanban"
 
 
 def github_workflow(default_branch: str, render_path: str) -> str:

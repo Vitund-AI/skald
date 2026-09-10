@@ -540,3 +540,17 @@ operations agents perform at run time. Sources are removed in the same
 operation as the stories are created so that one commit carries both and
 git's rename detection keeps the record's history reachable from the
 story.
+
+Addendum, after the first real migration. The filing date comes from git
+when no regex matches: only a third of that corpus carried a dated line,
+and the commit that added a file is right more often than any pattern, so
+`git-added` is the default and the regex is the override for records older
+than their git history; `fallback: error` keeps the strict behaviour for
+corpora where every record must carry a date. Links resolve against every
+ancestor of the referencing file up to ROOT and against the project root,
+because backlogs link bucket-relative and repository-relative as well as
+sibling-relative, and the stories are always scanned however narrow ROOT
+is, since that is where the moved bodies now live. The mapping is
+validated whole before any file is read: a mapping mistake is the first
+thing a new adopter hits, and it should read as a named rule, not a
+traceback.

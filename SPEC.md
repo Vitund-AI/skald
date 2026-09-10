@@ -17,8 +17,7 @@ This is the specification as of 0.2.
 ## 1. Goals and principles
 
 1. **Install once per machine.** The `skald-kanban` distribution provides
-   `skald` and `git-skald`. Until the first PyPI release it installs from the
-   GitHub repository (`pip install git+https://github.com/Vitund-AI/skald.git`),
+   `skald` and `git-skald`. It installs from PyPI (`pip install skald-kanban`),
    and generated workflows do the same. Repositories carry data only, never
    the tool.
 2. **Standard library only.** No third-party Python packages. Minimum Python
@@ -395,7 +394,7 @@ story or configuration. Commands that print stories take `--json`.
 | `note <id> "text"\|- [--as N] [--kind K] [--at WHEN]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. `--at` backdates the heading (`YYYY-MM-DD HH:MM` UTC, an ISO instant, or a date); `new --created-at WHEN` likewise sets both stamps and skips the touch. Migration primitives; the default stays now. |
 | `new` accepts `--parent ID [--no-inherit]`; `set` accepts `parent=ID` and `parent=-`; `ls --parent ID` lists children; `ls` marks parents `(children done/total)` and children `(child of ID)`. |
 | `answer <id> "text"\|- [--as N] [--question N]` | `note --kind decision`; prints how many open questions it closed. `--question N` closes only the Nth open question (as `resume` numbers them) by writing `Answers [author] stamp · first line of the question` as the decision's first line. |
-| `import PATH... [--map FILE] [--status C] [--rewrite-links ROOT] [--rm] [--dry-run] [--as N]` | Mapping-driven import of Markdown records (`importer.py`): title from the H1, body kept byte for byte apart from stripped lines and extracted note blocks, notes backdated with their original stamps, status and tags and `created_at` from rules, links rewritten across `ROOT`, sources removed with `--rm`; any problem aborts before anything is written. No MCP tool. See `docs/importing.md`. |
+| `import PATH... [--map FILE] [--status C] [--tag T] [--rewrite-links ROOT] [--rm] [--dry-run] [--as N]` | Mapping-driven import of Markdown records (`importer.py`): the mapping is validated first (regexes, `$N` against group counts, subjects, columns, rule shapes); title from the H1, body kept byte for byte apart from stripped lines and extracted note blocks, notes backdated with their original stamps, status and tags from rules (`on` is `filename`, `relpath`, `path`, or `body`; `--tag` adds fixed tags), `created_at` from a regex else the commit that added the file else now; links rewritten across `ROOT` and inside the new stories, resolved against the referencing file's ancestors up to `ROOT` and the project root; sources removed with `--rm`; any problem aborts before anything is written. No MCP tool. See `docs/importing.md`. |
 | `audit <id> [--notes] [--no-note] [--as N] [--json]` | Extracts paths, `path:line` references, and commit hashes from the prelude (plus notes with `--notes`); checks existence, line count, and `git cat-file -e`; lists referenced files changed since the newest `audit` note (else `created_at`); appends an `audit` note with the summary unless `--no-note`. `audit.py`. |
 | `rm <id> [--force]` | Delete a story file. Refuses while other stories depend on it or are its children; with `--force`, removes the id from their `blocked_by` and clears their `parent`, printing each change, so no dangling reference is left. |
 | `log <id>` | `git log --follow` on the file. |

@@ -12,9 +12,11 @@ import json
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from . import gitutil
 from .errors import SkaldError
 from .util import parse_when
 
@@ -41,6 +43,7 @@ class Plan:
     body: str
     notes: list[Note] = field(default_factory=list)
     problems: list[str] = field(default_factory=list)
+    created_from: str = "now"  # regex, git, or now
 
 
 # ---------------------------------------------------------------- mapping
@@ -60,6 +63,110 @@ def load_mapping(path: Optional[Path]) -> dict:
         if key in data and not isinstance(data[key], list):
             raise SkaldError(f"{path}: '{key}' must be a list")
     return data
+
+
+SUBJECTS = ("filename", "relpath", "path", "body")
+CREATED_FALLBACKS = ("git-added", "now", "error")
+KIND_RE = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
+
+
+def validate_mapping(mapping: dict, columns: Optional[list[str]] = None) -> list[str]:
+    """Every problem in the mapping, each naming its rule, so a bad mapping fails before any file is read.
+
+    Regexes must compile; a ``$N`` in a tag template must not exceed the regex's
+    groups; ``on`` must be a subject; a status must be a column when the columns
+    are known; a notes rule needs ``block`` or ``section`` and a valid kind.
+    """
+    out: list[str] = []
+
+    def rx(pattern, where) -> Optional[re.Pattern]:
+        if not isinstance(pattern, str):
+            out.append(f"{where}: must be a string")
+            return None
+        try:
+            return re.compile(pattern)
+        except re.error as e:
+            out.append(f"{where}: bad regex {pattern!r} ({e})")
+            return None
+
+    def check_on(rule, where):
+        if rule.get("on", "body") not in SUBJECTS:
+            out.append(f"{where}: 'on' must be one of {', '.join(SUBJECTS)} (got {rule.get('on')!r})")
+
+    def check_rules(key):
+        rules = mapping.get(key, [])
+        for i, rule in enumerate(rules):
+            if not isinstance(rule, dict):
+                out.append(f"{key}[{i}]: must be an object")
+        return [r for r in rules if isinstance(r, dict)]
+
+    ca = mapping.get("created_at")
+    if ca is not None:
+        if not isinstance(ca, dict):
+            out.append("created_at: must be an object with 'regex'")
+        else:
+            m = rx(ca.get("regex", ""), "created_at.regex") if "regex" in ca else None
+            if "regex" not in ca and ca.get("fallback", "git-added") == "error":
+                out.append("created_at: 'error' needs a regex to fail on")
+            group = ca.get("group", 1)
+            if m and (not isinstance(group, int) or group < 1 or group > m.groups):
+                out.append(f"created_at: 'group' is {group!r} but the regex has {m.groups} group(s)")
+            if ca.get("fallback", "git-added") not in CREATED_FALLBACKS:
+                out.append(f"created_at: 'fallback' must be one of {', '.join(CREATED_FALLBACKS)} (got {ca.get('fallback')!r})")
+
+    for i, rule in enumerate(check_rules("status")):
+        where = f"status[{i}]"
+        if "regex" in rule:
+            rx(rule["regex"], f"{where}.regex")
+            check_on(rule, where)
+            if "status" not in rule:
+                out.append(f"{where}: a regex rule needs 'status'")
+        elif "default" not in rule:
+            out.append(f"{where}: needs 'regex' and 'status', or 'default'")
+        value = rule.get("status", rule.get("default"))
+        if columns is not None and value is not None and value not in columns:
+            out.append(f"{where}: '{value}' is not a column (columns: {', '.join(columns)})")
+
+    for i, rule in enumerate(check_rules("tags")):
+        where = f"tags[{i}]"
+        if "regex" not in rule or "tag" not in rule:
+            out.append(f"{where}: needs 'regex' and 'tag'")
+            continue
+        m = rx(rule["regex"], f"{where}.regex")
+        check_on(rule, where)
+        if m is not None and isinstance(rule["tag"], str):
+            for n in re.findall(r"\$(\d+)", rule["tag"]):
+                if int(n) > m.groups:
+                    out.append(f"{where}: template refers to ${n} but the regex has {m.groups} group(s)")
+
+    for i, rule in enumerate(check_rules("notes")):
+        where = f"notes[{i}]"
+        kind = rule.get("kind", "note")
+        if not isinstance(kind, str) or not KIND_RE.match(kind):
+            out.append(f"{where}: kind must be a short lowercase word (got {kind!r})")
+        if "block" in rule:
+            m = rx(rule["block"], f"{where}.block")
+            if rule.get("until") is not None:
+                rx(rule["until"], f"{where}.until")
+            dg = rule.get("date_group")
+            if dg is not None and m is not None and (not isinstance(dg, int) or dg < 1 or dg > m.groups):
+                out.append(f"{where}: 'date_group' is {dg!r} but the block regex has {m.groups} group(s)")
+        elif "section" in rule:
+            rx(rule["section"], f"{where}.section")
+            if rule.get("per") not in (None, "bullet"):
+                out.append(f"{where}: 'per' must be 'bullet' when given (got {rule.get('per')!r})")
+        else:
+            out.append(f"{where}: needs 'block' or 'section'")
+
+    for i, pattern in enumerate(mapping.get("strip", [])):
+        rx(pattern, f"strip[{i}]")
+    for i, g in enumerate(mapping.get("exclude", [])):
+        if not isinstance(g, str):
+            out.append(f"exclude[{i}]: must be a string")
+    req = mapping.get("requirements")
+    if req is not None and not isinstance(req, dict):
+        out.append("requirements: must be an object")
+    return out
 
 
 def _rx(pattern: str, where: str, flags: int = 0) -> re.Pattern:
@@ -92,15 +199,41 @@ def excluded(relpath: str, mapping: dict) -> bool:
     return any(_glob_to_re(g).match(relpath) for g in mapping.get("exclude", []))
 
 
-def _subject(rule: dict, text: str, relpath: str) -> str:
+def _subject(rule: dict, text: str, relpath: str, path: Optional[str] = None) -> str:
+    """What a rule's regex runs over: the filename, the path under the imported directory,
+    the path under the project root, or the body."""
     on = rule.get("on", "body")
     if on == "filename":
         return Path(relpath).name
     if on == "relpath":
         return relpath
+    if on == "path":
+        return path if path is not None else relpath
     if on == "body":
         return text
-    raise SkaldError(f"mapping: 'on' must be filename, relpath, or body (got {on!r})")
+    raise SkaldError(f"mapping: 'on' must be one of {', '.join(SUBJECTS)} (got {on!r})")
+
+
+def git_added(source: Path) -> Optional[str]:
+    """When git first added ``source`` (author date, ISO), following renames; None outside git or unknown."""
+    source = Path(source)
+    try:
+        proc = gitutil._run(["log", "--follow", "--diff-filter=A", "--format=%aI", "--", source.name],
+                            cwd=source.parent)
+    except Exception:
+        return None
+    if proc.returncode != 0:
+        return None
+    dates = [l.strip() for l in proc.stdout.splitlines() if l.strip()]
+    if not dates:
+        return None
+    try:
+        when = datetime.fromisoformat(dates[-1])
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return when.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _expand(template: str, m: re.Match) -> str:
@@ -110,7 +243,10 @@ def _expand(template: str, m: re.Match) -> str:
 
 # ---------------------------------------------------------------- planning
 
-def plan_text(text: str, relpath: str, source: Path, mapping: dict, default_status: Optional[str] = None) -> Plan:
+def plan_text(text: str, relpath: str, source: Path, mapping: dict, default_status: Optional[str] = None,
+              path: Optional[str] = None, extra_tags: Optional[list[str]] = None) -> Plan:
+    """The story one record becomes. ``relpath`` is the record's path under the directory it was
+    given under; ``path`` its path under the project root, for ``"on": "path"`` rules."""
     lines = text.splitlines()
     problems: list[str] = []
 
@@ -127,25 +263,31 @@ def plan_text(text: str, relpath: str, source: Path, mapping: dict, default_stat
     if not title:
         title = Path(relpath).stem.replace("-", " ").replace("_", " ").strip() or relpath
 
-    # created_at: a regex over the original text with a group.
+    # created_at: a regex over the original text, else the commit that added the file, else now.
     created_at = None
-    rule = mapping.get("created_at")
-    if rule:
+    created_from = "now"
+    rule = mapping.get("created_at") or {}
+    fallback = rule.get("fallback", "git-added")
+    if rule.get("regex"):
         m = _rx(rule["regex"], "created_at", re.M).search(text)
         if m:
             raw = m.group(int(rule.get("group", 1)))
             if parse_when(raw) is None:
                 problems.append(f"created_at {raw!r} is not a date")
             else:
-                created_at = raw
-        else:
+                created_at, created_from = raw, "regex"
+        elif fallback == "error":
             problems.append("created_at: no match")
+    if created_at is None and fallback == "git-added":
+        added = git_added(source)
+        if added:
+            created_at, created_from = added, "git"
 
     # status: first matching rule, else the default rule, else the CLI default.
     status = default_status
     for rule in mapping.get("status", []):
         if "regex" in rule:
-            if _rx(rule["regex"], "status").search(_subject(rule, text, relpath)):
+            if _rx(rule["regex"], "status").search(_subject(rule, text, relpath, path)):
                 status = rule.get("status")
                 break
         elif "default" in rule and status is None:
@@ -154,11 +296,15 @@ def plan_text(text: str, relpath: str, source: Path, mapping: dict, default_stat
     # tags: every matching rule contributes one, with $1 substitution.
     tags: list[str] = []
     for rule in mapping.get("tags", []):
-        m = _rx(rule["regex"], "tags").search(_subject(rule, text, relpath))
+        m = _rx(rule["regex"], "tags").search(_subject(rule, text, relpath, path))
         if m:
             tag = _expand(rule["tag"], m).strip().lower()
             if tag and tag not in tags:
                 tags.append(tag)
+    for tag in extra_tags or []:
+        tag = tag.strip().lower()
+        if tag and tag not in tags:
+            tags.append(tag)
 
     # notes: blocks and sections come out of the body in order and become notes.
     notes: list[Note] = []
@@ -236,7 +382,7 @@ def plan_text(text: str, relpath: str, source: Path, mapping: dict, default_stat
     has = any(re.match(r"^##\s+requirements\s*$", l, re.I) for l in body_lines)
     if not (unless and has) and not body.lstrip().startswith(heading):
         body = f"{heading}\n\n{body}"
-    return Plan(source, relpath, title, status, tags, created_at, body, notes, problems)
+    return Plan(source, relpath, title, status, tags, created_at, body, notes, problems, created_from)
 
 
 def collect(paths: list[Path], mapping: dict) -> list[tuple[Path, str]]:
@@ -267,51 +413,91 @@ LINK_TOKEN_RE = re.compile(r"(?<![\w/])((?:\.\.?/)?(?:[\w.-]+/)*[\w.-]+\.md)(?![
 TEXT_SUFFIXES = {".md", ".txt", ".rst", ".py", ".yml", ".yaml", ".json", ".toml", ".html", ".js", ".ts", ".sh"}
 
 
-def rewrite_links(root: Path, moved: dict[Path, Path], write: bool) -> dict[str, int]:
+def _walk_files(*dirs: Path):
+    """Every file under the given directories, each file once, skipping SKIP_DIRS."""
+    seen: set[Path] = set()
+    for d in dirs:
+        if d is None or not d.is_dir():
+            continue
+        for dirpath, dirnames, filenames in os.walk(d):
+            dirnames[:] = [x for x in dirnames if x not in SKIP_DIRS]
+            for f in filenames:
+                path = Path(dirpath) / f
+                key = path.resolve()
+                if key not in seen:
+                    seen.add(key)
+                    yield path
+
+
+def rewrite_links(root: Path, moved: dict[Path, Path], write: bool, project_root: Optional[Path] = None,
+                  also: tuple[Path, ...] = ()) -> dict[str, int]:
     """Point every reference to a moved file at its new path, relative to the referencing file.
 
-    ``moved`` maps each source (resolved) to its new story path. Returns
-    ``{file: count}`` for files with at least one rewrite. With ``write``
-    false nothing is changed, only counted. A reference inside a moved file
-    (now a story) is resolved against the directory the record came from,
-    since that is where its relative links pointed.
+    ``moved`` maps each source (resolved) to its new story path. Files under
+    ``root`` and under each directory in ``also`` (the stories directory, so
+    the new stories are rewritten even when ROOT excludes ``.skald``) are
+    visited. A relative reference is tried against the referencing file's
+    directory, every ancestor of it up to ``root``, and ``project_root``,
+    so same-directory, bucket-relative, and repository-relative forms all
+    resolve. A reference inside a moved file (now a story) is tried first
+    against the directory the record came from, since that is where its
+    links pointed. Returns ``{file: count}`` for files with at least one
+    rewrite, keys relative to ``root`` where possible. With ``write`` false
+    nothing is changed, only counted.
     """
     root = Path(root).resolve()
+    project_root = Path(project_root).resolve() if project_root else None
     sources = {src.resolve(): dst.resolve() for src, dst in moved.items()}
     origins = {dst: src.parent for src, dst in sources.items()}
     counts: dict[str, int] = {}
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
-        for f in filenames:
-            path = Path(dirpath) / f
-            if path.suffix not in TEXT_SUFFIXES or path.resolve() in sources:
-                continue
+    for path in _walk_files(root, *also):
+        if path.suffix not in TEXT_SUFFIXES or path.resolve() in sources:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        n = 0
+
+        stop = {root, project_root, None}
+
+        def ancestors(start: Path) -> list[Path]:
+            out = []
+            d = start
+            while True:
+                out.append(d)
+                if d in stop or d.parent == d:
+                    break
+                d = d.parent
+            return out
+
+        bases: list[Path] = []
+        if path.resolve() in origins:
+            bases.extend(ancestors(origins[path.resolve()]))
+        for d in ancestors(path.resolve().parent) + [root, project_root]:
+            if d is not None and d not in bases:
+                bases.append(d)
+
+        def sub(m: re.Match) -> str:
+            nonlocal n
+            token = m.group(1)
+            for base in bases:
+                try:
+                    target = (base / token).resolve()
+                except OSError:
+                    continue
+                if target in sources:
+                    n += 1
+                    return os.path.relpath(sources[target], path.parent).replace(os.sep, "/")
+            return token
+
+        new_text = LINK_TOKEN_RE.sub(sub, text)
+        if n:
             try:
-                text = path.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
-                continue
-            n = 0
-
-            bases = [path.parent, root]
-            if path.resolve() in origins:
-                bases.insert(0, origins[path.resolve()])
-
-            def sub(m: re.Match) -> str:
-                nonlocal n
-                token = m.group(1)
-                for base in bases:
-                    try:
-                        target = (base / token).resolve()
-                    except OSError:
-                        continue
-                    if target in sources:
-                        n += 1
-                        return os.path.relpath(sources[target], path.parent).replace(os.sep, "/")
-                return token
-
-            new_text = LINK_TOKEN_RE.sub(sub, text)
-            if n:
-                counts[path.relative_to(root).as_posix()] = n
-                if write and new_text != text:
-                    path.write_text(new_text, encoding="utf-8")
+                key = path.resolve().relative_to(root).as_posix()
+            except ValueError:
+                key = path.resolve().relative_to(project_root).as_posix() if project_root and project_root in path.resolve().parents else str(path)
+            counts[key] = n
+            if write and new_text != text:
+                path.write_text(new_text, encoding="utf-8")
     return counts

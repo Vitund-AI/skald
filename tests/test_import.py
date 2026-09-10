@@ -30,7 +30,8 @@ Some intro text that is the gist.
 
 ## Design
 
-The design, with a link to [the other record](../fleet-hosts/sdlc-low-other.md).
+The design, with a link to [the other record](../fleet-hosts/sdlc-low-other.md)
+and the bare name `sdlc-low-other.md` as siblings cite each other.
 
 > **Update 2026-08-20 (agent):**
 > Shipped the first piece.
@@ -128,7 +129,9 @@ class TestImport(SkaldTestCase):
 
     def test_problems_abort_and_status_override(self):
         (self.backlog / "fleet-hosts" / "nodate.md").write_text("# No date\n\nbody\n", encoding="utf-8")
-        code, out, err = self.run_cli("import", str(self.backlog), "--map", "map.json")
+        strict = dict(MAPPING, created_at=dict(MAPPING["created_at"], fallback="error"))
+        (self.repo / "strict.json").write_text(json.dumps(strict), encoding="utf-8")
+        code, out, err = self.run_cli("import", str(self.backlog), "--map", "strict.json")
         self.assertEqual(code, 1)
         self.assertIn("nodate.md: created_at: no match", err)
         self.assertEqual(list((self.skald_dir / "stories").glob("*.md")), [])
@@ -136,3 +139,86 @@ class TestImport(SkaldTestCase):
         self.assertEqual(code, 0, err)
         s = json.loads(self.run_cli("ls", "--json")[1])[0]
         self.assertEqual((s["status"], s["title"], s["tags"]), ("ready", "Other record", []))
+
+    def test_links_resolve_across_roots_and_ancestors(self):
+        # A bucket-relative link from another bucket, a repository-relative link outside ROOT, and the
+        # stories themselves, which live outside ROOT when ROOT is docs/.
+        (self.backlog / "storage").mkdir()
+        (self.backlog / "storage" / "README.md").write_text("Pairs with `fleet-hosts/sdlc-low-other.md` (bucket-relative).\n", encoding="utf-8")  # excluded, so it stays
+        (self.repo / "docs" / "HANDOFF.md").write_text("Start at docs/backlog/fleet-hosts/sdlc-low-other.md (repository-relative).\n", encoding="utf-8")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "more links")
+        code, out, err = self.run_cli("import", str(self.backlog), "--map", "map.json", "--rm",
+                                      "--rewrite-links", str(self.repo / "docs"))
+        self.assertEqual(code, 0, err)
+        stories = {s["title"]: s for s in json.loads(self.run_cli("ls", "--json")[1])}
+        a, b = stories["Build placement must follow the audience"], stories["Other record"]
+        show = self.run_cli("show", a["id"])[1]
+        self.assertNotIn("sdlc-low-other.md", show)
+        self.assertEqual(show.count(f"{b['id']}-other-record.md"), 2, show)  # the ../fleet-hosts/ link and the bare name
+        disk = (self.backlog / "storage" / "README.md").read_text()
+        self.assertIn(f"../../../.skald/stories/{b['id']}-other-record.md", disk)
+        handoff = (self.repo / "docs" / "HANDOFF.md").read_text()
+        self.assertIn(f".skald/stories/{b['id']}-other-record.md", handoff)
+        self.assertNotIn("docs/backlog", handoff)
+        self.assertIn("HANDOFF.md: 1", out)
+        self.assertIn("backlog/storage/README.md: 1", out)
+
+    def test_created_at_from_git_path_tags_and_cli_tags(self):
+        # No created_at rule: the date is the commit that added the file. A path rule sees the bucket even
+        # when only that bucket is imported; --tag adds fixed tags.
+        mapping = {"tags": [{"regex": "^docs/backlog/([a-z-]+)/", "on": "path", "tag": "area:$1"}]}
+        (self.repo / "m.json").write_text(json.dumps(mapping), encoding="utf-8")
+        added = git(self.repo, "log", "--diff-filter=A", "--format=%aI", "--", "docs/backlog/fleet-hosts/sdlc-low-other.md").strip()
+        code, out, err = self.run_cli("import", str(self.backlog / "fleet-hosts"), "--map", "m.json", "--tag", "wave:1", "--dry-run")
+        self.assertEqual(code, 0, err)
+        self.assertIn("(from git, the commit that added the file)", out)
+        self.assertIn("tags:       area:fleet-hosts, wave:1", out)
+        code, out, err = self.run_cli("import", str(self.backlog / "fleet-hosts"), "--map", "m.json", "--tag", "wave:1")
+        self.assertEqual(code, 0, err)
+        b = {s["title"]: s for s in json.loads(self.run_cli("ls", "--json")[1])}["Other record"]
+        self.assertEqual(b["tags"], ["area:fleet-hosts", "wave:1"])
+        from datetime import datetime, timezone
+        expected = datetime.fromisoformat(added).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.assertEqual(b["created_at"], expected)
+        # A record outside git falls back to now, and a regex still wins over git.
+        outside = self.repo.parent / "loose.md"
+        outside.write_text("# Loose\n\n**Filed:** 2025-01-02\n", encoding="utf-8")
+        code, out, _ = self.run_cli("import", str(outside), "--dry-run")
+        self.assertIn("created_at: (now)  (no rule matched)", out)
+        code, out, _ = self.run_cli("import", str(outside), "--map", "map.json", "--dry-run")
+        self.assertIn("created_at: 2025-01-02  (from the mapping)", out)
+
+    def test_mapping_is_validated_before_any_file_is_read(self):
+        from skald import importer as imp
+        bad = {
+            "created_at": {"regex": "(\\d+", "fallback": "sometimes"},
+            "status": [{"regex": "^x", "on": "nowhere", "status": "nope"}, {"oops": 1}],
+            "tags": [{"regex": "^(a)-", "on": "filename", "tag": "priority:$2"}, {"regex": "^a"}],
+            "notes": [{"kind": "Not Valid", "block": "^>", "date_group": 3}, {"section": "^## Q", "per": "line"}, {"kind": "x"}],
+            "strip": ["["],
+        }
+        problems = imp.validate_mapping(bad, columns=["idea", "ready", "done"])
+        for expected in (
+            "created_at.regex: bad regex",
+            "created_at: 'fallback' must be one of git-added, now, error",
+            "status[0]: 'on' must be one of filename, relpath, path, body",
+            "status[0]: 'nope' is not a column",
+            "status[1]: needs 'regex' and 'status', or 'default'",
+            "tags[0]: template refers to $2 but the regex has 1 group(s)",
+            "tags[1]: needs 'regex' and 'tag'",
+            "notes[0]: kind must be a short lowercase word",
+            "notes[0]: 'date_group' is 3 but the block regex has 0 group(s)",
+            "notes[1]: 'per' must be 'bullet' when given",
+            "notes[2]: needs 'block' or 'section'",
+            "strip[0]: bad regex",
+        ):
+            self.assertTrue(any(x.startswith(expected) for x in problems), (expected, problems))
+        self.assertEqual(imp.validate_mapping(MAPPING, columns=["idea", "plan", "ready", "done"]), [])
+        # On the command line the mapping fails before any file is read, naming the rule.
+        (self.repo / "bad.json").write_text(json.dumps({"tags": [{"regex": "^(a)", "tag": "p:$2"}]}), encoding="utf-8")
+        code, out, err = self.run_cli("import", str(self.backlog), "--map", "bad.json")
+        self.assertEqual(code, 1)
+        self.assertIn("bad.json: tags[0]: template refers to $2 but the regex has 1 group(s)", err)
+        self.assertIn("nothing read", err)
+        self.assertEqual(list((self.skald_dir / "stories").glob("*.md")), [])

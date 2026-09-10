@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Skald is on PyPI as `skald-kanban`. The README, getting started guide,
+  agent contract, and the workflows `skald hooks github` generates install
+  `skald-kanban` instead of the repository; the git URL remains the way to
+  run the unreleased head.
+- The package classifier is Development Status 4, Beta.
+
+### Fixed
+- `skald import --rewrite-links ROOT` rewrites links inside the new
+  stories even when `ROOT` does not contain `.skald/`, and resolves a
+  reference against every ancestor of the referencing file up to `ROOT`
+  and against the project root, so bucket-relative and repository-relative
+  links are found. The mapping is validated before any file is read, with
+  errors naming the rule, instead of a traceback on a `$2` with one group.
+- `created_at` on import falls back to the commit that added the file
+  (`fallback: git-added`, the default), then now; `fallback: error` keeps a
+  regex miss as a problem. Tag and status rules can match `on: path`, the
+  path under the project root, and `--tag TAG` adds a fixed tag per run.
+- A test cited a commit by its short sha, which one run in about thirty has
+  no letter in; the audit extractor rightly reads such a token as a number.
+  The test cites the full sha.
+
 ## 0.4.0 (2026-09-10)
 
 ### Added
