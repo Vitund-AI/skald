@@ -49,12 +49,15 @@ interface still means plaintext HTTP, so do that deliberately.
   open it in its project.
 - **Branch** shows the working tree by default. When the project has more
   than one checkout on this machine, the dropdown starts with a "Working
-  trees" group: one entry per checkout with its branch, path, and a count
-  of uncommitted story files. Choosing one shows that working tree, edits
-  and all, and it is editable; a banner names the path. Below that, choosing
-  a branch, local or remote, shows a read-only view of the backlog as it is
-  committed there, with a banner and no editing. A badge counts stories that
-  exist only on other branches. See
+  trees" group: one entry per checkout reading `worktree` or `clone`, then
+  the directory, the branch, and a count of uncommitted story files, such
+  as `worktree skald-agent-two · agent-two · 2 uncommitted`. Choosing one
+  shows that working tree, edits and all, and it is editable; a banner
+  names the path. Below that, choosing a branch, local or remote, shows a
+  read-only view of the backlog as it is committed there, with a banner and
+  no editing; a branch that one of the working trees is on reads
+  `committed only`, because the working tree above it has the rest. A badge
+  counts stories that exist only on other branches. See
   [Working trees and branches](#working-trees-and-branches).
 - **Filter** matches title, id, tag, or assignee. `/` focuses it.
 - **Facet filters and swimlanes** appear when stories carry `key:value`
@@ -128,11 +131,17 @@ worktrees cannot both take a story.
 
 A **branch** is a read-only snapshot of what is committed there. Use it to
 review a branch you do not have checked out, or to compare. It cannot show
-uncommitted work, which is why worktrees get their own entries.
+uncommitted work, which is why worktrees get their own entries, and why a
+branch with a working tree on it is marked `committed only`. Hovering the
+control says which of the two the current choice is.
 
-Checkouts are found from `git worktree list` and from commands run in other
-clones; the address bar carries an opaque id for the one shown, never a
-path. See [Multiple projects](multi-project.md#several-checkouts-of-one-repository)
+Worktrees are found from `git worktree list` each time the list is
+refreshed, which the board does every thirty seconds while the tab is
+visible, so a new worktree appears within half a minute of `git worktree
+add` and leaves when it is removed; nothing needs to run inside it. A
+separate clone is the one case that needs a `skald` command run inside it
+once, because nothing else can find it. The address bar carries an opaque
+id for the checkout shown, never a path. See [Multiple projects](multi-project.md#several-checkouts-of-one-repository)
 for how the primary is chosen.
 
 ## The graph

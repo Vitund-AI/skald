@@ -30,8 +30,10 @@ A project has one name and one primary path: the checkout that `-p NAME`,
 cross-project references, and the board open by default. Any other checkout
 of the same repository, a git worktree or a second clone, is a checkout of
 that project, not a second project. Worktrees of the primary are found on
-their own through `git worktree list`; a separate clone is recorded the
-first time a command runs there, with a note saying where the primary is.
+their own through `git worktree list`, and the board re-checks every thirty
+seconds, so they appear and disappear without any command being run in
+them; a separate clone is recorded the first time a command runs there,
+with a note saying where the primary is.
 Neither replaces the primary. Only when the primary's directory has gone does
 the next checkout to run a command take its place, which is what you want
 after moving a repository.

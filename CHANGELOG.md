@@ -8,8 +8,10 @@ repository to migrate; story files are unchanged.
 ### Added
 - Checkouts: a project with several working trees on one machine (git
   worktrees, or a second clone) keeps one primary and knows the others.
-  The board's branch dropdown lists every working tree and shows the chosen
-  one, uncommitted changes included, editable. `skald projects` lists
+  The board's branch dropdown lists every working tree (`worktree` or
+  `clone`, directory, branch) and shows the chosen one, uncommitted changes
+  included, editable; a branch a working tree is on is marked `committed
+  only`. `skald projects` lists
   checkouts with branch and dirty count; `skald projects use` picks the
   primary. `next`, `claim`, and `context` see claims made in other checkouts
   before they are committed. A second checkout no longer replaces the

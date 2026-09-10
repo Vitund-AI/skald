@@ -424,7 +424,11 @@ A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
 stories that exist only on other branches. When the project has more than
 one checkout on the machine the dropdown starts with a "Working trees"
-group, one entry per checkout with branch, short path, and dirty count;
+group, one entry per checkout reading `worktree` or `clone`, the directory
+name (with its parent when two share a name), branch, `primary`, and dirty
+count, so the closed control cannot read as a branch; a read-only branch
+that a working tree is on is suffixed `committed only`, and the control's
+tooltip describes the current choice;
 choosing one shows and edits that working tree (every request carries
 `?checkout=ID`, including the event stream, and the id is kept in the URL),
 with a banner naming the path when it is not the primary.
