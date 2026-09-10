@@ -5,8 +5,9 @@ rank: 50
 tags: ["agents", "core", "ui"]
 blocked_by: []
 assignee: "claude"
+released: "0.3.0"
 created_at: "2026-09-10T05:09:37Z"
-updated_at: "2026-09-10T18:04:03Z"
+updated_at: "2026-09-10T18:07:16Z"
 ---
 ## Requirements
 

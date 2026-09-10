@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-09-10)
 
 ### Added
 - Questions: `skald note --kind question` records something only a human
@@ -69,6 +69,21 @@
   operating system for a free port instead of silently using the configured
   one. The test suite now passes on a machine with a board already running
   on 8321.
+
+### Stories
+
+- `skald serve --port 0` and `skald server start` with port 0 now ask the operating system for a free port instead of silently using the configured one. The test suite passes on a machine with a board already running. (a25045)
+- The Claude Code SessionStart hook written by `skald hooks claude` now runs `skald context`, a bounded orientation block, instead of listing the whole open backlog on every session start. `skald hooks claude --as NAME` bakes the agent's name into the hook; otherwise set `SKALD_AUTHOR`. Re-run the install to update an existing hook. (f3bac3)
+- The migration from the unreleased 0.1 single-file layout is gone from init and the docs; 0.2.0 is the first release anyone installed. (2f74dd)
+- skald resume at the right altitude: requirements section only, table of contents, --section and --full (45f306)
+- Questions as a note kind: open until a later decision, surfaced in context, resume, ls, and the board with a waiting-on-a-human filter (cb3bd6)
+- Lifecycle columns: idea and plan before ready, an init preset, and a plan-to-ready warning on open questions (32076e)
+- Document the design-record layout: long stories, sections the tools understand, a template (4798f4)
+- Lanes: facet limits so stories that must not run concurrently are not picked together (67f581)
+- skald audit: check a story's paths, line references, and commit hashes against the tree, and note it (cff9e4)
+- Parents: a parent field so an epic can have a body and children (fe6d27)
+- Backdating flags: note --at and new --created-at for migration scripts (fcecad)
+- Parents on the board and in history: children in the modal, epics merge, commits union (da2a34)
 
 ## 0.2.0 (2026-09-09)
 
