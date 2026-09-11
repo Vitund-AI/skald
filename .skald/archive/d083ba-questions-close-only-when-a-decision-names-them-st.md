@@ -1,12 +1,13 @@
 ---
 title: "Questions close only when a decision names them; stable Q-numbers; --all and --withdraw"
-status: "review"
-rank: 40
+status: "done"
+rank: 10
 tags: ["questions"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-11T05:09:11Z"
-updated_at: "2026-09-11T05:17:19Z"
+updated_at: "2026-09-11T05:28:36Z"
+released: "0.4.1"
 ---
 ## Requirements
 
