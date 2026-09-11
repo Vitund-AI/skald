@@ -219,7 +219,7 @@ def docs_markdown(parser: Optional[argparse.ArgumentParser] = None) -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="skald", description="Kanban lite for coding agents.")
+    p = argparse.ArgumentParser(prog="skald", description="Track work from idea to release, in Markdown, in your repo, with your coding agents.")
     p.add_argument("--version", action="version", version=f"skald {__version__}")
     p.add_argument("-p", "--project", metavar="NAME", help="act on a registered project instead of the current directory")
     sub = p.add_subparsers(dest="command", metavar="<command>")

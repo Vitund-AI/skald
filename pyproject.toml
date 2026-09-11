@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "skald-kanban"
 dynamic = ["version"]
-description = "Kanban lite for coding agents: a Markdown-in-git backlog with an agent CLI and a local web board."
+description = "Track work from idea to release, in Markdown, in your repo, with your coding agents: an agent CLI and a local board over story files in git."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.9"

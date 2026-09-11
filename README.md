@@ -1,12 +1,15 @@
 # Skald
 
-Kanban lite for coding agents.
+Track work from idea to release, in Markdown, in your repo, with your coding
+agents.
 
-Skald is a backlog tracker that lives inside your repository as Markdown
-files. AI coding agents drive it from a small CLI. Humans drive it from a
-local web board that can show every project on the machine. There is no
-database and no service to run; the whole thing is one dependency-free Python
-package.
+Skald turns a folder of Markdown files into a backlog that travels with your
+code. Capture an idea, plan it, hand it to an agent, answer the questions it
+raises, review the result, and ship it in a release, with every step recorded
+as a dated note in the story's own file. Agents drive it from a small CLI that
+fits in a session's context. You drive it from a local board that shows every
+project and worktree on the machine. There is no database and no service: one
+dependency-free Python package, and git is the history.
 
 ```
 .skald/

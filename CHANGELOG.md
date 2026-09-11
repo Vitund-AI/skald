@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- The README opens with the idea-to-release arc: "Track work from idea to
+  release, in Markdown, in your repo, with your coding agents." The PyPI
+  description and `skald --help` say the same.
+
 ## 0.4.1 (2026-09-10)
 
 ### Changed
