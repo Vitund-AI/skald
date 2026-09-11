@@ -311,11 +311,14 @@ def build_parser() -> argparse.ArgumentParser:
     note.add_argument("--kind", help="handoff, decision, blocker, question (open until a later decision), or any short word; shown in the heading")
     note.add_argument("--at", metavar="WHEN", help="backdate the note heading: YYYY-MM-DD HH:MM (UTC) or an ISO instant; for migrations, default now")
 
-    ans = sub.add_parser("answer", help="answer a story's open questions: appends a decision note, which closes them")
+    ans = sub.add_parser("answer", help="close a story's open question with a decision note that names it; nothing else closes one")
     ans.add_argument("id", help="story id or unique prefix")
-    ans.add_argument("text", help="the decision, or - to read stdin")
+    ans.add_argument("text", help="the answer (or why the question is withdrawn), or - to read stdin")
     ans.add_argument("--as", dest="author", help="author label (default: agent)")
-    ans.add_argument("--question", type=int, metavar="N", help="close only the Nth open question (1-based, as resume lists them); default: all of them")
+    ans.add_argument("--question", metavar="N", help="the question to close, by its stable number (3 or Q3, as resume and the board label them); "
+                                                     "default: the one open question; several open refuse")
+    ans.add_argument("--all", dest="all_open", action="store_true", help="close every open question with this one decision")
+    ans.add_argument("--withdraw", action="store_true", help="record that the question is dropped rather than answered")
 
     imp = sub.add_parser("import", help="bring a folder of Markdown records into the backlog, driven by a mapping file")
     imp.add_argument("paths", nargs="+", metavar="PATH", help="Markdown files, or directories searched recursively")
@@ -688,7 +691,7 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
             newest = qs[-1]
             waiting.append({"id": s.id, "title": s.title, "status": s.status, "open": len(qs),
                             "question": newest["text"].strip().splitlines()[0] if newest["text"].strip() else "",
-                            "stamp": newest["stamp"], "author": newest["author"]})
+                            "number": newest["number"], "stamp": newest["stamp"], "author": newest["author"]})
     # Hook output is paid for on every session start (D50), so this section is bounded: newest first, five at most.
     waiting.sort(key=lambda w: w["stamp"], reverse=True)
     waiting_more = max(0, len(waiting) - WAITING_CAP)
@@ -749,10 +752,10 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
         for b in ctx["ready_blocked"]:
             print(f"  {b['id']}  {b['title']}  waiting on {', '.join(b['unmet'])}")
     if ctx["waiting"]:
-        print("\nWaiting on a human (answer with skald answer <id> \"...\"):")
+        print("\nWaiting on a human (skald answer <id> --question N \"...\"):")
         for w in ctx["waiting"]:
-            more = f" (+{w['open'] - 1} more)" if w["open"] > 1 else ""
-            print(f"  {w['id']}  {w['title']}\n          {w['author']} asked: {w['question']}{more}")
+            more = f" (+{w['open'] - 1} more open)" if w["open"] > 1 else ""
+            print(f"  {w['id']}  {w['title']}\n          Q{w['number']} {w['author']} asked: {w['question']}{more}")
         if ctx.get("waiting_more"):
             print(f"  ... and {ctx['waiting_more']} more: skald ls --questions")
     if ctx["stale_claims"]:
@@ -802,6 +805,7 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
     d["decisions"] = [n for n in notes if n["kind"] == "decision"]
     d["blockers"] = [n for n in notes if n["kind"] == "blocker"]
     d["open_questions"] = story.open_questions()
+    d["closed_questions"] = [q for q in story.questions() if q["closed_by"] is not None]
     if story.parent and story.parent in idx:
         from .store import requirements_of
 
@@ -850,8 +854,17 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
         print()
     if d["open_questions"]:
         print("Open questions (waiting on a human; work on what does not depend on them; skald answer <id> --question N):")
-        for i, n in enumerate(d["open_questions"], 1):
-            print(f"  {i}. {n['stamp']} [{n['author']}] {n['text'].strip()}")
+        for n in d["open_questions"]:
+            print(f"  Q{n['number']}. {n['stamp']} [{n['author']}] {n['text'].strip()}")
+        print()
+    if d["closed_questions"]:
+        print("Closed questions:")
+        for n in d["closed_questions"][-5:]:
+            first = n["text"].strip().splitlines()[0] if n["text"].strip() else ""
+            by = n["closed_by"]
+            print(f"  Q{n['number']}. {first}  ({by['how']} {by['stamp']} by {by['author']})")
+        if len(d["closed_questions"]) > 5:
+            print(f"  ... and {len(d['closed_questions']) - 5} earlier, in the file")
         print()
     if latest:
         label = "Latest handoff" if handoff else "Latest note"
@@ -1976,8 +1989,12 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         print(f"noted on {story.id}" + (f" ({args.kind})" if args.kind else ""))
         return 0
     if args.command == "answer":
-        story, closed = store.answer(args.id, _read_text_arg(args.text), cli_identity(args.author), getattr(args, "question", None))
-        print(f"answered on {story.id} (decision; {closed} question(s) closed)" if closed else f"noted on {story.id} (decision; no open question)")
+        story, closed = store.answer(args.id, _read_text_arg(args.text), cli_identity(args.author),
+                                     getattr(args, "question", None), getattr(args, "all_open", False), getattr(args, "withdraw", False))
+        verb = "withdrew" if args.withdraw else "answered"
+        labels = ", ".join(f"Q{q['number']}" for q in closed)
+        left = len(story.open_questions())
+        print(f"{verb} {labels} on {story.id} (decision; {left} still open)" if left else f"{verb} {labels} on {story.id} (decision; none open)")
         return 0
     if args.command == "rm":
         cleared: list[str] = []

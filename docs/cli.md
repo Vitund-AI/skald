@@ -25,7 +25,7 @@ error or not found, 2 corrupt story or configuration.
 - [`tag`](#tag) tag <id> +tag -tag ...
 - [`block`](#block) block <id> +id -id ... (project:id for other projects)
 - [`note`](#note) append a note to a story
-- [`answer`](#answer) answer a story's open questions: appends a decision note, which closes them
+- [`answer`](#answer) close a story's open question with a decision note that names it; nothing else closes one
 - [`import`](#import) bring a folder of Markdown records into the backlog, driven by a mapping file
 - [`rm`](#rm) delete a story
 - [`log`](#log) git history of a story
@@ -274,17 +274,19 @@ Append a note to a story.
 ## answer
 
 ```
-skald answer [--as AUTHOR] [--question N] id text
+skald answer [--as AUTHOR] [--question N] [--all] [--withdraw] id text
 ```
 
-Answer a story's open questions: appends a decision note, which closes them.
+Close a story's open question with a decision note that names it; nothing else closes one.
 
 | Argument | Description |
 | --- | --- |
 | `id` | story id or unique prefix |
-| `text` | the decision, or - to read stdin |
+| `text` | the answer (or why the question is withdrawn), or - to read stdin |
 | `--as AUTHOR` | author label (default: agent) |
-| `--question N` | close only the Nth open question (1-based, as resume lists them); default: all of them |
+| `--question N` | the question to close, by its stable number (3 or Q3, as resume and the board label them); default: the one open question; several open refuse |
+| `--all` | close every open question with this one decision |
+| `--withdraw` | record that the question is dropped rather than answered |
 
 ## import
 

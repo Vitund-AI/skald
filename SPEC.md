@@ -239,17 +239,26 @@ not a length limit, decides what `resume` prints. `sections_of` lists the
 prelude's H2 headings with line counts and `section_of` returns one by
 case-insensitive prefix; `resume --section NAME` and `--full` expose them,
 and the default output ends with a one-line map of the other sections.
-A note of kind `question` is open until a later note of kind `decision` on
-the same story (`open_questions`, deliberately coarse), unless the
-decision's first line is `Answers [author] stamp · first line`, in which
-case it closes only that question; `story_dict` carries
-`questions: {open}` (plus `items` when not compact), `context` lists every
-story with one under `waiting`, `resume` prints them after the decisions,
-`ls` shows `?N` in a `Q` column and `--questions` filters, and `answer` is
-`note --kind decision` with a count of what it closed. `Store.answer` is
-the one place the targeted first line is written; the CLI, the MCP tool,
-and `POST .../notes` with `question` all call it, and the board's dialog
-offers an Answer button beside each open question.
+A note of kind `question` is numbered by order of appearance (Q1, Q2,
+...; `questions_of`), a number it keeps for the story's life, and is open
+until a later `decision` note names it: a leading line of the form
+`Answers Q3 [author] stamp · first line` (or `Withdraws ...` for a
+question dropped rather than answered; `answer --all` writes one line per
+question). The tool matches on author, stamp, and first line; the
+Q-label is for the reader. A decision with no such line is a decision and
+closes nothing (D54 addendum). `story_dict` carries `questions: {open}`
+(plus `items`, each with `number`, and `closed`, each with `closed_by`,
+when not compact), `context` lists every story with one under `waiting`
+with the newest question's number, `resume` prints open questions by
+label after the decisions and the last five closed with what closed them,
+`ls` shows `?N` in a `Q` column and `--questions` filters, and `check`
+warns per story whose open questions a plain decision follows, since the
+rule before 0.5 closed those. `Store.answer` is the one place the naming
+lines are written: `--question N` (3 or Q3) closes one, no target with one
+open closes it, several open refuse, none open refuse, `--all` sweeps, and
+`--withdraw` drops; the CLI, the MCP tool, and `POST .../notes` with
+`question`, `all`, `withdraw` all call it, and the board's dialog offers
+an Answer button beside each open question and Answer all.
 A note of kind `audit` is written by `audit` and holds the compact summary
 of what it checked; `resume` reports the newest one's date and how many
 referenced files changed since. The tool checks claims; the agent checks
@@ -396,7 +405,7 @@ story or configuration. Commands that print stories take `--json`.
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
 | `note <id> "text"\|- [--as N] [--kind K] [--at WHEN]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. `--at` backdates the heading (`YYYY-MM-DD HH:MM` UTC, an ISO instant, or a date); `new --created-at WHEN` likewise sets both stamps and skips the touch. Migration primitives; the default stays now. |
 | `new` accepts `--parent ID [--no-inherit]`; `set` accepts `parent=ID` and `parent=-`; `ls --parent ID` lists children; `ls` marks parents `(children done/total)` and children `(child of ID)`. |
-| `answer <id> "text"\|- [--as N] [--question N]` | `note --kind decision`; prints how many open questions it closed. `--question N` closes only the Nth open question (as `resume` numbers them) by writing `Answers [author] stamp · first line of the question` as the decision's first line. |
+| `answer <id> "text"\|- [--as N] [--question N] [--all] [--withdraw]` | Writes a decision whose leading lines name the questions it closes (`Answers Q3 [author] stamp · first line`); prints which it closed and how many remain. `--question` takes the stable number (3 or Q3); with one question open it is the default, several open refuse, none open refuse (`note --kind decision` records a choice). `--all` names every open question; `--withdraw` writes `Withdraws` for a question dropped rather than answered. |
 | `import PATH... [--map FILE] [--status C] [--tag T] [--rewrite-links ROOT] [--rm] [--dry-run] [--as N]` | Mapping-driven import of Markdown records (`importer.py`): the mapping is validated first (regexes, `$N` against group counts, subjects, columns, rule shapes); title from the H1, body kept byte for byte apart from stripped lines and extracted note blocks, notes backdated with their original stamps, status and tags from rules (`on` is `filename`, `relpath`, `path`, or `body`; `--tag` adds fixed tags), `created_at` from a regex else the commit that added the file else now; links rewritten across `ROOT` and inside the new stories, resolved against the referencing file's ancestors up to `ROOT` and the project root; sources removed with `--rm`; any problem aborts before anything is written. No MCP tool. See `docs/importing.md`. |
 | `audit <id> [--notes] [--no-note] [--as N] [--json]` | Extracts paths, `path:line` references, and commit hashes from the prelude (plus notes with `--notes`); checks existence, line count, and `git cat-file -e`; lists referenced files changed since the newest `audit` note (else `created_at`); appends an `audit` note with the summary unless `--no-note`. `audit.py`. |
 | `rm <id> [--force]` | Delete a story file. Refuses while other stories depend on it or are its children; with `--force`, removes the id from their `blocked_by` and clears their `parent`, printing each change, so no dangling reference is left. |

@@ -729,7 +729,8 @@ class TestNotesAndAcceptance(SkaldTestCase):
             with self.assertRaises(ConfigError):
                 ProjectConfig.load(cfg_path)
 
-    def test_questions_open_until_a_later_decision(self):
+    def test_questions_close_only_when_a_decision_names_them(self):
+        from skald.store import reopened_questions
         s = self.store()
         a, _ = s.create("a")
         self.assertEqual(s.get(a.id).open_questions(), [])
@@ -737,18 +738,53 @@ class TestNotesAndAcceptance(SkaldTestCase):
         s.append_note(a.id, "progress", "claude")
         s.append_note(a.id, "Also: which port?", "claude", kind="question")
         qs = s.get(a.id).open_questions()
-        self.assertEqual([q["text"] for q in qs], ["Postgres or SQLite?", "Also: which port?"])
+        self.assertEqual([(q["number"], q["text"]) for q in qs], [(1, "Postgres or SQLite?"), (2, "Also: which port?")])
         d = s.story_dict(s.get(a.id))
         self.assertEqual(d["questions"]["open"], 2)
-        self.assertEqual(len(d["questions"]["items"]), 2)
+        self.assertEqual([q["number"] for q in d["questions"]["items"]], [1, 2])
+        self.assertNotIn("closed", d["questions"])
         self.assertEqual(s.story_dict(s.get(a.id), compact=True)["questions"], {"open": 2})
-        # One dated decision after the questions closes them, whatever it says.
+        # A plain decision closes nothing, whatever it says; check reports the questions it would once have closed.
         s.append_note(a.id, "SQLite, port 5000", "jon", kind="decision")
-        self.assertEqual(s.get(a.id).open_questions(), [])
-        self.assertEqual(s.story_dict(s.get(a.id))["questions"], {"open": 0})
-        # A question after the decision is open again.
+        self.assertEqual(len(s.get(a.id).open_questions()), 2)
+        self.assertEqual([q["number"] for q in reopened_questions(s.get(a.id).notes())], [1, 2])
+        _, warnings = s.check()
+        self.assertTrue(any("Q1, Q2 open again" in w for w in warnings), warnings)
+        # Several open and no target: refuse. A target by number or label closes that one; its number is stable.
+        with self.assertRaises(SkaldError) as cm:
+            s.answer(a.id, "SQLite", "jon")
+        self.assertIn("2 questions are open (Q1, Q2)", str(cm.exception))
+        story, closed = s.answer(a.id, "5000", "jon", question="Q2")
+        self.assertEqual([q["number"] for q in closed], [2])
+        self.assertIn("· decision\nAnswers Q2 [claude] ", story.body)
+        self.assertEqual([q["number"] for q in story.open_questions()], [1])
+        d = s.story_dict(story)
+        self.assertEqual([(q["number"], q["closed_by"]["how"], q["closed_by"]["author"]) for q in d["questions"]["closed"]], [(2, "answered", "jon")])
+        with self.assertRaises(SkaldError) as cm:
+            s.answer(a.id, "again", "jon", question=2)
+        self.assertIn("Q2 is already answered", str(cm.exception))
+        with self.assertRaises(SkaldError):
+            s.answer(a.id, "x", "jon", question=9)
+        # One open and no target: it is the target. Withdraw records a drop. A new question gets the next number.
         s.append_note(a.id, "And auth?", "claude", kind="question")
-        self.assertEqual(len(s.get(a.id).open_questions()), 1)
+        self.assertEqual([q["number"] for q in s.get(a.id).open_questions()], [1, 3])
+        story, closed = s.answer(a.id, "Out of scope for this story.", "jon", question=3, withdraw=True)
+        self.assertEqual(story.questions()[2]["closed_by"]["how"], "withdrawn")
+        self.assertIn("Withdraws Q3 [claude] ", story.body)
+        story, closed = s.answer(a.id, "SQLite.", "jon")
+        self.assertEqual(([q["number"] for q in closed], story.open_questions()), ([1], []))
+        self.assertEqual(reopened_questions(story.notes()), [])
+        # Nothing open: refuse rather than write a second kind of plain decision. --all sweeps several.
+        with self.assertRaises(SkaldError) as cm:
+            s.answer(a.id, "x", "jon")
+        self.assertIn("no open question", str(cm.exception))
+        s.append_note(a.id, "Q4?", "claude", kind="question")
+        s.append_note(a.id, "Q5?", "claude", kind="question")
+        story, closed = s.answer(a.id, "Both moot.", "jon", all_open=True)
+        self.assertEqual([q["number"] for q in closed], [4, 5])
+        first_lines = story.notes()[-1]["text"].splitlines()[:2]
+        self.assertTrue(all(l.startswith("Answers Q") for l in first_lines), first_lines)
+        self.assertEqual(story.open_questions(), [])
 
     def test_acceptance_gate_warns_on_forward_moves(self):
         s = self.store()

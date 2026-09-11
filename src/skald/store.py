@@ -67,42 +67,102 @@ def parse_notes(body: str) -> list[dict]:
     return notes
 
 
-ANSWERS_RE = re.compile(r"^answers \[(?P<author>[^\]\n]+)\] (?P<stamp>\d{4}-\d\d-\d\d \d\d:\d\d UTC)(?: · (?P<first>.*))?\s*$", re.I)
+ANSWERS_RE = re.compile(
+    r"^(?P<verb>answers|withdraws) (?:Q(?P<label>\d+) )?\[(?P<author>[^\]\n]+)\] "
+    r"(?P<stamp>\d{4}-\d\d-\d\d \d\d:\d\d UTC)(?: · (?P<first>.*))?\s*$", re.I)
+QUESTION_REF_RE = re.compile(r"^\s*q?\s*(\d+)\s*$", re.I)
 
 
-def answer_line(question: dict) -> str:
-    """The first line of a targeted decision: names the question by author, stamp, and its first line."""
-    first = question["text"].strip().splitlines()[0] if question["text"].strip() else ""
-    return f"Answers [{question['author']}] {question['stamp']}" + (f" · {first}" if first else "")
+def _first_line(note: dict) -> str:
+    text = note["text"].strip()
+    return text.splitlines()[0] if text else ""
 
 
-def _answers(decision_first_line: str, question: dict) -> bool:
-    m = ANSWERS_RE.match(decision_first_line)
+def answer_line(question: dict, withdraw: bool = False) -> str:
+    """The first line of a decision that closes a question: the verb, the question's stable label,
+    and its author, stamp, and first line. The tool matches on author, stamp, and first line; the
+    label is for the person reading the file."""
+    verb = "Withdraws" if withdraw else "Answers"
+    label = f"Q{question['number']} " if question.get("number") else ""
+    first = _first_line(question)
+    return f"{verb} {label}[{question['author']}] {question['stamp']}" + (f" · {first}" if first else "")
+
+
+def _answers(line: str, question: dict) -> Optional[str]:
+    """``answered`` or ``withdrawn`` when ``line`` names ``question``, else None."""
+    m = ANSWERS_RE.match(line)
     if not m or m.group("author") != question["author"] or m.group("stamp") != question["stamp"]:
-        return False
-    first = question["text"].strip().splitlines()[0] if question["text"].strip() else ""
-    return m.group("first") is None or m.group("first").strip() == first
+        return None
+    if m.group("first") is not None and m.group("first").strip() != _first_line(question):
+        return None
+    return "withdrawn" if m.group("verb").lower() == "withdraws" else "answered"
 
 
-def open_questions(notes: list[dict]) -> list[dict]:
-    """Question notes not yet answered.
+def _naming_lines(decision: dict) -> list[str]:
+    """The leading lines of a decision that name questions (``answer --all`` writes one per question)."""
+    out = []
+    for line in decision["text"].strip().splitlines():
+        if ANSWERS_RE.match(line):
+            out.append(line)
+        else:
+            break
+    return out
 
-    A question is open until a later ``decision`` note on the same story. A
-    decision whose first line is ``Answers [author] stamp`` (what ``answer
-    --question N`` writes) closes only that question; any other decision
-    closes every question before it.
+
+def questions_of(notes: list[dict]) -> list[dict]:
+    """Every question note, numbered by order of appearance (Q1, Q2, ...; the number never changes),
+    each with ``closed_by``: the decision that named it, plus ``how`` (answered or withdrawn), or
+    None while it is open. A decision closes only the questions its leading lines name; any other
+    decision is a decision, not an answer.
     """
     out: list[dict] = []
     for n in notes:
         if n["kind"] == "question":
-            out.append(n)
+            q = dict(n)
+            q["number"] = len(out) + 1
+            q["closed_by"] = None
+            out.append(q)
         elif n["kind"] == "decision":
-            first = n["text"].strip().splitlines()[0] if n["text"].strip() else ""
-            if ANSWERS_RE.match(first):
-                out = [q for q in out if not _answers(first, q)]
-            else:
-                out = []
+            for line in _naming_lines(n):
+                for q in out:
+                    if q["closed_by"] is None:
+                        how = _answers(line, q)
+                        if how:
+                            q["closed_by"] = {"author": n["author"], "stamp": n["stamp"], "how": how}
     return out
+
+
+def open_questions(notes: list[dict]) -> list[dict]:
+    """Questions no decision has named yet, each carrying its stable ``number``."""
+    return [q for q in questions_of(notes) if q["closed_by"] is None]
+
+
+def reopened_questions(notes: list[dict]) -> list[dict]:
+    """Open questions followed by a plain decision: closed under the rule before 0.5, open now."""
+    open_stamps = {(q["author"], q["stamp"], _first_line(q)) for q in open_questions(notes)}
+    seen: list[dict] = []
+    out: list[dict] = []
+    number = 0
+    for n in notes:  # file order, since two notes can share a minute
+        if n["kind"] == "question":
+            number += 1
+            if (n["author"], n["stamp"], _first_line(n)) in open_stamps:
+                seen.append(dict(n, number=number))
+        elif n["kind"] == "decision" and not _naming_lines(n):
+            out.extend(q for q in seen if q not in out)
+    return out
+
+
+def parse_question_ref(ref) -> int:
+    """``3``, ``"3"``, or ``"Q3"`` as the question number."""
+    if isinstance(ref, bool):
+        raise SkaldError("question must be a number such as 3 or Q3")
+    if isinstance(ref, int):
+        return ref
+    m = QUESTION_REF_RE.match(str(ref))
+    if not m:
+        raise SkaldError(f"question must be a number such as 3 or Q3 (got {ref!r})")
+    return int(m.group(1))
 
 
 def prelude_of(body: str) -> str:
@@ -247,10 +307,13 @@ class Story:
         a_done, a_total = acceptance_progress(self.body)
         if a_total:
             d["acceptance"] = {"done": a_done, "total": a_total}
-        questions = self.open_questions()
-        d["questions"] = {"open": len(questions)}
-        if not compact and questions:
-            d["questions"]["items"] = questions
+        questions = self.questions()
+        open_qs = [q for q in questions if q["closed_by"] is None]
+        d["questions"] = {"open": len(open_qs)}
+        if not compact and open_qs:
+            d["questions"]["items"] = open_qs
+        if not compact and len(open_qs) < len(questions):
+            d["questions"]["closed"] = [q for q in questions if q["closed_by"] is not None]
         return d
 
     def notes(self) -> list[dict]:
@@ -262,8 +325,12 @@ class Story:
                 return n
         return None
 
+    def questions(self) -> list[dict]:
+        """Every question, numbered by appearance, with what closed it (see ``questions_of``)."""
+        return questions_of(self.notes())
+
     def open_questions(self) -> list[dict]:
-        """Questions waiting on a human: question notes with no later decision note."""
+        """Questions waiting on a human: no decision has named them yet."""
         return open_questions(self.notes())
 
 
@@ -931,20 +998,42 @@ class Store:
                 changed.append(s)
         return changed
 
-    def answer(self, ref: str, text: str, author: str = "agent", question: Optional[int] = None) -> tuple[Story, int]:
-        """Append a decision note. With ``question`` (1-based over the open questions, as ``resume`` numbers
-        them) the note's first line names that question so only it closes; otherwise every open question
-        closes. Returns the story and how many questions the note closes."""
+    def answer(self, ref: str, text: str, author: str = "agent", question=None, all_open: bool = False,
+               withdraw: bool = False) -> tuple[Story, list[dict]]:
+        """Close questions with a decision note whose leading lines name them; nothing else closes one.
+
+        ``question`` is a stable number (``3`` or ``"Q3"``). Without it, the one open question is
+        the target; several open refuse rather than guess, and none open refuses (record a plain
+        decision with ``note --kind decision``). ``all_open`` names every open question.
+        ``withdraw`` records the drop of a question instead of an answer. Returns the story and
+        the questions closed.
+        """
         open_qs = self.get(ref).open_questions()
         text = (text or "").strip()
-        if question is not None:
-            if not open_qs:
-                raise SkaldError("this story has no open question")
-            if not 1 <= question <= len(open_qs):
-                raise SkaldError(f"question must be between 1 and {len(open_qs)} (open questions on this story)")
-            text = f"{answer_line(open_qs[question - 1])}\n{text}"
-        story = self.append_note(ref, text, author, "decision")
-        return story, (1 if question is not None else len(open_qs))
+        if not text:
+            raise SkaldError("the answer text is required" if not withdraw else "say why the question is withdrawn")
+        if question is not None and all_open:
+            raise SkaldError("--question and --all are alternatives")
+        if not open_qs:
+            raise SkaldError("this story has no open question; record a decision with skald note --kind decision")
+        if all_open:
+            targets = open_qs
+        elif question is not None:
+            number = parse_question_ref(question)
+            targets = [q for q in open_qs if q["number"] == number]
+            if not targets:
+                closed = [q for q in self.get(ref).questions() if q["number"] == number]
+                if closed:
+                    raise SkaldError(f"Q{number} is already {closed[0]['closed_by']['how']} ({closed[0]['closed_by']['stamp']} by {closed[0]['closed_by']['author']})")
+                raise SkaldError(f"no question Q{number}; open: {', '.join('Q' + str(q['number']) for q in open_qs)}")
+        elif len(open_qs) == 1:
+            targets = open_qs
+        else:
+            raise SkaldError(f"{len(open_qs)} questions are open ({', '.join('Q' + str(q['number']) for q in open_qs)}); "
+                             f"say which with --question N, or --all")
+        lines = [answer_line(q, withdraw) for q in targets]
+        story = self.append_note(ref, "\n".join(lines) + "\n" + text, author, "decision")
+        return story, targets
 
     def append_note(self, ref: str, text: str, author: str = "agent", kind: Optional[str] = None,
                     at: Optional[str] = None) -> Story:
@@ -1104,6 +1193,12 @@ class Store:
                 )
             if s.archived and not self.config.is_terminal(s.status):
                 warnings.append(f"{s.path.name}: archived but status '{s.status}' is not terminal")
+            if not s.archived:
+                reopened = reopened_questions(s.notes())
+                if reopened:
+                    labels = ", ".join(f"Q{q['number']}" for q in reopened)
+                    warnings.append(f"{s.path.name}: {labels} open again: a plain decision followed them, which closed questions "
+                                    f"before 0.5 and no longer does; skald answer {s.id} --question N or --all")
             for b in s.blocked_by:
                 if not REF_RE.match(b):
                     problems.append(f"{s.path.name}: blocked_by entry '{b}' is not a valid reference")

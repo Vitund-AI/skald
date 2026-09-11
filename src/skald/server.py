@@ -547,13 +547,12 @@ class Handler(BaseHTTPRequestHandler):
                     author = (data.get("author") or "").strip() or self._identity(ws, store)
                     kind = (data.get("kind") or "").strip() or None
                     question = data.get("question")
-                    if question is not None:
-                        # A decision aimed at one open question (1-based), as answer --question N.
+                    if question is not None or data.get("all"):
+                        # A decision that closes questions, as answer --question N / --all / --withdraw.
                         if kind not in (None, "decision"):
                             raise SkaldError("question goes with a decision note")
-                        if not isinstance(question, int) or isinstance(question, bool):
-                            raise SkaldError("question must be an integer")
-                        story, _ = store.answer(ref, data.get("text", ""), author, question)
+                        story, _ = store.answer(ref, data.get("text", ""), author, question,
+                                                bool(data.get("all")), bool(data.get("withdraw")))
                     else:
                         story = store.append_note(ref, data.get("text", ""), author, kind)
                     self._json(201, self._story_json(ws, store, story, body=True))
