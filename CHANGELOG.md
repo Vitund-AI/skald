@@ -8,11 +8,22 @@
   `skald-kanban` instead of the repository; the git URL remains the way to
   run the unreleased head.
 - The package classifier is Development Status 4, Beta.
-- The board's story dialog lists open questions numbered, each with an
-  Answer button: select one and the reply closes only that question, as
-  `skald answer --question N` does; "Answer all" keeps the old behaviour.
-  `POST .../notes` takes `question` for the same purpose, and the CLI, MCP
-  tool, and server share one `Store.answer`.
+- A question closes only when a decision names it. A plain `note --kind
+  decision` records a choice and closes nothing; `skald answer` writes the
+  decision that closes a question, and is the only thing that does. Questions
+  are numbered Q1, Q2, ... by order of appearance for the story's life, and
+  `resume`, `context`, `ls`, and the board show the label; `--question`
+  takes `3` or `Q3`. With one question open `answer` targets it; with
+  several it refuses unless told which, or `--all`; with none it refuses.
+  `--withdraw` records a question as dropped rather than answered. `resume`
+  lists closed questions with the decision that closed them. Questions an
+  unnamed decision used to close are open again; `skald check` names each
+  such story so one `answer --all` (or one per question) settles it.
+- The board's story dialog lists open questions as Q1, Q2, ..., each with
+  an Answer button: select one and the reply closes only that question;
+  "Answer all" names every open question. `POST .../notes` takes
+  `question`, `all`, and `withdraw`, and the CLI, MCP tool, and server share
+  one `Store.answer`.
 
 ### Fixed
 - `skald import --rewrite-links ROOT` rewrites links inside the new

@@ -49,7 +49,7 @@ as errors.
 | `GET /api/projects/<p>/stories/<id>[?ref=REF]` | | story with `body`, `body_sha256`, `deps`, `children` (`[{id, title, status, done}]`), and `parent_story` (`{id, title, status}`) when it has one; with `ref`, as it is on that branch |
 | `PATCH /api/projects/<p>/stories/<id>` | any of `{title, status, rank, tags, blocked_by, assignee, parent, order}` | `{story, warnings}`; `parent: "-"` clears it |
 | `PUT /api/projects/<p>/stories/<id>/body` | `{body, base_sha256}` | story, or 409 if the body changed on disk |
-| `POST /api/projects/<p>/stories/<id>/notes` | `{text, author?, kind?, question?}` | 201, story with body. `question` (1-based over the open questions, with `kind` `decision` or omitted) aims the decision at that question alone, as `skald answer --question N`. |
+| `POST /api/projects/<p>/stories/<id>/notes` | `{text, author?, kind?, question?, all?, withdraw?}` | 201, story with body. `question` (a stable number, `3` or `"Q3"`) or `all: true`, with `kind` `decision` or omitted, writes the decision that closes those questions, as `skald answer`; `withdraw: true` records a drop. A decision without either closes nothing. |
 | `POST /api/projects/<p>/stories/<id>/claim` | `{author?}` | `{story, warnings}` |
 | `GET /api/projects/<p>/stories/<id>/history[?children=0]` | | `{history: [{sha, date, author, subject}], commits: [{..., story}], children}`; `commits` include those referencing the story's children, each tagged with `story`, unless `children=0` |
 | `DELETE /api/projects/<p>/stories/<id>[?force=1]` | | 204, or 409 if other stories depend on it |

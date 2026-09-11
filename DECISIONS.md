@@ -447,6 +447,23 @@ everything, so the coarse rule remains the default and the file format is
 unchanged. The `context` section that lists waiting stories is capped at
 five, newest first, for the reason in D50: it runs on every session start.
 
+*Second addendum, after the first real design story.* The coarse rule
+lasted one release. On a design story decisions and questions interleave,
+so an agent that recorded a choice as a decision, which is what the
+contract asks, closed four questions the owner had not answered, twice in
+one session, and could not tell from the output which ones. So closing is
+explicit: a decision closes only the questions its leading lines name,
+`answer` is the only verb that writes those lines, and `note --kind
+decision` is what it says. Questions are numbered by order of appearance
+rather than by position among the open ones, because the latter shifts
+every time one closes and is racy across two agents; the tool still
+matches on author, stamp, and first line, and the Q-label is for the
+person reading the file. `--withdraw` exists so a dropped question leaves
+a trail that says dropped, not answered. The format did not change: the
+naming line was already in the file as of 0.4.0, so the cost is that
+questions a plain decision used to close are open again, which is the
+honest state for the ones never answered, and `check` lists the rest.
+
 ### D55. The lifecycle is two backlog columns, and waiting is not one of them
 A full lifecycle from idea through plan and discussion to execution needs
 no new role: two columns with the `backlog` role before `ready` are the

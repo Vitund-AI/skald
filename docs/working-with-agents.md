@@ -54,9 +54,14 @@ unless asked, prefer `--json` when parsing.
 - **Questions are how an agent asks without stopping.** `--kind question`
   records something only you can decide; the agent carries on with whatever
   does not depend on it. `skald context` lists every story waiting on you,
-  the board has a "Waiting on a human" filter, and `skald answer <id> "..."`
-  (or the Answer button in the story dialog) closes them with a decision
-  note the next session will read.
+  the board has a "Waiting on a human" filter, and `skald answer <id>
+  --question N "..."` (or the Answer button beside a question in the story
+  dialog) closes that question with a decision note the next session will
+  read. Questions keep their numbers (Q1, Q2, ...) for the story's life, and
+  only a decision that names a question closes it: an agent recording a
+  choice with `--kind decision` never closes a question by accident.
+  `--withdraw` drops a question that became moot, and `--all` sweeps every
+  open one when they all have the same answer.
 - **Warnings, not walls.** An agent that hits a hard error stops or works
   around it in ways you did not intend. A warning plus a recorded decision
   keeps the agent moving and leaves you a trail to review.

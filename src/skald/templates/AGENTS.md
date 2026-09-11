@@ -46,9 +46,12 @@ tools from `skald mcp` (see the README).
    `skald note <id> - --as <your-name>` with the text on stdin. Give notes a
    kind when it fits: `--kind decision` for a choice and why, `--kind blocker`
    for something you cannot get past, `--kind question` for something only
-   the human can decide. A question stays open until a later decision note
-   on the same story; keep working on whatever does not depend on it, and
-   `skald context` lists every story waiting on a human. Task-list items (`- [ ]` / `- [x]`) in
+   the human can decide. Questions are numbered Q1, Q2, ... for the story's
+   life; one closes only when `skald answer <id> --question N "..."` names
+   it (a plain decision note closes nothing), so keep working on whatever
+   does not depend on it, and `skald context` lists every story waiting on
+   a human with the question's number. `--withdraw` drops a question that
+   became moot. Task-list items (`- [ ]` / `- [x]`) in
    the body show up as progress on the board. Put acceptance criteria under a
    `## Acceptance` heading as a checklist and tick them as you verify each;
    moving to review or done with unchecked items prints a warning.
@@ -104,7 +107,8 @@ skald move <id> <column>
 skald set <id> title="..." rank=N assignee=NAME
 skald tag <id> +tag -tag
 skald block <id> +id -id            (use project:id for another repository)
-skald note <id> "<text>" | -  --as NAME [--kind handoff|decision|blocker]
+skald note <id> "<text>" | -  --as NAME [--kind handoff|decision|blocker|question]
+skald answer <id> "<text>" --as NAME [--question N | --all] [--withdraw]   closes a question; nothing else does
 skald log <id>                      git history of the story file
 skald commits <id>                  code commits that reference the story
 skald graph                         dependency graph as Mermaid

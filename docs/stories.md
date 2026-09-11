@@ -116,9 +116,11 @@ One or two sentences for users; `skald release` uses them.
 
 The history does not go in these sections. Questions (`--kind question`),
 decisions, handoffs, and audits are dated notes appended by `skald note`,
-which is what keeps the sections stable: a question is answered by a
-later decision note, not by editing the body, and `resume` reads the
-notes in the order that matters. `resume` prints the requirements and a
+which is what keeps the sections stable: a question is closed by `skald
+answer`, which writes a decision note naming it, not by editing the body,
+and `resume` reads the notes in the order that matters. Questions are
+numbered by order of appearance (Q1, Q2, ...) for the story's life; a plain
+decision note records a choice and closes nothing. `resume` prints the requirements and a
 one-line map of the other sections; `--section design` or `--full` reads
 the rest on request.
 
