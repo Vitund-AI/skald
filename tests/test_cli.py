@@ -665,7 +665,7 @@ class TestAgentOrientation(SkaldTestCase):
         self.assertTrue(d["decisions"][0]["text"].startswith("Answers [claude] "))
         code, out, err = self.run_cli("answer", sid, "x", "--question", "3")
         self.assertEqual(code, 1)
-        self.assertIn("--question must be between 1 and 1", err)
+        self.assertIn("question must be between 1 and 1", err)
         code, out, _ = self.run_cli("answer", sid, "SQLite, all of it.")
         self.assertEqual(json.loads(self.run_cli("resume", sid, "--json")[1])["open_questions"], [])
 

@@ -8,6 +8,11 @@
   `skald-kanban` instead of the repository; the git URL remains the way to
   run the unreleased head.
 - The package classifier is Development Status 4, Beta.
+- The board's story dialog lists open questions numbered, each with an
+  Answer button: select one and the reply closes only that question, as
+  `skald answer --question N` does; "Answer all" keeps the old behaviour.
+  `POST .../notes` takes `question` for the same purpose, and the CLI, MCP
+  tool, and server share one `Store.answer`.
 
 ### Fixed
 - `skald import --rewrite-links ROOT` rewrites links inside the new

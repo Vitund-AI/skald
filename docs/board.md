@@ -96,9 +96,14 @@ Markers:
   branch.
 - **"1/3 children" with a blue bar**: a parent story, with its children
   done over total. The dialog lists them.
-- **"? N" in amber**: N open questions, waiting on a human. The dialog lists
-  them, and its Answer button appends your text as a decision note, which
-  closes them.
+- **"? N" in amber**: N open questions, waiting on a human. The dialog
+  lists them, numbered as `skald resume` numbers them, each with an Answer
+  button. Select one and the send button reads "Answer question N": your
+  text becomes a decision note aimed at that question alone, and the others
+  stay open, so the badge counts down as you work through them. With none
+  selected the button reads "Answer all" and one decision closes every
+  question. Either way the story file gets the same note `skald answer`
+  writes.
 
 Drag a card to move it between columns or reorder it within one. Tab
 reaches cards and Enter opens them. Clicking a card opens it.

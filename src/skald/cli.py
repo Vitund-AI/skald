@@ -1976,18 +1976,7 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         print(f"noted on {story.id}" + (f" ({args.kind})" if args.kind else ""))
         return 0
     if args.command == "answer":
-        open_qs = store.get(args.id).open_questions()
-        text = _read_text_arg(args.text)
-        which = getattr(args, "question", None)
-        if which is not None:
-            if not 1 <= which <= len(open_qs):
-                raise SkaldError(f"--question must be between 1 and {len(open_qs)} (open questions on this story)" if open_qs
-                                 else "this story has no open question")
-            from .store import answer_line
-
-            text = f"{answer_line(open_qs[which - 1])}\n{text}"
-        story = store.append_note(args.id, text, cli_identity(args.author), "decision")
-        closed = 1 if which is not None else len(open_qs)
+        story, closed = store.answer(args.id, _read_text_arg(args.text), cli_identity(args.author), getattr(args, "question", None))
         print(f"answered on {story.id} (decision; {closed} question(s) closed)" if closed else f"noted on {story.id} (decision; no open question)")
         return 0
     if args.command == "rm":
