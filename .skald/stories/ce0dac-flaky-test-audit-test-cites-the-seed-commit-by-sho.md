@@ -1,12 +1,12 @@
 ---
 title: "Flaky test: audit test cites the seed commit by short sha, which may have no letters"
-status: "review"
-rank: 20
+status: "done"
+rank: 40
 tags: ["tests"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T21:33:38Z"
-updated_at: "2026-09-10T21:39:36Z"
+updated_at: "2026-09-11T04:55:55Z"
 ---
 ## Requirements
 

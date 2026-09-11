@@ -1,12 +1,12 @@
 ---
 title: "Import review 0.4.0: links across roots, git-added dates, path tags, mapping validation"
-status: "review"
-rank: 10
+status: "done"
+rank: 50
 tags: ["import"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-10T21:33:38Z"
-updated_at: "2026-09-10T21:39:36Z"
+updated_at: "2026-09-11T04:56:19Z"
 ---
 ## Requirements
 
