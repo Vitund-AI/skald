@@ -5,8 +5,9 @@ rank: 10
 tags: []
 blocked_by: []
 assignee: "claude"
+released: "0.4.1"
 created_at: "2026-09-10T20:25:21Z"
-updated_at: "2026-09-10T20:26:10Z"
+updated_at: "2026-09-11T04:56:41Z"
 ---
 ## Requirements
 

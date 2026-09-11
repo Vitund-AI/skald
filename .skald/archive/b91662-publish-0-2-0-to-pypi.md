@@ -5,8 +5,9 @@ rank: 20
 tags: ["packaging"]
 blocked_by: []
 assignee: "claude"
+released: "0.4.1"
 created_at: "2026-09-06T07:04:42Z"
-updated_at: "2026-09-10T20:41:20Z"
+updated_at: "2026-09-11T04:56:41Z"
 ---
 ## Requirements
 

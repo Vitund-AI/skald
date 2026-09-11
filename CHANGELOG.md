@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 (2026-09-10)
 
 ### Changed
 - Skald is on PyPI as `skald-kanban`. The README, getting started guide,
@@ -28,6 +28,14 @@
 - A test cited a commit by its short sha, which one run in about thirty has
   no letter in; the audit extractor rightly reads such a token as a number.
   The test cites the full sha.
+
+### Stories
+
+- Changelog 0.4.0: drop the duplicated bullets and the stale 0.3.0 line (307343)
+- Publish to PyPI (b91662)
+- Board: answer one question at a time (abb68f)
+- Flaky test: audit test cites the seed commit by short sha, which may have no letters (ce0dac)
+- Import review 0.4.0: links across roots, git-added dates, path tags, mapping validation (b82d9b)
 
 ## 0.4.0 (2026-09-10)
 
