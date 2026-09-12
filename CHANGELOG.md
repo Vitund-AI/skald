@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+- Python 3.10 or newer. 3.9 has been end of life since October 2025; CI
+  now runs 3.10 through 3.14 on Linux and 3.12 on macOS and Windows.
+
 ### Added
 - `scripts/release.sh X.Y.Z`: the release as one checked sequence. It
   refuses to start unless on a clean `dev` in step with origin with an

@@ -21,7 +21,7 @@ This is the specification as of 0.2.
    and generated workflows do the same. Repositories carry data only, never
    the tool.
 2. **Standard library only.** No third-party Python packages. Minimum Python
-   3.9. The board loads Tailwind and marked from CDNs; that is the one
+   3.10, the oldest interpreter still receiving fixes when it was set. The board loads Tailwind and marked from CDNs; that is the one
    external dependency and it degrades to unstyled, un-previewed but working.
 3. **Git is the database.** All shared state lives in `.skald/` and is
    committed alongside the code it describes. Machine-local state (which
@@ -569,7 +569,7 @@ corruption cases, config validation, store behaviour including ranks,
 dependencies, cross-project states, roles, limits, archive, templates,
 registry and user config, every CLI command, every API endpoint, the
 background server lifecycle, and this repository's own backlog passing
-`check`. CI runs the suite on Python 3.9 through 3.13 on Linux, plus 3.12 on
+`check`. CI runs the suite on Python 3.10 through 3.14 on Linux, plus 3.12 on
 macOS and Windows, and builds the wheel. Tags matching `v*` publish to PyPI
 via trusted publishing once the project exists there; no tag has been cut yet.
 
