@@ -12,7 +12,7 @@ from typing import Optional
 from . import __version__, gitutil
 from .config import ProjectConfig, slugify_name
 from .errors import GitError, NotFoundError, SkaldError
-from .registry import Registry, UserConfig, Workspace, find_skald_dir
+from .registry import UserConfig, Workspace, find_skald_dir
 from .store import Store, Story, serialise_story, split_ref
 from .util import read_text
 
@@ -1396,7 +1396,7 @@ def cmd_release(ws: Workspace, store: Store, args) -> int:
     changelog = Path(args.changelog) if args.changelog else root / rel.DEFAULT_CHANGELOG
     if not changelog.is_absolute():
         changelog = root / changelog
-    result = rel.apply(store, plan, changelog)
+    rel.apply(store, plan, changelog)
     print(f"wrote {changelog.relative_to(root).as_posix() if changelog.is_relative_to(root) else changelog}: section {plan.version} ({plan.date})")
     for s in plan.stories:
         print(f"archived {s.id}  {s.title}")
@@ -1716,8 +1716,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install {INSTALL_SPEC}
@@ -1731,17 +1731,17 @@ jobs:
       contents: read        # listing any permission drops the rest to none; checkout needs this
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install {INSTALL_SPEC}
       - name: Describe backlog changes in this pull request
         run: skald diff --since "origin/${{{{ github.base_ref }}}}" --until HEAD --markdown > skald-diff.md
       - name: Post or update the comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -1760,8 +1760,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install {INSTALL_SPEC}

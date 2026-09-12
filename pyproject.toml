@@ -44,3 +44,25 @@ skald = ["web/*.html", "templates/*.md"]
 
 [tool.setuptools.dynamic]
 version = { attr = "skald.__version__" }
+
+[tool.ruff]
+line-length = 140
+target-version = "py39"
+extend-exclude = ["build", "dist"]
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle, bugbear, and the bandit-derived S rules. E501 is off: the code
+# wraps prose at 100 and tables wider, and the length rule would drown the rest.
+select = ["E", "F", "W", "B", "S"]
+ignore = ["E501", "E741"]
+
+[tool.ruff.lint.per-file-ignores]
+# git runs as an argument list, never through a shell; the executable is "git" by design.
+"src/skald/gitutil.py" = ["S603", "S607"]
+"src/skald/importer.py" = ["S603", "S607"]
+"src/skald/audit.py" = ["S603", "S607"]
+"src/skald/server.py" = ["S104", "S603", "S607"]  # --host 0.0.0.0 opens the board to the LAN on purpose
+"src/skald/cli.py" = ["S603", "S607"]
+"examples/**" = ["S603", "S607"]
+# Tests drive the CLI and git as subprocesses, open localhost URLs, and bind 0.0.0.0 deliberately.
+"tests/**" = ["S101", "S104", "S310", "S603", "S607"]

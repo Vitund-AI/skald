@@ -153,7 +153,7 @@ class UserConfig:
 
 def checkout_id(skald_dir: Path) -> str:
     """An opaque, stable id for a checkout: the API and the board refer to paths only through it."""
-    return hashlib.sha1(str(Path(skald_dir).resolve()).encode("utf-8")).hexdigest()[:8]
+    return hashlib.sha1(str(Path(skald_dir).resolve()).encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
 
 
 class Registry:
