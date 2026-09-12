@@ -118,42 +118,45 @@ With a `dev` branch for day-to-day work and `main` as the release line:
 1. Work lands on `dev` through pull requests. The workflow checks the
    backlog and comments the diff on each one. Agents move finished stories
    to review; you move them to done as you accept them.
-2. When it is time to ship, on `dev`, with every change for the release
-   already merged and the accepted stories in done:
+2. When it is time to ship, with every change for the release merged into
+   `dev` and the accepted stories in done, run the release script from
+   `dev`:
 
    ```sh
-   # 1. bump the version file (src/skald/__init__.py here)
-   # 2. release: CHANGELOG.md section, released: stamps, archive, commit
-   skald release 1.2.0 --dry-run          # read the section first
-   skald release 1.2.0
-   git add src/skald/__init__.py && git commit -m "Bump to 1.2.0"
-   python -m unittest                     # the guard: heading and version agree
-   git push origin dev
+   scripts/release.sh 1.2.0 --dry-run     # every check, and the changelog section it would write
+   scripts/release.sh 1.2.0
    ```
 
-   The bump and the release land together. The version guard test fails
-   while the version file is ahead of the changelog's newest release
-   heading, so a bump pushed on its own turns `dev` red until the release
-   follows it. The version is `1.2.0`, not `v1.2.0`: the `v` belongs to
-   the tag, and `release` strips one if given.
+   The script stops at the first thing that is not as expected, before it
+   has changed anything: it must be on `dev`, clean, and in step with
+   `origin/dev`; the version must be `1.2.0` (the `v` belongs to the tag),
+   newer than the one in the version file, and not yet tagged locally or
+   on origin; `skald` and a logged-in `gh` must be on the path. Then, in
+   order, and each step visible:
 
-3. Open a pull request from `dev` to `main` and merge it. The release
-   commit gets the full test matrix on the pull request before it reaches
-   `main`, and it is the shape branch protection on `main` requires.
+   - `skald release 1.2.0 --dry-run`, shown for confirmation.
+   - Bump `src/skald/__init__.py`, `skald release 1.2.0` (changelog
+     section, `released:` stamps, archive, commit), commit the bump, run
+     the tests. The bump and the release land together because the version
+     guard test fails while the version file is ahead of the changelog's
+     newest release heading.
+   - Push `dev`, open the pull request from `dev` to `main`, wait for its
+     checks, merge it. The release commit gets the full matrix before it
+     reaches `main`, and a pull request is the shape branch protection on
+     `main` requires.
+   - Tag `main` `v1.2.0` and push the tag. The publish workflow checks the
+     tag against the version file, runs the tests, builds, and waits for
+     approval on the `pypi` environment before uploading; the script prints
+     where to approve.
+   - Merge `main` back into `dev` and push, so the render job's commits on
+     `main` do not conflict at the next release.
 
-4. Tag `main` and push the tag:
-
-   ```sh
-   git checkout main && git pull
-   git tag -a v1.2.0 -m "Release 1.2.0"
-   git push origin v1.2.0
-   ```
-
-   The publish workflow checks the tag against the version file, runs the
-   tests, builds, and waits for approval on the `pypi` environment before
-   uploading. A tag that does not match the version file fails before
-   anything is uploaded; fix the file through `dev` and `main`, delete the
-   tag locally and on the remote, and tag again.
+   Every step is an ordinary git or `skald` command, so a run that stops
+   halfway (a failed check on the pull request, say) is finished by hand
+   from that step; the script says which. A tag that does not match the
+   version file fails in the publish workflow before anything is uploaded;
+   fix the file through `dev` and `main`, delete the tag locally and on
+   the remote, and tag again.
 
 `skald release` deliberately stops at the changelog and the archive. The
 version bump and the tag are the project's own, because they depend on the

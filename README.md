@@ -159,6 +159,7 @@ python -m unittest          # standard library only
 ruff check src tests examples   # the lint CI runs (pip install ruff)
 skald serve                 # run against this repository's own backlog
 skald docs                  # regenerate docs/cli.md after changing a command
+scripts/release.sh 1.2.0 --dry-run   # maintainers: the release, checked step by step
 ```
 
 This repository dogfoods Skald: its own backlog is in `.skald/`, and the
