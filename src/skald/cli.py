@@ -1716,8 +1716,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install {INSTALL_SPEC}
@@ -1731,17 +1731,17 @@ jobs:
       contents: read        # listing any permission drops the rest to none; checkout needs this
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install {INSTALL_SPEC}
       - name: Describe backlog changes in this pull request
         run: skald diff --since "origin/${{{{ github.base_ref }}}}" --until HEAD --markdown > skald-diff.md
       - name: Post or update the comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -1760,8 +1760,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install {INSTALL_SPEC}

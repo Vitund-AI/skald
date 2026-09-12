@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- The repository's workflows and the one `skald hooks github` writes use
+  the current action majors (checkout v7, setup-python v7, github-script
+  v9, upload-artifact v7, download-artifact v8), which run on Node 24, so
+  runs no longer warn that the actions target Node 20.
+
 ## 0.5.0 (2026-09-12)
 
 ### Changed
