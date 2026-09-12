@@ -65,6 +65,8 @@ class Release:
 
 def plan(store: Store, version: str, date: Optional[str] = None) -> Release:
     version = (version or "").strip()
+    if version[:1] in ("v", "V") and version[1:2].isdigit():
+        version = version[1:]  # the tag is vX.Y.Z; the changelog heading and released: field are X.Y.Z
     if not version or any(c.isspace() for c in version):
         raise SkaldError("a version such as 1.2.0 is required")
     date = date or _dt.date.today().isoformat()

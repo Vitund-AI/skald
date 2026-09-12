@@ -33,6 +33,7 @@ class TestRelease(SkaldTestCase):
         self.assertEqual([x.id for x in r.changes], [self.a, self.b])
         self.assertEqual([x.id for x in r.closed], [self.c])
         self.assertEqual(r.section(), f"## 1.2.0 (2026-09-09)\n\n- Sign in with an email and a password. ({self.a})\n- Fix logout ({self.b})\n\n### Not doing\n\n- Dark mode ({self.c})\n")
+        self.assertEqual(rel.plan(s, "v1.2.0", "2026-09-09").version, "1.2.0")  # the tag's v is not the version's
         with self.assertRaises(SkaldError):
             rel.plan(s, "", "2026-09-09")
         with self.assertRaises(SkaldError):
