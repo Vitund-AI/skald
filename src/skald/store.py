@@ -138,7 +138,7 @@ def open_questions(notes: list[dict]) -> list[dict]:
 
 
 def reopened_questions(notes: list[dict]) -> list[dict]:
-    """Open questions followed by a plain decision: closed under the rule before 0.5, open now."""
+    """Open questions followed by a plain decision: closed under the rule before 0.4.1, open now."""
     open_stamps = {(q["author"], q["stamp"], _first_line(q)) for q in open_questions(notes)}
     seen: list[dict] = []
     out: list[dict] = []
@@ -1204,7 +1204,7 @@ class Store:
                 if reopened:
                     labels = ", ".join(f"Q{q['number']}" for q in reopened)
                     warnings.append(f"{s.path.name}: {labels} open again: a plain decision followed them, which closed questions "
-                                    f"before 0.5 and no longer does; skald answer {s.id} --question N or --all")
+                                    f"before 0.4.1 and no longer does; skald answer {s.id} --question N or --all")
             for b in s.blocked_by:
                 if not REF_RE.match(b):
                     problems.append(f"{s.path.name}: blocked_by entry '{b}' is not a valid reference")

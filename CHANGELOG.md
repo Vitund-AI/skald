@@ -18,6 +18,16 @@
   tagged with an intent you do not match is not yours to claim; model and
   cost stay conventions over tags and note authors (D61).
 
+### Fixed
+- `skald import`: `created_at` from git was empty on Python 3.9 and 3.10
+  with a recent git, which prints UTC dates ending in `Z`; the author date
+  is read as a Unix timestamp now. A record with Windows line endings
+  became a story with `\r\n` in its body, and the link pass rewrote files
+  with the platform's line ending; line endings are normalised on import
+  and preserved everywhere else.
+- The `skald check` notice about questions a plain decision used to close
+  names 0.4.1, the release that changed the rule.
+
 ## 0.4.1 (2026-09-10)
 
 ### Changed
