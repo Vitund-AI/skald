@@ -1,6 +1,13 @@
 # Changelog
 
-## v0.5.1 (2026-09-12)
+## 0.5.1 (2026-09-12)
+
+### Fixed
+- `skald release v1.2.0` writes `## 1.2.0` and `released: "1.2.0"`: the
+  tag's `v` is not part of the version. The version guard test now fails
+  on a release heading it cannot read instead of passing silently, which
+  is how a `v`-prefixed heading let a tag go out against an unbumped
+  package.
 
 ### Changed
 - The repository's workflows and the one `skald hooks github` writes use
