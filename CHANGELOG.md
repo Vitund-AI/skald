@@ -7,6 +7,27 @@
   release, in Markdown, in your repo, with your coding agents." The PyPI
   description and `skald --help` say the same.
 
+### Added
+- `skald next --tag TAG` (and `tag` on MCP `skald_next`) picks the next
+  ready, unblocked story carrying the tag, so a loop that routes work by a
+  facet such as `effort:deep` asks in one call.
+- `examples/model-routing/`: a worked Claude Code setup for routing stories
+  to model-pinned subagents by an `effort:` tag, an executive skill that
+  drains the backlog through them, and a report joining the intended tier
+  with the authors that finished each story. The contract says a story
+  tagged with an intent you do not match is not yours to claim; model and
+  cost stay conventions over tags and note authors (D61).
+
+### Fixed
+- `skald import`: `created_at` from git was empty on Python 3.9 and 3.10
+  with a recent git, which prints UTC dates ending in `Z`; the author date
+  is read as a Unix timestamp now. A record with Windows line endings
+  became a story with `\r\n` in its body, and the link pass rewrote files
+  with the platform's line ending; line endings are normalised on import
+  and preserved everywhere else.
+- The `skald check` notice about questions a plain decision used to close
+  names 0.4.1, the release that changed the rule.
+
 ## 0.4.1 (2026-09-10)
 
 ### Changed

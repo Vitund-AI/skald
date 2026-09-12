@@ -15,7 +15,8 @@ git add -A && git commit -m "Move the backlog into Skald"
 - **Title** comes from the first `# H1` line, which is dropped from the
   body. A file with no H1 is titled from its filename.
 - **The body is kept byte for byte** apart from that line, lines matched by
-  `strip`, and blocks extracted as notes. It is placed under `##
+  `strip`, blocks extracted as notes, and Windows line endings, which
+  become `\n`. It is placed under `##
   Requirements` unless the body already has that heading, so `resume` shows
   the opening paragraphs and maps the rest.
 - **Notes** are extracted by rules and appended as dated notes in their

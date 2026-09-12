@@ -146,6 +146,7 @@ shell can use `skald mcp`.
 | [CLI reference](docs/cli.md) | You need the exact flags. Generated from the parser. |
 | [HTTP API](docs/api.md) | You are scripting against the board server. |
 | [Troubleshooting](docs/troubleshooting.md) | Something printed an error or looks wrong. |
+| [Examples](examples/) | Worked setups on top of the core: routing stories to model-pinned agents by tag, with a report on what each model finished. |
 
 The design is in [SPEC.md](SPEC.md) and the reasoning behind non-obvious
 choices in [DECISIONS.md](DECISIONS.md).

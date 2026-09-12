@@ -247,6 +247,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     nx = sub.add_parser("next", help="the story to pick up next")
     nx.add_argument("--as", dest="author", help="skip stories assigned to someone else")
+    nx.add_argument("--tag", help="only stories with this tag (facets such as effort:deep work), for loops that route work by tag")
     nx.add_argument("--all-projects", action="store_true", help="every registered project")
     nx.add_argument("--json", action="store_true", help="print JSON")
     nx.add_argument("--compact", action="store_true", help="with --json: only the fields an agent needs")
@@ -587,7 +588,8 @@ def cmd_next(ws: Workspace, args, store: Optional[Store]) -> int:
     stale_days = ws.user.get("stale_days")
     for st in stores:
         notes: list[str] = []
-        s = st.next_story(for_author=author, stale_days=stale_days, elsewhere=_elsewhere(ws, st), warnings=notes)
+        s = st.next_story(for_author=author, stale_days=stale_days, elsewhere=_elsewhere(ws, st), warnings=notes,
+                          tag=getattr(args, "tag", None))
         _warn(notes)
         if s:
             if args.json:
@@ -595,7 +597,7 @@ def cmd_next(ws: Workspace, args, store: Optional[Store]) -> int:
             else:
                 _print_table(_story_rows(st, [s], None, qualify=args.all_projects), STORY_HEADERS)
             return 0
-    print("no ready, unblocked stories", file=sys.stderr)
+    print("no ready, unblocked stories" + (f" tagged {args.tag}" if getattr(args, "tag", None) else ""), file=sys.stderr)
     return 1
 
 

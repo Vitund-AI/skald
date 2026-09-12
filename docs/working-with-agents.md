@@ -153,6 +153,21 @@ again with a warning.
 Dependencies never resolve across branches: a blocker done on `feature/x`
 does not unblock anything on `main` until it merges.
 
+## Routing work by model or effort
+
+When different stories deserve different models, say so with a facet tag at
+planning time (`effort:deep`, `effort:quick`) and let each kind of agent ask
+for its own work: `skald next --tag effort:deep --as deep` returns the next
+ready, unblocked story carrying that tag and nothing else. Record which
+model did the work by passing it as the author (`--as fable-5.1-max`), so
+every note and claim carries it and the story file is the record. Skald
+keeps no model field and no token count on purpose (DECISIONS.md, D61): the
+tag is the intent, the author is the actual, and the gap between them is
+what you learn from. [examples/model-routing](../examples/model-routing/)
+has a complete Claude Code setup: subagents pinned to models, an executive
+skill that routes the backlog to them, and a report that joins intent with
+actuals per finished story.
+
 Work that must not run in parallel, as opposed to work that must run in
 order, gets a lane: tag the stories with the same `lane:` value and put
 `"facet_limits": {"lane": 1}` in `config.json`. `next` then hands out one

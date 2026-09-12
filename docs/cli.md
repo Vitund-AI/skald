@@ -96,7 +96,7 @@ List stories.
 ## next
 
 ```
-skald next [--as AUTHOR] [--all-projects] [--json] [--compact]
+skald next [--as AUTHOR] [--tag TAG] [--all-projects] [--json] [--compact]
 ```
 
 The story to pick up next.
@@ -104,6 +104,7 @@ The story to pick up next.
 | Argument | Description |
 | --- | --- |
 | `--as AUTHOR` | skip stories assigned to someone else |
+| `--tag TAG` | only stories with this tag (facets such as effort:deep work), for loops that route work by tag |
 | `--all-projects` | every registered project |
 | `--json` | print JSON |
 | `--compact` | with --json: only the fields an agent needs |

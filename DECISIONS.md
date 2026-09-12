@@ -571,3 +571,22 @@ is, since that is where the moved bodies now live. The mapping is
 validated whole before any file is read: a mapping mistake is the first
 thing a new adopter hits, and it should read as a named rule, not a
 traceback.
+
+### D61. Model and cost are conventions over tags and authors, not fields
+A user asked for stories to carry the model intended for the work, the
+model that did it, and the tokens spent, to learn which shape of problem
+suits which model. The intent is a planning fact, and the story format
+already has a place for planning facts that filter and route: a facet tag,
+the same shape as `epic:` and `lane:`. An effort level ages better than a
+model name, since names change every quarter and what the planner means is
+"this needs the expensive one". The actual is attribution, and every note
+and claim already carries an author label, so `--as` with the model is the
+record with no new field. Tokens stay out: Skald cannot observe them, only
+the harness can, and a field another tool must fill in is stale the moment
+someone forgets; a note of kind `cost` is available to a harness that
+wants it. The one thing the core needed was `next --tag`, so a loop that
+routes by tag asks for its next story in one call. The rest is an example,
+kept in this repository under `examples/` because it is Markdown and a
+script that must track the Skald version it was written against, and a
+separate repository earns its existence only when something in it ships
+on its own schedule.

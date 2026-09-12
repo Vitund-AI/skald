@@ -9,7 +9,7 @@ from skald import cli
 from skald.config import ProjectConfig
 from skald.registry import Registry
 
-from .helpers import SAMPLE_CONFIG_COLUMNS, SkaldTestCase, git
+from .helpers import SAMPLE_CONFIG_COLUMNS, SkaldTestCase, git, prefix
 
 HEADERS = ["ID", "STATUS", "RANK", "BLOCKED", "Q", "ASSIGNEE", "TAGS", "TITLE"]
 
@@ -96,7 +96,7 @@ class TestStoryCommands(SkaldTestCase):
         code, out, _ = self.run_cli("next", "--json")
         self.assertEqual((code, json.loads(out)["id"]), (0, b))
 
-        code, out, err = self.run_cli("move", c[:3], "in_progress")
+        code, out, err = self.run_cli("move", prefix(c, [a, b]), "in_progress")
         self.assertEqual(code, 0)
         self.assertIn(f"moved {c} to in_progress", out)
         self.assertIn(f"WARNING: {c} has unmet dependencies: ", err)
@@ -755,6 +755,12 @@ class TestAgentOrientation(SkaldTestCase):
         self.assertIn("unmet", d)
         code, out, _ = self.run_cli("next", "--json", "--compact")
         self.assertNotIn("filename", json.loads(out))
+        # --tag routes: only ready stories carrying the tag are offered.
+        b = self.new("b", "--status", "ready", "--tags", "effort:deep")
+        code, out, _ = self.run_cli("next", "--tag", "effort:deep", "--json")
+        self.assertEqual(json.loads(out)["id"], b)
+        code, out, err = self.run_cli("next", "--tag", "effort:quick")
+        self.assertEqual((code, err.strip()), (1, "no ready, unblocked stories tagged effort:quick"))
 
 
 class TestGitLinkage(SkaldTestCase):

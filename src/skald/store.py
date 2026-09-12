@@ -138,7 +138,7 @@ def open_questions(notes: list[dict]) -> list[dict]:
 
 
 def reopened_questions(notes: list[dict]) -> list[dict]:
-    """Open questions followed by a plain decision: closed under the rule before 0.5, open now."""
+    """Open questions followed by a plain decision: closed under the rule before 0.4.1, open now."""
     open_stamps = {(q["author"], q["stamp"], _first_line(q)) for q in open_questions(notes)}
     seen: list[dict] = []
     out: list[dict] = []
@@ -935,21 +935,27 @@ class Store:
         return out
 
     def next_story(self, for_author: Optional[str] = None, stale_days: Optional[int] = None,
-                   elsewhere: Optional[dict] = None, warnings: Optional[list] = None) -> Optional[Story]:
+                   elsewhere: Optional[dict] = None, warnings: Optional[list] = None,
+                   tag: Optional[str] = None) -> Optional[Story]:
         """First ready, unblocked story available to ``for_author``.
 
         A story assigned to someone else is skipped unless the assignment is stale
         (untouched for ``stale_days``), in which case it is offered with a warning.
         A story claimed by someone else on another branch (``elsewhere``) is skipped
-        with a warning so parallel agents do not duplicate work.
+        with a warning so parallel agents do not duplicate work. With ``tag`` only
+        stories carrying it are considered, so a loop that routes work by a facet
+        such as ``effort:deep`` asks for its next story in one call.
         """
         stories, _ = self.load_all()
         idx = {s.id: s for s in stories}
         ready = set(self.config.keys_with_role("ready"))
         notes = warnings if warnings is not None else []
         busy = self.busy_lanes(stories, elsewhere)
+        tag = (tag or "").strip().lower() or None
         for s in stories:
             if s.status not in ready:
+                continue
+            if tag and tag not in s.tags:
                 continue
             if self.unmet(s, idx):
                 continue
@@ -1198,7 +1204,7 @@ class Store:
                 if reopened:
                     labels = ", ".join(f"Q{q['number']}" for q in reopened)
                     warnings.append(f"{s.path.name}: {labels} open again: a plain decision followed them, which closed questions "
-                                    f"before 0.5 and no longer does; skald answer {s.id} --question N or --all")
+                                    f"before 0.4.1 and no longer does; skald answer {s.id} --question N or --all")
             for b in s.blocked_by:
                 if not REF_RE.match(b):
                     problems.append(f"{s.path.name}: blocked_by entry '{b}' is not a valid reference")

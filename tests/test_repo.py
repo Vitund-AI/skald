@@ -1,4 +1,6 @@
 """Invariants of this repository's own Skald backlog and package data."""
+import json
+import sys
 import unittest
 from pathlib import Path
 
@@ -46,3 +48,22 @@ class TestRepo(unittest.TestCase):
         problems, _ = Store(skald_dir, config).check()
         self.assertEqual(problems, [])
 
+
+
+class TestExamples(unittest.TestCase):
+    def test_example_scripts_compile_and_report_runs(self):
+        import os
+        import py_compile
+        import subprocess
+        root = Path(__file__).resolve().parents[1]
+        # The child interpreter needs src/ the way tests/__init__.py gives it to this one.
+        env = dict(os.environ, PYTHONPATH=os.pathsep.join(p for p in (str(root / "src"), os.environ.get("PYTHONPATH", "")) if p))
+        scripts = sorted((root / "examples").rglob("*.py"))
+        self.assertTrue(scripts)
+        for s in scripts:
+            py_compile.compile(str(s), doraise=True)
+        proc = subprocess.run([sys.executable, str(root / "examples" / "model-routing" / "report.py"), "--json"],
+                              capture_output=True, text=True, cwd=root, env=env)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        rows = json.loads(proc.stdout)
+        self.assertTrue(all({"id", "intended", "worked_by", "days", "sent_back"} <= set(r) for r in rows))

@@ -8,7 +8,7 @@ from skald.config import ProjectConfig
 from skald.errors import ConfigError, ConflictError, NotFoundError, SkaldError
 from skald.registry import Registry, UserConfig, Workspace, config_home, find_skald_dir
 
-from .helpers import SAMPLE_CONFIG_COLUMNS, SkaldTestCase, git
+from .helpers import SAMPLE_CONFIG_COLUMNS, SkaldTestCase, git, prefix
 
 
 class TestStoreBasics(SkaldTestCase):
@@ -145,7 +145,7 @@ class TestStoreBasics(SkaldTestCase):
         self.assertTrue(a.path.exists())
         with self.assertRaises(NotFoundError):
             s.archive(ids=["zzzzzz"])
-        self.assertEqual([x.id for x in s.archive(ids=[b.id[:3], b.id])], [b.id])
+        self.assertEqual([x.id for x in s.archive(ids=[prefix(b.id, [a.id, c.id]), b.id])], [b.id])
         self.assertEqual(sorted(x.id for x in s.load_all()[0]), sorted([a.id, c.id]))
 
     def test_load_all_skips_corrupt_and_check_reports(self):
@@ -228,6 +228,11 @@ class TestDependencies(SkaldTestCase):
         self.assertEqual(s.next_story().id, c.id)          # b is bob's; c is unblocked and unassigned
         self.assertEqual(s.next_story(for_author="bob").id, b.id)
         self.assertEqual(s.next_story(for_author="alice").id, c.id)
+        # A tag narrows the pick to stories carrying it; the other rules still apply.
+        d, _ = s.create("d", status="ready", tags=["effort:deep"])
+        self.assertEqual(s.next_story(for_author="alice").id, c.id)
+        self.assertEqual(s.next_story(for_author="alice", tag="Effort:Deep").id, d.id)
+        self.assertIsNone(s.next_story(for_author="alice", tag="effort:quick"))
         claimed, warnings = s.claim(c.id, "alice")
         self.assertEqual((claimed.assignee, claimed.status), ("alice", "in_progress"))
         again, _ = s.claim(c.id, "carol")
@@ -535,7 +540,7 @@ class TestSnapshots(SkaldTestCase):
         self.assertEqual(ids, {self.a.id: "done", self.b.id: "backlog"})
         self.assertEqual(s.get(self.a.id).status, "ready")          # worktree untouched
         self.assertEqual(git(self.repo, "rev-parse", "--abbrev-ref", "HEAD").strip(), "master")
-        self.assertEqual(snap.get(self.b.id[:3]).title, "only on feature")
+        self.assertEqual(snap.get(prefix(self.b.id, ids)).title, "only on feature")
         from skald.errors import NotFoundError, SkaldError
         with self.assertRaises(NotFoundError):
             snap.get("zzz")

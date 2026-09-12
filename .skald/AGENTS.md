@@ -51,7 +51,9 @@ tools from `skald mcp` (see the README).
    it (a plain decision note closes nothing), so keep working on whatever
    does not depend on it, and `skald context` lists every story waiting on
    a human with the question's number. `--withdraw` drops a question that
-   became moot. Task-list items (`- [ ]` / `- [x]`) in
+   became moot. A story tagged with an intent you do not match (an `effort:`
+   or `model:` facet naming a kind of agent) is not yours to claim; `skald
+   next --tag` hands each kind its own. Task-list items (`- [ ]` / `- [x]`) in
    the body show up as progress on the board. Put acceptance criteria under a
    `## Acceptance` heading as a checklist and tick them as you verify each;
    moving to review or done with unchecked items prints a warning.

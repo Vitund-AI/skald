@@ -59,10 +59,11 @@ class TestImport(SkaldTestCase):
         (self.backlog / "fleet-hosts").mkdir(parents=True)
         (self.backlog / "archived").mkdir()
         (self.backlog / "fleet-hosts" / "needs-plan-common-high-placement.md").write_text(RECORD_A, encoding="utf-8")
-        (self.backlog / "fleet-hosts" / "sdlc-low-other.md").write_text(RECORD_B, encoding="utf-8")
+        # Written with Windows line endings, as a checkout on Windows would have it.
+        (self.backlog / "fleet-hosts" / "sdlc-low-other.md").write_bytes(RECORD_B.replace("\n", "\r\n").encode("utf-8"))
         (self.backlog / "fleet-hosts" / "README.md").write_text("# index\n", encoding="utf-8")
         (self.backlog / "archived" / "old.md").write_text("# old\n", encoding="utf-8")
-        (self.repo / "docs" / "ORDER.md").write_text("See docs/backlog/fleet-hosts/needs-plan-common-high-placement.md first.\n", encoding="utf-8")
+        (self.repo / "docs" / "ORDER.md").write_bytes(b"See docs/backlog/fleet-hosts/needs-plan-common-high-placement.md first.\r\nNext line.\r\n")
         (self.repo / "map.json").write_text(json.dumps(MAPPING), encoding="utf-8")
         cfg = self.skald_dir / "config.json"
         data = json.loads(cfg.read_text())
@@ -102,6 +103,7 @@ class TestImport(SkaldTestCase):
                          ("plan", "2026-08-17T00:00:00Z", ["area:fleet-hosts", "priority:high", "track:common"]))
         self.assertEqual((b["status"], b["tags"]), ("idea", ["area:fleet-hosts", "priority:low", "track:sdlc"]))
         self.assertEqual(a["questions"]["open"], 2)
+        self.assertNotIn("\r", self.run_cli("show", b["id"])[1])  # CRLF source, LF story
         code, show, _ = self.run_cli("show", a["id"])
         self.assertIn("## Requirements\n\n**Filed:** 2026-08-17\n\nSome intro text that is the gist.", show)
         self.assertNotIn("**Priority:**", show)
@@ -112,9 +114,11 @@ class TestImport(SkaldTestCase):
         self.assertIn("## [migrator] 2026-08-20 00:00 UTC\n**Update 2026-08-20 (agent):**\nShipped the first piece.\nSecond line of the update.", show)
         self.assertIn("## [migrator] 2026-08-17 00:00 UTC · question\nWhich registry hosts the image?", show)
         # Links: the sibling file and the intra-backlog link inside the imported story point at the new files.
-        order = (self.repo / "docs" / "ORDER.md").read_text()
+        order = (self.repo / "docs" / "ORDER.md").read_bytes().decode()
         self.assertIn(f"../.skald/stories/{a['id']}-", order)
         self.assertNotIn("docs/backlog", order)
+        self.assertIn("\r\nNext line.\r\n", order)      # the link pass keeps a file's own line endings
+        self.assertNotIn("\r", show)                    # and never gives a story any
         self.assertIn(f"{b['id']}", show)
         self.assertNotIn("sdlc-low-other.md", show)
         self.assertIn("links: rewrote", out)
@@ -169,7 +173,7 @@ class TestImport(SkaldTestCase):
         # when only that bucket is imported; --tag adds fixed tags.
         mapping = {"tags": [{"regex": "^docs/backlog/([a-z-]+)/", "on": "path", "tag": "area:$1"}]}
         (self.repo / "m.json").write_text(json.dumps(mapping), encoding="utf-8")
-        added = git(self.repo, "log", "--diff-filter=A", "--format=%aI", "--", "docs/backlog/fleet-hosts/sdlc-low-other.md").strip()
+        added = git(self.repo, "log", "--diff-filter=A", "--format=%at", "--", "docs/backlog/fleet-hosts/sdlc-low-other.md").strip()
         code, out, err = self.run_cli("import", str(self.backlog / "fleet-hosts"), "--map", "m.json", "--tag", "wave:1", "--dry-run")
         self.assertEqual(code, 0, err)
         self.assertIn("(from git, the commit that added the file)", out)
@@ -179,7 +183,7 @@ class TestImport(SkaldTestCase):
         b = {s["title"]: s for s in json.loads(self.run_cli("ls", "--json")[1])}["Other record"]
         self.assertEqual(b["tags"], ["area:fleet-hosts", "wave:1"])
         from datetime import datetime, timezone
-        expected = datetime.fromisoformat(added).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        expected = datetime.fromtimestamp(int(added), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         self.assertEqual(b["created_at"], expected)
         # A record outside git falls back to now, and a regex still wins over git.
         outside = self.repo.parent / "loose.md"
