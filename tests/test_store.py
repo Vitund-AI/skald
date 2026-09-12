@@ -1,5 +1,4 @@
 """Store behaviour: ranks, dependencies, cross-project refs, columns, archive, registry."""
-import json
 import os
 import shutil
 from pathlib import Path
@@ -277,7 +276,7 @@ class TestCrossProject(SkaldTestCase):
 
     def test_dependents_include_qualified_refs(self):
         ws = self.workspace()
-        alpha, beta = ws.open("alpha"), ws.open("beta")
+        alpha = ws.open("alpha")
         a, _ = alpha.create("a")
         b, _ = alpha.create("b", blocked_by=[f"alpha:{a.id}"])
         self.assertEqual([d.id for d in alpha.dependents(a.id)], [b.id])
@@ -541,7 +540,7 @@ class TestSnapshots(SkaldTestCase):
         self.assertEqual(s.get(self.a.id).status, "ready")          # worktree untouched
         self.assertEqual(git(self.repo, "rev-parse", "--abbrev-ref", "HEAD").strip(), "master")
         self.assertEqual(snap.get(prefix(self.b.id, ids)).title, "only on feature")
-        from skald.errors import NotFoundError, SkaldError
+        from skald.errors import NotFoundError
         with self.assertRaises(NotFoundError):
             snap.get("zzz")
         with self.assertRaises(NotFoundError):
@@ -594,7 +593,7 @@ class TestFacets(SkaldTestCase):
 
 class TestNotesAndAcceptance(SkaldTestCase):
     def test_parse_notes_requirements_and_kinds(self):
-        from skald.store import parse_notes, requirements_of
+        from skald.store import requirements_of
 
         s = self.store()
         a, _ = s.create("a", body="Do the thing.\n\n## Acceptance\n\n- [ ] one\n- [x] two\n")

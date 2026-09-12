@@ -1,0 +1,9 @@
+# Keeps the action versions in .github/workflows current; there are no Python
+# dependencies to track. Each bump arrives as a pull request against dev.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    target-branch: "dev"

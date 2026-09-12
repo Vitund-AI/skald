@@ -222,7 +222,7 @@ def cat_file_batch(repo: Path, ref: str, rel_paths: list[str]) -> dict[str, Opti
     data = proc.stdout
     out: dict[str, Optional[str]] = {}
     pos = 0
-    for spec, rel in zip(specs, rel_paths):
+    for _spec, rel in zip(specs, rel_paths):
         nl = data.find(b"\n", pos)
         if nl < 0:
             out[rel] = None

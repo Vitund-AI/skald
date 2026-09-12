@@ -8,6 +8,15 @@
   v9, upload-artifact v7, download-artifact v8), which run on Node 24, so
   runs no longer warn that the actions target Node 20.
 
+### Added
+- A lint job runs ruff (pyflakes, pycodestyle, bugbear, and the
+  bandit-derived `S` rules) on every pull request, configured in
+  `pyproject.toml` with the intentional findings waived per file; the
+  package stays standard library. Dependabot keeps the action versions
+  current. The findings it raised are fixed: unused names, a `raise` inside
+  `except` that lost its cause, and the sha1 fingerprints marked
+  `usedforsecurity=False`.
+
 ## 0.5.0 (2026-09-12)
 
 ### Changed

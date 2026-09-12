@@ -12,7 +12,7 @@ from typing import Optional
 from . import __version__, gitutil
 from .config import ProjectConfig, slugify_name
 from .errors import GitError, NotFoundError, SkaldError
-from .registry import Registry, UserConfig, Workspace, find_skald_dir
+from .registry import UserConfig, Workspace, find_skald_dir
 from .store import Store, Story, serialise_story, split_ref
 from .util import read_text
 
@@ -1396,7 +1396,7 @@ def cmd_release(ws: Workspace, store: Store, args) -> int:
     changelog = Path(args.changelog) if args.changelog else root / rel.DEFAULT_CHANGELOG
     if not changelog.is_absolute():
         changelog = root / changelog
-    result = rel.apply(store, plan, changelog)
+    rel.apply(store, plan, changelog)
     print(f"wrote {changelog.relative_to(root).as_posix() if changelog.is_relative_to(root) else changelog}: section {plan.version} ({plan.date})")
     for s in plan.stories:
         print(f"archived {s.id}  {s.title}")

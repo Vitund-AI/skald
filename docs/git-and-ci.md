@@ -94,6 +94,23 @@ corrupt files, dangling or self references, unknown statuses, cycles, and
 conflict markers, and `--hook` also fails while story files are
 uncommitted.
 
+## Checks
+
+Every pull request and every push to `main` runs the test suite on Linux
+for Python 3.9 to 3.13 and on macOS and Windows, builds the wheel, and
+lints with [ruff](https://docs.astral.sh/ruff/): pyflakes, pycodestyle,
+bugbear, and the bandit-derived `S` rules, configured in `pyproject.toml`.
+Ruff is a development tool only; the package itself stays standard library.
+Run the same check locally with `pip install ruff` and `ruff check src
+tests examples`. The few `S` findings that are intentional, git run as an
+argument list, `--host 0.0.0.0` for a board on the LAN, are waived per
+file in the configuration with the reason beside each.
+
+Dependabot watches the action versions in the workflows and opens a pull
+request against `dev` when a new major appears. GitHub's CodeQL default
+setup, enabled in the repository settings rather than in a file, runs its
+own analysis on pushes and pull requests.
+
 ## A release flow
 
 With a `dev` branch for day-to-day work and `main` as the release line:

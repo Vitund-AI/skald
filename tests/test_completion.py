@@ -19,7 +19,8 @@ class TestCompletion(SkaldTestCase):
         (self.skald_dir / "templates").mkdir()
         (self.skald_dir / "templates" / "bug.md").write_text("## Requirements\n")
         self.make_repo("beta")
-        git(self.repo, "add", "-A"); git(self.repo, "commit", "-q", "-m", "init")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "init")
         git(self.repo, "branch", "feature")
 
     def values(self, *words, cword=None):

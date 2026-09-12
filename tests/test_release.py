@@ -13,7 +13,8 @@ class TestRelease(SkaldTestCase):
         cfg = json.loads((self.skald_dir / "config.json").read_text())
         cfg["columns"] = SAMPLE_CONFIG_COLUMNS
         (self.skald_dir / "config.json").write_text(json.dumps(cfg))
-        git(self.repo, "add", "-A"); git(self.repo, "commit", "-q", "-m", "init")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "init")
         self.a = self.new("Add login", "--status", "done", "--body",
                           "## Requirements\n\nInternal detail.\n\n## Changelog\n\nSign in with an email\nand a password.\n\n## Acceptance\n- [x] works\n")
         self.b = self.new("Fix logout", "--status", "done")
@@ -36,7 +37,8 @@ class TestRelease(SkaldTestCase):
             rel.plan(s, "", "2026-09-09")
         with self.assertRaises(SkaldError):
             rel.plan(s, "1.0", "yesterday")
-        s.update(self.a, status="ready"); s.update(self.b, status="ready"); s.update(self.c, status="ready")
+        for sid in (self.a, self.b, self.c):
+            s.update(sid, status="ready")
         with self.assertRaises(SkaldError):
             rel.plan(s, "1.2.0")
 
