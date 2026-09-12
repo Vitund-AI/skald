@@ -1,12 +1,12 @@
 ---
 title: "Lint in CI: ruff with the bugbear and bandit rule sets, Dependabot for actions"
-status: "review"
+status: "done"
 rank: 20
 tags: ["ci"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T06:02:57Z"
-updated_at: "2026-09-12T06:05:04Z"
+updated_at: "2026-09-12T18:22:55Z"
 ---
 ## Requirements
 

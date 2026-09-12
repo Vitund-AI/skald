@@ -1,12 +1,12 @@
 ---
 title: "CodeQL findings: workflow token permissions, template name traversal, question reference regex"
-status: "review"
+status: "done"
 rank: 40
 tags: ["security"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T18:12:36Z"
-updated_at: "2026-09-12T18:13:36Z"
+updated_at: "2026-09-12T18:22:59Z"
 ---
 ## Requirements
 

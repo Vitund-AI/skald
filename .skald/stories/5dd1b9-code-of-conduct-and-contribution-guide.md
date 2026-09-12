@@ -1,12 +1,12 @@
 ---
 title: "Code of conduct and contribution guide"
-status: "review"
+status: "done"
 rank: 30
 tags: ["docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T06:12:58Z"
-updated_at: "2026-09-12T06:14:00Z"
+updated_at: "2026-09-12T18:22:56Z"
 ---
 ## Requirements
 

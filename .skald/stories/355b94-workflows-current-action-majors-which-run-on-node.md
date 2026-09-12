@@ -1,12 +1,12 @@
 ---
 title: "Workflows: current action majors, which run on Node 24"
-status: "review"
+status: "done"
 rank: 10
 tags: ["ci"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T05:52:54Z"
-updated_at: "2026-09-12T05:54:35Z"
+updated_at: "2026-09-12T18:22:52Z"
 ---
 ## Requirements
 
