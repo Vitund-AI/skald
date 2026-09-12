@@ -157,7 +157,7 @@ choices in [DECISIONS.md](DECISIONS.md).
 ```sh
 pip install -e .
 python -m unittest          # standard library only
-ruff check src tests examples   # the lint CI runs (pip install ruff)
+ruff check src tests examples scripts   # the lint CI runs (pip install ruff)
 skald serve                 # run against this repository's own backlog
 skald docs                  # regenerate docs/cli.md after changing a command
 scripts/release.sh 1.2.0 --dry-run   # maintainers: the release, checked step by step

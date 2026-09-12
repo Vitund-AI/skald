@@ -100,9 +100,17 @@ Every pull request and every push to `main` runs the test suite on Linux
 for Python 3.10 to 3.14 and on macOS and Windows, builds the wheel, and
 lints with [ruff](https://docs.astral.sh/ruff/): pyflakes, pycodestyle,
 bugbear, and the bandit-derived `S` rules, configured in `pyproject.toml`.
+A change that touches only documentation the tests never read (the
+README, the guides under `docs/`, the policies, SPEC and DECISIONS) skips
+the lint and test jobs: a first job classifies the changed files with
+`scripts/docs_only.py` and the others run on its answer. `CHANGELOG.md`,
+`docs/cli.md`, `.skald/`, and the contract template count as code, since
+tests read them. The skip is a job condition rather than a path filter on
+the workflow, because a workflow that does not run leaves a required
+status check pending forever, while a skipped job satisfies it.
 Ruff is a development tool only; the package itself stays standard library.
 Run the same check locally with `pip install ruff` and `ruff check src
-tests examples`. The few `S` findings that are intentional, git run as an
+tests examples scripts`. The few `S` findings that are intentional, git run as an
 argument list, `--host 0.0.0.0` for a board on the LAN, are waived per
 file in the configuration with the reason beside each.
 

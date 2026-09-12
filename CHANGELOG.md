@@ -7,6 +7,10 @@
   now runs 3.10 through 3.14 on Linux and 3.12 on macOS and Windows.
 
 ### Added
+- CI skips the lint and test jobs for a change that touches only
+  documentation the tests never read, classified by `scripts/docs_only.py`
+  in a first job, so a protected branch's required checks are satisfied
+  rather than left pending.
 - `SECURITY.md`: how to report a vulnerability privately, what to expect,
   which versions receive fixes (the latest; an earlier line at the
   maintainers' discretion), what is in and out of scope, and what happens
