@@ -16,6 +16,7 @@
   current. The findings it raised are fixed: unused names, a `raise` inside
   `except` that lost its cause, and the sha1 fingerprints marked
   `usedforsecurity=False`.
+- `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
 
 ## 0.5.0 (2026-09-12)
 
