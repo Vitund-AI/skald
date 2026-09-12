@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-09-12)
 
 ### Changed
 - The README opens with the idea-to-release arc: "Track work from idea to
@@ -27,6 +27,12 @@
   and preserved everywhere else.
 - The `skald check` notice about questions a plain decision used to close
   names 0.4.1, the release that changed the rule.
+
+### Stories
+
+- README: hero line and opening paragraph sell the idea-to-release arc (07d6b4)
+- next --tag: the next unblocked ready story carrying a tag (da3085)
+- Model routing example: intent tags, model as author, an executive loop over subagents (092468)
 
 ## 0.4.1 (2026-09-10)
 
