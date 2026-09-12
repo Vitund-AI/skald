@@ -81,7 +81,8 @@ python3 examples/model-routing/report.py            # this project
 python3 examples/model-routing/report.py --json     # for a spreadsheet
 ```
 
-It reads story files through the `skald` package, so run it where Skald is
+It reads story files through the `skald` package and runs `skald activity`
+with the same interpreter, so run it with the Python that has Skald
 installed. The output is one row per finished story: intended tier, the
 labels that worked it, days from claim to done, and whether it went back
 from review.

@@ -30,8 +30,9 @@ def bounces(store) -> dict[str, int]:
                           cwd=store.dir.parent).stdout.split()
     if not root:
         return {}
-    out = subprocess.run(["skald", "activity", "--json", "--since", root[-1]], capture_output=True, text=True,
-                         cwd=store.dir.parent).stdout
+    # The same interpreter that imported skald runs the CLI, so no `skald` on PATH is needed.
+    out = subprocess.run([sys.executable, "-m", "skald", "activity", "--json", "--since", root[-1]],
+                         capture_output=True, text=True, cwd=store.dir.parent).stdout
     events = json.loads(out) if out.strip() else []
     ready = set(store.config.keys_with_role("ready"))
     counts: dict[str, int] = {}
