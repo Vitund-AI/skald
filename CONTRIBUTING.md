@@ -23,7 +23,7 @@ git clone https://github.com/Vitund-AI/skald.git
 cd skald
 pip install -e .
 python -m unittest              # the test suite, standard library only
-pip install ruff && ruff check src tests examples
+pip install ruff && ruff check src tests examples scripts
 ```
 
 Python 3.10 or newer, and git. The suite runs in CI on Linux for Python

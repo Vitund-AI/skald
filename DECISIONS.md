@@ -601,3 +601,19 @@ when a version leaves upstream support, the next release drops it; when
 a version ships, CI adds it. Nothing in the package depends on a feature
 above 3.10, so the floor is a statement of what is tested, not a
 constraint the code needs.
+
+### D63. Fixes go to the latest release; an earlier line is patched from a branch cut at its tag, on demand
+Skald is pre-1.0, has no dependencies, is one `pip install --upgrade`
+away for every user, and has one maintainer. A fix costs the same
+wherever it lands; maintaining older lines costs a branch, a matrix, and
+a backport per fix for as long as the line lives. So the policy promises
+what can be kept: the latest release receives fixes, and an earlier line
+is patched only when a maintainer decides it must be. Release branches
+are not created in advance because a tag on `main` is enough to cut one
+the day it is needed, and the publish workflow keys on the tag, not the
+branch. Two rules follow from what a release is: a published tag is the
+identifier of what shipped, so it is never deleted or moved (the `v0.5.1`
+move was allowed only because nothing had been published from it), and a
+vulnerable release on PyPI is yanked rather than deleted, because
+yanking hides it from resolvers while keeping existing pins and lockfiles
+intact, and deleting breaks them and burns the number.

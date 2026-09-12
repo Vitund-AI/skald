@@ -156,3 +156,23 @@ class TestReleaseScript(unittest.TestCase):
         self.git("tag", "v1.1.0")
         r = self.release("1.1.0", "--dry-run")
         self.assertIn("already exists locally", r.stderr)
+
+
+class TestDocsOnlyClassifier(unittest.TestCase):
+    """scripts/docs_only.py: what CI may skip the matrix for, and what it must not."""
+
+    def classify(self, *paths):
+        import subprocess
+        root = Path(__file__).resolve().parents[1]
+        return subprocess.run([sys.executable, str(root / "scripts" / "docs_only.py")], input="\n".join(paths),
+                              capture_output=True, text=True).stdout.strip()
+
+    def test_documentation_the_tests_never_read_is_skippable(self):
+        self.assertEqual(self.classify("README.md"), "true")
+        self.assertEqual(self.classify("docs/board.md", "docs/images/board-dark.png", "SECURITY.md", "DECISIONS.md", "SPEC.md"), "true")
+
+    def test_anything_the_tests_read_or_any_code_runs_everything(self):
+        for paths in (("README.md", "src/skald/cli.py"), ("docs/cli.md",), ("CHANGELOG.md", "README.md"),
+                      (".skald/stories/abc123-x.md",), ("src/skald/templates/AGENTS.md",), ("tests/test_cli.py",),
+                      (".github/workflows/test.yml",), (), ("", " ")):
+            self.assertEqual(self.classify(*paths), "false", paths)
