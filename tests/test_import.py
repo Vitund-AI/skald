@@ -63,7 +63,7 @@ class TestImport(SkaldTestCase):
         (self.backlog / "fleet-hosts" / "sdlc-low-other.md").write_bytes(RECORD_B.replace("\n", "\r\n").encode("utf-8"))
         (self.backlog / "fleet-hosts" / "README.md").write_text("# index\n", encoding="utf-8")
         (self.backlog / "archived" / "old.md").write_text("# old\n", encoding="utf-8")
-        (self.repo / "docs" / "ORDER.md").write_text("See docs/backlog/fleet-hosts/needs-plan-common-high-placement.md first.\n", encoding="utf-8")
+        (self.repo / "docs" / "ORDER.md").write_bytes(b"See docs/backlog/fleet-hosts/needs-plan-common-high-placement.md first.\r\nNext line.\r\n")
         (self.repo / "map.json").write_text(json.dumps(MAPPING), encoding="utf-8")
         cfg = self.skald_dir / "config.json"
         data = json.loads(cfg.read_text())
@@ -114,9 +114,11 @@ class TestImport(SkaldTestCase):
         self.assertIn("## [migrator] 2026-08-20 00:00 UTC\n**Update 2026-08-20 (agent):**\nShipped the first piece.\nSecond line of the update.", show)
         self.assertIn("## [migrator] 2026-08-17 00:00 UTC · question\nWhich registry hosts the image?", show)
         # Links: the sibling file and the intra-backlog link inside the imported story point at the new files.
-        order = (self.repo / "docs" / "ORDER.md").read_text()
+        order = (self.repo / "docs" / "ORDER.md").read_bytes().decode()
         self.assertIn(f"../.skald/stories/{a['id']}-", order)
         self.assertNotIn("docs/backlog", order)
+        self.assertIn("\r\nNext line.\r\n", order)      # the link pass keeps a file's own line endings
+        self.assertNotIn("\r", show)                    # and never gives a story any
         self.assertIn(f"{b['id']}", show)
         self.assertNotIn("sdlc-low-other.md", show)
         self.assertIn("links: rewrote", out)

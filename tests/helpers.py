@@ -26,6 +26,15 @@ SAMPLE_CONFIG_COLUMNS = [
 ]
 
 
+def prefix(target: str, others) -> str:
+    """The shortest prefix of ``target`` (at least 3 characters) that no id in ``others`` shares.
+    Ids are random, so a fixed three characters collide about once in a thousand runs."""
+    n = 3
+    while any(o != target and o.startswith(target[:n]) for o in others):
+        n += 1
+    return target[:n]
+
+
 def git(repo: Path, *args: str) -> str:
     proc = subprocess.run(["git", *args], cwd=str(repo), capture_output=True, text=True, check=True)
     return proc.stdout

@@ -3,7 +3,7 @@ import json
 
 from skald.completion import SCRIPTS, complete
 
-from .helpers import SAMPLE_CONFIG_COLUMNS, SkaldTestCase, git
+from .helpers import SAMPLE_CONFIG_COLUMNS, SkaldTestCase, git, prefix
 
 
 class TestCompletion(SkaldTestCase):
@@ -103,7 +103,7 @@ class TestCompletion(SkaldTestCase):
         self.assertEqual(out.strip(), "move\tmove a story to a column")
 
     def test_cli_and_scripts(self):
-        code, out, _ = self.run_cli("_complete", "--", "1", "move", self.a[:3])
+        code, out, _ = self.run_cli("_complete", "--", "1", "move", prefix(self.a, [self.b]))
         self.assertEqual(code, 0)
         self.assertEqual(out.split("\t")[0], self.a)
         code, out, _ = self.run_cli("_complete", "--", "x")

@@ -18,7 +18,7 @@ from typing import Optional
 
 from . import gitutil
 from .errors import SkaldError
-from .util import parse_when
+from .util import atomic_write, parse_when, read_text
 
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", "build", "dist"}
 H1_RE = re.compile(r"^#\s+(.+?)\s*$")
@@ -451,7 +451,7 @@ def rewrite_links(root: Path, moved: dict[Path, Path], write: bool, project_root
         if path.suffix not in TEXT_SUFFIXES or path.resolve() in sources:
             continue
         try:
-            text = path.read_text(encoding="utf-8")
+            text = read_text(path)  # line endings preserved, so a rewrite never changes them
         except (OSError, UnicodeDecodeError):
             continue
         n = 0
@@ -496,5 +496,5 @@ def rewrite_links(root: Path, moved: dict[Path, Path], write: bool, project_root
                 key = path.resolve().relative_to(project_root).as_posix() if project_root and project_root in path.resolve().parents else str(path)
             counts[key] = n
             if write and new_text != text:
-                path.write_text(new_text, encoding="utf-8")
+                atomic_write(path, new_text)
     return counts
