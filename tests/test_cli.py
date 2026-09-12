@@ -225,6 +225,13 @@ class TestStoryCommands(SkaldTestCase):
         self.assertEqual(out.strip(), "bug")
         a = self.new("crash", "--template", "bug")
         self.assertTrue(self.store().get(a).body.startswith("## Steps"))
+        # A template is a name under .skald/templates/, never a path.
+        (self.repo / "secret.md").write_text("private\n", encoding="utf-8")
+        code, out, err = self.run_cli("new", "peek", "--template", "../../secret")
+        self.assertEqual(code, 1)
+        self.assertIn("template name must be letters, digits", err)
+        code, out, err = self.run_cli("new", "peek", "--template", "nope")
+        self.assertIn("no template 'nope'", err)
         code, out, _ = self.run_cli("columns")
         self.assertIn("in_progress  In progress  active", out)
         code, out, _ = self.run_cli("columns", "--json")

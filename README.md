@@ -163,6 +163,8 @@ skald docs                  # regenerate docs/cli.md after changing a command
 
 This repository dogfoods Skald: its own backlog is in `.skald/`, and the
 board rendered from it is at [.skald/README.md](.skald/README.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) has the workflow for changes, and the
+project follows a [code of conduct](CODE_OF_CONDUCT.md).
 
 ## License
 

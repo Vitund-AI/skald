@@ -769,6 +769,11 @@ class TestNotesAndAcceptance(SkaldTestCase):
         self.assertIn("Q2 is already answered", str(cm.exception))
         with self.assertRaises(SkaldError):
             s.answer(a.id, "x", "jon", question=9)
+        from skald.store import parse_question_ref
+        self.assertEqual([parse_question_ref(x) for x in (3, "3", "Q3", " q 3 ", "Q 12")], [3, 3, 3, 3, 12])
+        for bad in ("", "Q", "3a", True, " " * 5000):
+            with self.assertRaises(SkaldError):
+                parse_question_ref(bad)
         # One open and no target: it is the target. Withdraw records a drop. A new question gets the next number.
         s.append_note(a.id, "And auth?", "claude", kind="question")
         self.assertEqual([q["number"] for q in s.get(a.id).open_questions()], [1, 3])
