@@ -16,6 +16,15 @@
   current. The findings it raised are fixed: unused names, a `raise` inside
   `except` that lost its cause, and the sha1 fingerprints marked
   `usedforsecurity=False`.
+- `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
+
+### Fixed
+- From CodeQL's first run: every workflow, and the one `skald hooks github`
+  writes, starts the token read-only (`permissions: contents: read`) and
+  the jobs that write say so; a template name is a plain slug, so
+  `--template ../x` cannot read a Markdown file outside
+  `.skald/templates/`; and the question reference parser no longer has a
+  whitespace pattern that was quadratic on a long run of spaces.
 
 ## 0.5.0 (2026-09-12)
 

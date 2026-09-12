@@ -53,6 +53,7 @@ NOTE_HEADING_RE = re.compile(
     re.M,
 )
 KIND_RE = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
+TEMPLATE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 
 
 def parse_notes(body: str) -> list[dict]:
@@ -70,7 +71,7 @@ def parse_notes(body: str) -> list[dict]:
 ANSWERS_RE = re.compile(
     r"^(?P<verb>answers|withdraws) (?:Q(?P<label>\d+) )?\[(?P<author>[^\]\n]+)\] "
     r"(?P<stamp>\d{4}-\d\d-\d\d \d\d:\d\d UTC)(?: · (?P<first>.*))?\s*$", re.I)
-QUESTION_REF_RE = re.compile(r"^\s*q?\s*(\d+)\s*$", re.I)
+QUESTION_REF_RE = re.compile(r"^q?(\d+)$", re.I)  # applied after whitespace is removed
 
 
 def _first_line(note: dict) -> str:
@@ -159,7 +160,7 @@ def parse_question_ref(ref) -> int:
         raise SkaldError("question must be a number such as 3 or Q3")
     if isinstance(ref, int):
         return ref
-    m = QUESTION_REF_RE.match(str(ref))
+    m = QUESTION_REF_RE.match("".join(str(ref).split()))
     if not m:
         raise SkaldError(f"question must be a number such as 3 or Q3 (got {ref!r})")
     return int(m.group(1))
@@ -683,6 +684,9 @@ class Store:
     def _template_body(self, template: Optional[str]) -> str:
         if not template:
             return ""
+        # A name, never a path: the file is always .skald/templates/<name>.md.
+        if not TEMPLATE_NAME_RE.match(template):
+            raise SkaldError(f"template name must be letters, digits, '-' or '_' (got {template!r})")
         path = self.templates_dir / f"{template}.md"
         if not path.is_file():
             available = ", ".join(self.templates()) or "none"

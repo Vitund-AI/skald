@@ -1712,6 +1712,9 @@ on:
     branches: [{default_branch}]
   pull_request:
 
+permissions:
+  contents: read  # jobs that write say so themselves
+
 jobs:
   check:
     runs-on: ubuntu-latest

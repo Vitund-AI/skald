@@ -132,6 +132,7 @@ class TestHookInstallers(SkaldTestCase):
         self.assertTrue(wf.exists())
         text = wf.read_text()
         self.assertIn("pip install skald-kanban", text)
+        self.assertIn("\npermissions:\n  contents: read", text)   # the token starts read-only; writing jobs widen it
         self.assertNotIn("git+https://", text)
         self.assertIn("skald check", text)
         self.assertIn("skald render --out .skald/README.md", text)
