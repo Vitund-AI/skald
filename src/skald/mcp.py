@@ -37,7 +37,7 @@ TOOLS: list[dict] = [
                              "status": {"type": "string"}, "tag": {"type": "string"}, "assignee": {"type": "string"},
                              "unblocked": {"type": "boolean"}, "all": {"type": "boolean"}})},
     {"name": "skald_next", "description": "The first ready, unblocked story available to the caller, or null.",
-     "inputSchema": _schema({**PROJECT_PROP, **AS_PROP})},
+     "inputSchema": _schema({**PROJECT_PROP, **AS_PROP, "tag": {"type": "string", "description": "only stories with this tag, e.g. effort:deep"}})},
     {"name": "skald_show", "description": "One story with its body and dependency states.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP}, ["id"])},
     {"name": "skald_new", "description": "Create a story. Returns it.",
@@ -155,7 +155,7 @@ class McpServer:
         store = self._store(args)
         notes: list[str] = []
         s = store.next_story(for_author=self._actor(args), stale_days=self._ws().user.get("stale_days"),
-                             elsewhere=store.claims_elsewhere(), warnings=notes)
+                             elsewhere=store.claims_elsewhere(), warnings=notes, tag=args.get("tag"))
         return {"story": store.story_dict(s, compact=True) if s else None, "warnings": notes}
 
     def tool_skald_show(self, args: dict) -> Any:

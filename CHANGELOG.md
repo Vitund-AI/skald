@@ -7,6 +7,17 @@
   release, in Markdown, in your repo, with your coding agents." The PyPI
   description and `skald --help` say the same.
 
+### Added
+- `skald next --tag TAG` (and `tag` on MCP `skald_next`) picks the next
+  ready, unblocked story carrying the tag, so a loop that routes work by a
+  facet such as `effort:deep` asks in one call.
+- `examples/model-routing/`: a worked Claude Code setup for routing stories
+  to model-pinned subagents by an `effort:` tag, an executive skill that
+  drains the backlog through them, and a report joining the intended tier
+  with the authors that finished each story. The contract says a story
+  tagged with an intent you do not match is not yours to claim; model and
+  cost stay conventions over tags and note authors (D61).
+
 ## 0.4.1 (2026-09-10)
 
 ### Changed

@@ -755,6 +755,12 @@ class TestAgentOrientation(SkaldTestCase):
         self.assertIn("unmet", d)
         code, out, _ = self.run_cli("next", "--json", "--compact")
         self.assertNotIn("filename", json.loads(out))
+        # --tag routes: only ready stories carrying the tag are offered.
+        b = self.new("b", "--status", "ready", "--tags", "effort:deep")
+        code, out, _ = self.run_cli("next", "--tag", "effort:deep", "--json")
+        self.assertEqual(json.loads(out)["id"], b)
+        code, out, err = self.run_cli("next", "--tag", "effort:quick")
+        self.assertEqual((code, err.strip()), (1, "no ready, unblocked stories tagged effort:quick"))
 
 
 class TestGitLinkage(SkaldTestCase):

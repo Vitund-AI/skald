@@ -228,6 +228,11 @@ class TestDependencies(SkaldTestCase):
         self.assertEqual(s.next_story().id, c.id)          # b is bob's; c is unblocked and unassigned
         self.assertEqual(s.next_story(for_author="bob").id, b.id)
         self.assertEqual(s.next_story(for_author="alice").id, c.id)
+        # A tag narrows the pick to stories carrying it; the other rules still apply.
+        d, _ = s.create("d", status="ready", tags=["effort:deep"])
+        self.assertEqual(s.next_story(for_author="alice").id, c.id)
+        self.assertEqual(s.next_story(for_author="alice", tag="Effort:Deep").id, d.id)
+        self.assertIsNone(s.next_story(for_author="alice", tag="effort:quick"))
         claimed, warnings = s.claim(c.id, "alice")
         self.assertEqual((claimed.assignee, claimed.status), ("alice", "in_progress"))
         again, _ = s.claim(c.id, "carol")

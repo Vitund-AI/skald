@@ -54,6 +54,8 @@ class TestMcp(SkaldTestCase):
         moved, _ = self.call(server, "skald_move", id=a, status="ready")
         nxt, _ = self.call(server, "skald_next")
         self.assertEqual(nxt["story"]["id"], a)
+        nxt, _ = self.call(server, "skald_next", tag="effort:deep")
+        self.assertIsNone(nxt["story"])
         claimed, _ = self.call(server, "skald_claim", id=a[:3], **{"as": "claude"})
         self.assertEqual((claimed["story"]["assignee"], claimed["story"]["status"]), ("claude", "in_progress"))
         noted, _ = self.call(server, "skald_note", id=a, text="hello", **{"as": "claude"})
