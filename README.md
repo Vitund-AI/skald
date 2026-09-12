@@ -165,8 +165,9 @@ scripts/release.sh 1.2.0 --dry-run   # maintainers: the release, checked step by
 
 This repository dogfoods Skald: its own backlog is in `.skald/`, and the
 board rendered from it is at [.skald/README.md](.skald/README.md).
-[CONTRIBUTING.md](CONTRIBUTING.md) has the workflow for changes, and the
-project follows a [code of conduct](CODE_OF_CONDUCT.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) has the workflow for changes, the
+project follows a [code of conduct](CODE_OF_CONDUCT.md), and
+[SECURITY.md](SECURITY.md) says how to report a vulnerability.
 
 ## License
 

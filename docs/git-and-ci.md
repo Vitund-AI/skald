@@ -158,6 +158,58 @@ With a `dev` branch for day-to-day work and `main` as the release line:
    fix the file through `dev` and `main`, delete the tag locally and on
    the remote, and tag again.
 
+## Patching an earlier release
+
+Only the latest release receives fixes as a rule (see
+[SECURITY.md](../SECURITY.md)). When a maintainer decides an earlier line
+needs a patch, a security fix for a version people cannot yet upgrade
+from, say, the flow is:
+
+1. **Fix forward first.** Land the fix on `dev` through a pull request and
+   release it from `main` as usual, so the current line is fixed before any
+   backport exists.
+2. **Cut the maintenance branch from the tag**, on demand. Nothing is
+   prepared in advance; the tag is enough:
+
+   ```sh
+   git fetch --tags
+   git checkout -b release/0.3 v0.3.0        # or the latest 0.3.x tag
+   git cherry-pick <the fix's commit>        # resolve conflicts against the old code
+   ```
+
+3. **Version and changelog on the branch.** Set `__version__` to `0.3.1`
+   and add a `## 0.3.1 (date)` section above `## 0.3.0` in `CHANGELOG.md`
+   with the fix, by hand; `skald release` is for the current line. The
+   version guard test holds on the branch because its newest heading
+   matches. Run the tests on the branch.
+4. **Tag on the branch and push both:**
+
+   ```sh
+   git commit -am "Release 0.3.1"
+   git tag -a v0.3.1 -m "Release 0.3.1"
+   git push origin release/0.3 v0.3.1
+   ```
+
+   The publish workflow runs on any `v*` tag whatever branch it is on,
+   checks the tag against the version file, tests, builds, and waits for
+   approval. PyPI accepts 0.3.1 after 0.5.x exists, and anyone pinned
+   below 0.4 gets it on their next install.
+5. **Tell people.** Publish the advisory naming the affected and fixed
+   versions on every line, and add a line to the changelog on `dev` noting
+   the backport (`0.3.1 also carries this fix`). Yank the vulnerable
+   releases on PyPI if the severity warrants it.
+
+The branch stays as the record of what was released; it is not merged back,
+because the fix already exists on `main`. A second patch on the same line
+is another cherry-pick onto the same branch.
+
+Two rules that hold everywhere: a tag is never deleted or moved once a
+release has been published from it, and a release on PyPI is yanked, never
+deleted, unless the artifact itself contains something that must not
+exist, such as a leaked secret. Yanking keeps the files for anyone who has
+pinned the exact version and hides the release from every other resolver;
+deleting breaks existing lockfiles and burns the version number for good.
+
 `skald release` deliberately stops at the changelog and the archive. The
 version bump and the tag are the project's own, because they depend on the
 language and the packaging, and a release that does not touch them is safe
