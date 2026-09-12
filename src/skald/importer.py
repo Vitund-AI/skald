@@ -217,23 +217,19 @@ def _subject(rule: dict, text: str, relpath: str, path: Optional[str] = None) ->
 def git_added(source: Path) -> Optional[str]:
     """When git first added ``source`` (author date, ISO), following renames; None outside git or unknown."""
     source = Path(source)
+    # %at is the author date as a Unix timestamp: no ISO variant to parse (git 2.55 prints UTC as
+    # "Z", which datetime.fromisoformat accepts only from Python 3.11).
     try:
-        proc = gitutil._run(["log", "--follow", "--diff-filter=A", "--format=%aI", "--", source.name],
+        proc = gitutil._run(["log", "--follow", "--diff-filter=A", "--format=%at", "--", source.name],
                             cwd=source.parent)
     except Exception:
         return None
     if proc.returncode != 0:
         return None
-    dates = [l.strip() for l in proc.stdout.splitlines() if l.strip()]
-    if not dates:
+    stamps = [l.strip() for l in proc.stdout.splitlines() if l.strip()]
+    if not stamps or not stamps[-1].isdigit():
         return None
-    try:
-        when = datetime.fromisoformat(dates[-1])
-    except ValueError:
-        return None
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=timezone.utc)
-    return when.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.fromtimestamp(int(stamps[-1]), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _expand(template: str, m: re.Match) -> str:
@@ -247,6 +243,7 @@ def plan_text(text: str, relpath: str, source: Path, mapping: dict, default_stat
               path: Optional[str] = None, extra_tags: Optional[list[str]] = None) -> Plan:
     """The story one record becomes. ``relpath`` is the record's path under the directory it was
     given under; ``path`` its path under the project root, for ``"on": "path"`` rules."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n")  # line endings are the one byte-level change
     lines = text.splitlines()
     problems: list[str] = []
 
