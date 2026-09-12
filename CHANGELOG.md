@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.5.1 (2026-09-12)
 
 ### Changed
 - The repository's workflows and the one `skald hooks github` writes use
@@ -25,6 +25,13 @@
   `--template ../x` cannot read a Markdown file outside
   `.skald/templates/`; and the question reference parser no longer has a
   whitespace pattern that was quadratic on a long run of spaces.
+
+### Stories
+
+- Workflows: current action majors, which run on Node 24 (355b94)
+- Lint in CI: ruff with the bugbear and bandit rule sets, Dependabot for actions (dd8c14)
+- Code of conduct and contribution guide (5dd1b9)
+- CodeQL findings: workflow token permissions, template name traversal, question reference regex (b635fa)
 
 ## 0.5.0 (2026-09-12)
 
