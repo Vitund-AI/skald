@@ -1,12 +1,12 @@
 ---
 title: "Model routing example: intent tags, model as author, an executive loop over subagents"
-status: "review"
-rank: 70
+status: "done"
+rank: 30
 tags: ["docs", "examples"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T03:22:00Z"
-updated_at: "2026-09-12T03:27:19Z"
+updated_at: "2026-09-12T05:25:15Z"
 ---
 ## Requirements
 

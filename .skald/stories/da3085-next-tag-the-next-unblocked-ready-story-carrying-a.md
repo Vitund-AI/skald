@@ -1,12 +1,12 @@
 ---
 title: "next --tag: the next unblocked ready story carrying a tag"
-status: "review"
-rank: 60
+status: "done"
+rank: 20
 tags: ["cli"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T03:22:00Z"
-updated_at: "2026-09-12T03:27:18Z"
+updated_at: "2026-09-12T05:25:14Z"
 ---
 ## Requirements
 

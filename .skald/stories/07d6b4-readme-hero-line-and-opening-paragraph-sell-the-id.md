@@ -1,12 +1,12 @@
 ---
 title: "README: hero line and opening paragraph sell the idea-to-release arc"
-status: "review"
-rank: 50
+status: "done"
+rank: 10
 tags: ["docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-11T18:31:01Z"
-updated_at: "2026-09-11T18:31:47Z"
+updated_at: "2026-09-12T05:25:14Z"
 ---
 ## Requirements
 
