@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `scripts/release.sh X.Y.Z`: the release as one checked sequence. It
+  refuses to start unless on a clean `dev` in step with origin with an
+  untagged, newer version, previews the changelog section, then bumps the
+  version file, runs `skald release`, tests, pushes, opens and merges the
+  pull request to `main`, tags, and merges `main` back into `dev`.
+  `--dry-run` runs the checks and the preview and changes nothing. Tested
+  against a fixture repository with a stub `gh`.
+
 ## 0.5.1 (2026-09-12)
 
 ### Fixed

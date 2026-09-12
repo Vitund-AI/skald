@@ -13,11 +13,12 @@ dependency-free Python package, and git is the history.
 
 ```
 .skald/
-├── config.json   # project name, story format version, columns  (committed)
-├── AGENTS.md     # what an agent needs to know, written by `init` (committed)
-├── stories/      # one Markdown file per story                   (committed)
+├── config.json   # project name, story format version, columns
+├── AGENTS.md     # what an agent needs to know, written by `init`
+├── stories/      # one Markdown file per story
 │   └── a3f9c2-implement-wireguard-overlay.md
-└── archive/      # stories shipped in a release, moved out of the way
+├── archive/      # stories shipped in a release, moved out of the way
+└── templates/    # optional story body templates
 ```
 
 Stories are committed with the code they describe, so the board travels with
@@ -159,6 +160,7 @@ python -m unittest          # standard library only
 ruff check src tests examples   # the lint CI runs (pip install ruff)
 skald serve                 # run against this repository's own backlog
 skald docs                  # regenerate docs/cli.md after changing a command
+scripts/release.sh 1.2.0 --dry-run   # maintainers: the release, checked step by step
 ```
 
 This repository dogfoods Skald: its own backlog is in `.skald/`, and the
