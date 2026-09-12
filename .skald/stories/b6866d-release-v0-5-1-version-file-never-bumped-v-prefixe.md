@@ -1,12 +1,12 @@
 ---
 title: "Release v0.5.1: version file never bumped, v-prefixed heading blinded the guard"
-status: "review"
-rank: 10
+status: "done"
+rank: 20
 tags: ["release"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T18:32:28Z"
-updated_at: "2026-09-12T18:32:45Z"
+updated_at: "2026-09-12T18:49:53Z"
 ---
 ## Requirements
 

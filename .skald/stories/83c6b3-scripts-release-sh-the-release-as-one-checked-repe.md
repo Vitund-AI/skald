@@ -1,12 +1,12 @@
 ---
 title: "scripts/release.sh: the release as one checked, repeatable sequence with a dry run"
-status: "review"
-rank: 20
+status: "done"
+rank: 30
 tags: ["release"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T18:46:20Z"
-updated_at: "2026-09-12T18:47:03Z"
+updated_at: "2026-09-12T18:49:54Z"
 ---
 ## Requirements
 
