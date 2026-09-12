@@ -183,15 +183,20 @@ def _glob_to_re(glob: str) -> re.Pattern:
     while i < len(glob):
         c = glob[i]
         if glob.startswith("**/", i):
-            out += r"(?:.*/)?"; i += 3
+            out += r"(?:.*/)?"
+            i += 3
         elif glob.startswith("**", i):
-            out += r".*"; i += 2
+            out += r".*"
+            i += 2
         elif c == "*":
-            out += r"[^/]*"; i += 1
+            out += r"[^/]*"
+            i += 1
         elif c == "?":
-            out += r"[^/]"; i += 1
+            out += r"[^/]"
+            i += 1
         else:
-            out += re.escape(c); i += 1
+            out += re.escape(c)
+            i += 1
     return re.compile("^" + out + "$")
 
 
@@ -458,7 +463,7 @@ def rewrite_links(root: Path, moved: dict[Path, Path], write: bool, project_root
 
         stop = {root, project_root, None}
 
-        def ancestors(start: Path) -> list[Path]:
+        def ancestors(start: Path, stop=stop) -> list[Path]:
             out = []
             d = start
             while True:
@@ -475,7 +480,7 @@ def rewrite_links(root: Path, moved: dict[Path, Path], write: bool, project_root
             if d is not None and d not in bases:
                 bases.append(d)
 
-        def sub(m: re.Match) -> str:
+        def sub(m: re.Match, bases=bases, path=path) -> str:
             nonlocal n
             token = m.group(1)
             for base in bases:

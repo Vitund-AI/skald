@@ -3,7 +3,6 @@ import json
 import os
 import stat
 
-from skald import cli
 from skald import render as rnd
 from skald.config import ProjectConfig
 
@@ -65,7 +64,7 @@ class TestRender(SkaldTestCase):
 
     def test_archived_and_unknown_status_sections(self):
         ProjectConfig.from_dict({"name": "alpha", "columns": SAMPLE_CONFIG_COLUMNS}).save(self.skald_dir / "config.json")
-        a = self.new("gone", "--status", "done")
+        self.new("gone", "--status", "done")
         self.run_cli("archive")
         self.write_raw("bbbbbb-odd.md", '---\ntitle: "odd"\nstatus: "testing"\n---\n')
         code, out, _ = self.run_cli("render", "--stdout")

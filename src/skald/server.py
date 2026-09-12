@@ -187,8 +187,8 @@ class Handler(BaseHTTPRequestHandler):
             return {}
         try:
             data = json.loads(raw.decode("utf-8"))
-        except (ValueError, UnicodeDecodeError):
-            raise SkaldError("request body is not valid JSON")
+        except (ValueError, UnicodeDecodeError) as e:
+            raise SkaldError("request body is not valid JSON") from e
         if not isinstance(data, dict):
             raise SkaldError("request body must be a JSON object")
         return data
@@ -278,7 +278,7 @@ class Handler(BaseHTTPRequestHandler):
         return {"available": True, "branch": gitutil.branch(repo), "head": head[:7] if head else None, "changes": changes}
 
     def _version_hash(self, store: Store) -> str:
-        h = hashlib.sha1()
+        h = hashlib.sha1(usedforsecurity=False)  # a change counter for the board, not a credential
         for directory in (store.stories_dir, store.archive_dir):
             if directory.is_dir():
                 for p in sorted(directory.iterdir()):

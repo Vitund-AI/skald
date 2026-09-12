@@ -1,6 +1,5 @@
 """``skald audit``: extraction on a fixture body, then a temp repository where each check has something to find."""
 import json
-import subprocess
 
 from skald import audit
 

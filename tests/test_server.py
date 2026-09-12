@@ -7,7 +7,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from skald import server as srv
-from skald.registry import UserConfig, ensure_token, read_token, rotate_token
+from skald.registry import UserConfig, ensure_token, read_token
 
 from .helpers import SkaldTestCase, git
 

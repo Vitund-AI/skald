@@ -3,7 +3,6 @@ import io
 import json
 import os
 import sys
-from pathlib import Path
 
 from skald import cli
 from skald.config import ProjectConfig
@@ -596,7 +595,7 @@ class TestAgentOrientation(SkaldTestCase):
         d = json.loads(out)
         self.assertEqual((d["parent"], d["tags"]), (epic, ["epic:auth"]))
         code, out, _ = self.run_cli("ls")
-        self.assertIn(f"Auth overhaul  (children 0/1)", out)
+        self.assertIn("Auth overhaul  (children 0/1)", out)
         self.assertIn(f"Login form  (child of {epic})", out)
         code, out, _ = self.run_cli("ls", "--parent", epic, "--json")
         self.assertEqual([s["id"] for s in json.loads(out)], [child])
@@ -616,8 +615,8 @@ class TestAgentOrientation(SkaldTestCase):
     def test_parents_epics_merge_and_commits_union(self):
         epic = self.new("Auth overhaul", "--tags", "epic:auth")
         a = self.new("Login form", "--parent", epic, "--status", "done")
-        b = self.new("Session cookie", "--parent", epic)
-        loose = self.new("Loose", "--tags", "epic:auth")
+        self.new("Session cookie", "--parent", epic)
+        self.new("Loose", "--tags", "epic:auth")
         code, out, _ = self.run_cli("epics")
         self.assertIn("parent", out)
         self.assertIn(f"{epic}  Auth overhaul", out)
@@ -747,7 +746,7 @@ class TestAgentOrientation(SkaldTestCase):
         self.assertIn("no open question", err)
 
     def test_ls_and_next_compact(self):
-        a = self.new("a", "--status", "ready")
+        self.new("a", "--status", "ready")
         code, out, _ = self.run_cli("ls", "--json", "--compact")
         d = json.loads(out)[0]
         self.assertNotIn("filename", d)

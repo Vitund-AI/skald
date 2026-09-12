@@ -25,7 +25,7 @@ FORMATS = ("md", "html")
 
 def content_hash(store: Store, stories: list[Story]) -> str:
     """Hash of everything the snapshot shows, so unchanged backlogs render identically."""
-    h = hashlib.sha1()
+    h = hashlib.sha1(usedforsecurity=False)  # a fingerprint, not a credential
     h.update(json.dumps([c.to_dict() for c in store.config.columns], sort_keys=True).encode())
     for s in sorted(stories, key=lambda x: x.id):
         d = s.to_dict()
@@ -201,7 +201,7 @@ def render_html(store: Store, out_path: Path, include_archived: bool = False) ->
         cols.append(("Unknown status", None, None, False, r.orphans))
     if include_archived and r.archived:
         cols.append(("Archived", None, None, True, r.archived))
-    for label, key, limit, terminal, stories in cols:
+    for label, _key, limit, terminal, stories in cols:
         count = f"{len(stories)}/{limit}" if limit else str(len(stories))
         parts.append(f"<section class=\"col{' terminal' if terminal else ''}\"><h2><span>{e(label)}</span><span>{count}</span></h2><div class=\"cards\">")
         for s in stories:
