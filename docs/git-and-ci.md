@@ -118,23 +118,42 @@ With a `dev` branch for day-to-day work and `main` as the release line:
 1. Work lands on `dev` through pull requests. The workflow checks the
    backlog and comments the diff on each one. Agents move finished stories
    to review; you move them to done as you accept them.
-2. When it is time to ship, on `dev`:
+2. When it is time to ship, on `dev`, with every change for the release
+   already merged and the accepted stories in done:
 
    ```sh
-   # bump the version file first and commit it; a test fails until the
-   # changelog's newest release heading matches it
-   skald release 1.2.0 --dry-run          # read the section
-   skald release 1.2.0                    # CHANGELOG.md, released stamps, archive, commit
+   # 1. bump the version file (src/skald/__init__.py here)
+   # 2. release: CHANGELOG.md section, released: stamps, archive, commit
+   skald release 1.2.0 --dry-run          # read the section first
+   skald release 1.2.0
+   git add src/skald/__init__.py && git commit -m "Bump to 1.2.0"
+   python -m unittest                     # the guard: heading and version agree
+   git push origin dev
    ```
 
-   The version is `1.2.0`, not `v1.2.0`: the `v` belongs to the tag, and
-   `release` strips one if given.
+   The bump and the release land together. The version guard test fails
+   while the version file is ahead of the changelog's newest release
+   heading, so a bump pushed on its own turns `dev` red until the release
+   follows it. The version is `1.2.0`, not `v1.2.0`: the `v` belongs to
+   the tag, and `release` strips one if given.
 
-3. Merge `dev` to `main`, then tag: `git tag -a v1.2.0 -m "Release 1.2.0"`
-   and push the tag. The publish workflow checks the tag against the
-   version file, runs the tests, builds, and publishes. A tag that does
-   not match the version file fails before anything is uploaded; fix the
-   file on `main`, move the tag, and push it again.
+3. Open a pull request from `dev` to `main` and merge it. The release
+   commit gets the full test matrix on the pull request before it reaches
+   `main`, and it is the shape branch protection on `main` requires.
+
+4. Tag `main` and push the tag:
+
+   ```sh
+   git checkout main && git pull
+   git tag -a v1.2.0 -m "Release 1.2.0"
+   git push origin v1.2.0
+   ```
+
+   The publish workflow checks the tag against the version file, runs the
+   tests, builds, and waits for approval on the `pypi` environment before
+   uploading. A tag that does not match the version file fails before
+   anything is uploaded; fix the file through `dev` and `main`, delete the
+   tag locally and on the remote, and tag again.
 
 `skald release` deliberately stops at the changelog and the archive. The
 version bump and the tag are the project's own, because they depend on the

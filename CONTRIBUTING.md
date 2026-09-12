@@ -80,11 +80,13 @@ and `skald serve` opens the live one.
 
 ## Releases
 
-Maintainers release from `dev`: `skald release X.Y.Z` turns the done
-column into a changelog section and archives the stories, `dev` merges to
-`main`, and a `vX.Y.Z` tag publishes to PyPI. Contributors do not need to
-touch versions or the changelog headings; an entry under `Unreleased` is
-enough.
+Maintainers release from `dev`: the version file is bumped and
+`skald release X.Y.Z` turns the done column into a changelog section and
+archives the stories, both in one push; a pull request takes `dev` to
+`main`; a `vX.Y.Z` tag on `main` publishes to PyPI. The full sequence is in
+[docs/git-and-ci.md](docs/git-and-ci.md#a-release-flow). Contributors do
+not need to touch versions or the changelog headings; an entry under
+`Unreleased` is enough.
 
 ## Licence
 
