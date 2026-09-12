@@ -13,11 +13,12 @@ dependency-free Python package, and git is the history.
 
 ```
 .skald/
-├── config.json   # project name, story format version, columns  (committed)
-├── AGENTS.md     # what an agent needs to know, written by `init` (committed)
-├── stories/      # one Markdown file per story                   (committed)
+├── config.json   # project name, story format version, columns
+├── AGENTS.md     # what an agent needs to know, written by `init`
+├── stories/      # one Markdown file per story
 │   └── a3f9c2-implement-wireguard-overlay.md
-└── archive/      # stories shipped in a release, moved out of the way
+├── archive/      # stories shipped in a release, moved out of the way
+└── templates/    # optional story body templates
 ```
 
 Stories are committed with the code they describe, so the board travels with
