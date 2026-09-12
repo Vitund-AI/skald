@@ -590,3 +590,14 @@ kept in this repository under `examples/` because it is Markdown and a
 script that must track the Skald version it was written against, and a
 separate repository earns its existence only when something in it ships
 on its own schedule.
+
+### D62. The Python floor follows upstream support
+Skald ran on 3.9 from the start because a standard-library-only package
+costs nothing to keep there. Once 3.9 left upstream support the floor
+moved to 3.10, and CI took on 3.14, on the reasoning that the people
+running coding agents are on current interpreters and a floor below
+upstream support tests a version no user has. The rule going forward:
+when a version leaves upstream support, the next release drops it; when
+a version ships, CI adds it. Nothing in the package depends on a feature
+above 3.10, so the floor is a statement of what is tested, not a
+constraint the code needs.

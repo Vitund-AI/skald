@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Track work from idea to release, in Markdown, in your repo, with your coding agents: an agent CLI and a local board over story files in git."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "Vitund AI" }]
 keywords = ["kanban", "backlog", "agents", "markdown", "git"]
 classifiers = [
@@ -20,6 +20,11 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development",
 ]
 dependencies = []
@@ -47,7 +52,7 @@ version = { attr = "skald.__version__" }
 
 [tool.ruff]
 line-length = 140
-target-version = "py39"
+target-version = "py310"
 extend-exclude = ["build", "dist"]
 
 [tool.ruff.lint]

@@ -5,7 +5,7 @@ Ten minutes from nothing to a board with an agent working from it.
 ## Install
 
 Skald is one Python package with no dependencies beyond the standard
-library. Python 3.9 or newer, git, and a browser for the board.
+library. Python 3.10 or newer, git, and a browser for the board.
 
 ```sh
 pip install skald-kanban

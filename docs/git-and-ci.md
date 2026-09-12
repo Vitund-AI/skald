@@ -97,7 +97,7 @@ uncommitted.
 ## Checks
 
 Every pull request and every push to `main` runs the test suite on Linux
-for Python 3.9 to 3.13 and on macOS and Windows, builds the wheel, and
+for Python 3.10 to 3.14 and on macOS and Windows, builds the wheel, and
 lints with [ruff](https://docs.astral.sh/ruff/): pyflakes, pycodestyle,
 bugbear, and the bandit-derived `S` rules, configured in `pyproject.toml`.
 Ruff is a development tool only; the package itself stays standard library.

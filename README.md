@@ -57,7 +57,7 @@ the branch and shows up in pull request diffs.
   turns the done column into a changelog section and a versioned archive.
 - **More than one repository.** A machine-local index gives you one board
   and `project:id` dependencies across every repository you use Skald in.
-- **Nothing to run.** Python standard library only, Python 3.9 or newer,
+- **Nothing to run.** Python standard library only, Python 3.10 or newer,
   Linux, macOS, and Windows. Tab completion for bash, zsh, and fish.
 
 ## Is Skald the right tool?
