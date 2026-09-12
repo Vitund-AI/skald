@@ -34,10 +34,13 @@ class TestRepo(unittest.TestCase):
 
         from skald import __version__
 
-        first = next(l for l in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8").splitlines() if l.startswith("## "))
-        m = re.match(r"^## (\d+\.\d+\.\d+)", first)
-        if m:
-            self.assertEqual(m.group(1), __version__, "bump src/skald/__init__.py to match the newest release in CHANGELOG.md")
+        heads = [l for l in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8").splitlines() if l.startswith("## ")]
+        first = heads[0]
+        if re.match(r"^## unreleased\b", first, re.I):
+            first = heads[1]
+        m = re.match(r"^## (\d+\.\d+\.\d+) \(\d{4}-\d\d-\d\d\)$", first)
+        self.assertIsNotNone(m, f"the newest release heading must read '## X.Y.Z (YYYY-MM-DD)', not {first!r}")
+        self.assertEqual(m.group(1), __version__, "bump src/skald/__init__.py to match the newest release in CHANGELOG.md")
 
     def test_own_backlog_is_clean(self):
         skald_dir = ROOT / ".skald"

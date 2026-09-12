@@ -118,16 +118,23 @@ With a `dev` branch for day-to-day work and `main` as the release line:
 1. Work lands on `dev` through pull requests. The workflow checks the
    backlog and comments the diff on each one. Agents move finished stories
    to review; you move them to done as you accept them.
-2. When it is time to ship, on a release branch from `dev`:
+2. When it is time to ship, on `dev`:
 
    ```sh
+   # bump the version file first and commit it; a test fails until the
+   # changelog's newest release heading matches it
    skald release 1.2.0 --dry-run          # read the section
    skald release 1.2.0                    # CHANGELOG.md, released stamps, archive, commit
-   # bump the version file, commit, open the PR to main
    ```
 
-3. Merging to `main` is the release. CI on `main` builds, tests, and, if the
-   version is new, publishes and tags.
+   The version is `1.2.0`, not `v1.2.0`: the `v` belongs to the tag, and
+   `release` strips one if given.
+
+3. Merge `dev` to `main`, then tag: `git tag -a v1.2.0 -m "Release 1.2.0"`
+   and push the tag. The publish workflow checks the tag against the
+   version file, runs the tests, builds, and publishes. A tag that does
+   not match the version file fails before anything is uploaded; fix the
+   file on `main`, move the tag, and push it again.
 
 `skald release` deliberately stops at the changelog and the archive. The
 version bump and the tag are the project's own, because they depend on the
