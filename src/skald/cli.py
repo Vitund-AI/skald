@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import textwrap
 from pathlib import Path
@@ -126,6 +127,11 @@ def _skald_rel(store: Store, repo: Path) -> str:
 # --------------------------------------------------------------------------
 
 
+# Python 3.14 colours argparse usage when the stream is a TTY; the reference must be plain
+# whatever the Python version or the terminal, so strip the SGR escape sequences it may add.
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
 def command_reference(parser: Optional[argparse.ArgumentParser] = None) -> list[dict]:
     """Every subcommand with its help text and options, read from the parser so it cannot drift.
 
@@ -152,7 +158,7 @@ def command_reference(parser: Optional[argparse.ArgumentParser] = None) -> list[
                 "choices": [str(c) for c in a.choices] if a.choices else [],
                 "positional": not a.option_strings,
             })
-        usage = " ".join(p.format_usage().split()).replace("usage: ", "", 1).replace("[-h] ", "").replace(" [-h]", "")
+        usage = " ".join(_ANSI.sub("", p.format_usage()).split()).replace("usage: ", "", 1).replace("[-h] ", "").replace(" [-h]", "")
         return {"name": prefix.strip(), "help": p.description or "", "usage": usage, "arguments": args, "subcommands": subs}
 
     out = []

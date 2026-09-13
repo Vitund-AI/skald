@@ -41,6 +41,13 @@
   `--dry-run` runs the checks and the preview and changes nothing. Tested
   against a fixture repository with a stub `gh`.
 
+### Fixed
+- The generated CLI reference (`docs/cli.md` and `GET /api/help`) is plain
+  text under Python 3.14, whose argparse colours usage output when run from
+  a terminal. The escape sequences are stripped where the reference is
+  built, so the reference is identical on every Python version and in or out
+  of a terminal; interactive `skald --help` keeps its colour.
+
 ## 0.5.1 (2026-09-12)
 
 ### Fixed
