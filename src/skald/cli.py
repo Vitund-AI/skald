@@ -395,6 +395,12 @@ def build_parser() -> argparse.ArgumentParser:
     act.add_argument("--until", default="HEAD", metavar="REF", help="default: HEAD")
     act.add_argument("--json", action="store_true", help="print JSON")
 
+    dg = sub.add_parser("digest", help="what changed since you last looked, grouped by story, newest first")
+    dg.add_argument("--since", default="1d", metavar="WHEN", help="a duration (1d, 6h, 1w) or a git ref; default 1d")
+    dg.add_argument("--until", default="HEAD", metavar="REF", help="default: HEAD")
+    dg.add_argument("--limit", type=int, default=15, metavar="N", help="stories to show before a pointer to activity (default 15)")
+    dg.add_argument("--json", action="store_true", help="print JSON")
+
     gr = sub.add_parser("graph", help="dependency graph as Mermaid (default), DOT, or JSON")
     gr.add_argument("--format", choices=["mermaid", "dot", "json"], default="mermaid", help="output format")
     gr.add_argument("--all", action="store_true", help="include stories without dependencies")
@@ -1365,6 +1371,114 @@ def cmd_activity(store: Store, args) -> int:
     return 0
 
 
+DURATION_RE = re.compile(r"^(\d+)([mhdw])$")
+_DURATION_UNIT = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
+
+
+def _digest_since(since: str) -> tuple[Optional[str], bool, str]:
+    """Resolve ``--since``: a duration like ``1d`` becomes an approxidate; anything else is a ref.
+
+    Returns ``(value, is_date, label)`` for :func:`gitutil.commits_touching` and the header.
+    """
+    m = DURATION_RE.match(since or "")
+    if m:
+        n, unit = m.group(1), _DURATION_UNIT[m.group(2)]
+        return f"{n} {unit} ago", True, f"the last {since}"
+    return since, False, f"{since}..HEAD"
+
+
+def _digest_data(store: Store, repo: Path, commits: list[dict]) -> list[dict]:
+    """Fold the backlog events in ``commits`` into one summary per story, then read the notes."""
+    from .store import diff_states
+
+    agg: dict[str, dict] = {}
+
+    def touch(sid: str, title: str, date: str) -> dict:
+        a = agg.setdefault(sid, {"id": sid, "title": title, "created": False, "moves": [],
+                                 "notes": 0, "body": False, "archived": None, "deleted": False, "last": date})
+        a["title"], a["last"] = title, date
+        return a
+
+    for c in commits:  # oldest first, so the net move reads first-from -> last-to
+        parent = gitutil.parent_of(repo, c["full"])
+        head = store.snapshot(c["full"])
+        base = store.snapshot(parent) if parent else None
+        d = diff_states(base, head)
+        for s in d["added"]:
+            touch(s.id, s.title, c["date"])["created"] = True
+        for ch in d["changed"]:
+            a = touch(ch["story"].id, ch["story"].title, c["date"])
+            if "status" in ch["fields"]:
+                a["moves"].append(ch["fields"]["status"])
+            if "archived" in ch["fields"]:
+                a["archived"] = ch["fields"]["archived"][1]
+            a["notes"] += ch["notes_added"]
+            a["body"] = a["body"] or ch["body_changed"]
+        for s in d["removed"]:
+            touch(s.id, s.title, c["date"])["deleted"] = True
+
+    idx = store.index()
+    stories = sorted(agg.values(), key=lambda a: a["last"], reverse=True)
+    for a in stories:
+        cur = idx.get(a["id"])
+        a["status"] = cur.status if cur else ("deleted" if a["deleted"] else "")
+        a["latest_note"] = None
+        a["questions"] = []
+        if cur:
+            notes = cur.notes()
+            if notes:
+                n = cur.last_note("handoff") or notes[-1]
+                first = n["text"].strip().splitlines()[0] if n["text"].strip() else ""
+                a["latest_note"] = {"kind": n["kind"], "stamp": n["stamp"], "author": n["author"], "first": first}
+            a["questions"] = [{"number": q["number"], "text": q["text"].strip().splitlines()[0] if q["text"].strip() else ""}
+                              for q in cur.open_questions()]
+    return stories
+
+
+def cmd_digest(store: Store, args) -> int:
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    since, is_date, label = _digest_since(args.since)
+    rel = _skald_rel(store, repo)
+    commits = gitutil.commits_touching(repo, since, args.until, rel, since_is_date=is_date)
+    stories = _digest_data(store, repo, commits)
+    if args.json:
+        print(json.dumps({"since": args.since, "until": args.until, "stories": stories}, indent=2))
+        return 0
+    if not stories:
+        print(f"Nothing changed in {label}.")
+        return 0
+    cap = args.limit
+    shown = stories[:cap]
+    noun = "story" if len(stories) == 1 else "stories"
+    print(f"Since {label}: {len(stories)} {noun} changed.\n")
+    for a in shown:
+        print(f"{a['id']}  {a['title']}   {a['status'] or '-'}")
+        if a["created"]:
+            print("    created")
+        if a["moves"]:
+            print(f"    moved {a['moves'][0][0] or '-'} -> {a['moves'][-1][1] or '-'}")
+        if a["archived"]:
+            print("    archived")
+        if a["deleted"]:
+            print("    deleted")
+        if a["notes"]:
+            note = a["latest_note"]
+            tail = ""
+            if note:
+                kind = f"{note['kind']}, " if note["kind"] != "note" else ""
+                tail = f"; latest ({kind}{note['stamp'][:16]}) {note['first'][:70]}"
+            print(f"    {a['notes']} note(s){tail}")
+        for q in a["questions"][:2]:
+            print(f"    Q{q['number']} asks: {q['text'][:70]}")
+        if len(a["questions"]) > 2:
+            print(f"    (+{len(a['questions']) - 2} more open; skald resume {a['id']})")
+    if len(stories) > cap:
+        print(f"\n... and {len(stories) - cap} more: skald activity --since {args.since}")
+    return 0
+
+
 def cmd_graph(store: Store, args) -> int:
     from .graph import build_graph, render_as
 
@@ -1915,7 +2029,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
-    "commits", "diff", "activity", "graph", "release", "audit", "import",
+    "commits", "diff", "activity", "digest", "graph", "release", "audit", "import",
 }
 
 
@@ -2060,6 +2174,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_diff(store, args)
     if args.command == "activity":
         return cmd_activity(store, args)
+    if args.command == "digest":
+        return cmd_digest(store, args)
     if args.command == "graph":
         return cmd_graph(store, args)
     if args.command == "columns":

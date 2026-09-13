@@ -33,14 +33,19 @@ skald status                              # branch, counts, uncommitted story fi
 skald diff --since main                   # new, changed, removed stories vs the working tree
 skald diff --since v1.0 --until v1.1 --markdown
 skald activity --since HEAD~20            # every backlog event per commit, oldest first
+skald digest                              # the same events folded per story, for a human catching up
+skald digest --since 1w --limit 20        # a duration (1d, 6h, 1w) or a ref; cap the stories shown
 skald changelog --since v1.0              # stories that reached done between two refs
 ```
 
 `diff` compares two states by id and reports status, assignee, title, tag,
 blocker, and archive changes, plus notes added. `activity` walks every
-commit that touched `.skald/` and reports the same events per commit, which
-is the quickest way to see what agents did overnight. `changelog` is the
-read-only view; `release` below is the one that writes.
+commit that touched `.skald/` and reports the same events per commit.
+`digest` folds those events into one summary per story, newest first, with
+the net move, the note count and latest note, and any open questions: where
+`activity` is the per-event log an agent parses, `digest` is what a person
+reads in the morning to see what the agents did overnight. `changelog` is
+the read-only view; `release` below is the one that writes.
 
 ## Other branches
 

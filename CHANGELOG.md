@@ -3,6 +3,13 @@
 ## Unreleased
 
 ### Added
+- `skald digest [--since 1d|REF] [--limit N]`: the human's morning check-in.
+  It folds the backlog's git events into one summary per story, newest
+  activity first, with the net status move, the note count and latest note,
+  and the open questions, capped with a pointer to `skald activity`. Where
+  `activity` is the agent's per-event log, `digest` is what a person reads to
+  catch up on what agents did since they last looked. No new data: it reads
+  git history and the notes.
 - A story id in a note (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) resolves:
   on the board it becomes a link in the rendered story that opens the target
   (switching project for `project:id`), and `skald show` and `resume` print
