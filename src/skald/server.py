@@ -328,6 +328,17 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ["favicon.ico"]:
             self._send(204, b"", "image/x-icon")
             return
+        if method == "GET" and parts == ["theme.css"]:
+            # A user's own tokens, loaded after the page's defaults: SKALD_HOME/theme.css, empty when absent.
+            path = self.server.home / "theme.css" if self.server.home else None
+            body = b""
+            if path is not None and path.is_file():
+                try:
+                    body = path.read_bytes()
+                except OSError:
+                    body = b""
+            self._send(200, body, "text/css; charset=utf-8")
+            return
         if not parts or parts[0] != "api":
             self._json(404, {"error": "not found"})
             return

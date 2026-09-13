@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Offline copies of the board's CDN assets for docs/images/capture.py (see docs/images/README.md)
+docs/images/tailwind.js
+docs/images/marked.js
+docs/images/fonts/

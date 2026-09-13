@@ -25,14 +25,14 @@ Stories are committed with the code they describe, so the board travels with
 the branch and shows up in pull request diffs.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/board-dark.png">
-  <img src="docs/images/board-light.png" alt="The Skald board on the lifecycle columns Idea, Plan, Ready, In progress, Review, and Done: an epic with a children bar, a story claimed by an agent with its checklist progress, a blocked story, two stories with open questions, and a Waiting on a human filter" width="100%">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/board-light.png">
+  <img src="docs/images/board-dark.png" alt="The Skald board on the lifecycle columns Idea, Plan, Ready, In progress, Review, and Done: an epic with a children bar, a story claimed by an agent with its checklist progress, a blocked story, two stories with open questions, and a Waiting on a human filter" width="100%">
 </picture>
 
 <table>
 <tr>
 <td width="50%" valign="top"><img src="docs/images/cli-session.png" alt="A terminal session: skald status, skald claim, skald resume, a handoff note, skald move, and skald diff"></td>
-<td width="50%" valign="top"><img src="docs/images/story.png" alt="A story open on the board with its parent chip, an acceptance checklist, and a dated handoff note"></td>
+<td width="50%" valign="top"><img src="docs/images/story.png" alt="A story open on the board in view mode: its id, dates, and title, a status select, tag chips, its parent chip, an acceptance checklist, and a dated handoff note"></td>
 </tr>
 <tr>
 <td align="center"><sub>An agent's session: claim, resume, hand off, move, and see the diff.</sub></td>

@@ -6,10 +6,13 @@
     pip install playwright && playwright install chromium
     python3 docs/images/capture.py wireguard-overlay docs/images
 
-Board captures are 1640x560 at device pixel ratio 2, light and dark by the OS colour
-scheme the page follows; the story capture is 1640x1080 with one story's dialog open. The
-board loads Tailwind and marked from CDNs; where the browser cannot reach them, put copies
-at tailwind.js and marked.js beside this script and they are served from disk.
+Board captures are 1640x560 at device pixel ratio 2, once per theme (the theme is set
+through the board's own localStorage key); the story capture is 1640x1080 in the dark
+theme with one story's dialog open. The board loads Tailwind and marked from CDNs and its
+fonts from Google Fonts; where the browser cannot reach them, put copies at tailwind.js and
+marked.js beside this script, and a fonts/ directory holding the Google Fonts stylesheet as
+fonts.css with its font files beside it, referenced as http://127.0.0.1:1/NAME.woff2, and
+they are served from disk.
 """
 import json
 import os
@@ -27,16 +30,21 @@ def main() -> int:
     home = Path(os.environ.get("SKALD_HOME") or (Path.home() / ".config" / "skald"))
     token = (home / "token").read_text().strip()
     port = json.loads((home / "server.json").read_text())["port"]
+    fonts = HERE / "fonts"
     url = f"http://127.0.0.1:{port}/?project={project}#key={token}"
     local = {name: (HERE / f"{name}.js").read_bytes() for name in ("tailwind", "marked") if (HERE / f"{name}.js").exists()}
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM") or None)
         for scheme in ("light", "dark"):
             for name, size in (("board", (1640, 560)), ("story", (1640, 1080))):
-                if name == "story" and scheme == "dark":
+                if name == "story" and scheme == "light":
                     continue
                 ctx = browser.new_context(viewport={"width": size[0], "height": size[1]}, device_scale_factor=2, color_scheme=scheme)
+                ctx.add_init_script(f"try {{ localStorage.setItem('skald.theme', '{scheme}'); }} catch (e) {{}}")
                 page = ctx.new_page()
+                if (fonts / "fonts.css").exists():
+                    page.route("https://fonts.googleapis.com/**", lambda r: r.fulfill(body=(fonts / "fonts.css").read_bytes(), content_type="text/css"))
+                    page.route("http://127.0.0.1:1/**", lambda r: r.fulfill(body=(fonts / r.request.url.rsplit("/", 1)[1]).read_bytes(), content_type="font/woff2"))
                 if "tailwind" in local:
                     page.route("https://cdn.tailwindcss.com*", lambda r: r.fulfill(body=local["tailwind"], content_type="text/javascript"))
                 if "marked" in local:
@@ -44,6 +52,7 @@ def main() -> int:
                 page.goto(url)
                 page.wait_for_selector(".card", timeout=20000)
                 page.wait_for_function("typeof tailwind === 'object'", timeout=20000)
+                page.wait_for_function("document.fonts.status === 'loaded'", timeout=20000)
                 page.wait_for_timeout(1000)
                 if name == "story":
                     page.click(f".card:has-text('{STORY}')")

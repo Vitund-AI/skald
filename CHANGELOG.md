@@ -7,6 +7,21 @@
   now runs 3.10 through 3.14 on Linux and 3.12 on macOS and Windows.
 
 ### Added
+- The story dialog opens in view mode: the id first (click to copy it,
+  shift-click to copy `project:id`), the created and updated dates, the
+  title as a heading, then a status select for a quick move, assignee, tags,
+  claim, dependencies, family, the body rendered as Markdown with each note
+  set apart, questions, and add-a-note. Edit (or `e`) switches to the form;
+  Save and Cancel return to the view, and `Esc` leaves edit mode before it
+  closes the dialog. A new story still opens in the form. The open story is
+  kept in the URL as `#story=ID`, so the address bar holds a shareable
+  link, and the board opens straight to it.
+- The board follows the Vitund design system: dark by default (the Theme
+  button still offers light and following the operating system), Inter and
+  JetBrains Mono from Google Fonts with system fallbacks, one accent colour,
+  muted status colours, no card shadows, uppercase column headings. Every
+  colour is a token; `SKALD_HOME/theme.css`, served at `/theme.css` when it
+  exists, redefines them without touching the package.
 - CI skips the lint and test jobs for a change that touches only
   documentation the tests never read, classified by `scripts/docs_only.py`
   in a first job, so a protected branch's required checks are satisfied
