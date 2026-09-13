@@ -1,11 +1,11 @@
-<!-- skald-render 9f87152e0ad74054 -->
+<!-- skald-render b8e054e890032324 -->
 # skald backlog
 
-**4 open** · Idea 4 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 3
+**6 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 3
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Idea (4)
+## Idea (6)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -13,6 +13,8 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 | [e1ef91](stories/e1ef91-open-questions-at-the-top-of-the-rendered-board.md) | Open questions at the top of the rendered board | `roadmap` |  |  |  |
 | [d5cd0f](stories/d5cd0f-a-conventions-page-the-facets-and-what-each-unlock.md) | A conventions page: the facets and what each unlocks | `docs` `roadmap` |  |  |  |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
+| [18c326](stories/18c326-browse-what-shipped-by-release-on-the-board.md) | Browse what shipped, by release, on the board | `roadmap` |  |  |  |
+| [a729bb](stories/a729bb-rendered-board-doc-lists-what-shipped-grouped-by-r.md) | Rendered board doc lists what shipped, grouped by release | `roadmap` |  |  |  |
 
 ## Plan (0)
 
