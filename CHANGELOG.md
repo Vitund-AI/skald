@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- A story id in a note (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) resolves:
+  on the board it becomes a link in the rendered story that opens the target
+  (switching project for `project:id`), and `skald show` and `resume` print
+  the title beside it when it resolves. A hex that is not a story id, and the
+  `--json` output, are left untouched. The file format is unchanged.
+- A `release:<v>` facet plans what a version should carry. `skald release`
+  (dry run and real) warns about every story tagged for the version that is
+  not done yet, so the ones still open are named before the release goes
+  out. The value targets the version when it matches or is a dotted prefix
+  either way, so `release:0.6` covers `0.6.x`. It is an ordinary facet, so
+  the board filters and swimlanes on it with no special support.
+
 ## 0.6.0 (2026-09-13)
 
 ### Changed

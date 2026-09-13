@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 from .errors import SkaldError
-from .store import Store, Story, prelude_of
+from .store import Store, Story, prelude_of, split_facet
 
 CHANGELOG_HEADING_RE = re.compile(r"^##\s+changelog\s*$", re.I)
 SECTION_RE = re.compile(r"^##\s+(.*)$")
@@ -63,6 +63,17 @@ class Release:
         return "\n".join(lines) + "\n"
 
 
+def release_matches(tag_value: str, version: str) -> bool:
+    """Whether a ``release:`` facet value targets the version being released.
+
+    Exact (``release:0.6.0`` for ``0.6.0``) or a dotted prefix either way, so
+    ``release:0.6`` marks everything ``0.6.x`` and matches the ``0.6.0`` release.
+    """
+    if tag_value == version:
+        return True
+    return version.startswith(tag_value + ".") or tag_value.startswith(version + ".")
+
+
 def plan(store: Store, version: str, date: Optional[str] = None) -> Release:
     version = (version or "").strip()
     if version[:1] in ("v", "V") and version[1:2].isdigit():
@@ -82,6 +93,12 @@ def plan(store: Store, version: str, date: Optional[str] = None) -> Release:
         open_kids = [c for c in stories if c.parent == s.id and not store.config.is_terminal(c.status)]
         if open_kids:
             release.warnings.append(f"{s.id} ships with {len(open_kids)} child(ren) still open: {', '.join(c.id for c in open_kids)}")
+    for s in stories:
+        if store.config.is_terminal(s.status):
+            continue  # done ships, closed is a deliberate drop; both archive with this release
+        targeted = [fv[1] for t in s.tags if (fv := split_facet(t)) and fv[0] == "release" and release_matches(fv[1], version)]
+        if targeted:
+            release.warnings.append(f"{s.id} is tagged release:{targeted[0]} but is not done ({s.status}); it will not be in this release")
     return release
 
 

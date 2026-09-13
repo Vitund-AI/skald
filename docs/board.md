@@ -125,7 +125,9 @@ elsewhere), the parent as a chip that opens it, the children listed with
 their state and struck through when done, "+ child" to open a new story
 with this one already set as its parent, the body rendered as Markdown with
 each note's heading set apart, open questions with an answer form, and Add
-a note, which appends a dated note under your identity. Claim assigns the
+a note, which appends a dated note under your identity. A story id in the
+rendered text (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) is a link that opens
+that story, switching project for a `project:id`. Claim assigns the
 story to you and starts it.
 
 **Edit** (or `e`) switches to the form: title, status, assignee, tags,

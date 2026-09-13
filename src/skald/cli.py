@@ -51,6 +51,21 @@ def human_identity(user: UserConfig, repo: Optional[Path]) -> str:
 # Output helpers
 # --------------------------------------------------------------------------
 
+# A story id in prose: a bare 6-hex, or #-prefixed, or project:id. The boundaries keep it
+# from matching inside a longer hex run (a commit sha) or a filename slug.
+REF_IN_TEXT = re.compile(r"(?<![\w:-])#?((?:[a-z0-9][a-z0-9-]{0,63}:)?[0-9a-f]{6})(?![\w-])")
+
+
+def annotate_refs(text: str, index: dict) -> str:
+    """Put the title beside every story id in ``text`` that resolves, leaving the rest alone."""
+    def repl(m: "re.Match") -> str:
+        whole = m.group(0)
+        story = index.get(m.group(1).split(":")[-1])
+        if story is None or text[m.end():m.end() + 2] == " (":  # unknown, or a title already follows
+            return whole
+        return f"{whole} ({story.title})"
+    return REF_IN_TEXT.sub(repl, text)
+
 
 def _warn(warnings) -> None:
     for w in warnings:
@@ -858,7 +873,7 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
     if d["decisions"]:
         print("Decisions:")
         for n in d["decisions"]:
-            print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip().splitlines()[0]}")
+            print(f"  - {n['stamp']} [{n['author']}] {annotate_refs(n['text'].strip().splitlines()[0], idx)}")
         print()
     if d["open_questions"]:
         print("Open questions (waiting on a human; work on what does not depend on them; skald answer <id> --question N):")
@@ -878,7 +893,7 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
         label = "Latest handoff" if handoff else "Latest note"
         others = len(notes) - 1
         print(f"{label} ({latest['stamp']}, {latest['author']}){f', {others} earlier note(s) in the file' if others > 0 else ''}:")
-        print(latest["text"].rstrip())
+        print(annotate_refs(latest["text"].rstrip(), idx))
     else:
         print("No notes yet.")
     return 0
@@ -1004,7 +1019,8 @@ def cmd_show(ws: Workspace, args, store: Store) -> int:
         d["body_sha256"] = store.body_sha(story)
         print(json.dumps(d, indent=2))
     else:
-        sys.stdout.write(serialise_story(story.fields, story.body))
+        body = annotate_refs(story.body, store.index())
+        sys.stdout.write(serialise_story(story.fields, body))
     return 0
 
 

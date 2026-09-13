@@ -88,6 +88,8 @@
   .md a, .help a { color: var(--accent-text); text-decoration: underline; }
   .md h2.note { font-size: .8rem; font-weight: 500; color: var(--muted); border-top: 1px solid var(--line); padding-top: .8em; margin-top: 1.2em; font-family: "JetBrains Mono", ui-monospace, monospace; }
   .md h2.note .kind { color: var(--accent-text); }
+  .md .ref { color: var(--accent-text); cursor: pointer; font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .md .ref:hover { text-decoration: underline; }
   .md blockquote { border-left: 3px solid var(--line-strong); padding-left: .8em; color: var(--muted); }
   .md input[type=checkbox] { margin-right: .4em; }
   .tab.active { border-bottom: 2px solid var(--accent); color: var(--ink); }
@@ -1066,6 +1068,42 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     } else el.innerHTML = `<pre class="whitespace-pre-wrap">${esc(text)}</pre>`;
   }
   function renderPreview() { renderMarkdown($('m-preview'), $('m-body').value); }
+  // A story id in rendered text becomes a link that opens it. A bare id links only when it
+  // is on the board (so a stray hex is left alone); a project:id always links and switches.
+  const REF_IN_TEXT = /(?<![\w:-])#?((?:[a-z0-9][a-z0-9-]{0,63}:)?[0-9a-f]{6})(?![\w-])/g;
+  function linkifyRefs(root) {
+    const titles = new Map((state.stories || []).map(s => [s.id, s.title]));
+    const nodes = [];
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(n) {
+        if (n.parentElement && n.parentElement.closest('a, code, pre, .ref')) return NodeFilter.FILTER_REJECT;
+        REF_IN_TEXT.lastIndex = 0;
+        return REF_IN_TEXT.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      },
+    });
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) nodes.push(n);
+    for (const node of nodes) {
+      const text = node.nodeValue; REF_IN_TEXT.lastIndex = 0;
+      const frag = document.createDocumentFragment(); let last = 0, m, made = false;
+      while ((m = REF_IN_TEXT.exec(text))) {
+        const ref = m[1], id = ref.includes(':') ? ref.split(':')[1] : ref;
+        if (!ref.includes(':') && !titles.has(id)) continue;  // a bare hex that is not a board story
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        const span = document.createElement('span');
+        span.className = 'ref'; span.dataset.ref = ref; span.textContent = m[0];
+        if (titles.has(id)) span.title = titles.get(id);
+        frag.appendChild(span); last = m.index + m[0].length; made = true;
+      }
+      if (!made) continue;
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      node.parentNode.replaceChild(frag, node);
+    }
+    root.querySelectorAll('.ref').forEach(el => el.addEventListener('click', () => {
+      const ref = el.dataset.ref;
+      const [proj, id] = ref.includes(':') ? ref.split(':') : [state.project, ref];
+      if (proj === state.project) openModal(id); else switchProject(proj, () => setTimeout(() => openModal(id), 200));
+    }));
+  }
   // The view: chips for the fields, the body and notes rendered.
   function renderView(s) {
     $('m-heading').textContent = s.title;
@@ -1074,6 +1112,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     $('m-view-assignee').textContent = s.assignee ? `@${s.assignee}` : 'unassigned';
     $('m-view-tags').innerHTML = s.tags.map(tag => `<span class="inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(tag)}</span>`).join('');
     renderMarkdown($('m-rendered'), s.body);
+    linkifyRefs($('m-rendered'));
   }
   // The family: a chip for the parent, a chip per child with its state, and a way to add one.
   function renderFamily(s) {

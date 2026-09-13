@@ -43,6 +43,24 @@ class TestRelease(SkaldTestCase):
         with self.assertRaises(SkaldError):
             rel.plan(s, "1.2.0")
 
+    def test_release_facet_warns_about_stories_not_done(self):
+        self.new("Planned, not done", "--status", "ready", "--tags", "release:0.6")
+        self.new("Planned and done", "--status", "done", "--tags", "release:0.6")
+        self.new("Next release", "--status", "ready", "--tags", "release:0.7")
+        exact = self.new("Exact match", "--status", "ready", "--tags", "release:0.6.0")
+        s = self.store()
+        warns = rel.plan(s, "0.6.0", "2026-09-09").warnings
+        joined = "\n".join(warns)
+        self.assertIn("is tagged release:0.6 but is not done (ready)", joined)
+        self.assertIn(f"{exact} is tagged release:0.6.0 but is not done (ready)", joined)
+        self.assertNotIn("release:0.7", joined)  # a later release is not this one's concern
+        self.assertEqual(sum("is tagged release:" in w for w in warns), 2)  # the done one does not warn
+        # matcher: prefix either way, exact, and non-matches
+        self.assertTrue(rel.release_matches("0.6", "0.6.0"))
+        self.assertTrue(rel.release_matches("0.6.0", "0.6.0"))
+        self.assertFalse(rel.release_matches("0.7", "0.6.0"))
+        self.assertFalse(rel.release_matches("0.60", "0.6.0"))
+
     def test_merge_changelog_cases(self):
         s = self.store()
         r = rel.plan(s, "1.2.0", "2026-09-09")

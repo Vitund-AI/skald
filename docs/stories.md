@@ -71,7 +71,11 @@ Frontmatter fields:
   is the fallback.
 - **Notes** are headings of the form `## [author] YYYY-MM-DD HH:MM UTC`,
   optionally followed by `· kind`. `skald note` writes them; `resume` shows
-  every `decision`, every open `question`, and the latest `handoff`.
+  every `decision`, every open `question`, and the latest `handoff`. A story
+  id written in a note (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) resolves:
+  `show` and `resume` print the title beside it, and on the board it is a
+  link that opens that story. Nothing in the file changes; a hex that is not
+  a story id is left alone.
 - **Questions** are notes with `--kind question`: something only a human
   can decide. A question is open until a later `decision` note on the same
   story, whoever writes it; `skald answer <id> "..."` is the human's verb
@@ -325,3 +329,17 @@ survive; otherwise a new section goes in above the first one. Skald never
 bumps version files or creates tags; `--no-commit` leaves the changes for
 your own release commit. [Git and CI](git-and-ci.md) shows the whole release
 flow.
+
+Plan a release with a facet. Tag the stories a version should carry with
+`release:<v>` and the run warns about any that are not done yet:
+
+```sh
+skald new "Rotate keys" --tags release:0.6   # planned for 0.6
+skald ls --tag release:0.6                    # what 0.6 should carry
+skald release 0.6.0 --dry-run                 # warns about release:0.6 stories not in done
+```
+
+The value targets the version when it matches it or is a dotted prefix
+either way, so `release:0.6` covers `0.6.x` and warns on the `0.6.0` run. It
+is an ordinary facet, so the board gives it a filter and swimlanes like any
+other key; only the warning is new.
