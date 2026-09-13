@@ -1,7 +1,7 @@
-<!-- skald-render af277a66624e339a -->
+<!-- skald-render f74b5aef7167e44d -->
 # skald backlog
 
-**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 9
+**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -33,18 +33,8 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (9)</strong></summary>
+<details><summary><strong>Done (0)</strong></summary>
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [fab7b8](stories/fab7b8-release-flow-documented-as-run-bump-and-release-to.md) | Release flow documented as run: bump and release together on dev, PR to main, tag | `docs` | claude |  |  |
-| [b6866d](stories/b6866d-release-v0-5-1-version-file-never-bumped-v-prefixe.md) | Release v0.5.1: version file never bumped, v-prefixed heading blinded the guard | `release` | claude |  | 4/4 |
-| [83c6b3](stories/83c6b3-scripts-release-sh-the-release-as-one-checked-repe.md) | scripts/release.sh: the release as one checked, repeatable sequence with a dry run | `release` | claude |  | 3/3 |
-| [b63598](stories/b63598-readme-screenshots-the-board-on-the-lifecycle-colu.md) | README screenshots: the board on the lifecycle columns, from a reproducible demo project | `docs` | claude |  |  |
-| [c42f18](stories/c42f18-python-3-10-to-3-14-drop-3-9-test-on-3-14.md) | Python 3.10 to 3.14: drop 3.9, test on 3.14 | `ci` | claude |  | 3/3 |
-| [415a12](stories/415a12-security-policy-and-the-flow-for-patching-an-earli.md) | Security policy and the flow for patching an earlier release | `docs` `security` | claude |  | 3/3 |
-| [682ae0](stories/682ae0-ci-skips-lint-and-tests-for-documentation-only-cha.md) | CI skips lint and tests for documentation-only changes, without leaving required checks pending | `ci` | claude |  | 3/3 |
-| [abc3c4](stories/abc3c4-story-dialog-view-mode-by-default-a-copyable-id-a.md) | Story dialog: view mode by default, a copyable id, a deep link | `board` | claude |  | 4/4 |
-| [95b1fd](stories/95b1fd-vitund-design-system-tokens-dark-by-default-fonts.md) | Vitund design system: tokens, dark by default, fonts, a theme override file | `board` | claude |  | 5/5 |
+_none_
 
 </details>

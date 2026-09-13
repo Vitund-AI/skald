@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 (2026-09-13)
 
 ### Changed
 - Python 3.10 or newer. 3.9 has been end of life since October 2025; CI
@@ -47,6 +47,19 @@
   a terminal. The escape sequences are stripped where the reference is
   built, so the reference is identical on every Python version and in or out
   of a terminal; interactive `skald --help` keeps its colour.
+
+### Stories
+
+- Release flow documented as run: bump and release together on dev, PR to main, tag (fab7b8)
+- Release v0.5.1: version file never bumped, v-prefixed heading blinded the guard (b6866d)
+- scripts/release.sh: the release as one checked, repeatable sequence with a dry run (83c6b3)
+- README screenshots: the board on the lifecycle columns, from a reproducible demo project (b63598)
+- Python 3.10 to 3.14: drop 3.9, test on 3.14 (c42f18)
+- Security policy and the flow for patching an earlier release (415a12)
+- CI skips lint and tests for documentation-only changes, without leaving required checks pending (682ae0)
+- Story dialog: view mode by default, a copyable id, a deep link (abc3c4)
+- Vitund design system: tokens, dark by default, fonts, a theme override file (95b1fd)
+- CLI reference is plain text under Python 3.14's coloured argparse (a92b73)
 
 ## 0.5.1 (2026-09-12)
 

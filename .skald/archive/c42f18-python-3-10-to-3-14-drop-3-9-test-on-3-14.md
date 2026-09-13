@@ -5,8 +5,9 @@ rank: 50
 tags: ["ci"]
 blocked_by: []
 assignee: "claude"
+released: "0.6.0"
 created_at: "2026-09-12T19:12:34Z"
-updated_at: "2026-09-13T21:15:01Z"
+updated_at: "2026-09-13T21:49:59Z"
 ---
 ## Requirements
 

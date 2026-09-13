@@ -5,8 +5,9 @@ rank: 40
 tags: ["docs"]
 blocked_by: []
 assignee: "claude"
+released: "0.6.0"
 created_at: "2026-09-12T18:57:19Z"
-updated_at: "2026-09-12T18:57:19Z"
+updated_at: "2026-09-13T21:49:59Z"
 ---
 ## Requirements
 
