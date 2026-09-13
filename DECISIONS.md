@@ -617,3 +617,22 @@ move was allowed only because nothing had been published from it), and a
 vulnerable release on PyPI is yanked rather than deleted, because
 yanking hides it from resolvers while keeping existing pins and lockfiles
 intact, and deleting breaks them and burns the number.
+
+### D64. The board wears the Vitund tokens, dark first, and a theme file overrides them
+The board had grown its own palette a class at a time: Tailwind's amber
+here, violet there, a `dark:` variant on each. Adopting one design system
+(Vitund, shared with the maintainer's other tools) replaces that with a
+fixed set of named tokens (surfaces, lines, text, an accent, four status
+colours) that every class refers to, so a colour is decided once and the
+`dark:` variants disappear. Dark is the default because a board that sits
+beside a terminal and an editor is looked at in the dark far more than in
+the light; light and auto remain a click away and are remembered per
+browser. Fonts come from Google Fonts with system fallbacks rather than
+being vendored, because the board is a single file served from the package
+and fifty kilobytes of woff2 is not worth a build step; offline, the
+fallbacks are fine. The override is a file (`SKALD_HOME/theme.css`, served
+at `/theme.css`) rather than a settings page or a config key, because CSS
+custom properties are already the mechanism, a file is what a user of a
+filesystem-native tool expects to edit, and an empty response when the file
+is absent costs nothing. None of this needs a framework: the page stays one
+HTML file with Tailwind's play CDN, which is what keeps it hackable.

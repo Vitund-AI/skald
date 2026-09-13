@@ -72,8 +72,9 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Commit N changes** appears when story files are uncommitted. It commits
   only `.skald/` and, when enabled, the rendered snapshot; with `skald
   config push true` it can push too.
-- **Theme** cycles Auto, Light, Dark. Auto follows the operating system and
-  the choice is remembered per browser.
+- **Theme** cycles Dark, Light, Auto. Dark is the default, Auto follows the
+  operating system, and the choice is remembered per browser. See
+  [Theme](#theme) for restyling the board.
 - **?** opens the Help panel: shortcuts, what the card markers mean, the
   story file format, and the full CLI reference generated from the same
   parser as `skald --help`.
@@ -111,19 +112,33 @@ reaches cards and Enter opens them. Clicking a card opens it.
 
 ## The story dialog
 
-Title, status, assignee, tags, blockers, and parent are editable fields.
-Dependency chips below them show each blocker's state and open it on click,
-switching project if it lives elsewhere. A parent shows as a chip that opens
-it; a parent's children are listed with their state, struck through when
-done, and "+ child" opens a new story with this one already set as its
-parent. The History tab on a parent includes commits that reference its
-children, each tagged with the child's id. The body is Markdown with a Preview toggle;
-Save writes it back and refuses with a message if the file changed on disk
-while you were editing, so nothing is silently overwritten. Add a note
-appends a dated note under your identity. Claim assigns the story to you and
-starts it. Delete removes the file, asking first if other stories depend on
-it. The History tab lists code commits that reference the story above the
-story file's own history.
+The header shows the id, the created and updated dates, and the title.
+Click the id to copy it; shift-click copies `project:id`, the form that
+works from any project on the board. The dialog's address is kept in the
+URL as `#story=ID`, so the link in the address bar opens straight to the
+story for anyone with access to the board.
+
+A story opens in **view mode**: a status select for a quick move, the
+assignee, tag chips, a Claim button, dependency chips showing each
+blocker's state (a click opens it, switching project if it lives
+elsewhere), the parent as a chip that opens it, the children listed with
+their state and struck through when done, "+ child" to open a new story
+with this one already set as its parent, the body rendered as Markdown with
+each note's heading set apart, open questions with an answer form, and Add
+a note, which appends a dated note under your identity. Claim assigns the
+story to you and starts it.
+
+**Edit** (or `e`) switches to the form: title, status, assignee, tags,
+blockers, parent, and the body with a Preview toggle. Save writes it back
+and returns to view mode; it refuses with a message if the file changed on
+disk while you were editing, so nothing is silently overwritten. Cancel, or
+`Esc`, drops the edits and returns to view mode; `Esc` again closes the
+dialog. Delete removes the file, asking first if other stories depend on
+it. A new story opens straight in the form.
+
+The History tab lists code commits that reference the story above the story
+file's own history; on a parent it includes commits that reference its
+children, each tagged with the child's id.
 
 ## Selecting several cards
 
@@ -189,4 +204,38 @@ branch. Columns keep their scroll position across updates.
 | `?` | Help |
 | `x` | Start or toggle selection on the focused card |
 | `Tab`, `Enter` | Move between cards, open the focused one |
-| `Esc` | Close a dialog, end a selection |
+| `e` | Edit the open story |
+| `Esc` | Leave edit mode, close a dialog, end a selection |
+
+## Theme
+
+The board uses the Vitund design system: a dark canvas by default, Inter
+for text and JetBrains Mono for ids, notes, and code (loaded from Google
+Fonts, with system fonts as the fallback when the browser is offline), and
+one accent colour with success, warning, danger, and info for the markers.
+The Theme button switches to the light variant or to following the
+operating system.
+
+Every colour is a CSS custom property on the page's root element, and the
+board's own classes only ever refer to those properties, so the palette can
+be replaced without touching the package. The server serves
+`SKALD_HOME/theme.css` (by default `~/.config/skald/theme.css`) at
+`/theme.css`, linked after the board's own styles; create the file and
+restart the server to restyle the board. The tokens:
+
+| Token | Used for |
+| --- | --- |
+| `--canvas`, `--column`, `--surface`, `--chip`, `--hover` | the page, a column, a card or dialog, a chip, a hovered row |
+| `--line`, `--line-strong` | borders, and the border of a hovered or focused element |
+| `--ink`, `--muted`, `--faint` | text, secondary text, placeholders |
+| `--accent`, `--accent-hover`, `--accent-text`, `--accent-tint` | buttons, links, the active tab, selected chips |
+| `--success`, `--warning`, `--danger`, `--info`, each with `-text` and `-tint` | checklist progress, open questions, blocked and stale markers, notices |
+| `--role-backlog`, `--role-ready`, `--role-active`, `--role-done`, `--role-closed`, `--role-unknown` | node fills in the graph, by column role |
+
+Redefine them under `:root` for the dark theme and under
+`:root[data-theme="light"]` for the light one; for example, a warmer accent:
+
+```css
+:root { --accent: #d97706; --accent-hover: #f59e0b; --accent-text: #fbbf24; --accent-tint: rgba(217, 119, 6, .15); }
+:root[data-theme="light"] { --accent: #b45309; --accent-hover: #d97706; --accent-text: #92400e; --accent-tint: rgba(180, 83, 9, .1); }
+```

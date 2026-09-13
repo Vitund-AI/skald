@@ -1,12 +1,12 @@
 ---
 title: "Security policy and the flow for patching an earlier release"
-status: "review"
-rank: 20
+status: "done"
+rank: 60
 tags: ["docs", "security"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T19:54:14Z"
-updated_at: "2026-09-12T19:54:33Z"
+updated_at: "2026-09-13T21:15:01Z"
 ---
 ## Requirements
 

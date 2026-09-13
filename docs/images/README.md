@@ -4,10 +4,11 @@
   `make-demo.sh` (an epic with children, a claimed story with a checklist
   and a handoff, questions waiting on a human, a blocked story, two done),
   served by `skald serve` and captured by `capture.py` in headless Chromium
-  at a device pixel ratio of 2: the board at 1640×560, light and dark by the
-  OS colour scheme the page follows, and the story dialog at 1640×1080.
-  The README picks `board-dark.png` through `<picture>` when the reader's
-  GitHub theme is dark.
+  at a device pixel ratio of 2: the board at 1640×560 in the dark and the
+  light theme, and the story dialog at 1640×1080 in the dark theme, open in
+  view mode.
+  The README shows `board-dark.png` and picks `board-light.png` through
+  `<picture>` when the reader's GitHub theme is light.
 - Graph and multi-select: this repository's own backlog, 1440×860.
 - Terminal images: real command output wrapped in a small HTML terminal
   frame and rendered the same way. The completion image shows
@@ -20,3 +21,10 @@ docs/images/make-demo.sh /tmp/wireguard-overlay
 (cd /tmp/wireguard-overlay && skald server start)
 python3 docs/images/capture.py wireguard-overlay docs/images
 ```
+
+Where the browser cannot reach the CDNs (a sandbox behind a proxy), put
+copies of the Tailwind and marked scripts at `docs/images/tailwind.js`
+and `docs/images/marked.js`, and the Google Fonts stylesheet with its
+`.woff2` files in `docs/images/fonts/` (the stylesheet as `fonts.css`,
+each font URL rewritten to `http://127.0.0.1:1/NAME.woff2`); `capture.py`
+serves them from disk. Those copies are ignored by git.

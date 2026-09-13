@@ -53,6 +53,12 @@ class TestAPI(ServerTestCase):
         self.assertIn("stale_days", data["settings"])
         self.assertEqual(self.call("GET", "/nope")[0], 404)
         self.assertEqual(self.call("GET", "/api/nope")[0], 404)
+        # The user's theme overrides: empty CSS until SKALD_HOME/theme.css exists, then its content, no auth.
+        with urlopen(self.base + "/theme.css") as res:
+            self.assertEqual((res.status, res.headers["Content-Type"], res.read()), (200, "text/css; charset=utf-8", b""))
+        (self.home / "theme.css").write_text(":root { --accent: #ff00ff; }\n", encoding="utf-8")
+        with urlopen(self.base + "/theme.css") as res:
+            self.assertIn(b"--accent: #ff00ff", res.read())
         self.assertEqual(self.call("GET", "/api/projects/nope/board")[0], 404)
         with urlopen(self.base + "/favicon.ico") as res:
             self.assertEqual(res.status, 204)

@@ -1,12 +1,12 @@
 ---
 title: "CI skips lint and tests for documentation-only changes, without leaving required checks pending"
-status: "review"
-rank: 30
+status: "done"
+rank: 70
 tags: ["ci"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T19:58:10Z"
-updated_at: "2026-09-12T19:59:19Z"
+updated_at: "2026-09-13T21:15:01Z"
 ---
 ## Requirements
 
