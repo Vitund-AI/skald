@@ -1,12 +1,12 @@
 ---
 title: "Vitund design system: tokens, dark by default, fonts, a theme override file"
-status: "review"
-rank: 50
+status: "done"
+rank: 90
 tags: ["board"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-13T18:25:53Z"
-updated_at: "2026-09-13T18:38:12Z"
+updated_at: "2026-09-13T21:15:01Z"
 ---
 ## Requirements
 

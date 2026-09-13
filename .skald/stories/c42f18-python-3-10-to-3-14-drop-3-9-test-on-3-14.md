@@ -1,12 +1,12 @@
 ---
 title: "Python 3.10 to 3.14: drop 3.9, test on 3.14"
-status: "review"
-rank: 10
+status: "done"
+rank: 50
 tags: ["ci"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-12T19:12:34Z"
-updated_at: "2026-09-12T19:15:01Z"
+updated_at: "2026-09-13T21:15:01Z"
 ---
 ## Requirements
 

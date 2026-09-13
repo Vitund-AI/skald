@@ -1,12 +1,12 @@
 ---
 title: "Story dialog: view mode by default, a copyable id, a deep link"
-status: "review"
-rank: 40
+status: "done"
+rank: 80
 tags: ["board"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-13T18:25:53Z"
-updated_at: "2026-09-13T18:38:12Z"
+updated_at: "2026-09-13T21:15:01Z"
 ---
 ## Requirements
 
