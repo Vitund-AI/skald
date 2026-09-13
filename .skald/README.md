@@ -1,13 +1,21 @@
-<!-- skald-render d29c4773e807a979 -->
+<!-- skald-render f74b5aef7167e44d -->
 # skald backlog
 
-**1 open** · Idea 0 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 0
+**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Idea (0)
+## Idea (7)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [91e595](stories/91e595-skald-digest-the-human-s-context-what-changed-sinc.md) | skald digest: the human's context, what changed since you last looked | `roadmap` |  |  |  |
+| [527a9c](stories/527a9c-target-release-tag-and-a-release-warning.md) | Target-release tag and a release warning | `roadmap` |  |  |  |
+| [9c5d75](stories/9c5d75-skald-doctor-one-command-for-why-it-is-not-working.md) | skald doctor: one command for why it is not working | `roadmap` |  |  |  |
+| [1a5064](stories/1a5064-story-references-in-notes-resolve-on-the-board-and.md) | Story references in notes resolve on the board and in show | `roadmap` |  |  |  |
+| [e1ef91](stories/e1ef91-open-questions-at-the-top-of-the-rendered-board.md) | Open questions at the top of the rendered board | `roadmap` |  |  |  |
+| [d5cd0f](stories/d5cd0f-a-conventions-page-the-facets-and-what-each-unlock.md) | A conventions page: the facets and what each unlocks | `docs` `roadmap` |  |  |  |
+| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
 
 ## Plan (0)
 
@@ -21,11 +29,9 @@ _none_
 
 _none_
 
-## Review (1)
+## Review (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [b6866d](stories/b6866d-release-v0-5-1-version-file-never-bumped-v-prefixe.md) | Release v0.5.1: version file never bumped, v-prefixed heading blinded the guard | `release` | claude |  | 4/4 |
+_none_
 
 <details><summary><strong>Done (0)</strong></summary>
 

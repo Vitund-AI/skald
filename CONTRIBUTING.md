@@ -23,11 +23,11 @@ git clone https://github.com/Vitund-AI/skald.git
 cd skald
 pip install -e .
 python -m unittest              # the test suite, standard library only
-pip install ruff && ruff check src tests examples
+pip install ruff && ruff check src tests examples scripts
 ```
 
-Python 3.9 or newer, and git. The suite runs in CI on Linux for Python 3.9
-to 3.13 and on macOS and Windows, so a change that passes locally on one
+Python 3.10 or newer, and git. The suite runs in CI on Linux for Python
+3.10 to 3.14 and on macOS and Windows, so a change that passes locally on one
 platform can still fail there; the run on your pull request is the check.
 If a test depends on the platform (line endings, path separators, an older
 `datetime`), say so in a comment.
@@ -80,11 +80,13 @@ and `skald serve` opens the live one.
 
 ## Releases
 
-Maintainers release from `dev`: `skald release X.Y.Z` turns the done
-column into a changelog section and archives the stories, `dev` merges to
-`main`, and a `vX.Y.Z` tag publishes to PyPI. Contributors do not need to
-touch versions or the changelog headings; an entry under `Unreleased` is
-enough.
+Maintainers release from `dev` with `scripts/release.sh X.Y.Z`, which
+bumps the version file, runs `skald release` (changelog section, archive),
+takes `dev` to `main` through a pull request, tags `main`, and merges
+`main` back; `--dry-run` runs every check first. The sequence is in
+[docs/git-and-ci.md](docs/git-and-ci.md#a-release-flow). Contributors do
+not need to touch versions or the changelog headings; an entry under
+`Unreleased` is enough.
 
 ## Licence
 

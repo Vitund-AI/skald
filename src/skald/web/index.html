@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Skald</title>
 <script>
-  // Theme before first paint: 'auto' follows the OS, otherwise the stored choice.
+  // Theme before first paint: dark by default (the design system is dark-first); 'auto' follows the OS.
   (() => {
-    let pref = 'auto'; try { pref = localStorage.getItem('skald.theme') || 'auto'; } catch (e) {}
+    let pref = 'dark'; try { pref = localStorage.getItem('skald.theme') || 'dark'; } catch (e) {}
     const sys = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = () => { document.documentElement.dataset.theme = pref === 'auto' ? (sys.matches ? 'dark' : 'light') : pref; };
     apply();
@@ -19,33 +19,64 @@
 <script>
   tailwind.config = {
     darkMode: ['selector', '[data-theme="dark"]'],
-    theme: { extend: { colors: {
-      canvas: 'var(--canvas)', surface: 'var(--surface)', column: 'var(--column)', chip: 'var(--chip)', hover: 'var(--hover)',
-      line: 'var(--line)', strong: 'var(--line-strong)', ink: 'var(--ink)', muted: 'var(--muted)', faint: 'var(--faint)', accent: 'var(--accent)',
-    } } },
+    theme: { extend: {
+      colors: {
+        canvas: 'var(--canvas)', surface: 'var(--surface)', column: 'var(--column)', chip: 'var(--chip)', hover: 'var(--hover)',
+        line: 'var(--line)', strong: 'var(--line-strong)', ink: 'var(--ink)', muted: 'var(--muted)', faint: 'var(--faint)',
+        accent: { DEFAULT: 'var(--accent)', hover: 'var(--accent-hover)', text: 'var(--accent-text)', tint: 'var(--accent-tint)' },
+        success: { DEFAULT: 'var(--success)', text: 'var(--success-text)', tint: 'var(--success-tint)' },
+        warning: { DEFAULT: 'var(--warning)', text: 'var(--warning-text)', tint: 'var(--warning-tint)' },
+        danger: { DEFAULT: 'var(--danger)', text: 'var(--danger-text)', tint: 'var(--danger-tint)' },
+        info: { DEFAULT: 'var(--info)', text: 'var(--info-text)', tint: 'var(--info-tint)' },
+      },
+      fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    mono: ['JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Fira Code', 'ui-monospace', 'monospace'] },
+      borderRadius: { sm: '4px', DEFAULT: '8px', md: '8px', lg: '12px' },
+      boxShadow: { sm: 'none', DEFAULT: 'none' },  // elevation comes from lightness; shadows are for modals and popovers
+    } },
   };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
-  :root {
-    color-scheme: light;
-    --canvas: #f1f5f9; --surface: #ffffff; --column: #e2e8f0; --chip: #f1f5f9; --hover: #f8fafc;
-    --line: #e2e8f0; --line-strong: #cbd5e1; --ink: #1e293b; --muted: #64748b; --faint: #94a3b8; --accent: #2563eb;
-    --role-backlog: #f1f5f9; --role-ready: #dbeafe; --role-active: #fef3c7; --role-done: #d1fae5; --role-closed: #e5e7eb; --role-unknown: #fee2e2;
-    --node-stroke: #94a3b8; --edge-ok: #94a3b8; --placeholder: #93c5fd;
-  }
-  :root[data-theme="dark"] {
+  /* Tokens follow the Vitund design system: a blue-grey neutral ladder, one indigo accent, muted status
+     colours with tint and text variants. Surfaces step up by lightness (page, column, card, hover), not by
+     border. A user's SKALD_HOME/theme.css, loaded below, may redefine any of these. */
+  :root, :root[data-theme="dark"] {
     color-scheme: dark;
-    --canvas: #0f172a; --surface: #1e293b; --column: #16213a; --chip: #334155; --hover: #334155;
-    --line: #334155; --line-strong: #475569; --ink: #e2e8f0; --muted: #94a3b8; --faint: #64748b; --accent: #60a5fa;
-    --role-backlog: #1e293b; --role-ready: #1e3a8a; --role-active: #78350f; --role-done: #064e3b; --role-closed: #334155; --role-unknown: #7f1d1d;
-    --node-stroke: #64748b; --edge-ok: #64748b; --placeholder: #3b82f6;
+    --canvas: #0f1117; --column: #1a1d27; --surface: #252833; --chip: #2d3040; --hover: #383c50;
+    --line: #2d3040; --line-strong: #4a4e64; --ink: #e8eaf2; --muted: #8b8fa3; --faint: #6b6f85;
+    --accent: #6366f1; --accent-hover: #818cf8; --accent-text: #a5b4fc; --accent-tint: rgba(99, 102, 241, 0.15);
+    --success: #22c55e; --success-text: #4ade80; --success-tint: rgba(34, 197, 94, 0.15);
+    --warning: #eab308; --warning-text: #facc15; --warning-tint: rgba(234, 179, 8, 0.15);
+    --danger: #ef4444; --danger-text: #f87171; --danger-tint: rgba(239, 68, 68, 0.15);
+    --info: #3b82f6; --info-text: #60a5fa; --info-tint: rgba(59, 130, 246, 0.15);
+    --role-backlog: #252833; --role-ready: rgba(59, 130, 246, 0.2); --role-active: rgba(234, 179, 8, 0.2);
+    --role-done: rgba(34, 197, 94, 0.2); --role-closed: #2d3040; --role-unknown: rgba(239, 68, 68, 0.2);
+    --node-stroke: #6b6f85; --edge-ok: #6b6f85; --placeholder: #4f46e5;
   }
-  body { background: var(--canvas); color: var(--ink); }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --canvas: #f6f7fb; --column: #eceef5; --surface: #ffffff; --chip: #eceef5; --hover: #f6f7fb;
+    --line: #d1d4e0; --line-strong: #b0b4c8; --ink: #1a1d27; --muted: #4a4e64; --faint: #6b6f85;
+    --accent: #4f46e5; --accent-hover: #4338ca; --accent-text: #4338ca; --accent-tint: rgba(99, 102, 241, 0.10);
+    --success: #22c55e; --success-text: #15803d; --success-tint: rgba(34, 197, 94, 0.15);
+    --warning: #eab308; --warning-text: #a16207; --warning-tint: rgba(234, 179, 8, 0.18);
+    --danger: #ef4444; --danger-text: #b91c1c; --danger-tint: rgba(239, 68, 68, 0.12);
+    --info: #3b82f6; --info-text: #1d4ed8; --info-tint: rgba(59, 130, 246, 0.12);
+    --role-backlog: #eceef5; --role-ready: rgba(59, 130, 246, 0.15); --role-active: rgba(234, 179, 8, 0.18);
+    --role-done: rgba(34, 197, 94, 0.18); --role-closed: #dfe2ed; --role-unknown: rgba(239, 68, 68, 0.12);
+    --node-stroke: #8b8fa3; --edge-ok: #8b8fa3; --placeholder: #a5b4fc;
+  }
+  body { background: var(--canvas); color: var(--ink); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font-family: inherit; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .col-head { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
   .card.dragging { opacity: .4; }
   .placeholder { height: 0.5rem; border-radius: .25rem; background: var(--placeholder); margin: .25rem 0; }
   .col-list { min-height: 4rem; }
-  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  textarea { font-family: "JetBrains Mono", "SF Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace; }
   input, select, textarea { background: var(--surface); color: var(--ink); }
   .md h1, .md h2, .md h3 { font-weight: 600; margin: 1em 0 .4em; }
   .md h1 { font-size: 1.25rem; } .md h2 { font-size: 1.05rem; } .md h3 { font-size: 1rem; }
@@ -54,23 +85,26 @@
   .md code, .help code { background: var(--chip); padding: .1em .3em; border-radius: .2em; font-size: .9em; }
   .md pre, .help pre { background: var(--chip); padding: .6em; border-radius: .3em; overflow-x: auto; }
   .md pre code, .help pre code { background: none; padding: 0; }
-  .md a, .help a { color: var(--accent); text-decoration: underline; }
+  .md a, .help a { color: var(--accent-text); text-decoration: underline; }
+  .md h2.note { font-size: .8rem; font-weight: 500; color: var(--muted); border-top: 1px solid var(--line); padding-top: .8em; margin-top: 1.2em; font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .md h2.note .kind { color: var(--accent-text); }
   .md blockquote { border-left: 3px solid var(--line-strong); padding-left: .8em; color: var(--muted); }
   .md input[type=checkbox] { margin-right: .4em; }
   .tab.active { border-bottom: 2px solid var(--accent); color: var(--ink); }
-  .toggle[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .toggle[aria-pressed="true"] { background: var(--accent-tint); color: var(--accent-text); border-color: var(--accent); }
   .card:focus-visible, .ready-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .card.selectable { cursor: pointer; }
   .card.selected { outline: 2px solid var(--accent); outline-offset: -2px; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
   .sel-mark { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; border-radius: 9999px; border: 1.5px solid var(--line-strong); color: transparent; font-size: .75rem; flex: none; margin-top: .1rem; }
   .card.selected .sel-mark { background: var(--accent); border-color: var(--accent); color: #fff; }
   .card.dragging-batch { opacity: .4; }
-  kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8em; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: .25rem; padding: 0 .35em; background: var(--surface); }
+  kbd { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .8em; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: .25rem; padding: 0 .35em; background: var(--surface); }
   .help details > summary { cursor: pointer; list-style: none; }
   .help details > summary::-webkit-details-marker { display: none; }
   .help details[open] > summary .chev { transform: rotate(90deg); }
   .chev { display: inline-block; transition: transform .1s; }
 </style>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body class="h-screen flex flex-col">
 
@@ -78,8 +112,8 @@
   <h1 class="text-lg font-semibold tracking-tight">Skald</h1>
   <select id="project" class="rounded border border-strong px-2 py-1 text-sm"></select>
   <select id="branch" class="hidden rounded border border-strong px-2 py-1 text-xs font-mono" title="Working trees of this project are editable; other branches are read-only views."></select>
-  <span id="elsewhere" class="hidden text-xs rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-2 py-0.5 cursor-default"></span>
-  <input id="search" type="search" placeholder="Filter (title, id, tag, assignee)  /" class="flex-1 min-w-[12rem] max-w-md rounded border border-strong px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+  <span id="elsewhere" class="hidden text-xs rounded-full bg-accent-tint text-accent-text px-2 py-0.5 cursor-default"></span>
+  <input id="search" type="search" placeholder="Filter (title, id, tag, assignee)  /" class="flex-1 min-w-[12rem] max-w-md rounded border border-strong px-2 py-1 text-sm ">
   <span id="facet-filters" class="flex items-center gap-2"></span>
   <button id="waiting-btn" class="toggle hidden rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover" title="Only stories with an open question" aria-pressed="false">Waiting on a human</button>
   <select id="group-by" class="hidden rounded border border-strong px-2 py-1 text-xs" title="Group the board into swimlanes by a facet"></select>
@@ -87,24 +121,24 @@
   <span id="conn" class="text-xs text-faint"></span>
   <span id="identity" class="text-xs text-muted" title="Notes and commits from the board use this name. Change it with: skald config author NAME"></span>
   <div class="relative">
-    <button id="git-btn" class="hidden rounded border border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 px-3 py-1.5 text-sm hover:bg-amber-100 dark:hover:bg-amber-900/70"></button>
+    <button id="git-btn" class="hidden rounded border border-warning bg-warning-tint text-warning-text px-3 py-1.5 text-sm hover:bg-hover"></button>
     <div id="git-pop" class="hidden absolute right-0 mt-1 w-96 max-w-[90vw] bg-surface border border-line rounded shadow-lg p-3 z-30 text-sm">
       <div id="git-files" class="max-h-40 overflow-y-auto font-mono text-xs text-muted mb-2"></div>
       <input id="git-msg" class="w-full rounded border border-strong px-2 py-1 mb-2" placeholder="Commit message">
       <div class="flex gap-2">
-        <button id="git-commit" class="rounded bg-slate-800 text-white px-3 py-1.5 hover:bg-slate-900 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">Commit</button>
-        <button id="git-commit-push" class="hidden rounded bg-blue-600 text-white px-3 py-1.5 hover:bg-blue-700">Commit &amp; push</button>
+        <button id="git-commit" class="rounded bg-accent text-white px-3 py-1.5 hover:bg-accent-hover">Commit</button>
+        <button id="git-commit-push" class="hidden rounded border border-strong px-3 py-1.5 hover:bg-hover">Commit &amp; push</button>
         <button id="git-cancel" class="ml-auto text-muted hover:text-ink">Cancel</button>
       </div>
     </div>
   </div>
   <button id="theme-btn" class="rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover" title="Theme: follows the OS, or force light or dark"></button>
   <button id="help-btn" class="rounded border border-strong px-2.5 py-1 text-xs bg-surface hover:bg-hover font-semibold" title="Help and reference (?)">?</button>
-  <button id="new-btn" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700" title="New story (n)">New story</button>
+  <button id="new-btn" class="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-hover" title="New story (n)">New story</button>
 </header>
 
-<div id="ro-banner" class="hidden bg-violet-50 border-b border-violet-200 text-violet-900 dark:bg-violet-950 dark:border-violet-800 dark:text-violet-100 text-sm px-4 py-1.5"></div>
-<div id="co-banner" class="hidden bg-amber-50 border-b border-amber-200 text-amber-900 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-100 text-sm px-4 py-1.5"></div>
+<div id="ro-banner" class="hidden bg-accent-tint border-b border-line text-accent-text text-sm px-4 py-1.5"></div>
+<div id="co-banner" class="hidden bg-warning-tint border-b border-line text-warning-text text-sm px-4 py-1.5"></div>
 <div id="empty" class="hidden mx-3 mt-3 rounded-lg border border-dashed border-strong bg-surface px-4 py-3 text-sm text-muted"></div>
 <main id="board" class="flex-1 flex flex-col sm:flex-row gap-3 p-3 overflow-auto"></main>
 <main id="ready-view" class="hidden flex-1 overflow-y-auto p-4"></main>
@@ -127,26 +161,55 @@
 </div>
 <div id="toasts" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
 
-<div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-2 sm:p-4 z-40">
-  <div class="bg-surface rounded-lg shadow-xl w-full max-w-3xl max-h-full overflow-y-auto">
-    <div class="flex items-center gap-3 px-5 py-3 border-b border-line">
-      <div class="min-w-0 flex-1 text-xs text-faint">
-        <div id="m-id" class="font-mono truncate"></div>
-        <div id="m-meta" class="truncate"></div>
+<div id="modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-2 sm:p-4 z-40">
+  <div class="bg-surface rounded-lg border border-line shadow-xl w-full max-w-3xl max-h-full overflow-y-auto">
+    <div class="flex items-start gap-3 px-6 py-4 border-b border-line">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-3 min-w-0">
+          <button id="m-id" class="font-mono text-base font-medium text-ink rounded-sm px-1.5 -mx-1.5 hover:bg-hover" title="Click to copy the id; shift-click copies project:id"></button>
+          <span id="m-meta" class="text-xs text-faint truncate"></span>
+        </div>
+        <h2 id="m-heading" class="mt-1 text-lg font-semibold leading-snug"></h2>
       </div>
-      <div class="flex gap-3 text-sm text-muted shrink-0">
-        <button class="tab active py-1" data-tab="edit">Edit</button>
-        <button id="tab-history" class="tab py-1" data-tab="history">History</button>
+      <div class="flex items-center gap-2 shrink-0 text-sm">
+        <button class="tab py-1 text-muted" data-tab="story">Story</button>
+        <button id="tab-history" class="tab py-1 text-muted" data-tab="history">History</button>
+        <button id="m-edit-btn" class="ml-2 rounded border border-strong px-3 py-1 hover:bg-hover" title="Edit the fields and the body (e)">Edit</button>
+        <button id="m-close" class="ml-1 text-faint hover:text-ink text-xl leading-none" title="Close (Esc)">&times;</button>
       </div>
-      <button id="m-close" class="text-faint hover:text-ink text-xl leading-none shrink-0" title="Close (Esc)">&times;</button>
     </div>
 
-    <div id="pane-edit" class="px-5 py-4 grid gap-4">
+    <div id="pane-story" class="px-6 py-4 grid gap-4 text-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="m-status-quick" class="rounded border border-strong px-2 py-1 text-sm" title="Move to a column"></select>
+        <span id="m-view-assignee" class="text-muted"></span>
+        <span id="m-view-tags" class="flex flex-wrap gap-1"></span>
+        <button id="m-claim" class="ml-auto rounded border border-strong px-3 py-1 hover:bg-hover" title="Assign to you and start it">Claim</button>
+      </div>
+      <div id="m-deps" class="text-xs hidden flex flex-wrap gap-2"></div>
+      <div id="m-family" class="hidden grid gap-1 min-w-0 text-xs">
+        <div id="m-parent-chip"></div>
+        <div id="m-children" class="flex flex-wrap gap-1"></div>
+      </div>
+      <div id="m-rendered" class="md"></div>
+      <div id="m-questions" class="hidden border-t border-line pt-4">
+        <div class="text-warning-text font-medium mb-1">Waiting on a human</div>
+        <ul id="m-questions-list" class="grid gap-1"></ul>
+      </div>
+      <div id="m-note-wrap" class="grid gap-2 border-t border-line pt-4">
+        <span class="text-muted">Add a note</span>
+        <textarea id="m-note" rows="3" class="rounded border border-strong px-2 py-1.5 text-sm" placeholder="Appended to the bottom of the story with a timestamp and your name"></textarea>
+        <div class="flex gap-2"><button id="m-note-btn" class="rounded border border-strong px-3 py-1.5 hover:bg-hover">Append note</button>
+          <button id="m-answer-btn" class="hidden rounded bg-accent px-3 py-1.5 font-medium text-white hover:bg-accent-hover" title="Append the text as a decision note, which answers the open questions">Answer</button></div>
+      </div>
+    </div>
+
+    <div id="pane-edit" class="hidden px-6 py-4 grid gap-4">
       <label class="grid gap-1 text-sm">
         <span class="text-muted">Title</span>
         <input id="m-title" class="min-w-0 w-full rounded border border-strong px-2 py-1.5 text-base font-medium">
       </label>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
         <label class="grid gap-1 min-w-0"><span class="text-muted">Status</span>
           <select id="m-status" class="min-w-0 w-full rounded border border-strong px-2 py-1.5"></select></label>
         <label class="grid gap-1 min-w-0"><span class="text-muted">Assignee</span>
@@ -155,50 +218,32 @@
           <input id="m-tags" class="min-w-0 w-full rounded border border-strong px-2 py-1.5" placeholder="a, b"></label>
         <label class="grid gap-1 min-w-0"><span class="text-muted">Blocked by</span>
           <input id="m-blockers" class="min-w-0 w-full rounded border border-strong px-2 py-1.5 font-mono" placeholder="id, project:id"></label>
-      </div>
-      <div id="m-deps" class="text-xs hidden flex flex-wrap gap-2"></div>
-      <div class="grid sm:grid-cols-[auto_1fr] gap-x-4 gap-y-1 items-start text-sm">
         <label class="grid gap-1 min-w-0"><span class="text-muted">Parent</span>
-          <input id="m-parent" class="min-w-0 w-32 rounded border border-strong px-2 py-1.5 font-mono" placeholder="id" title="This story is one piece of the parent; empty for none"></label>
-        <div id="m-family" class="hidden grid gap-1 min-w-0 self-end">
-          <div id="m-parent-chip" class="text-xs"></div>
-          <div id="m-children" class="flex flex-wrap gap-1 text-xs"></div>
-        </div>
+          <input id="m-parent" class="min-w-0 w-full rounded border border-strong px-2 py-1.5 font-mono" placeholder="id" title="This story is one piece of the parent; empty for none"></label>
       </div>
       <div class="grid gap-1 text-sm">
         <div class="flex items-center gap-3">
           <span class="text-muted">Body (Markdown)</span>
-          <button id="m-preview-btn" class="text-xs text-accent hover:underline">Preview</button>
+          <button id="m-preview-btn" class="text-xs text-accent-text hover:underline">Preview</button>
         </div>
         <textarea id="m-body" rows="14" class="rounded border border-strong px-2 py-1.5 text-sm"></textarea>
         <div id="m-preview" class="md hidden rounded border border-line bg-canvas px-3 py-2 text-sm max-h-96 overflow-y-auto"></div>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
-        <button id="m-save" class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">Save</button>
-        <button id="m-reload" class="rounded border border-strong px-3 py-1.5 text-sm hover:bg-hover">Reload</button>
-        <button id="m-claim" class="rounded border border-strong px-3 py-1.5 text-sm hover:bg-hover" title="Assign to you and start it">Claim</button>
-        <span id="m-dirty" class="text-xs text-amber-600 dark:text-amber-400"></span>
-        <button id="m-delete" class="ml-auto rounded px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950">Delete</button>
-      </div>
-      <div id="m-questions" class="hidden border-t border-line pt-4 text-sm">
-        <div class="text-amber-700 dark:text-amber-300 font-medium mb-1">Waiting on a human</div>
-        <ul id="m-questions-list" class="grid gap-1 text-sm"></ul>
-      </div>
-      <div id="m-note-wrap" class="grid gap-2 border-t border-line pt-4 text-sm">
-        <span class="text-muted">Add a note</span>
-        <textarea id="m-note" rows="3" class="rounded border border-strong px-2 py-1.5 text-sm" placeholder="Appended to the bottom of the story with a timestamp and your name"></textarea>
-        <div class="flex gap-2"><button id="m-note-btn" class="rounded border border-strong px-3 py-1.5 text-sm hover:bg-hover">Append note</button>
-          <button id="m-answer-btn" class="hidden rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700" title="Append the text as a decision note, which answers the open questions">Answer</button></div>
+        <button id="m-save" class="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-hover">Save</button>
+        <button id="m-cancel" class="rounded border border-strong px-3 py-1.5 text-sm hover:bg-hover" title="Back to the story without saving (Esc)">Cancel</button>
+        <span id="m-dirty" class="text-xs text-warning-text"></span>
+        <button id="m-delete" class="ml-auto rounded px-3 py-1.5 text-sm text-danger-text hover:bg-danger-tint">Delete</button>
       </div>
     </div>
 
-    <div id="pane-history" class="hidden px-5 py-4 text-sm">
+    <div id="pane-history" class="hidden px-6 py-4 text-sm">
       <div id="m-history" class="grid gap-1 font-mono text-xs"></div>
     </div>
   </div>
 </div>
 
-<div id="help" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-2 sm:p-4 z-40">
+<div id="help" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-2 sm:p-4 z-40">
   <div class="help bg-surface rounded-lg shadow-xl w-full max-w-3xl max-h-full flex flex-col">
     <div class="flex items-center gap-4 px-5 py-3 border-b border-line">
       <span class="font-semibold">Help</span>
@@ -219,7 +264,9 @@
         <div><kbd>?</kbd> This help</div>
         <div><kbd>Tab</kbd> Move between cards</div>
         <div><kbd>Enter</kbd> Open the focused card</div>
-        <div><kbd>Esc</kbd> Close a dialog or popover</div>
+        <div><kbd>Esc</kbd> Close a dialog or popover; in the story dialog, leave edit mode first</div>
+        <div><kbd>e</kbd> Edit the open story</div>
+        <div>Click the id at the top of a story to copy it; shift-click copies <code>project:id</code></div>
         <div>Drag a card to move or reorder it</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Selecting several cards</div>
         <div>Press and hold a card (or <kbd>x</kbd> on a focused card) to start a selection</div>
@@ -228,12 +275,12 @@
         <div>The bar at the bottom moves, tags, or archives the batch</div>
         <div>Click in another column or press <kbd>Esc</kbd> to finish</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Cards</div>
-        <div><span class="inline-block w-1 h-3 bg-red-500 align-middle mr-1"></span> Red edge: blocked by an unmet dependency</div>
-        <div><span class="inline-block w-1 h-3 bg-amber-400 align-middle mr-1"></span> Amber edge: stale, no update for a while</div>
-        <div><span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5">also x@branch</span> Claimed by someone on another branch or in another checkout</div>
-        <div><span class="text-[10px] rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-1.5">? 2</span> Open questions, waiting on a human; the modal lists them as Q1, Q2, ..., Answer beside one closes it alone, and Answer all closes every one. Only a reply from here or skald answer closes a question; a plain decision note does not</div>
-        <div><span class="inline-block h-1.5 w-8 rounded bg-slate-300 dark:bg-slate-600 overflow-hidden align-middle"><span class="block h-full w-1/3 bg-sky-500"></span></span> Children done over total, on a parent story; the dialog lists them and can add one</div>
-        <div><span class="inline-block h-1.5 w-8 rounded bg-slate-300 dark:bg-slate-600 overflow-hidden align-middle"><span class="block h-full w-1/2 bg-emerald-500"></span></span> Acceptance checklist progress</div>
+        <div><span class="inline-block w-1 h-3 bg-danger align-middle mr-1"></span> Red edge: blocked by an unmet dependency</div>
+        <div><span class="inline-block w-1 h-3 bg-warning align-middle mr-1"></span> Amber edge: stale, no update for a while</div>
+        <div><span class="text-[10px] rounded-full bg-accent-tint text-accent-text px-1.5">also x@branch</span> Claimed by someone on another branch or in another checkout</div>
+        <div><span class="text-[10px] rounded-full bg-warning-tint text-warning-text px-1.5">? 2</span> Open questions, waiting on a human; the modal lists them as Q1, Q2, ..., Answer beside one closes it alone, and Answer all closes every one. Only a reply from here or skald answer closes a question; a plain decision note does not</div>
+        <div><span class="inline-block h-1.5 w-8 rounded bg-chip overflow-hidden align-middle"><span class="block h-full w-1/3 bg-info"></span></span> Children done over total, on a parent story; the dialog lists them and can add one</div>
+        <div><span class="inline-block h-1.5 w-8 rounded bg-chip overflow-hidden align-middle"><span class="block h-full w-1/2 bg-success"></span></span> Acceptance checklist progress</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Header</div>
         <div><b>Branch</b> shows a read-only view of the backlog on another branch, or another checkout of this project (a worktree or clone): its working tree, editable, uncommitted changes included</div>
         <div><b>Commit</b> appears when story files have uncommitted changes</div>
@@ -279,7 +326,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null,
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
     lastWrite: 0, help: false, helpCli: null,
     sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
   };
@@ -309,13 +356,22 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   // ---- Access ----------------------------------------------------------
   // `skald open` puts the key in the URL fragment, which never reaches the server. Trade it for a
   // session cookie once, then drop it from the address bar.
+  const hashParams = () => new URLSearchParams((location.hash || '').replace(/^#/, ''));
   async function establishSession() {
-    const m = (location.hash || '').match(/^#key=([A-Za-z0-9]+)$/);
-    if (!m) return;
+    const h = hashParams();
+    const token = h.get('key');
+    if (!token || !/^[A-Za-z0-9]+$/.test(token)) return;
     try {
-      await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: m[1] }) });
+      await fetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
     } catch (e) {}
-    history.replaceState(null, '', location.pathname + location.search);
+    // Drop the key; keep a story deep link if one rode along.
+    const story = h.get('story');
+    history.replaceState(null, '', location.pathname + location.search + (story ? `#story=${encodeURIComponent(story)}` : ''));
+  }
+  // The open story lives in the URL, so a copied link opens straight to it and Back closes it.
+  function setStoryHash(id) {
+    const want = id ? `#story=${encodeURIComponent(id)}` : '';
+    if ((location.hash || '') !== want) history.replaceState(null, '', location.pathname + location.search + want);
   }
   function lock() {
     if (state.locked) return;
@@ -327,8 +383,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   // ---- Toasts ----------------------------------------------------------
   function toast(msg, kind) {
     const el = document.createElement('div');
-    const colour = kind === 'error' ? 'bg-red-600' : kind === 'warn' ? 'bg-amber-500' : kind === 'info' ? 'bg-blue-600' : 'bg-slate-800';
-    el.className = `${colour} text-white text-sm rounded px-3 py-2 shadow-lg max-w-sm whitespace-pre-wrap`;
+    const colour = kind === 'error' ? 'bg-danger text-white' : kind === 'warn' ? 'bg-warning text-black' : kind === 'info' ? 'bg-info text-white' : 'bg-chip text-ink border border-strong';
+    el.className = `${colour} text-sm rounded px-3 py-2 shadow-lg max-w-sm whitespace-pre-wrap`;
     el.textContent = msg;
     $('toasts').appendChild(el);
     setTimeout(() => el.remove(), 6000);
@@ -374,7 +430,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const ok = (n) => n === ALL || state.projects.some(p => p.name === n && p.exists);
     state.project = ok(wanted) ? wanted : (state.projects.find(p => p.exists) || {}).name;
     sel.value = state.project;
-    applyProject();
+    return applyProject();
   }
   function applyProject() {
     state.allView = state.project === ALL;
@@ -398,8 +454,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     $('co-banner').classList.add('hidden');
     state.version = null; state.git = { changes: [] };
     subscribe();
-    refresh(true);
     loadBranches();
+    return refresh(true);
   }
   const repoDir = (p) => p.replace(/[\\/]\.skald$/, '');
   // The directory name alone, unless two checkouts share one; then the parent too.
@@ -469,8 +525,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     $('new-btn').classList.toggle('hidden', state.allView);
     clearSelection();
     subscribe();
-    refresh(true);
     loadBranches();
+    return refresh(true);
   }
   function setRef(ref) {
     state.ref = ref; state.readonly = !!ref; state.version = null;
@@ -543,28 +599,28 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   }
   function cardEl(story) {
     const el = document.createElement('div');
-    const border = story.blocked ? 'border-l-4 border-l-red-500' : story.stale ? 'border-l-4 border-l-amber-400' : '';
+    const border = story.blocked ? 'border-l-4 border-l-danger' : story.stale ? 'border-l-4 border-l-warning' : '';
     const selectable = state.sel.column !== null && state.sel.column === story.status;
     const selected = selectable && state.sel.ids.has(story.id);
-    el.className = `card bg-surface rounded shadow-sm border border-line p-2.5 cursor-grab hover:shadow ${border} ${selectable ? 'selectable' : ''} ${selected ? 'selected' : ''}`;
+    el.className = `card bg-surface rounded border border-line p-2.5 cursor-grab hover:border-strong ${border} ${selectable ? 'selectable' : ''} ${selected ? 'selected' : ''}`;
     el.dataset.id = story.id;
     el.draggable = !state.readonly;
     el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', story.title);
     if (selectable) el.setAttribute('aria-pressed', selected ? 'true' : 'false');
     const mark = selectable ? `<span class="sel-mark" aria-hidden="true">&#10003;</span>` : '';
     const tags = story.tags.map(t => `<span class="inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(t)}</span>`).join(' ');
-    const lock = story.blocked ? `<span class="text-red-500 text-sm" title="${esc(depTitle(story))}">&#128274;</span>` : '';
-    const stale = story.stale ? `<span class="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400" title="No update for ${state.settings.stale_days} days">stale</span>` : '';
+    const lock = story.blocked ? `<span class="text-danger text-sm" title="${esc(depTitle(story))}">&#128274;</span>` : '';
+    const stale = story.stale ? `<span class="text-[10px] uppercase tracking-wide text-warning-text" title="No update for ${state.settings.stale_days} days">stale</span>` : '';
     const cl = story.checklist && story.checklist.total ? `<span class="text-[11px] text-muted" title="Checklist">${story.checklist.done}/${story.checklist.total}</span>
-      <span class="inline-block h-1.5 w-12 rounded bg-chip overflow-hidden align-middle"><span class="block h-full bg-emerald-500" style="width:${Math.round(100 * story.checklist.done / story.checklist.total)}%"></span></span>` : '';
+      <span class="inline-block h-1.5 w-12 rounded bg-chip overflow-hidden align-middle"><span class="block h-full bg-success" style="width:${Math.round(100 * story.checklist.done / story.checklist.total)}%"></span></span>` : '';
     const who = story.assignee ? `<span class="text-muted" title="Assignee">@${esc(story.assignee)}</span>` : '';
     const claims = (state.branches && state.branches.claims && state.branches.claims[story.id]) || [];
     const other = claims.filter(c => c.assignee !== story.assignee);
-    const claimBadge = other.length ? `<span class="text-[10px] rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 px-1.5" title="${esc(other.map(c => `${c.assignee} on ${c.branch} (${c.status})`).join('\n'))}">also ${esc(other[0].assignee)}@${esc(other[0].branch)}</span>` : '';
+    const claimBadge = other.length ? `<span class="text-[10px] rounded-full bg-accent-tint text-accent-text px-1.5" title="${esc(other.map(c => `${c.assignee} on ${c.branch} (${c.status})`).join('\n'))}">also ${esc(other[0].assignee)}@${esc(other[0].branch)}</span>` : '';
     const kids = story.children && story.children.total ? `<span class="text-[11px] text-muted" title="Children done/total">${story.children.done}/${story.children.total} children</span>
-      <span class="inline-block h-1.5 w-12 rounded bg-chip overflow-hidden align-middle"><span class="block h-full bg-sky-500" style="width:${Math.round(100 * story.children.done / story.children.total)}%"></span></span>` : '';
+      <span class="inline-block h-1.5 w-12 rounded bg-chip overflow-hidden align-middle"><span class="block h-full bg-info" style="width:${Math.round(100 * story.children.done / story.children.total)}%"></span></span>` : '';
     const nq = openQuestions(story);
-    const qBadge = nq ? `<span class="text-[10px] rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-1.5" title="Waiting on a human: ${nq} open question(s)">? ${nq}</span>` : '';
+    const qBadge = nq ? `<span class="text-[10px] rounded-full bg-warning-tint text-warning-text px-1.5" title="Waiting on a human: ${nq} open question(s)">? ${nq}</span>` : '';
     el.innerHTML = `
       <div class="flex items-start gap-1.5">${mark}
         <div class="text-sm font-medium leading-snug flex-1">${esc(story.title)}</div>${lock}
@@ -740,9 +796,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         const limit = g.meta && key !== '__parent__' ? (state.facetLimits || {})[key] : null;
         const activeCols = new Set(state.columns.filter(c => c.role === 'active').map(c => c.key));
         const active = limit ? g.stories.filter(s => activeCols.has(s.status)).length : 0;
-        const laneTag = limit ? `<span class="text-xs font-normal ${active >= limit ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-muted'}" title="Lane: at most ${limit} active at once">${active}/${limit} active</span>` : '';
+        const laneTag = limit ? `<span class="text-xs font-normal ${active >= limit ? 'text-danger-text font-semibold' : 'text-muted'}" title="Lane: at most ${limit} active at once">${active}/${limit} active</span>` : '';
         lane.innerHTML = `<div class="flex items-center gap-3 mb-2 text-sm font-semibold text-muted">${esc(g.label)}
-          ${pct === null ? '' : `<span class="inline-block h-1.5 w-24 rounded bg-chip overflow-hidden"><span class="block h-full bg-emerald-500" style="width:${pct}%"></span></span><span class="text-xs font-normal text-muted">${g.meta.done}/${g.meta.total}</span>`}${laneTag}</div>`;
+          ${pct === null ? '' : `<span class="inline-block h-1.5 w-24 rounded bg-chip overflow-hidden"><span class="block h-full bg-success" style="width:${pct}%"></span></span><span class="text-xs font-normal text-muted">${g.meta.done}/${g.meta.total}</span>`}${laneTag}</div>`;
         const row = document.createElement('div');
         row.className = 'flex flex-col sm:flex-row gap-3 overflow-x-auto';
         renderColumns(row, g.stories);
@@ -768,8 +824,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       const allInColumn = col.key === null ? items.length : state.stories.filter(s => s.status === col.key).length;
       const over = col.limit && allInColumn > col.limit;
       const count = col.limit ? `${allInColumn}/${col.limit}` : `${items.length}`;
-      section.innerHTML = `<div class="flex items-center justify-between px-3 py-2 text-sm font-semibold text-muted" title="role: ${esc(col.role)}">
-        <span>${esc(col.label)}</span><span class="text-xs font-normal ${over ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-faint'}">${count}</span></div>`;
+      section.innerHTML = `<div class="col-head flex items-center justify-between px-3 py-2 font-semibold text-muted" title="role: ${esc(col.role)}">
+        <span>${esc(col.label)}</span><span class="text-xs font-normal ${over ? 'text-danger-text font-semibold' : 'text-faint'}">${count}</span></div>`;
       const list = document.createElement('div');
       list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 sm:overflow-y-auto';
       if (col.key !== null && !state.readonly) { list.dataset.status = col.key; list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop); }
@@ -781,7 +837,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
 
   async function renderReady() {
     let data;
-    try { data = await api('GET', '/api/ready'); } catch (err) { readyView.innerHTML = `<div class="text-red-600">${esc(err.message)}</div>`; return; }
+    try { data = await api('GET', '/api/ready'); } catch (err) { readyView.innerHTML = `<div class="text-danger-text">${esc(err.message)}</div>`; return; }
     showWarnings(data.warnings);
     const rows = data.stories.filter(matches);
     if (!rows.length) { readyView.innerHTML = '<div class="text-muted">No ready, unblocked stories in any project.</div>'; return; }
@@ -954,15 +1010,43 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const opts = state.columns.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`);
     if (current && !state.columns.some(c => c.key === current)) opts.push(`<option value="${esc(current)}">${esc(current)} (unknown)</option>`);
     $('m-status').innerHTML = opts.join('');
+    $('m-status-quick').innerHTML = opts.join('');
   }
+  let modalTab = 'story';
   function showTab(name) {
+    modalTab = name;
     modal.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-    $('pane-edit').classList.toggle('hidden', name !== 'edit');
+    $('pane-story').classList.toggle('hidden', name !== 'story' || state.editing);
+    $('pane-edit').classList.toggle('hidden', name !== 'story' || !state.editing);
     $('pane-history').classList.toggle('hidden', name !== 'history');
+    $('m-heading').classList.toggle('hidden', state.editing);
     if (name === 'history') loadHistory();
   }
-  function showModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); showTab('edit'); }
-  function hideModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); state.modal = null; state.loaded = null; refresh(true); }
+  // View mode shows the story as text; edit mode is the form. A new story starts in edit mode.
+  function setEditing(on) {
+    state.editing = on;
+    const btn = $('m-edit-btn');
+    btn.textContent = on ? 'Cancel' : 'Edit';
+    btn.title = on ? 'Back to the story without saving (Esc)' : 'Edit the fields and the body (e)';
+    btn.classList.toggle('hidden', state.readonly);
+    showTab('story');
+    if (on) $('m-title').focus();
+  }
+  function showModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); showTab('story'); }
+  function hideModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); state.modal = null; state.loaded = null; state.editing = false; setStoryHash(null); refresh(true); }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+    // http on a LAN address is not a secure context: fall back to a selection copy.
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove(); return ok;
+  }
+  async function copyId(e) {
+    if (!state.loaded) return;
+    const text = e.shiftKey ? `${state.loaded.project}:${state.loaded.id}` : state.loaded.id;
+    toast((await copyText(text)) ? `Copied ${text}` : `Could not copy; the id is ${text}`, 'info');
+  }
   function sanitize(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     doc.querySelectorAll('script, iframe, object, embed, style, link').forEach(n => n.remove());
@@ -973,11 +1057,23 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     });
     return doc.body.innerHTML;
   }
-  function renderPreview() {
-    const el = $('m-preview');
-    const text = $('m-body').value;
-    if (window.marked) el.innerHTML = sanitize(marked.parse(text, { gfm: true, breaks: false }));
-    else el.innerHTML = `<pre class="whitespace-pre-wrap">${esc(text)}</pre>`;
+  const NOTE_HEAD = /^## \[([^\]\n]+)\] (\d{4}-\d\d-\d\d \d\d:\d\d UTC)(?: · ([a-z][a-z0-9_-]*))?\s*$/gm;
+  function renderMarkdown(el, text) {
+    if (window.marked) {
+      // Note headings become quieter, mono, with the kind in the accent colour.
+      const marked_ = text.replace(NOTE_HEAD, (m, who, stamp, kind) => `<h2 class="note">[${esc(who)}] ${esc(stamp)}${kind ? ` · <span class="kind">${esc(kind)}</span>` : ''}</h2>`);
+      el.innerHTML = sanitize(marked.parse(marked_, { gfm: true, breaks: false }));
+    } else el.innerHTML = `<pre class="whitespace-pre-wrap">${esc(text)}</pre>`;
+  }
+  function renderPreview() { renderMarkdown($('m-preview'), $('m-body').value); }
+  // The view: chips for the fields, the body and notes rendered.
+  function renderView(s) {
+    $('m-heading').textContent = s.title;
+    $('m-status-quick').value = s.status;
+    $('m-status-quick').disabled = state.readonly;
+    $('m-view-assignee').textContent = s.assignee ? `@${s.assignee}` : 'unassigned';
+    $('m-view-tags').innerHTML = s.tags.map(tag => `<span class="inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(tag)}</span>`).join('');
+    renderMarkdown($('m-rendered'), s.body);
   }
   // The family: a chip for the parent, a chip per child with its state, and a way to add one.
   function renderFamily(s) {
@@ -1002,7 +1098,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (!s.deps || !s.deps.length) { box.classList.add('hidden'); return; }
     box.classList.remove('hidden');
     box.innerHTML = s.deps.map(d => {
-      const colour = d.satisfied ? (d.closed ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200') : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      const colour = d.satisfied ? (d.closed ? 'bg-warning-tint text-warning-text' : 'bg-success-tint text-success-text') : 'bg-danger-tint text-danger-text';
       return `<button class="dep rounded px-2 py-0.5 ${colour} font-mono" data-ref="${esc(d.ref)}" ${d.state === 'unavailable' || d.state === 'missing' ? 'disabled' : ''} title="Open">${esc(d.ref)} · ${esc(d.state)}</button>`;
     }).join('');
     box.querySelectorAll('.dep').forEach(b => b.addEventListener('click', () => {
@@ -1016,15 +1112,15 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (id === null) {
       fillStatusSelect(null);
       state.modal = 'new'; state.loaded = null;
-      $('m-id').textContent = 'new story'; $('m-meta').textContent = '';
+      $('m-id').textContent = 'new story'; $('m-meta').textContent = ''; $('m-heading').textContent = '';
       $('m-title').value = ''; $('m-status').value = (state.columns.find(c => c.role === 'backlog') || state.columns[0] || {}).key;
       $('m-tags').value = ''; $('m-blockers').value = ''; $('m-assignee').value = '';
       $('m-parent').value = state.newParent || ''; $('m-family').classList.add('hidden');
       $('m-body').value = ''; $('m-deps').classList.add('hidden'); $('m-dirty').textContent = '';
       ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = false; });
-      $('m-save').classList.remove('hidden');
-      $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden');
-      ['m-note-wrap', 'm-delete', 'm-reload', 'm-claim', 'tab-history'].forEach(i => $(i).classList.add('hidden'));
+      $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden'); $('m-preview-btn').textContent = 'Preview';
+      ['m-delete', 'm-cancel', 'tab-history', 'm-edit-btn'].forEach(i => $(i).classList.add('hidden'));
+      state.editing = true;
       showModal(); $('m-title').focus();
       return;
     }
@@ -1032,8 +1128,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       const s = await api('GET', `${P()}/stories/${id}${state.ref ? '?ref=' + encodeURIComponent(state.ref) : ''}`);
       fillStatusSelect(s.status);
       state.modal = s.id; state.loaded = s;
-      $('m-id').textContent = `${s.project}:${s.id}  ${s.filename}`;
-      $('m-meta').textContent = `created ${s.created_at} · updated ${s.updated_at}${s.archived ? ' · archived' : ''}`;
+      $('m-id').textContent = s.id;
+      $('m-meta').textContent = `created ${s.created_at.slice(0, 10)} · updated ${s.updated_at.slice(0, 16).replace('T', ' ')}${s.archived ? ' · archived' : ''}`;
+      renderView(s);
       const qs = (s.questions && s.questions.items) || [];
       $('m-questions').classList.toggle('hidden', !qs.length);
       $('m-answer-btn').classList.toggle('hidden', !qs.length || state.readonly);
@@ -1047,10 +1144,14 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       renderFamily(s);
       if (!$('m-preview').classList.contains('hidden')) renderPreview();
       $('m-note').value = '';
-      ['m-note-wrap', 'm-delete', 'm-reload', 'm-claim', 'tab-history'].forEach(i => $(i).classList.remove('hidden'));
+      $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden'); $('m-preview-btn').textContent = 'Preview';
+      ['m-delete', 'm-cancel', 'tab-history'].forEach(i => $(i).classList.remove('hidden'));
       ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = state.readonly; });
-      ['m-save', 'm-claim', 'm-delete', 'm-note-wrap', 'm-reload'].forEach(i => $(i).classList.toggle('hidden', state.readonly));
+      ['m-claim', 'm-note-wrap', 'm-edit-btn'].forEach(i => $(i).classList.toggle('hidden', state.readonly));
       if (state.readonly) $('m-meta').textContent += ` · read-only (${state.ref})`;
+      state.editing = false;
+      setEditing(false);
+      setStoryHash(s.id);
       if (!modal.classList.contains('flex')) showModal();
     } catch (err) { toast(err.message, 'error'); }
   }
@@ -1067,7 +1168,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       html += '<div class="font-sans font-semibold text-muted mt-3 mb-1">Story file history</div>';
       html += data.history.length ? data.history.map(row).join('') : '<div class="text-faint font-sans">No commits yet. Story changes are committed with the code they describe.</div>';
       box.innerHTML = html;
-    } catch (err) { box.innerHTML = `<div class="text-red-600 font-sans">${esc(err.message)}</div>`; }
+    } catch (err) { box.innerHTML = `<div class="text-danger-text font-sans">${esc(err.message)}</div>`; }
   }
   function splitList(v) { return v.split(',').map(x => x.trim()).filter(Boolean); }
 
@@ -1111,7 +1212,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const sel = state.answering;
     $('m-questions-list').innerHTML = qs.map(q => {
       const n = q.number, on = sel === n;
-      return `<li class="rounded px-2 py-1 flex gap-2 items-start ${on ? 'bg-amber-200 dark:bg-amber-800 ring-1 ring-amber-500' : 'bg-amber-50 dark:bg-amber-950'}">
+      return `<li class="rounded px-2 py-1 flex gap-2 items-start ${on ? 'bg-warning-tint ring-1 ring-warning' : 'bg-chip'}">
         <div class="grow"><span class="text-muted text-xs">Q${n} · ${esc(q.stamp)} · ${esc(q.author)}</span><br>${esc(q.text)}</div>
         ${state.readonly ? '' : `<button type="button" data-q="${n}" class="q-answer shrink-0 rounded border border-strong px-2 py-0.5 text-xs bg-surface hover:bg-hover" title="Aim the reply at this question only">${on ? 'Selected' : 'Answer'}</button>`}
       </li>`;
@@ -1185,7 +1286,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.helpCli = data.commands;
       $('help-version').textContent = `skald ${data.version}`;
       renderHelpCli();
-    } catch (err) { $('help-cli').innerHTML = `<div class="text-red-600">${esc(err.message)}</div>`; }
+    } catch (err) { $('help-cli').innerHTML = `<div class="text-danger-text">${esc(err.message)}</div>`; }
   }
   function renderHelpCli() {
     const q = ($('help-filter').value || '').trim().toLowerCase();
@@ -1265,7 +1366,14 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('git-commit-push').addEventListener('click', () => commit(true));
   $('m-close').addEventListener('click', hideModal);
   $('m-save').addEventListener('click', saveModal);
-  $('m-reload').addEventListener('click', () => state.modal && state.modal !== 'new' && openModal(state.modal));
+  $('m-id').addEventListener('click', copyId);
+  $('m-edit-btn').addEventListener('click', () => setEditing(!state.editing));
+  $('m-cancel').addEventListener('click', () => { if (state.modal === 'new') hideModal(); else openModal(state.modal); });
+  $('m-status-quick').addEventListener('change', async (e) => {
+    if (!state.loaded || e.target.value === state.loaded.status) return;
+    try { const res = await api('PATCH', `${P()}/stories/${state.loaded.id}`, { status: e.target.value }); showWarnings(res.warnings); await openModal(state.loaded.id); }
+    catch (err) { toast(err.message, 'error'); e.target.value = state.loaded.status; }
+  });
   $('m-note-btn').addEventListener('click', () => addNote());
   $('m-answer-btn').addEventListener('click', () => addNote('decision'));
   $('m-claim').addEventListener('click', claimStory);
@@ -1280,7 +1388,15 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
   document.addEventListener('keydown', (e) => {
     const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
-    if (e.key === 'Escape') { if (state.help) hideHelp(); else if (state.modal) hideModal(); else if (state.sel.column !== null) clearSelection(); else $('git-pop').classList.add('hidden'); return; }
+    if (e.key === 'Escape') {
+      if (state.help) hideHelp();
+      else if (state.modal && state.editing && state.modal !== 'new') openModal(state.modal);  // leave edit mode, changes discarded
+      else if (state.modal) hideModal();
+      else if (state.sel.column !== null) clearSelection();
+      else $('git-pop').classList.add('hidden');
+      return;
+    }
+    if (state.modal && !typing && e.key === 'e' && !state.editing && state.modal !== 'new' && !state.readonly && modalTab === 'story') { e.preventDefault(); setEditing(true); return; }
     if (typing || state.modal) return;
     if (e.key === '?') { e.preventDefault(); if (state.help) hideHelp(); else showHelp(); return; }
     if (state.help) return;
@@ -1296,7 +1412,10 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (state.live && tick % 10 !== 0) return;
     refresh(false);
   }, 1500);
-  establishSession().then(loadProjects).catch(err => {
+  establishSession().then(loadProjects).then(() => {
+    const story = hashParams().get('story');
+    if (story && state.project && !state.allView) openModal(story);
+  }).catch(err => {
     if (err.status === 401) return;
     $('conn').textContent = 'disconnected'; toast(err.message, 'error');
   });

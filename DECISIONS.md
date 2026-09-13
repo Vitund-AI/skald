@@ -590,3 +590,49 @@ kept in this repository under `examples/` because it is Markdown and a
 script that must track the Skald version it was written against, and a
 separate repository earns its existence only when something in it ships
 on its own schedule.
+
+### D62. The Python floor follows upstream support
+Skald ran on 3.9 from the start because a standard-library-only package
+costs nothing to keep there. Once 3.9 left upstream support the floor
+moved to 3.10, and CI took on 3.14, on the reasoning that the people
+running coding agents are on current interpreters and a floor below
+upstream support tests a version no user has. The rule going forward:
+when a version leaves upstream support, the next release drops it; when
+a version ships, CI adds it. Nothing in the package depends on a feature
+above 3.10, so the floor is a statement of what is tested, not a
+constraint the code needs.
+
+### D63. Fixes go to the latest release; an earlier line is patched from a branch cut at its tag, on demand
+Skald is pre-1.0, has no dependencies, is one `pip install --upgrade`
+away for every user, and has one maintainer. A fix costs the same
+wherever it lands; maintaining older lines costs a branch, a matrix, and
+a backport per fix for as long as the line lives. So the policy promises
+what can be kept: the latest release receives fixes, and an earlier line
+is patched only when a maintainer decides it must be. Release branches
+are not created in advance because a tag on `main` is enough to cut one
+the day it is needed, and the publish workflow keys on the tag, not the
+branch. Two rules follow from what a release is: a published tag is the
+identifier of what shipped, so it is never deleted or moved (the `v0.5.1`
+move was allowed only because nothing had been published from it), and a
+vulnerable release on PyPI is yanked rather than deleted, because
+yanking hides it from resolvers while keeping existing pins and lockfiles
+intact, and deleting breaks them and burns the number.
+
+### D64. The board wears the Vitund tokens, dark first, and a theme file overrides them
+The board had grown its own palette a class at a time: Tailwind's amber
+here, violet there, a `dark:` variant on each. Adopting one design system
+(Vitund, shared with the maintainer's other tools) replaces that with a
+fixed set of named tokens (surfaces, lines, text, an accent, four status
+colours) that every class refers to, so a colour is decided once and the
+`dark:` variants disappear. Dark is the default because a board that sits
+beside a terminal and an editor is looked at in the dark far more than in
+the light; light and auto remain a click away and are remembered per
+browser. Fonts come from Google Fonts with system fallbacks rather than
+being vendored, because the board is a single file served from the package
+and fifty kilobytes of woff2 is not worth a build step; offline, the
+fallbacks are fine. The override is a file (`SKALD_HOME/theme.css`, served
+at `/theme.css`) rather than a settings page or a config key, because CSS
+custom properties are already the mechanism, a file is what a user of a
+filesystem-native tool expects to edit, and an empty response when the file
+is absent costs nothing. None of this needs a framework: the page stays one
+HTML file with Tailwind's play CDN, which is what keeps it hackable.

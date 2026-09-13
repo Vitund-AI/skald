@@ -13,25 +13,26 @@ dependency-free Python package, and git is the history.
 
 ```
 .skald/
-├── config.json   # project name, story format version, columns  (committed)
-├── AGENTS.md     # what an agent needs to know, written by `init` (committed)
-├── stories/      # one Markdown file per story                   (committed)
+├── config.json   # project name, story format version, columns
+├── AGENTS.md     # what an agent needs to know, written by `init`
+├── stories/      # one Markdown file per story
 │   └── a3f9c2-implement-wireguard-overlay.md
-└── archive/      # stories shipped in a release, moved out of the way
+├── archive/      # stories shipped in a release, moved out of the way
+└── templates/    # optional story body templates
 ```
 
 Stories are committed with the code they describe, so the board travels with
 the branch and shows up in pull request diffs.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/board-dark.png">
-  <img src="docs/images/board-light.png" alt="The Skald board showing this repository's backlog: Backlog, Ready, In progress, Review, and Done columns, a story claimed by an agent, and a button to commit the changed story files" width="100%">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/board-light.png">
+  <img src="docs/images/board-dark.png" alt="The Skald board on the lifecycle columns Idea, Plan, Ready, In progress, Review, and Done: an epic with a children bar, a story claimed by an agent with its checklist progress, a blocked story, two stories with open questions, and a Waiting on a human filter" width="100%">
 </picture>
 
 <table>
 <tr>
 <td width="50%" valign="top"><img src="docs/images/cli-session.png" alt="A terminal session: skald status, skald claim, skald resume, a handoff note, skald move, and skald diff"></td>
-<td width="50%" valign="top"><img src="docs/images/story.png" alt="A story open on the board with a dependency chip, an acceptance checklist, and dated notes"></td>
+<td width="50%" valign="top"><img src="docs/images/story.png" alt="A story open on the board in view mode: its id, dates, and title, a status select, tag chips, its parent chip, an acceptance checklist, and a dated handoff note"></td>
 </tr>
 <tr>
 <td align="center"><sub>An agent's session: claim, resume, hand off, move, and see the diff.</sub></td>
@@ -56,7 +57,7 @@ the branch and shows up in pull request diffs.
   turns the done column into a changelog section and a versioned archive.
 - **More than one repository.** A machine-local index gives you one board
   and `project:id` dependencies across every repository you use Skald in.
-- **Nothing to run.** Python standard library only, Python 3.9 or newer,
+- **Nothing to run.** Python standard library only, Python 3.10 or newer,
   Linux, macOS, and Windows. Tab completion for bash, zsh, and fish.
 
 ## Is Skald the right tool?
@@ -156,15 +157,17 @@ choices in [DECISIONS.md](DECISIONS.md).
 ```sh
 pip install -e .
 python -m unittest          # standard library only
-ruff check src tests examples   # the lint CI runs (pip install ruff)
+ruff check src tests examples scripts   # the lint CI runs (pip install ruff)
 skald serve                 # run against this repository's own backlog
 skald docs                  # regenerate docs/cli.md after changing a command
+scripts/release.sh 1.2.0 --dry-run   # maintainers: the release, checked step by step
 ```
 
 This repository dogfoods Skald: its own backlog is in `.skald/`, and the
 board rendered from it is at [.skald/README.md](.skald/README.md).
-[CONTRIBUTING.md](CONTRIBUTING.md) has the workflow for changes, and the
-project follows a [code of conduct](CODE_OF_CONDUCT.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) has the workflow for changes, the
+project follows a [code of conduct](CODE_OF_CONDUCT.md), and
+[SECURITY.md](SECURITY.md) says how to report a vulnerability.
 
 ## License
 

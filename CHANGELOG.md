@@ -1,5 +1,66 @@
 # Changelog
 
+## 0.6.0 (2026-09-13)
+
+### Changed
+- Python 3.10 or newer. 3.9 has been end of life since October 2025; CI
+  now runs 3.10 through 3.14 on Linux and 3.12 on macOS and Windows.
+
+### Added
+- The story dialog opens in view mode: the id first (click to copy it,
+  shift-click to copy `project:id`), the created and updated dates, the
+  title as a heading, then a status select for a quick move, assignee, tags,
+  claim, dependencies, family, the body rendered as Markdown with each note
+  set apart, questions, and add-a-note. Edit (or `e`) switches to the form;
+  Save and Cancel return to the view, and `Esc` leaves edit mode before it
+  closes the dialog. A new story still opens in the form. The open story is
+  kept in the URL as `#story=ID`, so the address bar holds a shareable
+  link, and the board opens straight to it.
+- The board follows the Vitund design system: dark by default (the Theme
+  button still offers light and following the operating system), Inter and
+  JetBrains Mono from Google Fonts with system fallbacks, one accent colour,
+  muted status colours, no card shadows, uppercase column headings. Every
+  colour is a token; `SKALD_HOME/theme.css`, served at `/theme.css` when it
+  exists, redefines them without touching the package.
+- CI skips the lint and test jobs for a change that touches only
+  documentation the tests never read, classified by `scripts/docs_only.py`
+  in a first job, so a protected branch's required checks are satisfied
+  rather than left pending.
+- `SECURITY.md`: how to report a vulnerability privately, what to expect,
+  which versions receive fixes (the latest; an earlier line at the
+  maintainers' discretion), what is in and out of scope, and what happens
+  after a fix. docs/git-and-ci.md describes patching an earlier release
+  from a branch cut at its tag, and the two standing rules: a published
+  tag is never deleted or moved, and a vulnerable release on PyPI is
+  yanked, never deleted.
+- `scripts/release.sh X.Y.Z`: the release as one checked sequence. It
+  refuses to start unless on a clean `dev` in step with origin with an
+  untagged, newer version, previews the changelog section, then bumps the
+  version file, runs `skald release`, tests, pushes, opens and merges the
+  pull request to `main`, tags, and merges `main` back into `dev`.
+  `--dry-run` runs the checks and the preview and changes nothing. Tested
+  against a fixture repository with a stub `gh`.
+
+### Fixed
+- The generated CLI reference (`docs/cli.md` and `GET /api/help`) is plain
+  text under Python 3.14, whose argparse colours usage output when run from
+  a terminal. The escape sequences are stripped where the reference is
+  built, so the reference is identical on every Python version and in or out
+  of a terminal; interactive `skald --help` keeps its colour.
+
+### Stories
+
+- Release flow documented as run: bump and release together on dev, PR to main, tag (fab7b8)
+- Release v0.5.1: version file never bumped, v-prefixed heading blinded the guard (b6866d)
+- scripts/release.sh: the release as one checked, repeatable sequence with a dry run (83c6b3)
+- README screenshots: the board on the lifecycle columns, from a reproducible demo project (b63598)
+- Python 3.10 to 3.14: drop 3.9, test on 3.14 (c42f18)
+- Security policy and the flow for patching an earlier release (415a12)
+- CI skips lint and tests for documentation-only changes, without leaving required checks pending (682ae0)
+- Story dialog: view mode by default, a copyable id, a deep link (abc3c4)
+- Vitund design system: tokens, dark by default, fonts, a theme override file (95b1fd)
+- CLI reference is plain text under Python 3.14's coloured argparse (a92b73)
+
 ## 0.5.1 (2026-09-12)
 
 ### Fixed

@@ -21,7 +21,7 @@ This is the specification as of 0.2.
    and generated workflows do the same. Repositories carry data only, never
    the tool.
 2. **Standard library only.** No third-party Python packages. Minimum Python
-   3.9. The board loads Tailwind and marked from CDNs; that is the one
+   3.10, the oldest interpreter still receiving fixes when it was set. The board loads Tailwind and marked from CDNs; that is the one
    external dependency and it degrades to unstyled, un-previewed but working.
 3. **Git is the database.** All shared state lives in `.skald/` and is
    committed alongside the code it describes. Machine-local state (which
@@ -495,13 +495,23 @@ the children's commits; "swimlanes by parent" is offered when any story
 has one. Choosing a checkout shows and edits that working tree (every request carries
 `?checkout=ID`, including the event stream, and the id is kept in the URL),
 with a banner naming the path when it is not the primary.
-Modal: title, status, assignee, tags, blockers, dependency chips that open
-the target (switching project if needed), body with Markdown preview, save
-with conflict detection, reload, claim, delete, notes, history tab. Toasts
+Story dialog: the id first (a click copies it, shift-click copies
+`project:id`), created and updated dates, the title as a heading, then
+Story and History tabs. The Story tab opens in view mode: a status select
+for a quick move, assignee, tag chips, claim, dependency chips that open
+the target (switching project if needed), parent and children, the body
+rendered as Markdown with note headings set in the mono face and the kind
+in the accent colour, the questions panel, and the add-a-note form. Edit
+(or `e`) swaps in the form: title, status, assignee, tags, blockers,
+parent, body with a preview toggle, save with conflict detection, delete;
+Save and Cancel return to view mode, `Esc` leaves edit mode before it
+closes the dialog. A new story opens in edit mode. An open story is kept
+in the URL fragment as `#story=ID`, so the link can be shared (it rides
+beside `#key=` on first open) and the fragment is cleared on close. Toasts
 for warnings, errors, changes made outside the board (from the event
 stream, suppressed for three seconds after the board's own writes), and a
 new `HEAD` on the branch. Keyboard: `n` new, `/` filter, `g` graph, `?`
-help, `Esc` close; cards, ready rows, and graph nodes are focusable and open
+help, `e` edit, `Esc` close; cards, ready rows, and graph nodes are focusable and open
 on Enter. An empty project shows a hint instead of five bare columns.
 
 Multi-select: pressing and holding a card for 450ms (pointer events, so
@@ -522,14 +532,25 @@ jump back to the top.
 Help panel: shortcuts and card markers, the CLI reference from `/api/help`
 with a filter, and a story file primer with links to the docs.
 
-Theme: a dozen CSS custom properties on `:root` define the palette; a
-`data-theme` attribute on the root element selects light or dark. A script
-in `<head>` sets it before first paint from `localStorage` (`skald.theme`:
-`auto`, `light`, `dark`; `auto` follows `prefers-color-scheme` and tracks
+Theme: the Vitund design system tokens as CSS custom properties on
+`:root`: surfaces (`--canvas`, `--column`, `--surface`, `--chip`,
+`--hover`), lines (`--line`, `--line-strong`), text (`--ink`, `--muted`,
+`--faint`), and the accent, success, warning, danger, and info colours,
+each with a hover, text, and tint variant; radii 4, 8, and 12 pixels; no
+card shadows; Inter for text and JetBrains Mono for ids, notes, and code,
+loaded from Google Fonts with system fallbacks. Dark is the default; a
+`data-theme` attribute on the root element selects light or dark, set by a
+script in `<head>` before first paint from `localStorage` (`skald.theme`:
+`dark`, `light`, `auto`; `auto` follows `prefers-color-scheme` and tracks
 changes). Tailwind is configured to expose the properties as colour names
-(`bg-surface`, `text-muted`, ...) and its `dark:` variant keys off the same
-attribute for the few semantic accents. The graph reads its fills from the
-same properties, so it re-renders on theme change.
+(`bg-surface`, `text-muted`, `bg-accent`, `text-warning-text`, ...) and
+the page uses only those names, never a raw palette class, so a theme
+change is a change of tokens. The graph reads its fills from the same
+properties, so it re-renders on theme change. `GET /theme.css` serves
+`SKALD_HOME/theme.css` when the file exists and an empty stylesheet
+otherwise; the page links it after its own styles, so a file that
+redefines tokens under `:root` or `:root[data-theme="light"]` restyles the
+board without touching the package.
 
 Layout: columns are flex items with a 15rem floor and a 28rem ceiling, so
 five columns fit a laptop screen and ten scroll; below the `sm` breakpoint
@@ -569,7 +590,7 @@ corruption cases, config validation, store behaviour including ranks,
 dependencies, cross-project states, roles, limits, archive, templates,
 registry and user config, every CLI command, every API endpoint, the
 background server lifecycle, and this repository's own backlog passing
-`check`. CI runs the suite on Python 3.9 through 3.13 on Linux, plus 3.12 on
+`check`. CI runs the suite on Python 3.10 through 3.14 on Linux, plus 3.12 on
 macOS and Windows, and builds the wheel. Tags matching `v*` publish to PyPI
 via trusted publishing once the project exists there; no tag has been cut yet.
 
