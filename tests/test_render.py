@@ -32,6 +32,34 @@ class TestRender(SkaldTestCase):
         code, again, _ = self.run_cli("render", "--stdout")
         self.assertEqual(out, again)
 
+    def test_open_questions_section(self):
+        a, b, c = self.seed()
+        # no questions yet: no section
+        code, out, _ = self.run_cli("render", "--stdout")
+        self.assertNotIn("## Open questions", out)
+        # a question surfaces at the top, above the columns, linked to the story
+        self.run_cli("note", a, "Which OAuth provider?", "--kind", "question", "--as", "claude")
+        code, out, _ = self.run_cli("render", "--stdout")
+        self.assertIn("## Open questions", out)
+        self.assertIn(f"[{a}](stories/{a}-login-form.md) Login form | Q1: Which OAuth provider?", out)
+        self.assertLess(out.index("## Open questions"), out.index("## Ready"))
+        # answering it removes the section again
+        self.run_cli("answer", a, "Use the shared provider", "--as", "jon")
+        code, out, _ = self.run_cli("render", "--stdout")
+        self.assertNotIn("## Open questions", out)
+
+    def test_releases_section(self):
+        a, b, c = self.seed()  # b is done
+        code, out, _ = self.run_cli("render", "--stdout")
+        self.assertNotIn("## Releases", out)  # nothing shipped yet
+        from skald import release as rel
+        s = self.store()
+        rel.apply(s, rel.plan(s, "1.0.0", "2026-01-01"), self.repo / "CHANGELOG.md")
+        code, out, _ = self.run_cli("render", "--stdout")
+        self.assertIn("## Releases", out)
+        self.assertIn("<strong>1.0.0 (1)</strong>", out)  # only the done story b shipped
+        self.assertIn(f"[{b}](archive/{b}-session-store.md)", out)
+
     def test_write_default_path_enable_and_stale_check(self):
         self.seed()
         code, out, _ = self.run_cli("render")

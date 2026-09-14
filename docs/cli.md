@@ -32,11 +32,13 @@ error or not found, 2 corrupt story or configuration.
 - [`archive`](#archive) move done and closed stories to .skald/archive/
 - [`unarchive`](#unarchive) move a story back out of the archive
 - [`check`](#check) validate every story file
+- [`doctor`](#doctor) check the environment and wiring: prerequisites, config, registry, server, hooks
 - [`status`](#status) project summary: branch, counts, uncommitted story changes
 - [`commit`](#commit) commit everything under .skald/ with Skald-Story trailers
 - [`commits`](#commits) commits that reference a story (Skald-Story trailer or [id])
 - [`diff`](#diff) backlog changes between two git refs
 - [`activity`](#activity) every backlog event in git history, oldest first
+- [`digest`](#digest) what changed since you last looked, grouped by story, newest first
 - [`graph`](#graph) dependency graph as Mermaid (default), DOT, or JSON
 - [`changelog`](#changelog) stories completed between two git refs
 - [`columns`](#columns) list this project's columns
@@ -372,6 +374,18 @@ Validate every story file.
 | `--json` | print JSON |
 | `--hook` | also fail on uncommitted story changes (for agent stop hooks) |
 
+## doctor
+
+```
+skald doctor [--json]
+```
+
+Check the environment and wiring: prerequisites, config, registry, server, hooks.
+
+| Argument | Description |
+| --- | --- |
+| `--json` | print JSON |
+
 ## status
 
 ```
@@ -440,6 +454,21 @@ Every backlog event in git history, oldest first.
 | --- | --- |
 | `--since REF` | default: 20 commits back |
 | `--until REF` | default: HEAD |
+| `--json` | print JSON |
+
+## digest
+
+```
+skald digest [--since WHEN] [--until REF] [--limit N] [--json]
+```
+
+What changed since you last looked, grouped by story, newest first.
+
+| Argument | Description |
+| --- | --- |
+| `--since WHEN` | a duration (1d, 6h, 1w) or a git ref; default 1d |
+| `--until REF` | default: HEAD |
+| `--limit N` | stories to show before a pointer to activity (default 15) |
 | `--json` | print JSON |
 
 ## graph

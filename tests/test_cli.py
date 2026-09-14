@@ -685,6 +685,32 @@ class TestAgentOrientation(SkaldTestCase):
         self.assertEqual(code, 1)
         self.assertIn("no open question; record a decision with skald note --kind decision", err)
 
+    def test_story_references_resolve_in_resume_and_show(self):
+        a = self.new("Design the config format", "--status", "ready")
+        b = self.new("Implement it", "--status", "in_progress")
+        self.run_cli("note", b, f"Blocked on {a}; also #{a} and elsewhere:{a}. Stray hex abcdef stays plain.",
+                     "--as", "claude", "--kind", "handoff")
+        self.run_cli("note", b, f"Chose the layout from {a}", "--as", "claude", "--kind", "decision")
+        title = "Design the config format"
+        # resume annotates the latest note and the decisions
+        code, out, _ = self.run_cli("resume", b)
+        self.assertIn(f"{a} ({title})", out)          # bare id
+        self.assertIn(f"#{a} ({title})", out)         # #-prefixed
+        self.assertIn(f"elsewhere:{a} ({title})", out)  # project:id form
+        self.assertIn("abcdef stays plain", out)
+        self.assertNotIn("abcdef (", out)             # a stray hex is not a story, left alone
+        # show renders the same in the body it prints
+        code, out, _ = self.run_cli("show", b)
+        self.assertIn(f"Blocked on {a} ({title})", out)
+        self.assertIn(f"Chose the layout from {a} ({title})", out)
+        # --json stays the raw file: no title is inserted
+        code, out, _ = self.run_cli("show", b, "--json")
+        self.assertNotIn(f"({title})", json.loads(out)["body"])
+        # a title already written by hand is not doubled
+        self.run_cli("note", b, f"see {a} ({title}) again", "--as", "claude")
+        code, out, _ = self.run_cli("show", b)
+        self.assertNotIn(f"{a} ({title}) ({title})", out)
+
     def test_resume_map_wraps_above_four_sections(self):
         body = "## Requirements\n\nr\n\n## A\n\na\n\n## B\n\nb\n\n## C\n\nc\n\n## D\n\nd\n\n## E\n\ne\n"
         sid = self.new("Long", "--body", body)

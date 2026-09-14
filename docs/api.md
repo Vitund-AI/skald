@@ -44,6 +44,7 @@ as errors.
 | `GET /api/projects/<p>/checkouts` | | `{current, checkouts: [{id, path, branch, changes, primary, worktree, exists}]}`; `current` is the checkout the request acted on |
 | `GET /api/projects/<p>/branches` | | `{current, branches: [{name, sha, remote, stories, only_there, only_here, differ}], elsewhere, claims}`; `claims` includes uncommitted claims in other checkouts, each with `checkout` |
 | `GET /api/projects/<p>/version` | | a hash that changes whenever any story file changes |
+| `GET /api/projects/<p>/releases` | | `{releases: [{version, stories: [{id, title, status, tags, assignee}]}]}`, what shipped grouped by version, newest first (done-role archived stories; won't-do excluded) |
 | `GET /api/projects/<p>/events` | | server-sent events: `hello` on connect, `change` whenever the hash changes |
 | `POST /api/projects/<p>/stories` | `{title, status?, tags?, blocked_by?, body?, assignee?, template?, parent?, inherit?}` | 201, `{story, warnings}`; with `parent`, the parent's facet tags are copied unless `inherit` is false |
 | `GET /api/projects/<p>/stories/<id>[?ref=REF]` | | story with `body`, `body_sha256`, `deps`, `children` (`[{id, title, status, done}]`), and `parent_story` (`{id, title, status}`) when it has one; with `ref`, as it is on that branch |

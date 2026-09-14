@@ -1,5 +1,69 @@
 # Changelog
 
+## 0.7.0 (2026-09-14)
+
+### Added
+- Browse what shipped, by release. A Releases view on the board (a header
+  toggle) and a `## Releases` section in the rendered `.skald/README.md` list
+  the stories each version carried, newest first, from `store.releases()`
+  (archived stories with a `released` stamp whose status is a done column;
+  won't-do is excluded, it stays in the changelog's "Not doing" list). The
+  board reads `GET /api/projects/<p>/releases`; a shipped story opens
+  read-only, since it is archived (archived stories now open read-only
+  wherever they are opened).
+- `skald doctor`: one command for why the setup is not working. It checks the
+  environment and the wiring, one line each with the fix, and exits non-zero
+  if anything is red: the Python version; `git` and a repository with a
+  `user.name`/`user.email`; that `config.json` parses and validates (which
+  `check` cannot reach, since a broken config never opens the store); the
+  registry's paths; the board server and its token; and the Claude Code hooks
+  and the contract copies. Read-only, and it ends by running `check` so one
+  command and one exit code cover both the setup and the data.
+- `docs/conventions.md`: one page listing the facet tags (`epic:`, `lane:`,
+  `effort:`, `area:`, `release:`), what command or board feature each one
+  unlocks, and when to use it, linked from the README and the docs index.
+- The rendered board (`.skald/README.md`) leads with an "Open questions"
+  section when any story is waiting on a human, above the columns, so a
+  reader of the committed board on GitHub sees what is waiting without
+  running anything. It is omitted when nothing waits.
+- A finished column on the board (a `done` or `closed` role) can be
+  collapsed to a labeled strip showing its count, click to expand. It is a
+  per-viewer preference in `localStorage`, so a large `Done` or a "won't do"
+  column stops crowding the active work without hiding it from anyone else or
+  touching the config.
+- `skald digest [--since 1d|REF] [--limit N]`: the human's morning check-in.
+  It reads the backlog's git events and groups them by action into sections
+  (moved, notes, open questions, created, ...), newest activity first, each
+  section capped with a pointer to `skald activity`. Where `activity` is the
+  agent's per-event log, `digest` is what a person reads to catch up on what
+  agents did since they last looked. No new data: it reads git history and
+  the notes.
+- A story id in a note (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) resolves:
+  on the board it becomes a link in the rendered story that opens the target
+  (switching project for `project:id`), and `skald show` and `resume` print
+  the title beside it when it resolves. A hex that is not a story id, and the
+  `--json` output, are left untouched. The file format is unchanged.
+- A `release:<v>` facet plans what a version should carry. `skald release`
+  (dry run and real) warns about every story tagged for the version that is
+  not done yet, so the ones still open are named before the release goes
+  out. The value targets the version when it matches or is a dotted prefix
+  either way, so `release:0.6` covers `0.6.x`. It is an ordinary facet, so
+  the board filters and swimlanes on it with no special support.
+
+### Stories
+
+- Target-release tag and a release warning (527a9c)
+- Story references in notes resolve on the board and in show (1a5064)
+- skald digest: the human's context, what changed since you last looked (91e595)
+- Collapse terminal columns on the board, per viewer (011410)
+- Document how to model won't-do: the closed role and the archive (0f9649)
+- digest groups its output by action, not by story (c5a7b5)
+- Open questions at the top of the rendered board (e1ef91)
+- A conventions page: the facets and what each unlocks (d5cd0f)
+- skald doctor: one command for why it is not working (9c5d75)
+- Browse what shipped, by release, on the board (18c326)
+- Rendered board doc lists what shipped, grouped by release (a729bb)
+
 ## 0.6.0 (2026-09-13)
 
 ### Changed

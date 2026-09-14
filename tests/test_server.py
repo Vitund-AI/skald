@@ -234,6 +234,20 @@ class TestAPI(ServerTestCase):
         status, data = self.call("GET", "/api/projects/beta/templates")
         self.assertEqual(data["templates"], [])
 
+    def test_releases_endpoint(self):
+        P = "/api/projects/alpha"
+        status, data = self.call("GET", f"{P}/releases")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["releases"], [])  # nothing shipped yet
+        # ship one
+        sid = self.new("Login", "--status", "done")
+        from skald import release as rel
+        rel.apply(self.store(), rel.plan(self.store(), "0.1.0", "2026-01-01"), self.repo / "CHANGELOG.md")
+        status, data = self.call("GET", f"{P}/releases")
+        self.assertEqual(status, 200)
+        self.assertEqual([r["version"] for r in data["releases"]], ["0.1.0"])
+        self.assertEqual(data["releases"][0]["stories"][0]["id"], sid)
+
     def test_bad_json(self):
         req = Request(self.base + "/api/projects/alpha/stories", data=b"{not json", method="POST",
                       headers={"Authorization": f"Bearer {self.token}"})

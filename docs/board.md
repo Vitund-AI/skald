@@ -68,6 +68,7 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Waiting on a human** appears when any story has an open question and
   filters the board to those stories; the count is in the label.
 - **Graph** (`g`) draws the dependency graph.
+- **Releases** lists what shipped, grouped by version, newest first; a story opens read-only.
 - **Identity** is the name notes and commits from the board will carry.
 - **Commit N changes** appears when story files are uncommitted. It commits
   only `.skald/` and, when enabled, the rendered snapshot; with `skald
@@ -85,6 +86,13 @@ Columns come from `.skald/config.json` with their labels and WIP limits; a
 column over its limit turns its count red. A story whose status matches no
 column appears in an "Unknown status" column. Columns share the width on
 wide screens and stack vertically on phones.
+
+A finished column (one with a `done` or `closed` role) has a caret in its
+header that collapses it to a labeled strip showing its count; click the
+strip to expand it again. It is a per-viewer preference kept in your
+browser, so a large `Done` column or a "won't do" column can stop crowding
+the active work without hiding it from anyone else or changing anything on
+disk.
 
 A card shows the title, tags, checklist progress, id, assignee, and age.
 Markers:
@@ -125,7 +133,9 @@ elsewhere), the parent as a chip that opens it, the children listed with
 their state and struck through when done, "+ child" to open a new story
 with this one already set as its parent, the body rendered as Markdown with
 each note's heading set apart, open questions with an answer form, and Add
-a note, which appends a dated note under your identity. Claim assigns the
+a note, which appends a dated note under your identity. A story id in the
+rendered text (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) is a link that opens
+that story, switching project for a `project:id`. Claim assigns the
 story to you and starts it.
 
 **Edit** (or `e`) switches to the form: title, status, assignee, tags,
@@ -186,6 +196,15 @@ cross-project targets are dashed, satisfied edges are grey, unmet edges are
 highlighted, and cycles are red. Click a node to open it.
 
 <img src="images/graph.png" alt="The board's graph view: blockers on the left, blocked stories on the right, arrows coloured by whether the dependency is met" width="100%">
+
+## Releases
+
+The **Releases** button switches to a view of what has shipped, read from the
+archive: one section per version, newest first, listing the stories that
+version carried (the done ones; a won't-do story lives in the changelog's
+"Not doing" list, not here). Click a story to open it; because it is
+archived it opens read-only. The same list is written into the committed
+`.skald/README.md` by `skald render`, so it is browsable on GitHub too.
 
 ## Live updates
 

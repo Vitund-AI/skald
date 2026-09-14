@@ -51,6 +51,21 @@ def human_identity(user: UserConfig, repo: Optional[Path]) -> str:
 # Output helpers
 # --------------------------------------------------------------------------
 
+# A story id in prose: a bare 6-hex, or #-prefixed, or project:id. The boundaries keep it
+# from matching inside a longer hex run (a commit sha) or a filename slug.
+REF_IN_TEXT = re.compile(r"(?<![\w:-])#?((?:[a-z0-9][a-z0-9-]{0,63}:)?[0-9a-f]{6})(?![\w-])")
+
+
+def annotate_refs(text: str, index: dict) -> str:
+    """Put the title beside every story id in ``text`` that resolves, leaving the rest alone."""
+    def repl(m: "re.Match") -> str:
+        whole = m.group(0)
+        story = index.get(m.group(1).split(":")[-1])
+        if story is None or text[m.end():m.end() + 2] == " (":  # unknown, or a title already follows
+            return whole
+        return f"{whole} ({story.title})"
+    return REF_IN_TEXT.sub(repl, text)
+
 
 def _warn(warnings) -> None:
     for w in warnings:
@@ -355,6 +370,9 @@ def build_parser() -> argparse.ArgumentParser:
     ck.add_argument("--json", action="store_true", help="print JSON")
     ck.add_argument("--hook", action="store_true", help="also fail on uncommitted story changes (for agent stop hooks)")
 
+    doc = sub.add_parser("doctor", help="check the environment and wiring: prerequisites, config, registry, server, hooks")
+    doc.add_argument("--json", action="store_true", help="print JSON")
+
     stt = sub.add_parser("status", help="project summary: branch, counts, uncommitted story changes")
     stt.add_argument("--json", action="store_true", help="print JSON")
 
@@ -379,6 +397,12 @@ def build_parser() -> argparse.ArgumentParser:
     act.add_argument("--since", metavar="REF", help="default: 20 commits back")
     act.add_argument("--until", default="HEAD", metavar="REF", help="default: HEAD")
     act.add_argument("--json", action="store_true", help="print JSON")
+
+    dg = sub.add_parser("digest", help="what changed since you last looked, grouped by story, newest first")
+    dg.add_argument("--since", default="1d", metavar="WHEN", help="a duration (1d, 6h, 1w) or a git ref; default 1d")
+    dg.add_argument("--until", default="HEAD", metavar="REF", help="default: HEAD")
+    dg.add_argument("--limit", type=int, default=15, metavar="N", help="stories to show before a pointer to activity (default 15)")
+    dg.add_argument("--json", action="store_true", help="print JSON")
 
     gr = sub.add_parser("graph", help="dependency graph as Mermaid (default), DOT, or JSON")
     gr.add_argument("--format", choices=["mermaid", "dot", "json"], default="mermaid", help="output format")
@@ -858,7 +882,7 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
     if d["decisions"]:
         print("Decisions:")
         for n in d["decisions"]:
-            print(f"  - {n['stamp']} [{n['author']}] {n['text'].strip().splitlines()[0]}")
+            print(f"  - {n['stamp']} [{n['author']}] {annotate_refs(n['text'].strip().splitlines()[0], idx)}")
         print()
     if d["open_questions"]:
         print("Open questions (waiting on a human; work on what does not depend on them; skald answer <id> --question N):")
@@ -878,7 +902,7 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
         label = "Latest handoff" if handoff else "Latest note"
         others = len(notes) - 1
         print(f"{label} ({latest['stamp']}, {latest['author']}){f', {others} earlier note(s) in the file' if others > 0 else ''}:")
-        print(latest["text"].rstrip())
+        print(annotate_refs(latest["text"].rstrip(), idx))
     else:
         print("No notes yet.")
     return 0
@@ -1004,7 +1028,8 @@ def cmd_show(ws: Workspace, args, store: Store) -> int:
         d["body_sha256"] = store.body_sha(story)
         print(json.dumps(d, indent=2))
     else:
-        sys.stdout.write(serialise_story(story.fields, story.body))
+        body = annotate_refs(story.body, store.index())
+        sys.stdout.write(serialise_story(story.fields, body))
     return 0
 
 
@@ -1152,6 +1177,38 @@ def cmd_check(store: Store, args) -> int:
         if not problems and not uncommitted:
             print("ok")
     return 2 if (problems or uncommitted) else 0
+
+
+def cmd_doctor(ws: Workspace, args) -> int:
+    from . import doctor
+
+    results = doctor.run()
+    # Fold in `check` when the store opens; a broken config already showed above.
+    try:
+        store = ws.current(getattr(args, "project", None))
+        problems, warnings = store.check()
+        if problems:
+            results.append(doctor._r("backlog", doctor.FAIL, f"{len(problems)} problem(s) in the story files", "skald check"))
+        elif warnings:
+            results.append(doctor._r("backlog", doctor.WARN, f"{len(warnings)} warning(s) in the story files", "skald check"))
+        else:
+            results.append(doctor._r("backlog", doctor.OK, "story files valid"))
+    except SkaldError:
+        pass  # no openable project here; the project checks above say why
+
+    failed = sum(1 for r in results if r["level"] == doctor.FAIL)
+    warned = sum(1 for r in results if r["level"] == doctor.WARN)
+    if args.json:
+        print(json.dumps({"ok": failed == 0, "failed": failed, "warned": warned, "checks": results}, indent=2))
+        return 1 if failed else 0
+    mark = {doctor.OK: "ok  ", doctor.INFO: "  · ", doctor.WARN: "warn", doctor.FAIL: "FAIL"}
+    for r in results:
+        print(f"[{mark[r['level']]}] {r['name']}: {r['detail']}")
+        if r["fix"] and r["level"] in (doctor.WARN, doctor.FAIL):
+            print(f"         fix: {r['fix']}")
+    summary = "all good" if not failed and not warned else f"{failed} failed, {warned} warning(s)"
+    print(f"\n{summary}.")
+    return 1 if failed else 0
 
 
 def cmd_status(ws: Workspace, store: Store, args) -> int:
@@ -1346,6 +1403,128 @@ def cmd_activity(store: Store, args) -> int:
             print(f"{e['sha']}  {e['date'][:16].replace('T', ' ')}  {e['author']}  {e['subject']}")
             last = e["sha"]
         print(f"    {e['id']}  {e['event']}  ({e['title']})")
+    return 0
+
+
+DURATION_RE = re.compile(r"^(\d+)([mhdw])$")
+_DURATION_UNIT = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
+
+
+def _digest_since(since: str) -> tuple[Optional[str], bool, str]:
+    """Resolve ``--since``: a duration like ``1d`` becomes an approxidate; anything else is a ref.
+
+    Returns ``(value, is_date, label)`` for :func:`gitutil.commits_touching` and the header.
+    """
+    m = DURATION_RE.match(since or "")
+    if m:
+        n, unit = m.group(1), _DURATION_UNIT[m.group(2)]
+        return f"{n} {unit} ago", True, f"the last {since}"
+    return since, False, f"{since}..HEAD"
+
+
+def _digest_data(store: Store, repo: Path, commits: list[dict]) -> list[dict]:
+    """Fold the backlog events in ``commits`` into one summary per story, then read the notes."""
+    from .store import diff_states
+
+    agg: dict[str, dict] = {}
+
+    def touch(sid: str, title: str, date: str) -> dict:
+        a = agg.setdefault(sid, {"id": sid, "title": title, "created": False, "moves": [],
+                                 "notes": 0, "body": False, "archived": None, "deleted": False, "last": date})
+        a["title"], a["last"] = title, date
+        return a
+
+    for c in commits:  # oldest first, so the net move reads first-from -> last-to
+        parent = gitutil.parent_of(repo, c["full"])
+        head = store.snapshot(c["full"])
+        base = store.snapshot(parent) if parent else None
+        d = diff_states(base, head)
+        for s in d["added"]:
+            touch(s.id, s.title, c["date"])["created"] = True
+        for ch in d["changed"]:
+            a = touch(ch["story"].id, ch["story"].title, c["date"])
+            if "status" in ch["fields"]:
+                a["moves"].append(ch["fields"]["status"])
+            if "archived" in ch["fields"]:
+                a["archived"] = ch["fields"]["archived"][1]
+            a["notes"] += ch["notes_added"]
+            a["body"] = a["body"] or ch["body_changed"]
+        for s in d["removed"]:
+            touch(s.id, s.title, c["date"])["deleted"] = True
+
+    idx = store.index()
+    stories = sorted(agg.values(), key=lambda a: a["last"], reverse=True)
+    for a in stories:
+        cur = idx.get(a["id"])
+        a["status"] = cur.status if cur else ("deleted" if a["deleted"] else "")
+        a["latest_note"] = None
+        a["questions"] = []
+        if cur:
+            notes = cur.notes()
+            if notes:
+                n = cur.last_note("handoff") or notes[-1]
+                first = n["text"].strip().splitlines()[0] if n["text"].strip() else ""
+                a["latest_note"] = {"kind": n["kind"], "stamp": n["stamp"], "author": n["author"], "first": first}
+            a["questions"] = [{"number": q["number"], "text": q["text"].strip().splitlines()[0] if q["text"].strip() else ""}
+                              for q in cur.open_questions()]
+    return stories
+
+
+def cmd_digest(store: Store, args) -> int:
+    repo = _repo_of(store)
+    if repo is None:
+        raise GitError(f"{store.dir} is not inside a git repository")
+    since, is_date, label = _digest_since(args.since)
+    rel = _skald_rel(store, repo)
+    commits = gitutil.commits_touching(repo, since, args.until, rel, since_is_date=is_date)
+    stories = _digest_data(store, repo, commits)
+    if args.json:
+        print(json.dumps({"since": args.since, "until": args.until, "stories": stories}, indent=2))
+        return 0
+    if not stories:
+        print(f"Nothing changed in {label}.")
+        return 0
+    noun = "story" if len(stories) == 1 else "stories"
+    print(f"Since {label}: {len(stories)} {noun} changed.")
+    # Grouped by action rather than by story, so a run of same-kind changes reads as one list.
+    # stories is already newest activity first, so each section keeps that order.
+    moved, notes, questions, created, archived, deleted = [], [], [], [], [], []
+    for a in stories:
+        head = f"{a['id']}  {a['title']}"
+        if a["moves"]:
+            moved.append(f"{head}   {a['moves'][0][0] or '-'} -> {a['moves'][-1][1] or '-'}")
+        if a["notes"]:
+            note = a["latest_note"]
+            tail = ""
+            if note:
+                kind = f"{note['kind']} " if note["kind"] != "note" else ""
+                tail = f"; latest {kind}{note['stamp'][:16]}: {note['first'][:70]}"
+            notes.append(f"{head}   +{a['notes']}{tail}")
+        for q in a["questions"]:
+            questions.append(f"{head}   Q{q['number']}: {q['text'][:70]}")
+        if a["created"]:
+            created.append(f"{head}   ({a['status'] or '-'})")
+        if a["archived"]:
+            archived.append(head)
+        if a["deleted"]:
+            deleted.append(head)
+    cap = args.limit
+
+    def section(title, rows):
+        if not rows:
+            return
+        print(f"\n{title}:")
+        for line in rows[:cap]:
+            print(f"  {line}")
+        if len(rows) > cap:
+            print(f"  ... and {len(rows) - cap} more: skald activity --since {args.since}")
+
+    section("Moved", moved)
+    section("Notes", notes)
+    section("Open questions", questions)
+    section("Created", created)
+    section("Archived", archived)
+    section("Deleted", deleted)
     return 0
 
 
@@ -1899,7 +2078,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
-    "commits", "diff", "activity", "graph", "release", "audit", "import",
+    "commits", "diff", "activity", "digest", "graph", "release", "audit", "import",
 }
 
 
@@ -1932,6 +2111,9 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return 0
     if args.command == "docs":
         return cmd_docs(args)
+    if args.command == "doctor":
+        _notice(ws.notices)
+        return cmd_doctor(ws, args)
     if args.command == "projects":
         return cmd_projects(ws, args)
     if args.command == "config":
@@ -2044,6 +2226,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_diff(store, args)
     if args.command == "activity":
         return cmd_activity(store, args)
+    if args.command == "digest":
+        return cmd_digest(store, args)
     if args.command == "graph":
         return cmd_graph(store, args)
     if args.command == "columns":

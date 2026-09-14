@@ -105,6 +105,17 @@ def render_markdown(store: Store, out_path: Path, include_archived: bool = False
                  "Regenerate with `skald render`.")
     lines.append("")
 
+    # Waiting on a human, up top: a reader of the committed board on GitHub sees it without running anything.
+    waiting = [(s, q) for s in r.stories if not s.archived for q in s.open_questions()]
+    if waiting:
+        lines += ["## Open questions", "", "Waiting on a human.", "",
+                  "| Story | Question | Asked |", "| --- | --- | --- |"]
+        for s, q in waiting:
+            first = q["text"].strip().splitlines()[0] if q["text"].strip() else ""
+            link = f"[{s.id}]({_rel_link(s, out_dir)})"
+            lines.append(f"| {link} {_md_cell(s.title)} | Q{q['number']}: {_md_cell(first)} | {_md_cell(q['author'])}, {q['stamp'][:10]} |")
+        lines.append("")
+
     epics = r.facets.get("epic")
     if epics:
         lines += ["## Epics", "", "| Epic | Progress | Done | Open |", "| --- | --- | ---: | ---: |"]
@@ -151,6 +162,13 @@ def render_markdown(store: Store, out_path: Path, include_archived: bool = False
             lines.append("")
     if r.orphans:
         lines += ["## Unknown status", ""] + table(r.orphans) + [""]
+    releases = store.releases()
+    if releases:
+        lines += ["## Releases", ""]
+        for rel in releases:
+            n = len(rel["stories"])
+            lines += [f"<details><summary><strong>{html.escape(rel['version'], quote=False)} ({n})</strong></summary>", ""]
+            lines += table(rel["stories"]) + ["", "</details>", ""]
     if include_archived and r.archived:
         lines += [f"<details><summary><strong>Archived ({len(r.archived)})</strong></summary>", ""]
         lines += table(r.archived) + ["", "</details>", ""]

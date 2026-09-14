@@ -344,6 +344,14 @@ Skald never edits version files or creates tags. `--dry-run` prints the
 section and the count and touches nothing; `--no-commit` writes and archives
 only. It is an error when no story is in a terminal column.
 
+A `release:<v>` facet plans what a version should carry: `plan` warns about
+every story whose `release:` value targets the version but is not in a
+terminal column, so the ones still to do are named before the release goes
+out. A value targets the version when it equals it or is a dotted prefix of
+it either way, so `release:0.6` covers `0.6.x` and matches the `0.6.0`
+release. It is an ordinary facet, so the board filters and swimlanes on it
+with no special support; only the warning knows the name.
+
 ### 4.6 Other branches
 
 `Store.snapshot(ref)` reads a project's `config.json`, stories, and archive
@@ -394,9 +402,9 @@ story or configuration. Commands that print stories take `--json`.
 | `status [--json]` | Name, path, branch, per-column counts, unknown-status count, ready-and-unblocked count, uncommitted files under `.skald/`. |
 | `ls [--status C] [--tag T] [--assignee A] [--parent ID] [--unblocked] [--questions] [--all] [--archived] [--all-projects] [--branch REF] [--all-branches]` | Table `ID STATUS RANK BLOCKED Q ASSIGNEE TAGS TITLE`. Terminal columns hidden unless `--all` or `--status`. `--all-projects` qualifies ids. `--branch` lists a snapshot. `--all-branches` lists stories only on or differing on other branches with their local status. |
 | `context [--as N] [--json]` | Orientation block: assigned stories with last note and handoff flag, next story, blocked ready stories, stories waiting on a human (open questions, not filtered to the actor; newest five, with `waiting_more` counting the rest, because hook output is paid for on every session start), stale claims by others, claims on other branches, uncommitted files. |
-| `resume <id> [--section NAME] [--full] [--json]` | Compact story plus requirements (section 4.3), the other sections' headings and sizes, dependency states, decision and blocker notes, open questions, latest handoff (else latest note), note count. |
+| `resume <id> [--section NAME] [--full] [--json]` | Compact story plus requirements (section 4.3), the other sections' headings and sizes, dependency states, decision and blocker notes, open questions, latest handoff (else latest note), note count. Story ids in the printed notes (`id`, `#id`, `project:id`) that resolve are shown with the title beside them; `--json` is untouched. |
 | `next [--as N] [--tag T] [--all-projects] [--compact]` | First ready, unblocked story available to the actor per section 4.4; `--tag` considers only stories carrying the tag, so a loop routing work by a facet asks in one call. Exit 1 and a stderr message if none. |
-| `show <id> [--branch REF]` | Raw file. `--json` adds derived fields, `body`, `body_sha256`. |
+| `show <id> [--branch REF]` | The file, with story ids in the body that resolve shown with the title beside them. `--json` is the raw file plus derived fields, `body`, `body_sha256`. |
 | `branches [--json]` | Every local and remote branch with story count and diff counts against the working tree. |
 | `new "<title>" [--status C] [--tags a,b] [--blocked-by refs] [--body TEXT\|-] [--template T] [--assignee A]` | Create; prints the id. |
 | `move <id> <column>` | Change status; rank goes to the bottom of the new column. |
@@ -414,10 +422,12 @@ story or configuration. Commands that print stories take `--json`.
 | `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit]` | Section 4.5b. |
 | `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
+| `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
 | `commits <id> [--all-branches] [--no-children] [--json]` | `git log --grep` for the trailer or `[id]`, plus the same for each child, de-duplicated, newest first, each entry tagged with the story it names (`commits_for_family`). |
 | `diff --since REF [--until REF] [--markdown] [--json]` | `diff_states` between two snapshots (or the working tree): added, removed, and changed stories with field deltas, notes added, body edits. Markdown output starts with `<!-- skald-diff -->` for comment upserts. |
 | `activity [--since REF] [--until REF] [--json]` | For each commit touching `.skald/` in the range, `diff_states(parent, commit)` rendered as events. Default range is 20 commits. |
+| `digest [--since WHEN] [--until REF] [--limit N] [--json]` | The human's check-in: the same commit events, grouped by action into sections (moved, notes, open questions, created, archived, deleted), newest activity first; a story appears in each section that applies. `--since` is a duration (`1d`, `6h`, `1w`, default `1d`) or a git ref; `--limit` (default 15) caps each section before a pointer to `activity`. `--json` is one object per story instead. Where `activity` is the agent's per-event log, `digest` is what a person reads in the morning. |
 | `changelog --since REF [--until REF]` | Stories terminal at `until` that were absent or non-terminal at `since`, read from git objects. |
 | `facets [KEY] [--all-projects] [--json]`, `epics` | Facet values with counts and progress. `epics` also lists structural parents under key `parent`, titled, with children counts. |
 | `columns`, `templates`, `projects [rm NAME \| use [PATH]]`, `config [KEY [VALUE]] [--unset]` | Inspection and settings. `columns` prints facet limits beneath the table; `status` reports busy lanes (`lanes` in JSON). `projects` lists each project's other checkouts beneath it with branch and dirty count; `use` makes a checkout the primary. |
@@ -477,7 +487,7 @@ branch, filter, identity, commit button when `.skald/` has uncommitted
 changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
-One filter dropdown per facet key and a swimlane control that splits the
+A Releases view (a header toggle) lists what shipped grouped by version, newest first, from `GET /api/projects/<p>/releases` (`store.releases()`); a story opens read-only, since it is archived. One filter dropdown per facet key and a swimlane control that splits the
 board by a facet's values with a progress bar per lane.
 A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
@@ -501,7 +511,9 @@ Story and History tabs. The Story tab opens in view mode: a status select
 for a quick move, assignee, tag chips, claim, dependency chips that open
 the target (switching project if needed), parent and children, the body
 rendered as Markdown with note headings set in the mono face and the kind
-in the accent colour, the questions panel, and the add-a-note form. Edit
+in the accent colour, story ids in the text (`id`, `#id`, or `project:id`)
+turned into links that open the referenced story, the questions panel, and
+the add-a-note form. Edit
 (or `e`) swaps in the form: title, status, assignee, tags, blockers,
 parent, body with a preview toggle, save with conflict detection, delete;
 Save and Cancel return to view mode, `Esc` leaves edit mode before it
@@ -554,7 +566,12 @@ board without touching the package.
 
 Layout: columns are flex items with a 15rem floor and a 28rem ceiling, so
 five columns fit a laptop screen and ten scroll; below the `sm` breakpoint
-they stack vertically.
+they stack vertically. A terminal column (a `done` or `closed` role) carries
+a caret that collapses it to a labeled strip showing its count, click to
+expand; the set of collapsed columns is per project in `localStorage`
+(`skald.collapsed:<project>`), a viewing preference that changes no data and
+no config, so a finished `Done` or "won't do" column stops crowding the
+active work without hiding it.
 Not in scope: authentication, multi-select.
 
 ---
@@ -604,9 +621,18 @@ committing. Markdown goes to `.skald/README.md` unless `config.json` or
 The file starts with `<!-- skald-render <hash> -->` where the hash covers
 columns and every displayed story field; there is no timestamp, so an
 unchanged backlog re-renders byte-identically. Ids link to story files
-relative to the output location. Terminal columns are collapsed in
-`<details>`; the `epic` facet produces a progress table; unknown statuses
-and, with `--archived`, archived stories get their own sections.
+relative to the output location. When any story has an open question, an
+"Open questions" section leads the file, above the columns, one row per
+question with the story, its number and first line, and who asked and when,
+so a reader of the committed board sees what is waiting on a human without
+running anything; it is omitted when nothing waits. Terminal columns are
+collapsed in `<details>`; the `epic` facet produces a progress table;
+unknown statuses and, with `--archived`, archived stories get their own
+sections. A `Releases` section, when anything has shipped, lists what each
+version carried, one collapsed `<details>` per version newest first, from
+`store.releases()` (archived stories with a `released` stamp whose status is
+a done column; won't-do is excluded, it lives in the changelog's "Not doing"
+list).
 
 `config.json` may carry `"render": {"path", "format", "archived"}`. When it
 does, `commit` and the board's commit button re-render before staging and

@@ -63,6 +63,15 @@ def user_name(repo: Path) -> Optional[str]:
     return name or None
 
 
+def user_email(repo: Path) -> Optional[str]:
+    try:
+        proc = _run(["config", "--get", "user.email"], cwd=repo)
+    except GitError:
+        return None
+    email = proc.stdout.strip()
+    return email or None
+
+
 
 
 def changes(repo: Path, subpath: str) -> list[dict]:
@@ -278,10 +287,18 @@ def commits_for_family(repo: Path, story_id: str, child_ids: list[str], limit: i
     return out
 
 
-def commits_touching(repo: Path, since: Optional[str], until: str, subpath: str, limit: int = 200) -> list[dict]:
-    """Commits in ``since..until`` (or up to ``until``) that touch ``subpath``, oldest first."""
-    rng = f"{since}..{until}" if since else until
-    proc = _run(["log", f"-n{limit}", "--reverse", "--format=%H%x1f%h%x1f%aI%x1f%an%x1f%s", rng, "--", subpath], cwd=repo)
+def commits_touching(repo: Path, since: Optional[str], until: str, subpath: str, limit: int = 200,
+                     since_is_date: bool = False) -> list[dict]:
+    """Commits that touch ``subpath``, oldest first.
+
+    ``since`` is a commit-ish and the window is ``since..until``; with
+    ``since_is_date`` it is an approxidate (``"1 day ago"``) passed to ``--since``.
+    """
+    if since and since_is_date:
+        rng = ["--since", since, until]
+    else:
+        rng = [f"{since}..{until}" if since else until]
+    proc = _run(["log", f"-n{limit}", "--reverse", "--format=%H%x1f%h%x1f%aI%x1f%an%x1f%s", *rng, "--", subpath], cwd=repo)
     if proc.returncode != 0:
         return []
     out = []
