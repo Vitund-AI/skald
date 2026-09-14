@@ -620,9 +620,14 @@ committing. Markdown goes to `.skald/README.md` unless `config.json` or
 The file starts with `<!-- skald-render <hash> -->` where the hash covers
 columns and every displayed story field; there is no timestamp, so an
 unchanged backlog re-renders byte-identically. Ids link to story files
-relative to the output location. Terminal columns are collapsed in
-`<details>`; the `epic` facet produces a progress table; unknown statuses
-and, with `--archived`, archived stories get their own sections.
+relative to the output location. When any story has an open question, an
+"Open questions" section leads the file, above the columns, one row per
+question with the story, its number and first line, and who asked and when,
+so a reader of the committed board sees what is waiting on a human without
+running anything; it is omitted when nothing waits. Terminal columns are
+collapsed in `<details>`; the `epic` facet produces a progress table;
+unknown statuses and, with `--archived`, archived stories get their own
+sections.
 
 `config.json` may carry `"render": {"path", "format", "archived"}`. When it
 does, `commit` and the board's commit button re-render before staging and

@@ -141,6 +141,7 @@ shell can use `skald mcp`.
 | [Working with agents](docs/working-with-agents.md) | You want to know what the contract asks for and why, and how to hook Claude Code or any MCP client up to it. |
 | [The board](docs/board.md) | You want every board feature in one place. |
 | [Stories](docs/stories.md) | You want the file format, the design-record layout for long stories, columns and roles, facets and epics, templates, archiving, and releases. |
+| [Conventions](docs/conventions.md) | You want the facet tags (`epic:`, `lane:`, `effort:`, `area:`, `release:`) and what each one unlocks. |
 | [Git and CI](docs/git-and-ci.md) | You want commit trailers, reviewing what changed, the committed snapshot, hooks, the GitHub workflow, and the release flow. |
 | [Multiple projects](docs/multi-project.md) | You have more than one repository, or more than one checkout of one. |
 | [Importing](docs/importing.md) | You have an existing folder of Markdown records to bring in. |
