@@ -47,7 +47,7 @@ class TestCompletion(SkaldTestCase):
         c = self.cands("move", "")
         self.assertEqual(set(c), {self.a, self.b, self.c})
         self.assertEqual(c[self.a], "Add login  (backlog)")
-        self.assertEqual(self.values("show", self.a[:2]), [self.a])
+        self.assertEqual(self.values("show", prefix(self.a, [self.b, self.c])), [self.a])
         self.assertEqual(self.values("mv", ""), self.values("move", ""))
         self.assertEqual(self.values("move", self.a, ""), [c["key"] for c in SAMPLE_CONFIG_COLUMNS])
         self.assertEqual(self.values("move", self.a, "w"), ["wont_do"])
