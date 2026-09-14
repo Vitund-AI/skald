@@ -459,6 +459,13 @@ class Handler(BaseHTTPRequestHandler):
                     "version": self._version_hash(store),
                 })
                 return
+            if tail == ["releases"] and method == "GET":
+                rels = [{"version": r["version"],
+                         "stories": [{"id": s.id, "title": s.title, "status": s.status,
+                                      "tags": s.tags, "assignee": s.assignee} for s in r["stories"]]}
+                        for r in store.releases()]
+                self._json(200, {"releases": rels})
+                return
             if tail == ["version"] and method == "GET":
                 self._json(200, {"version": self._version_hash(store)})
                 return

@@ -3,6 +3,22 @@
 ## Unreleased
 
 ### Added
+- Browse what shipped, by release. A Releases view on the board (a header
+  toggle) and a `## Releases` section in the rendered `.skald/README.md` list
+  the stories each version carried, newest first, from `store.releases()`
+  (archived stories with a `released` stamp whose status is a done column;
+  won't-do is excluded, it stays in the changelog's "Not doing" list). The
+  board reads `GET /api/projects/<p>/releases`; a shipped story opens
+  read-only, since it is archived (archived stories now open read-only
+  wherever they are opened).
+- `skald doctor`: one command for why the setup is not working. It checks the
+  environment and the wiring, one line each with the fix, and exits non-zero
+  if anything is red: the Python version; `git` and a repository with a
+  `user.name`/`user.email`; that `config.json` parses and validates (which
+  `check` cannot reach, since a broken config never opens the store); the
+  registry's paths; the board server and its token; and the Claude Code hooks
+  and the contract copies. Read-only, and it ends by running `check` so one
+  command and one exit code cover both the setup and the data.
 - `docs/conventions.md`: one page listing the facet tags (`epic:`, `lane:`,
   `effort:`, `area:`, `release:`), what command or board feature each one
   unlocks, and when to use it, linked from the README and the docs index.

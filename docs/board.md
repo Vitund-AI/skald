@@ -68,6 +68,7 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Waiting on a human** appears when any story has an open question and
   filters the board to those stories; the count is in the label.
 - **Graph** (`g`) draws the dependency graph.
+- **Releases** lists what shipped, grouped by version, newest first; a story opens read-only.
 - **Identity** is the name notes and commits from the board will carry.
 - **Commit N changes** appears when story files are uncommitted. It commits
   only `.skald/` and, when enabled, the rendered snapshot; with `skald
@@ -195,6 +196,15 @@ cross-project targets are dashed, satisfied edges are grey, unmet edges are
 highlighted, and cycles are red. Click a node to open it.
 
 <img src="images/graph.png" alt="The board's graph view: blockers on the left, blocked stories on the right, arrows coloured by whether the dependency is met" width="100%">
+
+## Releases
+
+The **Releases** button switches to a view of what has shipped, read from the
+archive: one section per version, newest first, listing the stories that
+version carried (the done ones; a won't-do story lives in the changelog's
+"Not doing" list, not here). Click a story to open it; because it is
+archived it opens read-only. The same list is written into the committed
+`.skald/README.md` by `skald render`, so it is browsable on GitHub too.
 
 ## Live updates
 

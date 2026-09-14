@@ -32,6 +32,7 @@ error or not found, 2 corrupt story or configuration.
 - [`archive`](#archive) move done and closed stories to .skald/archive/
 - [`unarchive`](#unarchive) move a story back out of the archive
 - [`check`](#check) validate every story file
+- [`doctor`](#doctor) check the environment and wiring: prerequisites, config, registry, server, hooks
 - [`status`](#status) project summary: branch, counts, uncommitted story changes
 - [`commit`](#commit) commit everything under .skald/ with Skald-Story trailers
 - [`commits`](#commits) commits that reference a story (Skald-Story trailer or [id])
@@ -372,6 +373,18 @@ Validate every story file.
 | --- | --- |
 | `--json` | print JSON |
 | `--hook` | also fail on uncommitted story changes (for agent stop hooks) |
+
+## doctor
+
+```
+skald doctor [--json]
+```
+
+Check the environment and wiring: prerequisites, config, registry, server, hooks.
+
+| Argument | Description |
+| --- | --- |
+| `--json` | print JSON |
 
 ## status
 

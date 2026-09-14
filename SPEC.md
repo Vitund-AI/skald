@@ -422,6 +422,7 @@ story or configuration. Commands that print stories take `--json`.
 | `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit]` | Section 4.5b. |
 | `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
+| `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
 | `commits <id> [--all-branches] [--no-children] [--json]` | `git log --grep` for the trailer or `[id]`, plus the same for each child, de-duplicated, newest first, each entry tagged with the story it names (`commits_for_family`). |
 | `diff --since REF [--until REF] [--markdown] [--json]` | `diff_states` between two snapshots (or the working tree): added, removed, and changed stories with field deltas, notes added, body edits. Markdown output starts with `<!-- skald-diff -->` for comment upserts. |
@@ -486,7 +487,7 @@ branch, filter, identity, commit button when `.skald/` has uncommitted
 changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
-One filter dropdown per facet key and a swimlane control that splits the
+A Releases view (a header toggle) lists what shipped grouped by version, newest first, from `GET /api/projects/<p>/releases` (`store.releases()`); a story opens read-only, since it is archived. One filter dropdown per facet key and a swimlane control that splits the
 board by a facet's values with a progress bar per lane.
 A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
@@ -627,7 +628,11 @@ so a reader of the committed board sees what is waiting on a human without
 running anything; it is omitted when nothing waits. Terminal columns are
 collapsed in `<details>`; the `epic` facet produces a progress table;
 unknown statuses and, with `--archived`, archived stories get their own
-sections.
+sections. A `Releases` section, when anything has shipped, lists what each
+version carried, one collapsed `<details>` per version newest first, from
+`store.releases()` (archived stories with a `released` stamp whose status is
+a done column; won't-do is excluded, it lives in the changelog's "Not doing"
+list).
 
 `config.json` may carry `"render": {"path", "format", "archived"}`. When it
 does, `commit` and the board's commit button re-render before staging and

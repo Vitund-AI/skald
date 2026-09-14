@@ -1,11 +1,12 @@
 ---
 title: "Browse what shipped, by release, on the board"
-status: "idea"
-rank: 80
+status: "done"
+rank: 100
 tags: ["roadmap"]
 blocked_by: []
+assignee: "claude"
 created_at: "2026-09-13T23:08:32Z"
-updated_at: "2026-09-13T23:08:32Z"
+updated_at: "2026-09-14T05:42:10Z"
 ---
 ## Requirements
 
@@ -25,3 +26,6 @@ The board shows active work; what shipped lives only in git and the CHANGELOG. T
 ## Notes
 
 - `skald ls --release VERSION` today returns done and won't-do together; decide whether it keeps that or gains a flag. The `releases()` helper is done-only regardless.
+
+## [agent] 2026-09-14 05:42 UTC · result
+Board Releases view: a header toggle (rel-btn) mutually exclusive with Graph, shows GET /api/projects/<p>/releases grouped by version newest first, one section per version listing the shipped stories; a row opens the story. Rendered on toggle, not on every poll (render() early-returns when releasesView). The endpoint returns store.releases() as {version, stories:[{id,title,status,tags,assignee}]}. Archived stories now open read-only everywhere: openModal computes ro = state.readonly || s.archived and disables the fields, quick select, claim, note, and Edit (setEditing too), the e key is blocked, and the meta shows 'read-only'; so a shipped story opens for reading, not editing. Verified with a headless-browser pass (two versions newest-first, rows open the read-only dialog with Edit hidden and the quick select disabled, Graph and Releases are mutually exclusive, no page errors). Server test for the endpoint. SPEC section 8, docs/api.md, docs/board.md, CHANGELOG. Shares store.releases() with a729bb.
