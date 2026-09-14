@@ -86,6 +86,13 @@ column over its limit turns its count red. A story whose status matches no
 column appears in an "Unknown status" column. Columns share the width on
 wide screens and stack vertically on phones.
 
+A finished column (one with a `done` or `closed` role) has a caret in its
+header that collapses it to a labeled strip showing its count; click the
+strip to expand it again. It is a per-viewer preference kept in your
+browser, so a large `Done` column or a "won't do" column can stop crowding
+the active work without hiding it from anyone else or changing anything on
+disk.
+
 A card shows the title, tags, checklist progress, id, assignee, and age.
 Markers:
 

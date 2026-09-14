@@ -73,6 +73,7 @@
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .col-head { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .col-caret { font-size: 11px; line-height: 1; padding: 0 .1em; cursor: pointer; background: none; border: 0; }
   .card.dragging { opacity: .4; }
   .placeholder { height: 0.5rem; border-radius: .25rem; background: var(--placeholder); margin: .25rem 0; }
   .col-list { min-height: 4rem; }
@@ -331,6 +332,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
     lastWrite: 0, help: false, helpCli: null,
     sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
+    collapsed: new Set(),
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal'), help = $('help');
   const ALL = '__all__';
@@ -434,9 +436,20 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     sel.value = state.project;
     return applyProject();
   }
+  const collapseKey = () => `skald.collapsed:${state.project}`;
+  function loadCollapsed() {
+    let keys = [];
+    try { keys = JSON.parse(localStorage.getItem(collapseKey()) || '[]'); } catch (e) {}
+    state.collapsed = new Set(Array.isArray(keys) ? keys : []);
+  }
+  function saveCollapsed() {
+    try { localStorage.setItem(collapseKey(), JSON.stringify([...state.collapsed])); } catch (e) {}
+  }
+  const isTerminalRole = (role) => role === 'done' || role === 'closed';
   function applyProject() {
     state.allView = state.project === ALL;
     try { localStorage.setItem('skald.project', state.project); } catch (e) {}
+    loadCollapsed();
     const url = new URL(location.href); url.searchParams.set('project', state.project); history.replaceState(null, '', url);
     state.graph = false; $('graph-view').classList.add('hidden');
     $('graph-btn').setAttribute('aria-pressed', 'false');
@@ -819,20 +832,36 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (orphans.length) cols.push({ key: null, label: 'Unknown status', role: 'unknown' });
     for (const col of cols) {
       const section = document.createElement('section');
-      // Columns share the width on wide screens, keep a floor so many columns scroll, and stack on phones.
-      section.className = 'flex flex-col sm:flex-1 sm:basis-0 sm:min-w-[15rem] sm:max-w-md bg-column rounded-lg';
       const items = col.key === null ? orphans : stories.filter(s => s.status === col.key);
       const shown = items.filter(matches);
       const allInColumn = col.key === null ? items.length : state.stories.filter(s => s.status === col.key).length;
       const over = col.limit && allInColumn > col.limit;
       const count = col.limit ? `${allInColumn}/${col.limit}` : `${items.length}`;
-      section.innerHTML = `<div class="col-head flex items-center justify-between px-3 py-2 font-semibold text-muted" title="role: ${esc(col.role)}">
-        <span>${esc(col.label)}</span><span class="text-xs font-normal ${over ? 'text-danger-text font-semibold' : 'text-faint'}">${count}</span></div>`;
-      const list = document.createElement('div');
-      list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 sm:overflow-y-auto';
-      if (col.key !== null && !state.readonly) { list.dataset.status = col.key; list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop); }
-      shown.forEach(s => list.appendChild(cardEl(s)));
-      section.appendChild(list);
+      // A finished column (done or closed) can be collapsed to a labeled strip; the choice is per viewer.
+      const collapsible = isTerminalRole(col.role);
+      const collapsed = collapsible && state.collapsed.has(col.key);
+      // Columns share the width on wide screens, keep a floor so many columns scroll, and stack on phones.
+      section.className = collapsed
+        ? 'flex flex-col sm:flex-none bg-column rounded-lg'
+        : 'flex flex-col sm:flex-1 sm:basis-0 sm:min-w-[15rem] sm:max-w-md bg-column rounded-lg';
+      const caret = collapsible
+        ? `<button class="col-caret text-faint hover:text-ink" title="${collapsed ? 'Expand' : 'Collapse'} this column" aria-expanded="${!collapsed}">${collapsed ? '▸' : '▾'}</button>`
+        : '';
+      section.innerHTML = `<div class="col-head flex items-center gap-2 px-3 py-2 font-semibold text-muted ${collapsed ? 'cursor-pointer' : ''}" title="role: ${esc(col.role)}">
+        ${caret}<span class="flex-1 ${collapsed ? 'whitespace-nowrap' : ''}">${esc(col.label)}</span><span class="text-xs font-normal ${over ? 'text-danger-text font-semibold' : 'text-faint'}">${count}</span></div>`;
+      if (collapsible) {
+        const head = section.querySelector('.col-head');
+        const toggle = () => { state.collapsed.has(col.key) ? state.collapsed.delete(col.key) : state.collapsed.add(col.key); saveCollapsed(); render(); };
+        section.querySelector('.col-caret').addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+        if (collapsed) head.addEventListener('click', toggle);  // the whole strip expands
+      }
+      if (!collapsed) {
+        const list = document.createElement('div');
+        list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 sm:overflow-y-auto';
+        if (col.key !== null && !state.readonly) { list.dataset.status = col.key; list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop); }
+        shown.forEach(s => list.appendChild(cardEl(s)));
+        section.appendChild(list);
+      }
       container.appendChild(section);
     }
   }

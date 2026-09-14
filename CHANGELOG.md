@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- A finished column on the board (a `done` or `closed` role) can be
+  collapsed to a labeled strip showing its count, click to expand. It is a
+  per-viewer preference in `localStorage`, so a large `Done` or a "won't do"
+  column stops crowding the active work without hiding it from anyone else or
+  touching the config.
 - `skald digest [--since 1d|REF] [--limit N]`: the human's morning check-in.
   It folds the backlog's git events into one summary per story, newest
   activity first, with the net status move, the note count and latest note,

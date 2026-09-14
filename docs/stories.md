@@ -195,6 +195,31 @@ no column still lists, shows in an "Unknown status" column, and is reported
 by `skald check`. `skald columns` prints the current set. The project `name`
 is what cross-project references use, so it is the same on every clone.
 
+### Won't do
+
+To track work you have decided not to do, give a column the `closed` role
+(the `wont_do` column in the config above); the default lifecycle set has no
+such column, so add one when you want it. `closed` is a terminal state that
+means "decided not to do", distinct from `done` ("finished"). It is not a
+tag or a deletion: the story stays a first-class record of the decision.
+
+The lifecycle is the same as for done work, with a different meaning:
+
+1. Move the story into the closed column and add a `decision` note saying
+   why: `skald note <id> "Superseded by the new importer" --kind decision`.
+2. It leaves the board at the next `skald release`, listed under **Not
+   doing** in the changelog and archived with the version stamp, or move it
+   out on demand with `skald archive <id>`.
+3. Archived stories keep their file and git history: `skald show <id>` and
+   `skald ls --archived` still find them. Archive a won't-do; never delete
+   it, because the record of why you did not do something is the point.
+
+The `closed` role already carries weight elsewhere: a dependency on a closed
+story is satisfied but with a warning, so nothing silently blocks on
+abandoned work, and `release` keeps closed stories in their own "Not doing"
+list rather than the shipped one. On the board a closed column can be
+collapsed to a labeled strip so it does not crowd the active work.
+
 ## Dependencies
 
 ```sh

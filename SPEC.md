@@ -565,7 +565,12 @@ board without touching the package.
 
 Layout: columns are flex items with a 15rem floor and a 28rem ceiling, so
 five columns fit a laptop screen and ten scroll; below the `sm` breakpoint
-they stack vertically.
+they stack vertically. A terminal column (a `done` or `closed` role) carries
+a caret that collapses it to a labeled strip showing its count, click to
+expand; the set of collapsed columns is per project in `localStorage`
+(`skald.collapsed:<project>`), a viewing preference that changes no data and
+no config, so a finished `Done` or "won't do" column stops crowding the
+active work without hiding it.
 Not in scope: authentication, multi-select.
 
 ---
