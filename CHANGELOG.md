@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- A finished column on the board (a `done` or `closed` role) can be
+  collapsed to a labeled strip showing its count, click to expand. It is a
+  per-viewer preference in `localStorage`, so a large `Done` or a "won't do"
+  column stops crowding the active work without hiding it from anyone else or
+  touching the config.
+- `skald digest [--since 1d|REF] [--limit N]`: the human's morning check-in.
+  It folds the backlog's git events into one summary per story, newest
+  activity first, with the net status move, the note count and latest note,
+  and the open questions, capped with a pointer to `skald activity`. Where
+  `activity` is the agent's per-event log, `digest` is what a person reads to
+  catch up on what agents did since they last looked. No new data: it reads
+  git history and the notes.
+- A story id in a note (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) resolves:
+  on the board it becomes a link in the rendered story that opens the target
+  (switching project for `project:id`), and `skald show` and `resume` print
+  the title beside it when it resolves. A hex that is not a story id, and the
+  `--json` output, are left untouched. The file format is unchanged.
+- A `release:<v>` facet plans what a version should carry. `skald release`
+  (dry run and real) warns about every story tagged for the version that is
+  not done yet, so the ones still open are named before the release goes
+  out. The value targets the version when it matches or is a dotted prefix
+  either way, so `release:0.6` covers `0.6.x`. It is an ordinary facet, so
+  the board filters and swimlanes on it with no special support.
+
 ## 0.6.0 (2026-09-13)
 
 ### Changed

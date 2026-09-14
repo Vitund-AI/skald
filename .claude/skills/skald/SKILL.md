@@ -93,7 +93,8 @@ tools from `skald mcp` (see the README).
   project's name or columns.
 - Tags of the form `key:value` are facets. Use `epic:<name>` to group stories
   into an epic; `skald epics` shows progress and `skald ls --tag epic:<name>`
-  lists one.
+  lists one. A `release:<v>` tag plans what a version should carry: `skald
+  release <v> --dry-run` warns about stories tagged for it that are not done.
 - Any command that takes an id accepts a unique prefix: `skald show a3f`.
 - Prefer `--json` output when you need to parse results.
 - Exit codes: 0 success (warnings on stderr), 1 usage error or not found,

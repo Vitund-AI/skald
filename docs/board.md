@@ -86,6 +86,13 @@ column over its limit turns its count red. A story whose status matches no
 column appears in an "Unknown status" column. Columns share the width on
 wide screens and stack vertically on phones.
 
+A finished column (one with a `done` or `closed` role) has a caret in its
+header that collapses it to a labeled strip showing its count; click the
+strip to expand it again. It is a per-viewer preference kept in your
+browser, so a large `Done` column or a "won't do" column can stop crowding
+the active work without hiding it from anyone else or changing anything on
+disk.
+
 A card shows the title, tags, checklist progress, id, assignee, and age.
 Markers:
 
@@ -125,7 +132,9 @@ elsewhere), the parent as a chip that opens it, the children listed with
 their state and struck through when done, "+ child" to open a new story
 with this one already set as its parent, the body rendered as Markdown with
 each note's heading set apart, open questions with an answer form, and Add
-a note, which appends a dated note under your identity. Claim assigns the
+a note, which appends a dated note under your identity. A story id in the
+rendered text (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) is a link that opens
+that story, switching project for a `project:id`. Claim assigns the
 story to you and starts it.
 
 **Edit** (or `e`) switches to the form: title, status, assignee, tags,

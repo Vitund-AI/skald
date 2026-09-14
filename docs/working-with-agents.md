@@ -72,6 +72,12 @@ unless asked, prefer `--json` when parsing.
 - **Commits tie it together.** The trailer lets `skald commits <id>` and the
   board's History tab show every code commit for a story, and `skald
   activity` reconstructs what happened overnight from git alone.
+- **`skald digest` is your morning catch-up.** It folds the same git events
+  into one summary per story, newest first, with the net status move, the
+  latest note, and any open questions: `skald digest` for the last day,
+  `skald digest --since 1w` for longer. Where `context` orients an agent and
+  `activity` is the raw per-event log, `digest` is the human's read on what
+  the agents did while you were away.
 
 ## Claude Code
 
