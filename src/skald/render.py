@@ -162,6 +162,13 @@ def render_markdown(store: Store, out_path: Path, include_archived: bool = False
             lines.append("")
     if r.orphans:
         lines += ["## Unknown status", ""] + table(r.orphans) + [""]
+    releases = store.releases()
+    if releases:
+        lines += ["## Releases", ""]
+        for rel in releases:
+            n = len(rel["stories"])
+            lines += [f"<details><summary><strong>{html.escape(rel['version'], quote=False)} ({n})</strong></summary>", ""]
+            lines += table(rel["stories"]) + ["", "</details>", ""]
     if include_archived and r.archived:
         lines += [f"<details><summary><strong>Archived ({len(r.archived)})</strong></summary>", ""]
         lines += table(r.archived) + ["", "</details>", ""]

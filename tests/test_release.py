@@ -61,6 +61,21 @@ class TestRelease(SkaldTestCase):
         self.assertFalse(rel.release_matches("0.7", "0.6.0"))
         self.assertFalse(rel.release_matches("0.60", "0.6.0"))
 
+    def test_releases_groups_shipped_by_version(self):
+        s = self.store()
+        rel.apply(s, rel.plan(s, "0.5.0", "2026-01-01"), self.repo / "CHANGELOG.md")
+        # move the open one to done and ship a newer version
+        s = self.store()
+        s.update(self.d, status="done")
+        rel.apply(s, rel.plan(s, "0.6.0", "2026-02-01"), self.repo / "CHANGELOG.md")
+        rels = self.store().releases()
+        self.assertEqual([r["version"] for r in rels], ["0.6.0", "0.5.0"])  # newest first
+        v050 = next(r for r in rels if r["version"] == "0.5.0")["stories"]
+        ids = [st.id for st in v050]
+        self.assertIn(self.a, ids)
+        self.assertIn(self.b, ids)
+        self.assertNotIn(self.c, ids)  # won't-do (closed) is not "shipped"
+
     def test_merge_changelog_cases(self):
         s = self.store()
         r = rel.plan(s, "1.2.0", "2026-09-09")

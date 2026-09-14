@@ -1117,6 +1117,20 @@ class Store:
         os.unlink(story.path)
         return story
 
+    def releases(self) -> list[dict]:
+        """What shipped, grouped by version, newest first: archived stories with a ``released``
+        stamp whose status is a done (not closed) column. Won't-do lives only in the changelog's
+        "Not doing" list, so it is excluded here. ``[{version, stories}]``."""
+        stories, _ = self.load_all(include_archived=True)
+        by_ver: dict[str, list[Story]] = {}
+        for s in stories:
+            if s.archived and s.released and not self.config.is_closed(s.status):
+                by_ver.setdefault(s.released, []).append(s)
+        out = []
+        for ver in sorted(by_ver, key=_version_key, reverse=True):
+            out.append({"version": ver, "stories": sorted(by_ver[ver], key=lambda s: s.title.lower())})
+        return out
+
     def mark_released(self, ref: str, version: str) -> Story:
         """Record the version a story shipped in (``released`` in the frontmatter)."""
         story = self.get(ref)
@@ -1469,6 +1483,11 @@ Store.readonly = False
 # --------------------------------------------------------------------------
 # Facets: tags of the form key:value
 # --------------------------------------------------------------------------
+
+
+def _version_key(version: str) -> tuple:
+    """Sort ``1.2.10`` after ``1.2.9``: numeric parts as ints, anything else after them as text."""
+    return tuple((0, int(p)) if p.isdigit() else (1, p) for p in version.split("."))
 
 
 def split_facet(tag: str) -> Optional[tuple[str, str]]:

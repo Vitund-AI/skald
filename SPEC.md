@@ -487,7 +487,7 @@ branch, filter, identity, commit button when `.skald/` has uncommitted
 changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
-One filter dropdown per facet key and a swimlane control that splits the
+A Releases view (a header toggle) lists what shipped grouped by version, newest first, from `GET /api/projects/<p>/releases` (`store.releases()`); a story opens read-only, since it is archived. One filter dropdown per facet key and a swimlane control that splits the
 board by a facet's values with a progress bar per lane.
 A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
@@ -628,7 +628,11 @@ so a reader of the committed board sees what is waiting on a human without
 running anything; it is omitted when nothing waits. Terminal columns are
 collapsed in `<details>`; the `epic` facet produces a progress table;
 unknown statuses and, with `--archived`, archived stories get their own
-sections.
+sections. A `Releases` section, when anything has shipped, lists what each
+version carried, one collapsed `<details>` per version newest first, from
+`store.releases()` (archived stories with a `released` stamp whose status is
+a done column; won't-do is excluded, it lives in the changelog's "Not doing"
+list).
 
 `config.json` may carry `"render": {"path", "format", "archived"}`. When it
 does, `commit` and the board's commit button re-render before staging and

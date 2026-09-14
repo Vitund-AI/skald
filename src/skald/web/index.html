@@ -121,6 +121,7 @@
   <button id="waiting-btn" class="toggle hidden rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover" title="Only stories with an open question" aria-pressed="false">Waiting on a human</button>
   <select id="group-by" class="hidden rounded border border-strong px-2 py-1 text-xs" title="Group the board into swimlanes by a facet"></select>
   <button id="graph-btn" class="toggle rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover" title="Dependency graph (g)" aria-pressed="false">Graph</button>
+  <button id="rel-btn" class="toggle rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover" title="What shipped, by release" aria-pressed="false">Releases</button>
   <span id="conn" class="text-xs text-faint"></span>
   <span id="identity" class="text-xs text-muted" title="Notes and commits from the board use this name. Change it with: skald config author NAME"></span>
   <div class="relative">
@@ -146,6 +147,7 @@
 <main id="board" class="flex-1 flex flex-col sm:flex-row gap-3 p-3 overflow-auto"></main>
 <main id="ready-view" class="hidden flex-1 overflow-y-auto p-4"></main>
 <main id="graph-view" class="hidden flex-1 overflow-auto p-4"></main>
+<main id="releases-view" class="hidden flex-1 overflow-auto p-4"></main>
 
 <div id="bulk" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-surface border border-strong rounded-lg shadow-xl px-3 py-2 flex items-center gap-2 text-sm flex-wrap max-w-[95vw]">
   <span id="bulk-count" class="font-semibold"></span>
@@ -332,7 +334,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
     lastWrite: 0, help: false, helpCli: null,
     sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
-    collapsed: new Set(),
+    collapsed: new Set(), releasesView: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal'), help = $('help');
   const ALL = '__all__';
@@ -454,6 +456,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     state.graph = false; $('graph-view').classList.add('hidden');
     $('graph-btn').setAttribute('aria-pressed', 'false');
     $('graph-btn').classList.toggle('hidden', state.allView);
+    state.releasesView = false; $('releases-view').classList.add('hidden');
+    $('rel-btn').setAttribute('aria-pressed', 'false');
+    $('rel-btn').classList.toggle('hidden', state.allView);
     board.classList.toggle('hidden', state.allView);
     readyView.classList.toggle('hidden', !state.allView);
     $('new-btn').classList.toggle('hidden', state.allView);
@@ -771,6 +776,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (state.allView) return renderReady();
     renderEmpty();
     renderBulk();
+    if (state.releasesView) return;  // the releases view is fetched on toggle, not on every poll
     if (state.graph) return renderGraph();
     // Rebuilding the columns would reset their scroll positions; keep them so
     // selecting or refreshing deep in a long column does not jump to the top.
@@ -964,10 +970,44 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   }
   function setGraph(on) {
     state.graph = on;
+    if (on && state.releasesView) setReleases(false);
     $('graph-btn').setAttribute('aria-pressed', on ? 'true' : 'false');
-    board.classList.toggle('hidden', on || state.allView);
+    board.classList.toggle('hidden', on || state.allView || state.releasesView);
     $('graph-view').classList.toggle('hidden', !on);
     render();
+  }
+  // What shipped, grouped by release, read from the archive. Rendered on toggle, not on every poll.
+  function setReleases(on) {
+    state.releasesView = on;
+    if (on && state.graph) setGraph(false);
+    $('rel-btn').setAttribute('aria-pressed', on ? 'true' : 'false');
+    board.classList.toggle('hidden', on || state.allView || state.graph);
+    $('releases-view').classList.toggle('hidden', !on);
+    if (on) renderReleases();
+  }
+  async function renderReleases() {
+    const view = $('releases-view');
+    let data;
+    try { data = await api('GET', `${P()}/releases`); }
+    catch (err) { view.innerHTML = `<div class="text-danger-text">${esc(err.message)}</div>`; return; }
+    const rels = data.releases || [];
+    if (!rels.length) { view.innerHTML = '<div class="text-muted">Nothing has shipped yet. <code>skald release X.Y.Z</code> stamps and archives what is done.</div>'; return; }
+    view.innerHTML = rels.map(r => `
+      <section class="mb-5">
+        <h2 class="text-sm font-semibold text-muted mb-2">${esc(r.version)} <span class="font-normal text-faint">${r.stories.length}</span></h2>
+        <div class="grid gap-2">${r.stories.map(s => `
+          <div class="rel-row bg-surface rounded border border-line px-3 py-2 flex items-center gap-3 cursor-pointer hover:border-strong" data-id="${esc(s.id)}" tabindex="0" role="button">
+            <span class="font-mono text-xs text-faint">${esc(s.id)}</span>
+            <span class="text-sm font-medium flex-1">${esc(s.title)}</span>
+            ${(s.tags || []).map(t => `<span class="rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(t)}</span>`).join(' ')}
+            ${s.assignee ? `<span class="text-xs text-faint">@${esc(s.assignee)}</span>` : ''}
+          </div>`).join('')}</div>
+      </section>`).join('');
+    view.querySelectorAll('.rel-row').forEach(row => {
+      const open = () => openModal(row.dataset.id);
+      row.addEventListener('click', open);
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
   }
 
   // ---- Drag and drop ---------------------------------------------------
@@ -1059,7 +1099,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const btn = $('m-edit-btn');
     btn.textContent = on ? 'Cancel' : 'Edit';
     btn.title = on ? 'Back to the story without saving (Esc)' : 'Edit the fields and the body (e)';
-    btn.classList.toggle('hidden', state.readonly);
+    btn.classList.toggle('hidden', state.readonly || (state.loaded && state.loaded.archived));
     showTab('story');
     if (on) $('m-title').focus();
   }
@@ -1137,7 +1177,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   function renderView(s) {
     $('m-heading').textContent = s.title;
     $('m-status-quick').value = s.status;
-    $('m-status-quick').disabled = state.readonly;
+    $('m-status-quick').disabled = state.readonly || s.archived;
     $('m-view-assignee').textContent = s.assignee ? `@${s.assignee}` : 'unassigned';
     $('m-view-tags').innerHTML = s.tags.map(tag => `<span class="inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(tag)}</span>`).join('');
     renderMarkdown($('m-rendered'), s.body);
@@ -1194,6 +1234,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     }
     try {
       const s = await api('GET', `${P()}/stories/${id}${state.ref ? '?ref=' + encodeURIComponent(state.ref) : ''}`);
+      const ro = state.readonly || s.archived;  // a released/archived story opens read-only
       fillStatusSelect(s.status);
       state.modal = s.id; state.loaded = s;
       $('m-id').textContent = s.id;
@@ -1201,7 +1242,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       renderView(s);
       const qs = (s.questions && s.questions.items) || [];
       $('m-questions').classList.toggle('hidden', !qs.length);
-      $('m-answer-btn').classList.toggle('hidden', !qs.length || state.readonly);
+      $('m-answer-btn').classList.toggle('hidden', !qs.length || ro);
       state.answering = null;
       renderQuestions(qs);
       $('m-title').value = s.title; $('m-status').value = s.status; $('m-assignee').value = s.assignee || '';
@@ -1214,9 +1255,10 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       $('m-note').value = '';
       $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden'); $('m-preview-btn').textContent = 'Preview';
       ['m-delete', 'm-cancel', 'tab-history'].forEach(i => $(i).classList.remove('hidden'));
-      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = state.readonly; });
-      ['m-claim', 'm-note-wrap', 'm-edit-btn'].forEach(i => $(i).classList.toggle('hidden', state.readonly));
+      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = ro; });
+      ['m-claim', 'm-note-wrap', 'm-edit-btn'].forEach(i => $(i).classList.toggle('hidden', ro));
       if (state.readonly) $('m-meta').textContent += ` · read-only (${state.ref})`;
+      else if (s.archived) $('m-meta').textContent += ' · read-only';
       state.editing = false;
       setEditing(false);
       setStoryHash(s.id);
@@ -1425,6 +1467,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('group-by').addEventListener('change', (e) => { state.groupBy = e.target.value; render(); });
   $('waiting-btn').addEventListener('click', () => { state.waitingOnly = !state.waitingOnly; $('waiting-btn').setAttribute('aria-pressed', String(state.waitingOnly)); render(); });
   $('graph-btn').addEventListener('click', () => setGraph(!state.graph));
+  $('rel-btn').addEventListener('click', () => setReleases(!state.releasesView));
   setInterval(() => { if (document.visibilityState === 'visible' && !state.modal) loadBranches(); }, 30000);
   $('search').addEventListener('input', (e) => { state.filter = e.target.value.trim().toLowerCase(); render(); });
   $('new-btn').addEventListener('click', () => { state.newParent = null; openModal(null); });
@@ -1464,7 +1507,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       else $('git-pop').classList.add('hidden');
       return;
     }
-    if (state.modal && !typing && e.key === 'e' && !state.editing && state.modal !== 'new' && !state.readonly && modalTab === 'story') { e.preventDefault(); setEditing(true); return; }
+    if (state.modal && !typing && e.key === 'e' && !state.editing && state.modal !== 'new' && !state.readonly && !(state.loaded && state.loaded.archived) && modalTab === 'story') { e.preventDefault(); setEditing(true); return; }
     if (typing || state.modal) return;
     if (e.key === '?') { e.preventDefault(); if (state.help) hideHelp(); else showHelp(); return; }
     if (state.help) return;
