@@ -369,3 +369,9 @@ The value targets the version when it matches it or is a dotted prefix
 either way, so `release:0.6` covers `0.6.x` and warns on the `0.6.0` run. It
 is an ordinary facet, so the board gives it a filter and swimlanes like any
 other key; only the warning is new.
+
+After a release, what it shipped is browsable: the board's **Releases** view
+lists each version's stories, and `skald render` writes the same list into
+`.skald/README.md`, so it shows on GitHub too. Both read the archive (the
+done stories a version carried; won't-do stays in the changelog's "Not
+doing" list). See [The board](board.md#releases).
