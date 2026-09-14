@@ -1449,33 +1449,47 @@ def cmd_digest(store: Store, args) -> int:
     if not stories:
         print(f"Nothing changed in {label}.")
         return 0
-    cap = args.limit
-    shown = stories[:cap]
     noun = "story" if len(stories) == 1 else "stories"
-    print(f"Since {label}: {len(stories)} {noun} changed.\n")
-    for a in shown:
-        print(f"{a['id']}  {a['title']}   {a['status'] or '-'}")
-        if a["created"]:
-            print("    created")
+    print(f"Since {label}: {len(stories)} {noun} changed.")
+    # Grouped by action rather than by story, so a run of same-kind changes reads as one list.
+    # stories is already newest activity first, so each section keeps that order.
+    moved, notes, questions, created, archived, deleted = [], [], [], [], [], []
+    for a in stories:
+        head = f"{a['id']}  {a['title']}"
         if a["moves"]:
-            print(f"    moved {a['moves'][0][0] or '-'} -> {a['moves'][-1][1] or '-'}")
-        if a["archived"]:
-            print("    archived")
-        if a["deleted"]:
-            print("    deleted")
+            moved.append(f"{head}   {a['moves'][0][0] or '-'} -> {a['moves'][-1][1] or '-'}")
         if a["notes"]:
             note = a["latest_note"]
             tail = ""
             if note:
-                kind = f"{note['kind']}, " if note["kind"] != "note" else ""
-                tail = f"; latest ({kind}{note['stamp'][:16]}) {note['first'][:70]}"
-            print(f"    {a['notes']} note(s){tail}")
-        for q in a["questions"][:2]:
-            print(f"    Q{q['number']} asks: {q['text'][:70]}")
-        if len(a["questions"]) > 2:
-            print(f"    (+{len(a['questions']) - 2} more open; skald resume {a['id']})")
-    if len(stories) > cap:
-        print(f"\n... and {len(stories) - cap} more: skald activity --since {args.since}")
+                kind = f"{note['kind']} " if note["kind"] != "note" else ""
+                tail = f"; latest {kind}{note['stamp'][:16]}: {note['first'][:70]}"
+            notes.append(f"{head}   +{a['notes']}{tail}")
+        for q in a["questions"]:
+            questions.append(f"{head}   Q{q['number']}: {q['text'][:70]}")
+        if a["created"]:
+            created.append(f"{head}   ({a['status'] or '-'})")
+        if a["archived"]:
+            archived.append(head)
+        if a["deleted"]:
+            deleted.append(head)
+    cap = args.limit
+
+    def section(title, rows):
+        if not rows:
+            return
+        print(f"\n{title}:")
+        for line in rows[:cap]:
+            print(f"  {line}")
+        if len(rows) > cap:
+            print(f"  ... and {len(rows) - cap} more: skald activity --since {args.since}")
+
+    section("Moved", moved)
+    section("Notes", notes)
+    section("Open questions", questions)
+    section("Created", created)
+    section("Archived", archived)
+    section("Deleted", deleted)
     return 0
 
 
