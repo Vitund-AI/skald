@@ -1,15 +1,38 @@
-<!-- skald-render 632c29225ef6f337 -->
+<!-- skald-render 9388d9127ef2921a -->
 # skald backlog
 
-**1 open** · Idea 1 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 1
+**4 open** · Idea 3 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 2
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Idea (1)
+## Epics
+
+| Epic | Progress | Done | Open |
+| --- | --- | ---: | ---: |
+| `epic:feature-flags` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 3 |
+
+## Dependencies
+
+```mermaid
+flowchart LR
+    n_0341fc["0341fc<br/>Settings modal and API for defaults and…"]
+    n_716fe0["716fe0<br/>Machine-local feature-flag config layer"]
+    n_f9e295["f9e295<br/>Open story in Claude Code from the card…"]
+    n_716fe0 --> n_0341fc
+    n_716fe0 --> n_f9e295
+    classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
+    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+    class n_0341fc,n_f9e295 backlog
+    class n_716fe0 active
+```
+
+## Idea (3)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
+| [0341fc](stories/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` |  | 🔒 `716fe0` | 0/8 |
+| [f9e295](stories/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` |  | 🔒 `716fe0` | 0/8 |
 
 ## Plan (0)
 
@@ -23,15 +46,18 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [716fe0](stories/716fe0-machine-local-feature-flag-config-layer.md) | Machine-local feature-flag config layer | `area:config` `epic:feature-flags` | claude |  | 7/7 |
 
-<details><summary><strong>Done (1)</strong></summary>
+<details><summary><strong>Done (2)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [ce8ab1](stories/ce8ab1-completion-and-api-tests-pick-a-unique-id-prefix-n.md) | Completion and API tests pick a unique id prefix, not a fixed slice | `tests` | claude |  | 1/1 |
+| [947089](stories/947089-release-sh-tags-the-merge-commit-not-a-skip-ci-ren.md) | release.sh tags the merge commit, not a [skip ci] render HEAD | `area:release` | claude |  | 4/4 |
 
 </details>
 

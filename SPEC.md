@@ -81,8 +81,22 @@ else `$XDG_CONFIG_HOME/skald` defaulting to `~/.config/skald`. It holds:
   `path` is the primary; `checkouts` (optional) are other working trees of
   the same project recorded when a command ran there.
 - `config.json`: user settings with defaults `author ""`, `push false`,
-  `port 8321`, `host "127.0.0.1"`, `stale_days 3`.
+  `port 8321`, `host "127.0.0.1"`, `stale_days 3`. It also carries the
+  feature flags (below), which is why nothing in this file is committed.
 - `server.json` and `server.log`: the background server's pid, host, port.
+
+Feature flags are machine-local boolean toggles for board and CLI behaviour,
+declared once in a catalog (`FEATURE_DEFAULTS`: name, label, help, built-in
+default) so the CLI, the board settings, and the resolver stay generic over
+them. A flag is stored at `features.<name>` for a global value and at
+`projects.<name>.features.<name>` for a per-project override; it resolves
+per-project, then global, then the built-in default. Values are read
+tolerantly (a hand-edited non-boolean falls through to the next scope).
+`skald config features.<name> [true|false]` reads or sets the global value,
+`-p NAME` scopes it to one project, and `--unset` returns a scope to what it
+inherits. The current flags are: `claude_code_link` (default on) — show a
+link on the board's card detail view that opens the story as a Claude Code
+web session.
 
 ### 2.4 Finding the project
 

@@ -13,7 +13,7 @@ from typing import Optional
 from . import __version__, gitutil
 from .config import ProjectConfig, slugify_name
 from .errors import GitError, NotFoundError, SkaldError
-from .registry import UserConfig, Workspace, find_skald_dir
+from .registry import FEATURE_DEFAULTS, UserConfig, Workspace, coerce_bool, find_skald_dir
 from .store import Store, Story, serialise_story, split_ref
 from .util import read_text
 
@@ -433,9 +433,9 @@ def build_parser() -> argparse.ArgumentParser:
     pru.add_argument("path", nargs="?", help="a checkout of the project; default: the current directory")
 
     cf = sub.add_parser("config", help="get or set a user setting")
-    cf.add_argument("key", nargs="?", help="author, push, port, host, or stale_days")
+    cf.add_argument("key", nargs="?", help="author, push, port, host, stale_days, or features.<name>")
     cf.add_argument("value", nargs="?", help="new value; omit to show the current one")
-    cf.add_argument("--unset", action="store_true", help="return the key to its default")
+    cf.add_argument("--unset", action="store_true", help="return the key to its default (with -p NAME, just for that project)")
 
     hk = sub.add_parser("hooks", help="print or install hooks: claude (agent), git (pre-commit), github (workflow)")
     hk.add_argument("target", choices=["claude", "git", "github"], help="which hook to print or install")
@@ -1719,10 +1719,29 @@ def cmd_projects(ws: Workspace, args) -> int:
 
 def cmd_config(ws: Workspace, args) -> int:
     user = ws.user
+    project = getattr(args, "project", None)
+    scope = f" for {project}" if project else ""
     if args.key is None:
         for k, v in user.all().items():
             print(f"{k} = {json.dumps(v)}")
+        for name in FEATURE_DEFAULTS:
+            print(f"features.{name} = {json.dumps(user.feature(name, project))}")
         print(f"(stored in {user.path})")
+        return 0
+    if args.key.startswith("features."):
+        flag = args.key[len("features."):]
+        if args.unset:
+            user.unset_feature(flag, project)
+            print(f"unset features.{flag}{scope}")
+            return 0
+        if args.value is None:
+            print(json.dumps(user.feature(flag, project)))
+            return 0
+        value = coerce_bool(args.value)
+        if value is None:
+            raise SkaldError(f"features.{flag} must be true or false (got {args.value!r})")
+        user.set_feature(flag, value, project)
+        print(f"features.{flag} = {json.dumps(user.feature(flag, project))}{scope}")
         return 0
     if args.unset:
         user.unset(args.key)

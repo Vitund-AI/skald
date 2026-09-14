@@ -655,3 +655,25 @@ job has landed yet or not, and the version check is the backstop if the
 walk ever lands somewhere unexpected. Tagging the merge commit instead of
 the render commit costs nothing for publishing, because the render only
 touches `.skald/README.md`, which is not part of the package.
+
+### D66. Feature flags are machine-local, with a global default and a per-project override, declared in a catalog
+Some board and CLI behaviour is a matter of personal preference on a given
+machine — whether to show the "Open in Claude Code" link, for one — not a
+property of the project that every clone should inherit. So feature flags
+live in the machine-local user config (`SKALD_HOME/config.json`), never in
+the committed `.skald/config.json`. Two scopes cover the real need: a global
+value the user sets once, and a per-project override for the repositories
+where they want something different; resolution is per-project, then global,
+then a built-in default. A committed project-level default was considered and
+declined for now — it would add a fourth resolution layer and put personal
+toggles into the shared repo, and the two machine-local scopes already answer
+"turn this off everywhere except here" and "on only here". Per-project values
+are keyed by project name, not path, because the registry already keys by
+name and a preference should follow the project across worktrees and clones.
+Each flag is declared once in a catalog (`FEATURE_DEFAULTS`: name, label,
+help, default) rather than scattered through the code, so the resolver, the
+`skald config features.<name>` CLI, and the board's settings modal are all
+generic over the catalog: adding a flag is one entry plus wherever it is
+consumed, with no new UI or parser work. Stored values are read tolerantly
+(a hand-edited non-boolean falls through to the next scope) for the same
+reason the flat settings are: the file is meant to be safe to edit by hand.

@@ -355,6 +355,31 @@ class TestProjectsAndConfig(SkaldTestCase):
         code, _, err = self.run_cli("config", "colour", "red")
         self.assertEqual(code, 1)
 
+    def test_config_feature_flags(self):
+        # a flag reads its built-in default and appears in the listing
+        code, out, _ = self.run_cli("config", "features.claude_code_link")
+        self.assertEqual(out.strip(), "true")
+        code, out, _ = self.run_cli("config")
+        self.assertIn("features.claude_code_link = true", out)
+        # a global value overrides the default; a per-project value overrides the global
+        self.run_cli("config", "features.claude_code_link", "false")
+        code, out, _ = self.run_cli("config", "features.claude_code_link")
+        self.assertEqual(out.strip(), "false")
+        code, out, _ = self.run_cli("-p", "alpha", "config", "features.claude_code_link", "true")
+        self.assertEqual(out.strip(), "features.claude_code_link = true for alpha")
+        self.assertEqual(self.run_cli("-p", "alpha", "config", "features.claude_code_link")[1].strip(), "true")
+        self.assertEqual(self.run_cli("config", "features.claude_code_link")[1].strip(), "false")  # global untouched
+        # unset the project override falls back to global; unset global falls back to the default
+        self.run_cli("-p", "alpha", "config", "features.claude_code_link", "--unset")
+        self.assertEqual(self.run_cli("-p", "alpha", "config", "features.claude_code_link")[1].strip(), "false")
+        self.run_cli("config", "features.claude_code_link", "--unset")
+        self.assertEqual(self.run_cli("config", "features.claude_code_link")[1].strip(), "true")
+        # a non-boolean value and an unknown flag are errors
+        self.assertEqual(self.run_cli("config", "features.claude_code_link", "maybe")[0], 1)
+        code, _, err = self.run_cli("config", "features.nope", "true")
+        self.assertEqual(code, 1)
+        self.assertIn("unknown feature", err)
+
 
 class TestGitCommands(SkaldTestCase):
     def test_status_check_hook_commit_log_changelog(self):

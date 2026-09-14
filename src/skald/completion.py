@@ -14,7 +14,7 @@ from typing import Optional
 
 from . import gitutil
 from .errors import SkaldError
-from .registry import Workspace
+from .registry import FEATURE_DEFAULTS, Workspace
 from .store import Store
 
 NOTE_KINDS = ["handoff", "decision", "blocker", "result", "progress"]
@@ -267,8 +267,9 @@ class Completer:
             return self.facet_keys(project) if n == 0 else []
         if command == "config":
             if n == 0:
-                return [(k, d) for k, d in CONFIG_KEYS.items()]
-            if n == 1 and pos[0] == "push":
+                return ([(k, d) for k, d in CONFIG_KEYS.items()]
+                        + [(f"features.{name}", meta["help"]) for name, meta in FEATURE_DEFAULTS.items()])
+            if n == 1 and (pos[0] == "push" or pos[0].startswith("features.")):
                 return [("true", ""), ("false", "")]
             return []
         if command == "projects":
