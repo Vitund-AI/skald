@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 from skald import server as srv
 from skald.registry import UserConfig, ensure_token, read_token
 
-from .helpers import SkaldTestCase, git
+from .helpers import SkaldTestCase, git, prefix
 
 
 class ServerTestCase(SkaldTestCase):
@@ -112,7 +112,7 @@ class TestAPI(ServerTestCase):
         status, v = self.call("GET", f"{P}/version")
         self.assertEqual(v["version"], version)
 
-        status, one = self.call("GET", f"{P}/stories/{a[:4]}")
+        status, one = self.call("GET", f"{P}/stories/{prefix(a, [b])}")
         self.assertEqual(one["body"], "## Requirements\n\n- [ ] a\n")
 
         status, data = self.call("PATCH", f"{P}/stories/{a}", {"status": "ready", "order": [a, b]})
