@@ -31,10 +31,16 @@ class TestDigest(SkaldTestCase):
         code, out, err = self.run_cli("digest", "--since", "HEAD~1")
         self.assertEqual(code, 0, err)
         self.assertIn("2 stories changed", out)
-        self.assertIn(f"{a}  Design schema   in_progress", out)
-        self.assertIn("moved ready -> in_progress", out)
-        self.assertIn("latest (handoff", out)
-        self.assertIn("Q1 asks: Which auth scheme?", out)
+        # grouped by action, each story under its section
+        self.assertIn("Moved:", out)
+        self.assertIn(f"{a}  Design schema   ready -> in_progress", out)
+        self.assertIn("Notes:", out)
+        self.assertIn("latest handoff", out)
+        self.assertIn("Open questions:", out)
+        self.assertIn(f"{b}  Build API   Q1: Which auth scheme?", out)
+        # sections are ordered Moved, then Notes, then Open questions
+        self.assertLess(out.index("Moved:"), out.index("Notes:"))
+        self.assertLess(out.index("Notes:"), out.index("Open questions:"))
 
         code, out, _ = self.run_cli("digest", "--since", "HEAD~1", "--json")
         d = json.loads(out)

@@ -41,10 +41,10 @@ skald changelog --since v1.0              # stories that reached done between tw
 `diff` compares two states by id and reports status, assignee, title, tag,
 blocker, and archive changes, plus notes added. `activity` walks every
 commit that touched `.skald/` and reports the same events per commit.
-`digest` folds those events into one summary per story, newest first, with
-the net move, the note count and latest note, and any open questions: where
-`activity` is the per-event log an agent parses, `digest` is what a person
-reads in the morning to see what the agents did overnight. `changelog` is
+`digest` groups those events by action into sections (moved, notes, open
+questions, created, ...), newest first: where `activity` is the per-event
+log an agent parses, `digest` is what a person reads in the morning to see
+what the agents did overnight. `changelog` is
 the read-only view; `release` below is the one that writes.
 
 ## Other branches
