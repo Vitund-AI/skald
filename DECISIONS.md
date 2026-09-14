@@ -636,3 +636,22 @@ custom properties are already the mechanism, a file is what a user of a
 filesystem-native tool expects to edit, and an empty response when the file
 is absent costs nothing. None of this needs a framework: the page stays one
 HTML file with Tailwind's play CDN, which is what keeps it hackable.
+
+### D65. The release script tags the merge commit, not main's HEAD, to clear the render job's [skip ci]
+The publish workflow keys on the tag push (D63), but GitHub skips every
+workflow for a push whose head commit message carries a skip instruction —
+`[skip ci]` and its documented siblings — and a tag push is not exempt.
+The `skald.yml` render job commits a `[skip ci]` render onto `main` right
+after each merge, so by the time the release script reaches the tag step
+`main`'s HEAD is usually that render commit; tagging it pushed a tag that
+published nothing, silently, which is exactly how the first `v0.7.0` tag
+failed to build. The script now walks back from HEAD along first parents to
+the newest commit whose message is not a skip instruction — the merge
+commit, which carries the version bump — and tags that, after checking the
+commit's version file still reads the release version. Walking back rather
+than waiting for or amending the render commit keeps the step a pure read
+of existing history with no timing assumption: it works whether the render
+job has landed yet or not, and the version check is the backstop if the
+walk ever lands somewhere unexpected. Tagging the merge commit instead of
+the render commit costs nothing for publishing, because the render only
+touches `.skald/README.md`, which is not part of the package.
