@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (2026-09-14)
 
 ### Added
 - Browse what shipped, by release. A Releases view on the board (a header
@@ -49,6 +49,20 @@
   out. The value targets the version when it matches or is a dotted prefix
   either way, so `release:0.6` covers `0.6.x`. It is an ordinary facet, so
   the board filters and swimlanes on it with no special support.
+
+### Stories
+
+- Target-release tag and a release warning (527a9c)
+- Story references in notes resolve on the board and in show (1a5064)
+- skald digest: the human's context, what changed since you last looked (91e595)
+- Collapse terminal columns on the board, per viewer (011410)
+- Document how to model won't-do: the closed role and the archive (0f9649)
+- digest groups its output by action, not by story (c5a7b5)
+- Open questions at the top of the rendered board (e1ef91)
+- A conventions page: the facets and what each unlocks (d5cd0f)
+- skald doctor: one command for why it is not working (9c5d75)
+- Browse what shipped, by release, on the board (18c326)
+- Rendered board doc lists what shipped, grouped by release (a729bb)
 
 ## 0.6.0 (2026-09-13)
 

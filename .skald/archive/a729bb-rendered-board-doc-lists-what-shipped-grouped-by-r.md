@@ -5,8 +5,9 @@ rank: 110
 tags: ["roadmap"]
 blocked_by: []
 assignee: "claude"
+released: "0.7.0"
 created_at: "2026-09-13T23:08:40Z"
-updated_at: "2026-09-14T05:42:10Z"
+updated_at: "2026-09-14T15:24:52Z"
 ---
 ## Requirements
 

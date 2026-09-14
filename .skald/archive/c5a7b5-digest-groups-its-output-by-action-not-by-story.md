@@ -5,8 +5,9 @@ rank: 60
 tags: ["cli"]
 blocked_by: []
 assignee: "claude"
+released: "0.7.0"
 created_at: "2026-09-14T01:52:16Z"
-updated_at: "2026-09-14T01:53:14Z"
+updated_at: "2026-09-14T15:24:52Z"
 ---
 ## Requirements
 
