@@ -3,6 +3,14 @@
 ## Unreleased
 
 ### Added
+- `skald doctor`: one command for why the setup is not working. It checks the
+  environment and the wiring, one line each with the fix, and exits non-zero
+  if anything is red: the Python version; `git` and a repository with a
+  `user.name`/`user.email`; that `config.json` parses and validates (which
+  `check` cannot reach, since a broken config never opens the store); the
+  registry's paths; the board server and its token; and the Claude Code hooks
+  and the contract copies. Read-only, and it ends by running `check` so one
+  command and one exit code cover both the setup and the data.
 - `docs/conventions.md`: one page listing the facet tags (`epic:`, `lane:`,
   `effort:`, `area:`, `release:`), what command or board feature each one
   unlocks, and when to use it, linked from the README and the docs index.

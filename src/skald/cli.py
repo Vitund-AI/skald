@@ -370,6 +370,9 @@ def build_parser() -> argparse.ArgumentParser:
     ck.add_argument("--json", action="store_true", help="print JSON")
     ck.add_argument("--hook", action="store_true", help="also fail on uncommitted story changes (for agent stop hooks)")
 
+    doc = sub.add_parser("doctor", help="check the environment and wiring: prerequisites, config, registry, server, hooks")
+    doc.add_argument("--json", action="store_true", help="print JSON")
+
     stt = sub.add_parser("status", help="project summary: branch, counts, uncommitted story changes")
     stt.add_argument("--json", action="store_true", help="print JSON")
 
@@ -1174,6 +1177,38 @@ def cmd_check(store: Store, args) -> int:
         if not problems and not uncommitted:
             print("ok")
     return 2 if (problems or uncommitted) else 0
+
+
+def cmd_doctor(ws: Workspace, args) -> int:
+    from . import doctor
+
+    results = doctor.run()
+    # Fold in `check` when the store opens; a broken config already showed above.
+    try:
+        store = ws.current(getattr(args, "project", None))
+        problems, warnings = store.check()
+        if problems:
+            results.append(doctor._r("backlog", doctor.FAIL, f"{len(problems)} problem(s) in the story files", "skald check"))
+        elif warnings:
+            results.append(doctor._r("backlog", doctor.WARN, f"{len(warnings)} warning(s) in the story files", "skald check"))
+        else:
+            results.append(doctor._r("backlog", doctor.OK, "story files valid"))
+    except SkaldError:
+        pass  # no openable project here; the project checks above say why
+
+    failed = sum(1 for r in results if r["level"] == doctor.FAIL)
+    warned = sum(1 for r in results if r["level"] == doctor.WARN)
+    if args.json:
+        print(json.dumps({"ok": failed == 0, "failed": failed, "warned": warned, "checks": results}, indent=2))
+        return 1 if failed else 0
+    mark = {doctor.OK: "ok  ", doctor.INFO: "  · ", doctor.WARN: "warn", doctor.FAIL: "FAIL"}
+    for r in results:
+        print(f"[{mark[r['level']]}] {r['name']}: {r['detail']}")
+        if r["fix"] and r["level"] in (doctor.WARN, doctor.FAIL):
+            print(f"         fix: {r['fix']}")
+    summary = "all good" if not failed and not warned else f"{failed} failed, {warned} warning(s)"
+    print(f"\n{summary}.")
+    return 1 if failed else 0
 
 
 def cmd_status(ws: Workspace, store: Store, args) -> int:
@@ -2076,6 +2111,9 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return 0
     if args.command == "docs":
         return cmd_docs(args)
+    if args.command == "doctor":
+        _notice(ws.notices)
+        return cmd_doctor(ws, args)
     if args.command == "projects":
         return cmd_projects(ws, args)
     if args.command == "config":

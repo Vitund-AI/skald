@@ -4,6 +4,16 @@ The messages you are most likely to see, what they mean, and what to do.
 `skald check` is the first thing to run whenever the backlog looks wrong: it
 validates every file and names the line at fault.
 
+When it is the setup rather than the data, run **`skald doctor`**. It checks
+the environment and the wiring in one pass, one line each with the fix to
+run, and exits non-zero if anything is red: the Python version; `git` and a
+repository with a `user.name`/`user.email`; that `config.json` parses and
+validates (the one thing `check` cannot catch, since the store never opens);
+the registry's paths; the board server and its token; and the Claude Code
+hooks and the contract copies. It ends by running `check`, so one command
+covers both the setup and the data. It only reads and reports; it never
+changes anything.
+
 ## Finding the project
 
 **`no .skald directory found here or in any parent; run skald init or pass --project NAME`**

@@ -63,6 +63,15 @@ def user_name(repo: Path) -> Optional[str]:
     return name or None
 
 
+def user_email(repo: Path) -> Optional[str]:
+    try:
+        proc = _run(["config", "--get", "user.email"], cwd=repo)
+    except GitError:
+        return None
+    email = proc.stdout.strip()
+    return email or None
+
+
 
 
 def changes(repo: Path, subpath: str) -> list[dict]:
