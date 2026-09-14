@@ -252,7 +252,8 @@ skald facets                              # every key and value with done/open c
 ```
 
 The board shows one filter per facet key and can split into swimlanes by
-any of them.
+any of them. [Conventions](conventions.md) lists the facet keys that unlock
+more (`lane:`, `effort:`, `area:`, `release:`) and what each one turns on.
 
 When the epic is itself a story with a body, a design record whose pieces
 ship separately, use a parent instead. A child is an ordinary story with

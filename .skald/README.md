@@ -1,17 +1,15 @@
-<!-- skald-render f5a2ffa9f4e4ce07 -->
+<!-- skald-render 750d5c27d1056b95 -->
 # skald backlog
 
-**6 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 6
+**4 open** · Idea 4 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 8
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Idea (6)
+## Idea (4)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [9c5d75](stories/9c5d75-skald-doctor-one-command-for-why-it-is-not-working.md) | skald doctor: one command for why it is not working | `roadmap` |  |  |  |
-| [e1ef91](stories/e1ef91-open-questions-at-the-top-of-the-rendered-board.md) | Open questions at the top of the rendered board | `roadmap` |  |  |  |
-| [d5cd0f](stories/d5cd0f-a-conventions-page-the-facets-and-what-each-unlock.md) | A conventions page: the facets and what each unlocks | `docs` `roadmap` |  |  |  |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
 | [18c326](stories/18c326-browse-what-shipped-by-release-on-the-board.md) | Browse what shipped, by release, on the board | `roadmap` |  |  |  |
 | [a729bb](stories/a729bb-rendered-board-doc-lists-what-shipped-grouped-by-r.md) | Rendered board doc lists what shipped, grouped by release | `roadmap` |  |  |  |
@@ -32,7 +30,7 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (6)</strong></summary>
+<details><summary><strong>Done (8)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -42,5 +40,7 @@ _none_
 | [011410](stories/011410-collapse-terminal-columns-on-the-board-per-viewer.md) | Collapse terminal columns on the board, per viewer | `roadmap` | claude |  |  |
 | [0f9649](stories/0f9649-document-how-to-model-won-t-do-the-closed-role-and.md) | Document how to model won't-do: the closed role and the archive | `roadmap` | claude |  |  |
 | [c5a7b5](stories/c5a7b5-digest-groups-its-output-by-action-not-by-story.md) | digest groups its output by action, not by story | `cli` | claude |  | 3/3 |
+| [e1ef91](stories/e1ef91-open-questions-at-the-top-of-the-rendered-board.md) | Open questions at the top of the rendered board | `roadmap` | claude |  |  |
+| [d5cd0f](stories/d5cd0f-a-conventions-page-the-facets-and-what-each-unlock.md) | A conventions page: the facets and what each unlocks | `docs` `roadmap` | claude |  |  |
 
 </details>

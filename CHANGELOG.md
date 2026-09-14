@@ -3,6 +3,13 @@
 ## Unreleased
 
 ### Added
+- `docs/conventions.md`: one page listing the facet tags (`epic:`, `lane:`,
+  `effort:`, `area:`, `release:`), what command or board feature each one
+  unlocks, and when to use it, linked from the README and the docs index.
+- The rendered board (`.skald/README.md`) leads with an "Open questions"
+  section when any story is waiting on a human, above the columns, so a
+  reader of the committed board on GitHub sees what is waiting without
+  running anything. It is omitted when nothing waits.
 - A finished column on the board (a `done` or `closed` role) can be
   collapsed to a labeled strip showing its count, click to expand. It is a
   per-viewer preference in `localStorage`, so a large `Done` or a "won't do"
