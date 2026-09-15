@@ -79,6 +79,13 @@ The output is deterministic, with a content hash instead of a timestamp, so
 an unchanged backlog produces no diff. `skald check` warns when the snapshot
 is stale.
 
+The HTML render is a single self-contained file with no external assets, so
+it travels anywhere a file can go. One use of that: away from your desk, an
+agent driving a remote session can `skald render --format html` and hand you
+the file to view on your phone, so you can see the board — columns, epic
+progress, card state — without the board server or a checkout in front of
+you.
+
 ## Hooks
 
 ```sh
