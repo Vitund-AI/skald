@@ -5,7 +5,7 @@ rank: 80
 tags: ["area:cli"]
 blocked_by: []
 created_at: "2026-09-15T17:22:01Z"
-updated_at: "2026-09-15T17:22:01Z"
+updated_at: "2026-09-15T17:24:12Z"
 ---
 ## Requirements
 
@@ -78,3 +78,12 @@ branches are out of scope, as they are for claims_elsewhere by default).
 `skald claim` now warns when a story is already active in another local
 working tree or branch, including when the same name is used in both, so
 parallel agents do not silently pick up the same story.
+
+## [claude] 2026-09-15 17:24 UTC · decision
+Design refinement (from the maintainer): the collision key is (author, from_branch/tree), not author alone. We cannot require distinct agent names, but a git worktree cannot share a branch with another, so the origin branch (or checkout path) always distinguishes two concurrent claimants — even when both are 'claude'.
+
+Implication: the fix is to key the warning on origin, not on name. Warn whenever the story is active in another local worktree/branch, and label it with that origin (e.g. claude@feature-x) so a different-name and a same-name-other-branch collision read differently. author != author gating goes away.
+
+Good news: from_branch is already available on both sides without any storage change — skald claim knows the current branch via gitutil.branch(), and claims_elsewhere() already returns each other-tree claim's {branch, checkout}. The current tree is never in that set, so any entry is a real other-origin claim. So the core fix needs no story-file/frontmatter change.
+
+Open fork for the maintainer (Q3): do we also want to STORE/DISPLAY provenance durably — surface the claim as author@branch on the board badge, in ls, and in the claim note — or is deriving it at warn time enough? Deriving fully closes the reported gap with no format change; storing adds at-a-glance provenance but touches how assignee is shown. Recommend: derive-only core now, treat author@branch display as an optional follow-up.
