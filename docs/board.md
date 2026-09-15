@@ -138,7 +138,9 @@ each note's heading set apart, open questions with an answer form, and Add
 a note, which appends a dated note under your identity. A story id in the
 rendered text (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) is a link that opens
 that story, switching project for a `project:id`. Claim assigns the
-story to you and starts it.
+story to you and starts it; if the story is already active in another local
+working tree or branch, a toast names that branch, so two agents do not
+unknowingly work it at once even when they share a name.
 
 When the project has a GitHub `origin` remote, an **Open in Claude Code**
 button opens the story as a [Claude Code](https://claude.ai/code) session on

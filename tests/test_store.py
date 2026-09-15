@@ -516,6 +516,29 @@ class TestRegistry(SkaldTestCase):
         self.assertEqual(cat[0]["name"], "claude_code_link")
         self.assertEqual({"name", "label", "help", "default"}, set(cat[0]))
 
+    def test_taking_a_story_active_elsewhere_warns(self):
+        a = self.new("Shared", "--status", "ready")
+        b = self.new("Movable", "--status", "ready")
+        c = self.new("Backlogged", "--status", "ready")
+        d = self.new("Solo", "--status", "ready")
+        active = self.store().config.first_active_key
+
+        def other(name):
+            return [{"branch": "feature", "assignee": name, "status": "in_progress", "checkout": "/wt"}]
+
+        # Same name in another working tree still warns: the name is not a reliable key.
+        _, warns = self.store().claim(a, "claude", elsewhere={a: other("claude")})
+        self.assertTrue(any(f"{a} is already active as claude on branch feature" in w for w in warns), warns)
+        # A move into an active column warns the same way, not only claim.
+        _, warns = self.store().update(b, status=active, elsewhere={b: other("agent")})
+        self.assertTrue(any(f"{b} is already active as agent on branch feature" in w for w in warns), warns)
+        # An update that does not make the story active is silent.
+        _, warns = self.store().update(c, title="renamed", elsewhere={c: other("agent")})
+        self.assertFalse(any("already active" in w for w in warns), warns)
+        # No elsewhere-claim, no warning.
+        _, warns = self.store().claim(d, "claude", elsewhere={})
+        self.assertFalse(any("already active" in w for w in warns), warns)
+
     def test_workspace_current_and_autoregister(self):
         Registry(self.home).remove("alpha")
         (self.skald_dir / "config.json").unlink()
@@ -890,7 +913,7 @@ class TestClaimAwareness(SkaldTestCase):
         self.assertIn("claimed by codex on branch agent/two", notes[0])
         self.assertEqual(self.store().next_story(for_author="codex", elsewhere=elsewhere).id, a.id)
         story, warnings = self.store().claim(a.id, "claude", elsewhere=elsewhere)
-        self.assertTrue(any("also claimed by codex" in w for w in warnings))
+        self.assertTrue(any("already active as codex on branch agent/two" in w for w in warnings))
 
 
 class TestDiffStates(SkaldTestCase):

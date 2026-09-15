@@ -320,6 +320,9 @@ class TestProjectsAndConfig(SkaldTestCase):
         self.assertIn("worker", err)
         code, out, err = self.run_cli("claim", a, "--as", "claude")
         self.assertIn("worker", err)
+        # The same name in both trees still warns: the origin branch is the key, not the name.
+        code, out, err = self.run_cli("claim", a, "--as", "worker")
+        self.assertIn("already active as worker on branch feature", err)
         # use: the worktree becomes the primary, then back.
         code, out, _ = self.run_cli("projects", "use", cwd=wt)
         self.assertIn("now points at", out)
