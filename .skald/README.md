@@ -1,7 +1,7 @@
-<!-- skald-render 6093bdc1eb8ac791 -->
+<!-- skald-render 9fec62522b63ace2 -->
 # skald backlog
 
-**2 open** · Idea 1 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 4
+**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 4
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -22,15 +22,16 @@ flowchart LR
     n_716fe0 --> n_0341fc
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_f9e295 active
     class n_0341fc,n_716fe0 done
+    class n_f9e295 active
 ```
 
-## Idea (1)
+## Idea (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
+| [50b992](stories/50b992-warn-when-claiming-a-story-already-active-in-anoth.md) | Warn when claiming a story already active in another local worktree, same author included | `area:cli` |  |  | 0/7 |
 
 ## Plan (0)
 
