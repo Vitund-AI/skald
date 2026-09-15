@@ -592,9 +592,9 @@ Get or set a user setting.
 
 | Argument | Description |
 | --- | --- |
-| `[key]` | author, push, port, host, or stale_days |
+| `[key]` | author, push, port, host, stale_days, or features.<name> |
 | `[value]` | new value; omit to show the current one |
-| `--unset` | return the key to its default |
+| `--unset` | return the key to its default (with -p NAME, just for that project) |
 
 ## hooks
 

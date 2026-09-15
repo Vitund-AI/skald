@@ -483,6 +483,39 @@ class TestRegistry(SkaldTestCase):
         u.unset("author")
         self.assertEqual(UserConfig(self.home).get("author"), "")
 
+    def test_feature_flag_resolution_and_persistence(self):
+        u = UserConfig(self.home)
+        # built-in default when nothing is stored
+        self.assertTrue(u.feature("claude_code_link"))
+        self.assertEqual(u.features(), {"claude_code_link": True})
+        # global override; a project with no override inherits it
+        u.set_feature("claude_code_link", False)
+        self.assertFalse(u.feature("claude_code_link"))
+        self.assertFalse(u.feature("claude_code_link", "alpha"))
+        # per-project override beats the global, and does not touch it
+        u.set_feature("claude_code_link", True, "alpha")
+        self.assertTrue(u.feature("claude_code_link", "alpha"))
+        self.assertFalse(u.feature("claude_code_link"))
+        self.assertFalse(u.feature("claude_code_link", "beta"))  # a different project still inherits global
+        # survives a reload
+        self.assertTrue(UserConfig(self.home).feature("claude_code_link", "alpha"))
+        # unsetting a scope falls back to the next; empty blocks are pruned away
+        u.unset_feature("claude_code_link", "alpha")
+        self.assertFalse(u.feature("claude_code_link", "alpha"))
+        self.assertNotIn("projects", u.data)
+        u.unset_feature("claude_code_link")
+        self.assertTrue(u.feature("claude_code_link"))
+        self.assertEqual(u.data, {})
+        # unknown flag and a bad project name are errors
+        with self.assertRaises(SkaldError):
+            u.feature("nope")
+        with self.assertRaises(SkaldError):
+            u.set_feature("claude_code_link", True, "Bad Name")
+        # the catalog carries what the UI needs
+        cat = UserConfig(self.home).feature_catalog()
+        self.assertEqual(cat[0]["name"], "claude_code_link")
+        self.assertEqual({"name", "label", "help", "default"}, set(cat[0]))
+
     def test_workspace_current_and_autoregister(self):
         Registry(self.home).remove("alpha")
         (self.skald_dir / "config.json").unlink()
@@ -514,6 +547,16 @@ class TestUserConfigCoercion(SkaldTestCase):
         u.save()
         again = UserConfig(self.home)
         self.assertEqual((again.get("stale_days"), again.get("push"), again.get("port"), again.get("author")), (7, True, 8321, ""))
+
+    def test_hand_edited_feature_flags_are_tolerated(self):
+        u = UserConfig(self.home)
+        # a string "false" is read as the boolean; garbage falls through to the built-in default
+        u.data.update({"features": {"claude_code_link": "false"},
+                       "projects": {"alpha": {"features": {"claude_code_link": "nonsense"}}}})
+        u.save()
+        again = UserConfig(self.home)
+        self.assertFalse(again.feature("claude_code_link"))                 # "false" coerced
+        self.assertFalse(again.feature("claude_code_link", "alpha"))        # garbage -> falls back to global
 
 
 class TestSnapshots(SkaldTestCase):

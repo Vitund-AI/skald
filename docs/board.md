@@ -73,6 +73,8 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Commit N changes** appears when story files are uncommitted. It commits
   only `.skald/` and, when enabled, the rendered snapshot; with `skald
   config push true` it can push too.
+- **Settings** (the gear) opens the settings panel: feature flags and a few
+  preferences. See [Settings](#settings).
 - **Theme** cycles Dark, Light, Auto. Dark is the default, Auto follows the
   operating system, and the choice is remembered per browser. See
   [Theme](#theme) for restyling the board.
@@ -137,6 +139,16 @@ a note, which appends a dated note under your identity. A story id in the
 rendered text (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) is a link that opens
 that story, switching project for a `project:id`. Claim assigns the
 story to you and starts it.
+
+When the project has a GitHub `origin` remote, an **Open in Claude Code**
+button opens the story as a [Claude Code](https://claude.ai/code) session on
+the web: it preselects the repository and prefills a short prompt that points
+the session at the story (`skald show <id>`, then claim it and follow
+`.skald/AGENTS.md`) rather than embedding the body, since the cloud checkout
+can run `skald` itself. The prompt is not submitted automatically — you review
+it first. The button is hidden when there is no GitHub remote, and it is
+governed by the `claude_code_link` setting (on by default; see
+[Settings](#settings)).
 
 **Edit** (or `e`) switches to the form: title, status, assignee, tags,
 blockers, parent, and the body with a Preview toggle. Save writes it back
@@ -225,6 +237,29 @@ branch. Columns keep their scroll position across updates.
 | `Tab`, `Enter` | Move between cards, open the focused one |
 | `e` | Edit the open story |
 | `Esc` | Leave edit mode, close a dialog, end a selection |
+
+## Settings
+
+The gear in the header opens a settings panel. Everything here is
+machine-local: it lives in `SKALD_HOME/config.json` and is never committed,
+so it is per-person, per-machine.
+
+- **Defaults (all projects)** holds the feature flags and a few
+  preferences — the board author, whether to offer push after a commit, and
+  the stale-after day count. A flag here is a plain on/off that applies
+  everywhere unless a project overrides it.
+- **This project** lists the same flags for the project on screen, each a
+  three-way choice: *Inherit* (follow the default, which the option names as
+  on or off), *On*, or *Off*. Inherit clears the per-project value so the
+  default shows through again. This panel is hidden in the "All projects"
+  view, which has no single project to scope to.
+
+Feature flags come from a catalog the server sends, so the panel lists
+whatever flags this version of Skald defines without any per-flag UI. The
+current flag is **Open in Claude Code** (`claude_code_link`), on by default.
+Changes save immediately and the board reflects them at once; the same
+values are settable from the terminal with `skald config features.<name>`
+(and `-p NAME` for one project).
 
 ## Theme
 

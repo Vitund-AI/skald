@@ -1,9 +1,30 @@
-<!-- skald-render 632c29225ef6f337 -->
+<!-- skald-render 6093bdc1eb8ac791 -->
 # skald backlog
 
-**1 open** · Idea 1 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 1
+**2 open** · Idea 1 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 4
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
+
+## Epics
+
+| Epic | Progress | Done | Open |
+| --- | --- | ---: | ---: |
+| `epic:feature-flags` | ▰▰▰▰▰▰▰▱▱▱ 67% | 2 | 1 |
+
+## Dependencies
+
+```mermaid
+flowchart LR
+    n_0341fc["0341fc<br/>Settings modal and API for defaults and…"]
+    n_716fe0["716fe0<br/>Machine-local feature-flag config layer"]
+    n_f9e295["f9e295<br/>Open story in Claude Code from the card…"]
+    n_716fe0 --> n_f9e295
+    n_716fe0 --> n_0341fc
+    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+    classDef done fill:#d1fae5,stroke:#34d399,color:#475569
+    class n_f9e295 active
+    class n_0341fc,n_716fe0 done
+```
 
 ## Idea (1)
 
@@ -23,15 +44,20 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [f9e295](stories/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
 
-<details><summary><strong>Done (1)</strong></summary>
+<details><summary><strong>Done (4)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [ce8ab1](stories/ce8ab1-completion-and-api-tests-pick-a-unique-id-prefix-n.md) | Completion and API tests pick a unique id prefix, not a fixed slice | `tests` | claude |  | 1/1 |
+| [947089](stories/947089-release-sh-tags-the-merge-commit-not-a-skip-ci-ren.md) | release.sh tags the merge commit, not a [skip ci] render HEAD | `area:release` | claude |  | 4/4 |
+| [716fe0](stories/716fe0-machine-local-feature-flag-config-layer.md) | Machine-local feature-flag config layer | `area:config` `epic:feature-flags` | claude |  | 7/7 |
+| [0341fc](stories/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
 
 </details>
 

@@ -448,3 +448,67 @@ class TestAuth(ServerTestCase):
         url = srv.board_url("127.0.0.1", 8321, "abc", "alpha")
         self.assertEqual(url, "http://127.0.0.1:8321/?project=alpha#key=abc")
         self.assertEqual(srv.board_url("127.0.0.1", 8321, None), "http://127.0.0.1:8321/")
+
+
+class TestRepoSlug(ServerTestCase):
+    def test_board_carries_github_slug_when_origin_is_github(self):
+        # no GitHub origin: the board reports null, so the button stays hidden
+        _, board = self.call("GET", "/api/projects/alpha/board")
+        self.assertIsNone(board["repo_slug"])
+        # add a GitHub origin and the slug appears
+        git(self.repo, "remote", "add", "origin", "git@github.com:acme/alpha.git")
+        _, board = self.call("GET", "/api/projects/alpha/board")
+        self.assertEqual(board["repo_slug"], "acme/alpha")
+
+
+class TestSettings(ServerTestCase):
+    def test_settings_read_write_global_and_per_project(self):
+        # GET exposes the catalog, the resolved values, and the raw scopes
+        status, data = self.call("GET", "/api/settings")
+        self.assertEqual(status, 200)
+        self.assertIn("stale_days", data["settings"])
+        feats = data["features"]
+        self.assertEqual([c["name"] for c in feats["catalog"]], ["claude_code_link"])
+        self.assertEqual(feats["resolved"]["claude_code_link"], True)   # built-in default
+        self.assertIsNone(feats["global"]["claude_code_link"])          # nothing stored yet
+        self.assertEqual(feats["project"], {})                          # no project in the query
+        # the board payload carries the same features block, resolved for the project
+        _, board = self.call("GET", "/api/projects/alpha/board")
+        self.assertEqual(board["features"]["resolved"]["claude_code_link"], True)
+        # a global write flips the default; GET and the board both reflect it
+        status, data = self.call("PUT", "/api/settings", {"features": {"claude_code_link": False}})
+        self.assertEqual((status, data["features"]["global"]["claude_code_link"]), (200, False))
+        _, board = self.call("GET", "/api/projects/alpha/board")
+        self.assertFalse(board["features"]["resolved"]["claude_code_link"])
+        # a per-project override beats the global and leaves it untouched
+        status, data = self.call("PUT", "/api/projects/alpha/settings", {"features": {"claude_code_link": True}})
+        self.assertEqual(status, 200)
+        self.assertEqual(data["features"]["project"]["claude_code_link"], True)
+        self.assertEqual(data["features"]["resolved"]["claude_code_link"], True)
+        self.assertFalse(data["features"]["global"]["claude_code_link"])
+        _, board = self.call("GET", "/api/projects/alpha/board")
+        self.assertTrue(board["features"]["resolved"]["claude_code_link"])
+        # null clears the project override, falling back to the global value
+        status, data = self.call("PUT", "/api/projects/alpha/settings", {"features": {"claude_code_link": None}})
+        self.assertIsNone(data["features"]["project"]["claude_code_link"])
+        self.assertFalse(data["features"]["resolved"]["claude_code_link"])
+        # persisted to disk (a fresh UserConfig sees the global override)
+        self.assertFalse(UserConfig(self.home).feature("claude_code_link"))
+
+    def test_settings_flat_prefs_and_validation(self):
+        # a flat preference can be set and cleared through the global endpoint
+        status, data = self.call("PUT", "/api/settings", {"stale_days": 7})
+        self.assertEqual((status, data["settings"]["stale_days"]), (200, 7))
+        status, data = self.call("PUT", "/api/settings", {"stale_days": None})
+        self.assertEqual(data["settings"]["stale_days"], 3)  # back to default
+        # unknown flag, bad value, and unknown pref are all rejected
+        self.assertEqual(self.call("PUT", "/api/settings", {"features": {"nope": True}})[0], 400)
+        self.assertEqual(self.call("PUT", "/api/settings", {"features": {"claude_code_link": "maybe"}})[0], 400)
+        self.assertEqual(self.call("PUT", "/api/settings", {"colour": "red"})[0], 400)
+        # a rejected batch writes nothing (the good flag beside the bad one is not applied)
+        self.call("PUT", "/api/settings", {"features": {"claude_code_link": False, "nope": True}})
+        self.assertIsNone(UserConfig(self.home).feature_raw("claude_code_link"))
+        # per-project endpoint refuses anything but features
+        self.assertEqual(self.call("PUT", "/api/projects/alpha/settings", {"stale_days": 5})[0], 400)
+        # writes require the token
+        self.assertEqual(self.call("PUT", "/api/settings", {"features": {}}, auth=False)[0], 401)

@@ -157,8 +157,13 @@ With a `dev` branch for day-to-day work and `main` as the release line:
      checks, merge it. The release commit gets the full matrix before it
      reaches `main`, and a pull request is the shape branch protection on
      `main` requires.
-   - Tag `main` `v1.2.0` and push the tag. The publish workflow checks the
-     tag against the version file, runs the tests, builds, and waits for
+   - Tag `v1.2.0` and push the tag. The tag goes on the merge commit, not
+     on `main`'s HEAD: the render job commits a `[skip ci]` render onto
+     `main` right after the merge, and a tag push whose head commit says
+     `[skip ci]` is skipped by GitHub in full, publish included, so the
+     script walks back to the newest non-skip commit (the merge, which
+     carries the bump) and tags that. The publish workflow checks the tag
+     against the version file, runs the tests, builds, and waits for
      approval on the `pypi` environment before uploading; the script prints
      where to approve.
    - Merge `main` back into `dev` and push, so the render job's commits on

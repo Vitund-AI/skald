@@ -81,8 +81,22 @@ else `$XDG_CONFIG_HOME/skald` defaulting to `~/.config/skald`. It holds:
   `path` is the primary; `checkouts` (optional) are other working trees of
   the same project recorded when a command ran there.
 - `config.json`: user settings with defaults `author ""`, `push false`,
-  `port 8321`, `host "127.0.0.1"`, `stale_days 3`.
+  `port 8321`, `host "127.0.0.1"`, `stale_days 3`. It also carries the
+  feature flags (below), which is why nothing in this file is committed.
 - `server.json` and `server.log`: the background server's pid, host, port.
+
+Feature flags are machine-local boolean toggles for board and CLI behaviour,
+declared once in a catalog (`FEATURE_DEFAULTS`: name, label, help, built-in
+default) so the CLI, the board settings, and the resolver stay generic over
+them. A flag is stored at `features.<name>` for a global value and at
+`projects.<name>.features.<name>` for a per-project override; it resolves
+per-project, then global, then the built-in default. Values are read
+tolerantly (a hand-edited non-boolean falls through to the next scope).
+`skald config features.<name> [true|false]` reads or sets the global value,
+`-p NAME` scopes it to one project, and `--unset` returns a scope to what it
+inherits. The current flags are: `claude_code_link` (default on) — show a
+link on the board's card detail view that opens the story as a Claude Code
+web session.
 
 ### 2.4 Finding the project
 
@@ -471,6 +485,15 @@ endpoint table; it is the reference.
 which walks the argparse tree; the board's Help panel renders it, so the
 page never carries its own copy of the command list.
 
+`GET/PUT /api/settings` and `GET/PUT /api/projects/<p>/settings` read and
+write the machine-local settings behind the board's settings panel. The
+response carries the feature-flag catalog and, per flag, the value resolved
+for the project alongside the value explicitly stored at each scope (`null`
+for inherit), so the panel can render a global on/off and a per-project
+inherit/on/off without a second request. A `PUT` feature value of `null`
+clears that scope; the global endpoint also accepts the flat preferences
+(`author`, `push`, `stale_days`, ...), the per-project one only `features`.
+
 `GET .../version` returns a hash of story file names, sizes, and mtimes.
 `GET .../events` is a server-sent event stream that emits `hello` on connect
 and `change` whenever that hash changes, checked every half second on the
@@ -513,7 +536,12 @@ the target (switching project if needed), parent and children, the body
 rendered as Markdown with note headings set in the mono face and the kind
 in the accent colour, story ids in the text (`id`, `#id`, or `project:id`)
 turned into links that open the referenced story, the questions panel, and
-the add-a-note form. Edit
+the add-a-note form. When the project has a GitHub `origin` remote
+(`gitutil.github_slug`, surfaced as `repo_slug` in the board payload) and the
+`claude_code_link` flag resolves on, an "Open in Claude Code" link opens
+`claude.ai/code` with the repository preselected and a short prompt prefilled
+that sends the session to `skald show <id>` and `.skald/AGENTS.md` rather than
+embedding the body; the link is not auto-submitted. Edit
 (or `e`) swaps in the form: title, status, assignee, tags, blockers,
 parent, body with a preview toggle, save with conflict detection, delete;
 Save and Cancel return to view mode, `Esc` leaves edit mode before it
@@ -543,6 +571,13 @@ jump back to the top.
 
 Help panel: shortcuts and card markers, the CLI reference from `/api/help`
 with a filter, and a story file primer with links to the docs.
+
+Settings panel (the header gear): a Defaults section with an on/off per
+feature flag plus the flat preferences (author, push, stale-days), and a
+This-project section with an inherit/on/off select per flag, hidden in the
+All-projects view. It is driven by the catalog the API sends, so a new flag
+appears with no per-flag markup; changes save immediately through the
+settings endpoints and the board refetches so a flag's effect shows at once.
 
 Theme: the Vitund design system tokens as CSS custom properties on
 `:root`: surfaces (`--canvas`, `--column`, `--surface`, `--chip`,

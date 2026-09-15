@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from .config import ProjectConfig, slugify_name
+from .config import NAME_RE, ProjectConfig, slugify_name
 from .errors import ConfigError, NotFoundError, SkaldError
 from .store import Store
 from .util import atomic_write, now_iso
@@ -29,6 +29,33 @@ USER_DEFAULTS = {
     "host": "127.0.0.1",  # board bind address
     "stale_days": 3,     # mark active stories untouched for this many days
 }
+
+# Machine-local feature flags: opt-in/opt-out toggles for board and CLI
+# behaviour. Each is declared once here; the CLI, the board settings modal,
+# and the resolver are generic over the catalog, so adding a flag is one entry
+# plus wherever it is consumed. Every flag is a boolean with a built-in
+# default; a global value overrides the default, and a per-project value
+# overrides the global (see UserConfig.feature).
+FEATURE_DEFAULTS = {
+    "claude_code_link": {
+        "label": "Open in Claude Code",
+        "help": "Show a link on the card detail view that opens the story as a Claude Code web session.",
+        "default": True,
+    },
+}
+
+
+def coerce_bool(value) -> Optional[bool]:
+    """A stored or typed value read as a boolean, or None if it is neither."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        low = value.strip().lower()
+        if low in ("1", "true", "yes", "on"):
+            return True
+        if low in ("0", "false", "no", "off"):
+            return False
+    return None
 
 
 def config_home() -> Path:
@@ -149,6 +176,89 @@ class UserConfig:
 
     def save(self) -> None:
         atomic_write(self.path, json.dumps(self.data, indent=2) + "\n")
+
+    # -- feature flags ---------------------------------------------------
+    #
+    # Stored machine-local, never committed. A flag lives at ``features.<name>``
+    # for the global default and at ``projects.<name>.features.<name>`` for a
+    # per-project override. Resolution is per-project, then global, then the
+    # built-in default from FEATURE_DEFAULTS.
+
+    @staticmethod
+    def _check_feature(name: str) -> None:
+        if name not in FEATURE_DEFAULTS:
+            raise SkaldError(f"unknown feature '{name}' (known: {', '.join(FEATURE_DEFAULTS)})")
+
+    @staticmethod
+    def _flag_at(block, name: str) -> Optional[bool]:
+        """The flag's value in one config block, or None if absent/uninterpretable."""
+        if not isinstance(block, dict):
+            return None
+        feats = block.get("features")
+        if not isinstance(feats, dict) or name not in feats:
+            return None
+        return coerce_bool(feats[name])
+
+    def feature(self, name: str, project: Optional[str] = None) -> bool:
+        """Resolve a flag: per-project override, else global, else built-in default."""
+        self._check_feature(name)
+        if project:
+            value = self._flag_at(self.data.get("projects", {}).get(project), name)
+            if value is not None:
+                return value
+        value = self._flag_at(self.data, name)
+        if value is not None:
+            return value
+        return FEATURE_DEFAULTS[name]["default"]
+
+    def features(self, project: Optional[str] = None) -> dict:
+        """Every flag resolved for ``project`` (or globally)."""
+        return {name: self.feature(name, project) for name in FEATURE_DEFAULTS}
+
+    def feature_raw(self, name: str, project: Optional[str] = None) -> Optional[bool]:
+        """The value explicitly stored at one scope, or None when that scope inherits."""
+        self._check_feature(name)
+        if project:
+            return self._flag_at(self.data.get("projects", {}).get(project), name)
+        return self._flag_at(self.data, name)
+
+    @staticmethod
+    def feature_catalog() -> list[dict]:
+        """The declared flags, for the settings UI and completion."""
+        return [{"name": name, "label": meta["label"], "help": meta["help"],
+                 "default": meta["default"]} for name, meta in FEATURE_DEFAULTS.items()]
+
+    def set_feature(self, name: str, value: bool, project: Optional[str] = None) -> None:
+        self._check_feature(name)
+        block = self.data
+        if project:
+            if not NAME_RE.match(project):
+                raise SkaldError(f"invalid project name {project!r}")
+            block = self.data.setdefault("projects", {}).setdefault(project, {})
+        block.setdefault("features", {})[name] = bool(value)
+        self.save()
+
+    def unset_feature(self, name: str, project: Optional[str] = None) -> None:
+        """Return a flag to what it inherits by removing its stored value."""
+        self._check_feature(name)
+        if project:
+            proj = self.data.get("projects", {}).get(project)
+            self._drop_flag(proj, name)
+            if isinstance(proj, dict) and not proj:
+                self.data.get("projects", {}).pop(project, None)
+            if isinstance(self.data.get("projects"), dict) and not self.data["projects"]:
+                self.data.pop("projects", None)
+        else:
+            self._drop_flag(self.data, name)
+        self.save()
+
+    @staticmethod
+    def _drop_flag(block, name: str) -> None:
+        if not isinstance(block, dict) or not isinstance(block.get("features"), dict):
+            return
+        block["features"].pop(name, None)
+        if not block["features"]:
+            block.pop("features", None)
 
 
 def checkout_id(skald_dir: Path) -> str:

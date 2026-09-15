@@ -38,9 +38,12 @@ as errors.
 | `GET /api/health` | | `{ok, version, pid}`; open, no token |
 | `POST /api/session`, `DELETE /api/session` | `{token}` | Sets or clears the session cookie; open, but the token must match |
 | `GET /api/projects` | | `{projects, settings}` |
+| `GET /api/settings[?project=NAME]` | | `{settings, features}`; `features` is `{catalog: [{name, label, help, default}], resolved, global, project}` — `global`/`project` map each flag to its explicitly stored value or `null` (inherit), `resolved` to the effective value |
+| `PUT /api/settings` | `{features?: {name: true|false|null}, author?, push?, stale_days?, ...}` | writes global settings; a feature `null` clears it; returns `{settings, features}` |
 | `GET /api/help` | | `{version, commands: [{name, help, usage, arguments, subcommands}]}`, the CLI reference read from the argparse parser |
 | `GET /api/ready` | | ready, unblocked stories across all projects |
-| `GET /api/projects/<p>/board[?ref=REF]` | | `{columns, stories, facets, git, identity, settings, version, warnings, checkout}`; `git` carries `branch`, `head`, and `changes`; with `ref`, a read-only snapshot of that branch |
+| `GET /api/projects/<p>/board[?ref=REF]` | | `{columns, stories, facets, git, identity, settings, features, version, warnings, checkout}`; `git` carries `branch`, `head`, and `changes`; `features` is resolved for this project (see `GET /api/settings`); with `ref`, a read-only snapshot of that branch |
+| `GET /api/projects/<p>/settings`, `PUT` | `{features: {name: true|false|null}}` | the project's feature overrides; `PUT` sets or (with `null`) clears them and returns `{features}`; accepts only `features` |
 | `GET /api/projects/<p>/checkouts` | | `{current, checkouts: [{id, path, branch, changes, primary, worktree, exists}]}`; `current` is the checkout the request acted on |
 | `GET /api/projects/<p>/branches` | | `{current, branches: [{name, sha, remote, stories, only_there, only_here, differ}], elsewhere, claims}`; `claims` includes uncommitted claims in other checkouts, each with `checkout` |
 | `GET /api/projects/<p>/version` | | a hash that changes whenever any story file changes |
