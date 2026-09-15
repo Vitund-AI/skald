@@ -317,8 +317,13 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
 - `next` skips ready stories assigned to someone else unless the assignment
   is stale, in which case it offers them with a warning; it also skips
   stories that are active with a different assignee on any other local
-  branch (`claims_elsewhere`, computed from snapshots). `claim` warns in both
-  cases and proceeds.
+  branch (`claims_elsewhere`, computed from snapshots). Taking a story —
+  `claim`, or a move into an active column — warns when it is already active
+  in another local working tree or branch, naming that branch. Because a
+  worktree cannot share a branch, the branch identifies the other claimant
+  even when both run under the same name, as parallel agents usually do, so
+  the warning does not depend on the assignee differing. It warns and
+  proceeds; the actor decides.
 
 ### 4.5 Facets
 

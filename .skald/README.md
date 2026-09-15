@@ -1,7 +1,7 @@
-<!-- skald-render 9fec62522b63ace2 -->
+<!-- skald-render 9ed80d64f7ff5c42 -->
 # skald backlog
 
-**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 4
+**4 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 4
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -16,14 +16,19 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 ```mermaid
 flowchart LR
     n_0341fc["0341fc<br/>Settings modal and API for defaults and…"]
+    n_50b992["50b992<br/>Warn when claiming a story already acti…"]
     n_716fe0["716fe0<br/>Machine-local feature-flag config layer"]
+    n_a29da4["a29da4<br/>Show claim provenance as author@branch …"]
     n_f9e295["f9e295<br/>Open story in Claude Code from the card…"]
+    n_50b992 --> n_a29da4
     n_716fe0 --> n_f9e295
     n_716fe0 --> n_0341fc
+    classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
     class n_0341fc,n_716fe0 done
-    class n_f9e295 active
+    class n_a29da4 backlog
+    class n_50b992,n_f9e295 active
 ```
 
 ## Idea (2)
@@ -31,7 +36,7 @@ flowchart LR
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
-| [50b992](stories/50b992-warn-when-claiming-a-story-already-active-in-anoth.md) | Warn when claiming a story already active in another local worktree, same author included | `area:cli` |  |  | 0/7 |
+| [a29da4](stories/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` |  | 🔒 `50b992` | 0/6 |
 
 ## Plan (0)
 
@@ -45,11 +50,12 @@ _none_
 
 _none_
 
-## Review (1)
+## Review (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [f9e295](stories/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
+| [50b992](stories/50b992-warn-when-claiming-a-story-already-active-in-anoth.md) | Warn when claiming a story already active in another local worktree, same author included | `area:cli` | claude |  | 7/7 |
 
 <details><summary><strong>Done (4)</strong></summary>
 

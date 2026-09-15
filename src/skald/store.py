@@ -862,6 +862,16 @@ class Store:
             busy = self.busy_lanes(stories, elsewhere)
             for c in self.lane_conflicts(story, busy):
                 warnings.append(f"{story.id} enters a busy lane: {c}")
+        # Taking a story that is already active in another local working tree or branch. The
+        # actor's name is not a reliable key (agents share one, e.g. "claude"), but a worktree
+        # cannot share a branch, so the origin branch names the other claimant. claims_elsewhere
+        # never includes the current tree, so any entry here is a real other-origin claim.
+        if elsewhere and self.config.role(story.status) == "active":
+            for c in elsewhere.get(story.id, []):
+                warnings.append(
+                    f"{story.id} is already active as {c['assignee']} on branch {c['branch']}; "
+                    "check it is not being worked in another tree"
+                )
         if status_changed and column and column.limit:
             count = sum(1 for s in self.index(include_archived=False).values() if s.status == column.key)
             if count > column.limit:
@@ -890,9 +900,8 @@ class Store:
         if story.assignee and story.assignee != author:
             stale = " (stale)" if _is_stale(story, stale_days) else ""
             pre.append(f"{story.id} was assigned to {story.assignee}{stale}; now {author}")
-        for c in (elsewhere or {}).get(story.id, []):
-            if c["assignee"] != author:
-                pre.append(f"{story.id} is also claimed by {c['assignee']} on branch {c['branch']} ({c['status']})")
+        # The cross-worktree/branch active-claim warning is raised by update(), which both
+        # claim and move reach, so it fires however the story is taken (see update()).
         kwargs: dict = {"assignee": author}
         role = self.config.role(story.status)
         target = self.config.first_active_key

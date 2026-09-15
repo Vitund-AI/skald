@@ -376,6 +376,10 @@ class TestBranchAPI(ServerTestCase):
         status, data = self.call("GET", f"{P}/branches")
         self.assertEqual(data["claims"][a], [{"branch": "feature", "assignee": "worker", "status": "in_progress",
                                              "checkout": str((wt / ".skald").resolve())}])
+        # Claiming it from the primary surfaces that collision (the board toasts the warning),
+        # even under the same name — the origin branch is the key.
+        status, data = self.call("POST", f"{P}/stories/{a}/claim", {"author": "worker"})
+        self.assertTrue(any("already active as worker on branch feature" in w for w in data["warnings"]), data["warnings"])
         # Ids only: an unknown id is 404, and a path is not an id.
         self.assertEqual(self.call("GET", f"{P}/board?checkout=nope")[0], 404)
         self.assertEqual(self.call("GET", f"{P}/board?checkout={wt / '.skald'}")[0], 404)

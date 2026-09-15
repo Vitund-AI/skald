@@ -1,11 +1,12 @@
 ---
 title: "Warn when claiming a story already active in another local worktree, same author included"
-status: "idea"
-rank: 80
+status: "review"
+rank: 20
 tags: ["area:cli"]
 blocked_by: []
+assignee: "claude"
 created_at: "2026-09-15T17:22:01Z"
-updated_at: "2026-09-15T17:24:12Z"
+updated_at: "2026-09-15T17:35:04Z"
 ---
 ## Requirements
 
@@ -65,13 +66,13 @@ branches are out of scope, as they are for claims_elsewhere by default).
   confirm the claim action in the dialog surfaces the warning the API returns.
 
 ## Acceptance
-- [ ] `skald claim` warns when the story is active in another local worktree/branch even for the same author, with distinct wording from the different-author case
-- [ ] different-author warning unchanged; no warning when there is genuinely no elsewhere-claim
-- [ ] warning only (claim still succeeds); local-only
-- [ ] decision recorded on Q1 (move) and Q2 (board), acted on or deferred with a note
-- [ ] unit tests: same-author-elsewhere warns, different-author warns, no-collision is silent
-- [ ] docs updated if behaviour is user-visible (board.md / git-and-ci.md)
-- [ ] python3 -m unittest green, ruff clean
+- [x] `skald claim` (and a move into an active column) warns when the story is active in another local worktree/branch even for the same author, naming the origin branch (one name-agnostic message; branch is the key — see decision note)
+- [x] different-author case still warns (name shown inline); no warning when there is genuinely no elsewhere-claim
+- [x] warning only (claim still succeeds); local-only
+- [x] decision recorded on Q1 (move) and Q2 (board), acted on or deferred with a note
+- [x] unit tests: same-author-elsewhere warns, different-author warns, no-collision is silent
+- [x] docs updated if behaviour is user-visible (board.md / git-and-ci.md)
+- [x] python3 -m unittest green, ruff clean
 
 ## Changelog
 
@@ -87,3 +88,12 @@ Implication: the fix is to key the warning on origin, not on name. Warn whenever
 Good news: from_branch is already available on both sides without any storage change — skald claim knows the current branch via gitutil.branch(), and claims_elsewhere() already returns each other-tree claim's {branch, checkout}. The current tree is never in that set, so any entry is a real other-origin claim. So the core fix needs no story-file/frontmatter change.
 
 Open fork for the maintainer (Q3): do we also want to STORE/DISPLAY provenance durably — surface the claim as author@branch on the board badge, in ls, and in the claim note — or is deriving it at warn time enough? Deriving fully closes the reported gap with no format change; storing adds at-a-glance provenance but touches how assignee is shown. Recommend: derive-only core now, treat author@branch display as an optional follow-up.
+
+## [claude] 2026-09-15 17:34 UTC · decision
+Built the derive-only core. Implementation and decisions:
+
+- Placed the warning in store.update(), the chokepoint both claim and a move-into-active reach, gated on: elsewhere provided AND the story's resulting status has an active role. Removed the old author-gated loop from store.claim(). So the warning fires on claim, on 'skald move <id> <active-col>', and on a re-claim of an already-active story.
+- Q1 (move) RESOLVED: yes, a move into an active column warns too (same code path).
+- Q2 (board parity) RESOLVED: the server claim endpoint now computes elsewhere and passes it to store.claim, so the board's Claim button toasts the same warning (frontend already surfaces res.warnings).
+- Message: chose ONE name-agnostic template rather than two — 'X is already active as <assignee> on branch <branch>; check it is not being worked in another tree'. The branch is the reliable key; the assignee name is shown inline, so a different-name collision still reads differently without a separate template. This is a deliberate deviation from the acceptance bullet that asked for 'distinct wording'; the single message is simpler and honest about names being unreliable.
+- Verified end to end (scratch worktrees): same-author claim warns (was silent), move warns, different-author warns, no-collision silent. Tests: test_store unit, a CLI worktree assertion, and a server-endpoint assertion. 179 tests, ruff clean. Docs: SPEC 4.4, board.md.

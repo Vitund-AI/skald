@@ -658,7 +658,8 @@ class Handler(BaseHTTPRequestHandler):
                 if sub == ["claim"] and method == "POST":
                     data = self._read_json()
                     author = (data.get("author") or "").strip() or self._identity(ws, store)
-                    story, warnings = store.claim(ref, author)
+                    elsewhere = store.claims_elsewhere(checkouts=ws.other_checkouts(store))
+                    story, warnings = store.claim(ref, author, ws.user.get("stale_days"), elsewhere)
                     self._json(200, {"story": self._story_json(ws, store, story), "warnings": warnings})
                     return
 
