@@ -215,6 +215,13 @@ class UserConfig:
         """Every flag resolved for ``project`` (or globally)."""
         return {name: self.feature(name, project) for name in FEATURE_DEFAULTS}
 
+    def feature_raw(self, name: str, project: Optional[str] = None) -> Optional[bool]:
+        """The value explicitly stored at one scope, or None when that scope inherits."""
+        self._check_feature(name)
+        if project:
+            return self._flag_at(self.data.get("projects", {}).get(project), name)
+        return self._flag_at(self.data, name)
+
     @staticmethod
     def feature_catalog() -> list[dict]:
         """The declared flags, for the settings UI and completion."""

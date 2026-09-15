@@ -258,6 +258,46 @@ class Handler(BaseHTTPRequestHandler):
 
         return human_identity(ws.user, gitutil.root(store.dir))
 
+    def _features_payload(self, user: UserConfig, project: Optional[str]) -> dict:
+        """Everything the settings modal needs: the catalog, the value resolved for
+        this project, and the values explicitly stored at each scope (null = inherit)."""
+        names = [c["name"] for c in user.feature_catalog()]
+        return {
+            "catalog": user.feature_catalog(),
+            "resolved": {n: user.feature(n, project) for n in names},
+            "global": {n: user.feature_raw(n) for n in names},
+            "project": {n: user.feature_raw(n, project) for n in names} if project else {},
+        }
+
+    def _write_settings(self, ws: Workspace, data: dict, project: Optional[str]) -> None:
+        """Apply a settings write to global (project=None) or per-project scope. A
+        feature value of true/false sets it, null clears it back to inherit."""
+        user = ws.user
+        feats = data.get("features")
+        if feats is not None:
+            if not isinstance(feats, dict):
+                raise SkaldError("features must be an object of flag name to true, false, or null")
+            for name, value in feats.items():   # validate the whole batch before writing any of it
+                UserConfig._check_feature(name)
+                if value is not None and not isinstance(value, bool):
+                    raise SkaldError(f"features.{name} must be true, false, or null")
+            for name, value in feats.items():
+                if value is None:
+                    user.unset_feature(name, project)
+                else:
+                    user.set_feature(name, value, project)
+        extra = set(data) - {"features"}
+        if project is not None:
+            if extra:
+                raise SkaldError(f"per-project settings accept only 'features' (got {', '.join(sorted(extra))})")
+            return
+        for key in extra:   # global scope may also carry the flat preferences
+            value = data[key]
+            if value is None:
+                user.unset(key)
+            else:
+                user.set(key, str(value))
+
     def _story_json(self, ws: Workspace, store: Store, story, body: bool = False) -> dict:
         d = store.story_dict(story, None, ws.user.get("stale_days"))
         if body:
@@ -368,6 +408,18 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {"projects": entries, "settings": ws.user.all()})
             return
 
+        if rest == ["settings"]:
+            if method == "GET":
+                project = (query.get("project") or [""])[0].strip() or None
+                self._json(200, {"settings": ws.user.all(), "features": self._features_payload(ws.user, project)})
+                return
+            if method in ("PUT", "PATCH"):
+                self._write_settings(ws, self._read_json(), None)
+                self._json(200, {"settings": ws.user.all(), "features": self._features_payload(ws.user, None)})
+                return
+            self._json(405, {"error": "method not allowed"})
+            return
+
         if rest == ["ready"] and method == "GET":
             stores, warnings = ws.open_all()
             out = []
@@ -388,6 +440,17 @@ class Handler(BaseHTTPRequestHandler):
 
             if tail == ["checkouts"] and method == "GET":
                 self._json(200, {"current": checkout_id(store.dir), "checkouts": self._checkouts(ws, name)})
+                return
+
+            if tail == ["settings"]:
+                if method == "GET":
+                    self._json(200, {"features": self._features_payload(ws.user, store.name)})
+                    return
+                if method in ("PUT", "PATCH"):
+                    self._write_settings(ws, self._read_json(), store.name)
+                    self._json(200, {"features": self._features_payload(ws.user, store.name)})
+                    return
+                self._json(405, {"error": "method not allowed"})
                 return
 
             ref = (query.get("ref") or [""])[0].strip()
@@ -456,6 +519,7 @@ class Handler(BaseHTTPRequestHandler):
                     "git": git,
                     "identity": self._identity(ws, store),
                     "settings": ws.user.all(),
+                    "features": self._features_payload(ws.user, store.name),
                     "version": self._version_hash(store),
                 })
                 return

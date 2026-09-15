@@ -1,7 +1,7 @@
-<!-- skald-render 9388d9127ef2921a -->
+<!-- skald-render 420f5695ae393b4a -->
 # skald backlog
 
-**4 open** · Idea 3 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 2
+**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 3
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -9,7 +9,7 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 | Epic | Progress | Done | Open |
 | --- | --- | ---: | ---: |
-| `epic:feature-flags` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 3 |
+| `epic:feature-flags` | ▰▰▰▱▱▱▱▱▱▱ 33% | 1 | 2 |
 
 ## Dependencies
 
@@ -18,21 +18,22 @@ flowchart LR
     n_0341fc["0341fc<br/>Settings modal and API for defaults and…"]
     n_716fe0["716fe0<br/>Machine-local feature-flag config layer"]
     n_f9e295["f9e295<br/>Open story in Claude Code from the card…"]
-    n_716fe0 --> n_0341fc
     n_716fe0 --> n_f9e295
+    n_716fe0 --> n_0341fc
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
-    class n_0341fc,n_f9e295 backlog
-    class n_716fe0 active
+    classDef done fill:#d1fae5,stroke:#34d399,color:#475569
+    class n_716fe0 done
+    class n_f9e295 backlog
+    class n_0341fc active
 ```
 
-## Idea (3)
+## Idea (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
-| [0341fc](stories/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` |  | 🔒 `716fe0` | 0/8 |
-| [f9e295](stories/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` |  | 🔒 `716fe0` | 0/8 |
+| [f9e295](stories/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` |  | `716fe0` | 0/8 |
 
 ## Plan (0)
 
@@ -50,14 +51,15 @@ _none_
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
-| [716fe0](stories/716fe0-machine-local-feature-flag-config-layer.md) | Machine-local feature-flag config layer | `area:config` `epic:feature-flags` | claude |  | 7/7 |
+| [0341fc](stories/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
 
-<details><summary><strong>Done (2)</strong></summary>
+<details><summary><strong>Done (3)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [ce8ab1](stories/ce8ab1-completion-and-api-tests-pick-a-unique-id-prefix-n.md) | Completion and API tests pick a unique id prefix, not a fixed slice | `tests` | claude |  | 1/1 |
 | [947089](stories/947089-release-sh-tags-the-merge-commit-not-a-skip-ci-ren.md) | release.sh tags the merge commit, not a [skip ci] render HEAD | `area:release` | claude |  | 4/4 |
+| [716fe0](stories/716fe0-machine-local-feature-flag-config-layer.md) | Machine-local feature-flag config layer | `area:config` `epic:feature-flags` | claude |  | 7/7 |
 
 </details>
 

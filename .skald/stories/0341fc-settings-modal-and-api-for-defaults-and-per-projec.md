@@ -1,11 +1,12 @@
 ---
 title: "Settings modal and API for defaults and per-project options"
-status: "idea"
-rank: 90
+status: "review"
+rank: 10
 tags: ["area:board", "epic:feature-flags"]
 blocked_by: ["716fe0"]
+assignee: "claude"
 created_at: "2026-09-14T23:46:45Z"
-updated_at: "2026-09-14T23:46:45Z"
+updated_at: "2026-09-15T01:14:04Z"
 ---
 ## Requirements
 
@@ -44,11 +45,14 @@ change.
 - The specific flags themselves and their consumers (each is its own story).
 
 ## Acceptance
-- [ ] GET board payload includes resolved features + catalog
-- [ ] PUT /api/settings and PUT /api/projects/<name>/settings write and validate
-- [ ] gear-icon modal renders defaults + per-project panels from the catalog
-- [ ] per-project control is tri-state (inherit / on / off) and persists
-- [ ] theme-consistent, dismissable, responsive
-- [ ] server tests for both endpoints (happy path, unknown flag, auth)
-- [ ] docs/board.md documents the settings modal
-- [ ] python3 -m unittest green, ruff clean
+- [x] GET board payload includes resolved features + catalog
+- [x] PUT /api/settings and PUT /api/projects/<name>/settings write and validate
+- [x] gear-icon modal renders defaults + per-project panels from the catalog
+- [x] per-project control is tri-state (inherit / on / off) and persists
+- [x] theme-consistent, dismissable, responsive
+- [x] server tests for both endpoints (happy path, unknown flag, auth)
+- [x] docs/board.md documents the settings modal
+- [x] python3 -m unittest green, ruff clean
+
+## [claude] 2026-09-15 01:14 UTC · handoff
+Built the settings modal and its API. Server: GET/PUT /api/settings (global) and GET/PUT /api/projects/<name>/settings (per-project); both return a features payload of {catalog, resolved, global, project} so the modal needs no second request. A feature value of null clears a scope; the global endpoint also takes the flat prefs (author/push/stale_days), the per-project one only features; a bad batch is validated before any write lands. The board payload gains the same features block (resolved for the project) for story f9e295. Board: a header gear opens a modal with a Defaults panel (on/off per flag + author/push/stale_days) and a This-project panel (inherit/on/off select per flag, hidden in All-projects), both generated from the catalog. Verified with a live-browser Playwright run (global toggle, per-project tri-state, stale-days all persisted; Esc and X close). Docs: api.md endpoint rows, board.md Settings section, SPEC 7 and 8. 175 tests (added TestSettings), ruff clean.

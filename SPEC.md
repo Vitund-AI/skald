@@ -485,6 +485,15 @@ endpoint table; it is the reference.
 which walks the argparse tree; the board's Help panel renders it, so the
 page never carries its own copy of the command list.
 
+`GET/PUT /api/settings` and `GET/PUT /api/projects/<p>/settings` read and
+write the machine-local settings behind the board's settings panel. The
+response carries the feature-flag catalog and, per flag, the value resolved
+for the project alongside the value explicitly stored at each scope (`null`
+for inherit), so the panel can render a global on/off and a per-project
+inherit/on/off without a second request. A `PUT` feature value of `null`
+clears that scope; the global endpoint also accepts the flat preferences
+(`author`, `push`, `stale_days`, ...), the per-project one only `features`.
+
 `GET .../version` returns a hash of story file names, sizes, and mtimes.
 `GET .../events` is a server-sent event stream that emits `hello` on connect
 and `change` whenever that hash changes, checked every half second on the
@@ -557,6 +566,13 @@ jump back to the top.
 
 Help panel: shortcuts and card markers, the CLI reference from `/api/help`
 with a filter, and a story file primer with links to the docs.
+
+Settings panel (the header gear): a Defaults section with an on/off per
+feature flag plus the flat preferences (author, push, stale-days), and a
+This-project section with an inherit/on/off select per flag, hidden in the
+All-projects view. It is driven by the catalog the API sends, so a new flag
+appears with no per-flag markup; changes save immediately through the
+settings endpoints and the board refetches so a flag's effect shows at once.
 
 Theme: the Vitund design system tokens as CSS custom properties on
 `:root`: surfaces (`--canvas`, `--column`, `--surface`, `--chip`,

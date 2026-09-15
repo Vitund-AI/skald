@@ -136,6 +136,9 @@
       </div>
     </div>
   </div>
+  <button id="settings-btn" class="rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover leading-none" title="Settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block align-[-2px]"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+  </button>
   <button id="theme-btn" class="rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover" title="Theme: follows the OS, or force light or dark"></button>
   <button id="help-btn" class="rounded border border-strong px-2.5 py-1 text-xs bg-surface hover:bg-hover font-semibold" title="Help and reference (?)">?</button>
   <button id="new-btn" class="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white hover:bg-accent-hover" title="New story (n)">New story</button>
@@ -326,13 +329,47 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   </div>
 </div>
 
+<div id="settings" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-2 sm:p-4 z-40">
+  <div class="bg-surface rounded-lg shadow-xl w-full max-w-lg max-h-full flex flex-col">
+    <div class="flex items-center gap-4 px-5 py-3 border-b border-line">
+      <span class="font-semibold">Settings</span>
+      <span class="text-xs text-faint">Stored on this machine, never committed</span>
+      <button id="settings-close" class="ml-auto text-faint hover:text-ink text-xl leading-none" title="Close (Esc)">&times;</button>
+    </div>
+    <div class="px-5 py-4 text-sm overflow-y-auto grid gap-5">
+      <section class="grid gap-3">
+        <h3 class="font-semibold text-muted">Defaults <span class="font-normal text-faint">(all projects)</span></h3>
+        <div id="set-features-global" class="grid gap-3"></div>
+        <div class="grid gap-3 border-t border-line pt-3">
+          <label class="flex items-center justify-between gap-3">
+            <span>Board author <span class="block text-xs text-faint">Name on notes and commits made from the board; blank uses your git name.</span></span>
+            <input id="set-author" type="text" class="rounded border border-strong px-2 py-1 w-40" placeholder="git user.name">
+          </label>
+          <label class="flex items-center justify-between gap-3">
+            <span>Push after commit <span class="block text-xs text-faint">Offer a Commit &amp; push button on the board.</span></span>
+            <input id="set-push" type="checkbox" class="h-4 w-4 accent-accent">
+          </label>
+          <label class="flex items-center justify-between gap-3">
+            <span>Stale after <span class="block text-xs text-faint">Days before an active story is flagged stale.</span></span>
+            <span class="whitespace-nowrap"><input id="set-stale" type="number" min="1" class="rounded border border-strong px-2 py-1 w-16 text-right"> days</span>
+          </label>
+        </div>
+      </section>
+      <section id="set-project-section" class="grid gap-3 border-t border-line pt-4">
+        <h3 class="font-semibold text-muted">This project <span id="set-project-name" class="font-mono font-normal text-faint"></span></h3>
+        <div id="set-features-project" class="grid gap-3"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
-    lastWrite: 0, help: false, helpCli: null,
+    lastWrite: 0, help: false, helpCli: null, features: null, settingsOpen: false,
     sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
     collapsed: new Set(), releasesView: false,
   };
@@ -1388,6 +1425,76 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   }
   function showHelp(tab) { state.help = true; help.classList.remove('hidden'); help.classList.add('flex'); showHelpTab(tab || 'keys'); }
   function hideHelp() { state.help = false; help.classList.add('hidden'); help.classList.remove('flex'); }
+
+  // ---- Settings --------------------------------------------------------
+  // Feature flags and preferences are machine-local (see registry.py). The
+  // catalog drives this UI, so a new flag appears here with no change: the
+  // global panel is a plain on/off, the project panel a tri-state that can
+  // defer to the global value.
+  async function loadSettings() {
+    if (state.allView || !state.project) {
+      const g = await api('GET', '/api/settings');
+      state.features = g.features; state.settings = g.settings;
+    } else {
+      const [f, g] = await Promise.all([api('GET', P() + '/settings'), api('GET', '/api/settings')]);
+      state.features = f.features; state.settings = g.settings;
+    }
+  }
+  function featureGlobalRow(c, f) {
+    const val = f.global[c.name] != null ? f.global[c.name] : c.default;
+    return `<label class="flex items-center justify-between gap-3"><span>${esc(c.label)}<span class="block text-xs text-faint">${esc(c.help)}</span></span>`
+      + `<input type="checkbox" data-feat-global="${esc(c.name)}" class="h-4 w-4 accent-accent shrink-0" ${val ? 'checked' : ''}></label>`;
+  }
+  function featureProjectRow(c, f) {
+    const raw = f.project[c.name];
+    const inherit = (f.global[c.name] != null ? f.global[c.name] : c.default) ? 'on' : 'off';
+    const cur = raw === true ? 'on' : raw === false ? 'off' : 'inherit';
+    const opt = (v, t) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${t}</option>`;
+    return `<label class="flex items-center justify-between gap-3"><span>${esc(c.label)}</span>`
+      + `<select data-feat-project="${esc(c.name)}" class="rounded border border-strong px-2 py-1 shrink-0">`
+      + opt('inherit', `Inherit (${inherit})`) + opt('on', 'On') + opt('off', 'Off') + '</select></label>';
+  }
+  function renderSettings() {
+    const f = state.features || { catalog: [], global: {}, project: {} };
+    const s = state.settings || {};
+    const empty = '<div class="text-faint">No feature flags.</div>';
+    $('set-features-global').innerHTML = f.catalog.map(c => featureGlobalRow(c, f)).join('') || empty;
+    if (document.activeElement !== $('set-author')) $('set-author').value = s.author || '';
+    $('set-push').checked = !!s.push;
+    if (document.activeElement !== $('set-stale')) $('set-stale').value = s.stale_days != null ? s.stale_days : 3;
+    const showProject = !state.allView && !!state.project;
+    $('set-project-section').classList.toggle('hidden', !showProject);
+    if (showProject) {
+      $('set-project-name').textContent = state.project;
+      $('set-features-project').innerHTML = f.catalog.map(c => featureProjectRow(c, f)).join('') || empty;
+    }
+    $('set-features-global').querySelectorAll('[data-feat-global]').forEach(el =>
+      el.addEventListener('change', () => writeSettings('/api/settings', { features: { [el.dataset.featGlobal]: el.checked } })));
+    $('set-features-project').querySelectorAll('[data-feat-project]').forEach(el =>
+      el.addEventListener('change', () => {
+        const v = el.value === 'on' ? true : el.value === 'off' ? false : null;
+        writeSettings(P() + '/settings', { features: { [el.dataset.featProject]: v } });
+      }));
+  }
+  async function writeSettings(path, body) {
+    try {
+      await api('PUT', path, body);
+      await loadSettings();
+      renderSettings();
+      refresh(true);   // the board reflects flag changes at once
+      toast('Settings saved', 'info');
+    } catch (e) {
+      toast(e.message || 'could not save settings', 'error');
+      try { await loadSettings(); renderSettings(); } catch (_) {}
+    }
+  }
+  async function showSettings() {
+    state.settingsOpen = true;
+    $('settings').classList.remove('hidden'); $('settings').classList.add('flex');
+    try { await loadSettings(); } catch (e) { toast(e.message || 'could not load settings', 'error'); }
+    renderSettings();
+  }
+  function hideSettings() { state.settingsOpen = false; $('settings').classList.add('hidden'); $('settings').classList.remove('flex'); }
   async function loadHelpCli() {
     if (state.helpCli) return renderHelpCli();
     $('help-cli').innerHTML = '<div class="text-faint">loading…</div>';
@@ -1425,6 +1532,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       const prevHead = state.git && state.git.head;
       state.columns = data.columns; state.stories = data.stories; state.settings = data.settings;
       state.identity = data.identity; state.git = data.git; state.version = data.version;
+      state.features = data.features || null;
+      if (state.settingsOpen) renderSettings();
       state.facets = data.facets || {};
       state.facetLimits = data.facet_limits || {};
       if (prevHead && data.git.head && data.git.head !== prevHead && Date.now() - state.lastWrite > 3000) toast(`New commit ${data.git.head} on ${data.git.branch}`, 'info');
@@ -1449,6 +1558,16 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('theme-btn').addEventListener('click', cycleTheme);
   $('help-btn').addEventListener('click', () => showHelp());
   $('help-close').addEventListener('click', hideHelp);
+  $('settings-btn').addEventListener('click', () => showSettings());
+  $('settings-close').addEventListener('click', hideSettings);
+  $('settings').addEventListener('click', (e) => { if (e.target === $('settings')) hideSettings(); });
+  $('set-author').addEventListener('change', () => writeSettings('/api/settings', { author: $('set-author').value }));
+  $('set-push').addEventListener('change', () => writeSettings('/api/settings', { push: $('set-push').checked }));
+  $('set-stale').addEventListener('change', () => {
+    const n = parseInt($('set-stale').value, 10);
+    if (Number.isInteger(n) && n >= 1) writeSettings('/api/settings', { stale_days: n });
+    else { toast('Stale days must be a positive whole number', 'error'); renderSettings(); }
+  });
   $('help-filter').addEventListener('input', renderHelpCli);
   help.querySelectorAll('.htab').forEach(t => t.addEventListener('click', () => showHelpTab(t.dataset.htab)));
   help.addEventListener('click', (e) => { if (e.target === help) hideHelp(); });
@@ -1500,7 +1619,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   document.addEventListener('keydown', (e) => {
     const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
     if (e.key === 'Escape') {
-      if (state.help) hideHelp();
+      if (state.settingsOpen) hideSettings();
+      else if (state.help) hideHelp();
       else if (state.modal && state.editing && state.modal !== 'new') openModal(state.modal);  // leave edit mode, changes discarded
       else if (state.modal) hideModal();
       else if (state.sel.column !== null) clearSelection();

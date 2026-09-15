@@ -1,12 +1,12 @@
 ---
 title: "Machine-local feature-flag config layer"
-status: "review"
-rank: 10
+status: "done"
+rank: 30
 tags: ["area:config", "epic:feature-flags"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-14T23:46:30Z"
-updated_at: "2026-09-14T23:54:08Z"
+updated_at: "2026-09-15T01:03:31Z"
 ---
 ## Requirements
 
