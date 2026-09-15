@@ -193,6 +193,9 @@
         <span id="m-view-assignee" class="text-muted"></span>
         <span id="m-view-tags" class="flex flex-wrap gap-1"></span>
         <button id="m-claim" class="ml-auto rounded border border-strong px-3 py-1 hover:bg-hover" title="Assign to you and start it">Claim</button>
+        <a id="m-claude" href="#" target="_blank" rel="noopener" class="hidden rounded border border-accent bg-accent-tint text-accent-text px-3 py-1 hover:bg-hover inline-flex items-center gap-1.5" title="Open this story as a Claude Code session on the web (claude.ai/code). You review the prompt before it runs.">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l1.5 3.5L10 8 6.5 9.5 5 13 3.5 9.5 0 8l3.5-1.5z" transform="translate(2 1)"></path><path d="M18 13l1 2.5 2.5 1-2.5 1L18 20l-1-2.5-2.5-1 2.5-1z"></path></svg>
+          Open in Claude Code</a>
       </div>
       <div id="m-deps" class="text-xs hidden flex flex-wrap gap-2"></div>
       <div id="m-family" class="hidden grid gap-1 min-w-0 text-xs">
@@ -369,7 +372,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
-    lastWrite: 0, help: false, helpCli: null, features: null, settingsOpen: false,
+    lastWrite: 0, help: false, helpCli: null, features: null, settingsOpen: false, repo_slug: null,
     sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
     collapsed: new Set(), releasesView: false,
   };
@@ -1219,6 +1222,24 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     $('m-view-tags').innerHTML = s.tags.map(tag => `<span class="inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(tag)}</span>`).join('');
     renderMarkdown($('m-rendered'), s.body);
     linkifyRefs($('m-rendered'));
+    renderClaudeLink(s);
+  }
+  // "Open in Claude Code": a deep link that preselects the repo and prefills a
+  // short prompt (claude.ai/code does not auto-submit it, so the user reviews
+  // it first). The prompt stays short and points the session at the story
+  // rather than embedding the body: the cloud checkout can run skald itself.
+  const featureOn = (name) => !!(state.features && state.features.resolved && state.features.resolved[name]);
+  function claudePrompt(s) {
+    return `Pick up Skald story \`${s.id}\` — "${s.title}".\n\n`
+      + `Run \`skald show ${s.id}\` for the full card, claim it with \`skald claim ${s.id} --as claude\`, `
+      + `and work it following .skald/AGENTS.md.`;
+  }
+  function renderClaudeLink(s) {
+    const a = $('m-claude');
+    const on = !!(s && state.repo_slug && featureOn('claude_code_link'));
+    a.classList.toggle('hidden', !on);
+    if (on) a.href = 'https://claude.ai/code?repositories=' + encodeURI(state.repo_slug)
+      + '&prompt=' + encodeURIComponent(claudePrompt(s));
   }
   // The family: a chip for the parent, a chip per child with its state, and a way to add one.
   function renderFamily(s) {
@@ -1262,6 +1283,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       $('m-tags').value = ''; $('m-blockers').value = ''; $('m-assignee').value = '';
       $('m-parent').value = state.newParent || ''; $('m-family').classList.add('hidden');
       $('m-body').value = ''; $('m-deps').classList.add('hidden'); $('m-dirty').textContent = '';
+      $('m-claude').classList.add('hidden');
       ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = false; });
       $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden'); $('m-preview-btn').textContent = 'Preview';
       ['m-delete', 'm-cancel', 'tab-history', 'm-edit-btn'].forEach(i => $(i).classList.add('hidden'));
@@ -1533,6 +1555,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.columns = data.columns; state.stories = data.stories; state.settings = data.settings;
       state.identity = data.identity; state.git = data.git; state.version = data.version;
       state.features = data.features || null;
+      state.repo_slug = data.repo_slug || null;
       if (state.settingsOpen) renderSettings();
       state.facets = data.facets || {};
       state.facetLimits = data.facet_limits || {};

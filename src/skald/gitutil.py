@@ -1,11 +1,21 @@
 """Thin wrappers around the git CLI. Every function tolerates git being absent."""
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 from typing import Optional
 
 from .errors import GitError
+
+# owner/repo out of a GitHub origin URL, in any of the forms git writes:
+# git@github.com:owner/repo(.git), https://github.com/owner/repo(.git)(/),
+# and ssh://git@github.com/owner/repo. Only github.com, since the slug feeds
+# a claude.ai/code deep link.
+_GITHUB_ORIGIN = re.compile(
+    r"^(?:git@github\.com:|ssh://git@github\.com/|https?://(?:[^@/]+@)?github\.com/|github\.com/)"
+    r"(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?/?$"
+)
 
 
 def _run(args: list[str], cwd: Path, check: bool = False) -> subprocess.CompletedProcess:
@@ -70,6 +80,24 @@ def user_email(repo: Path) -> Optional[str]:
         return None
     email = proc.stdout.strip()
     return email or None
+
+
+def origin_url(repo: Path) -> Optional[str]:
+    try:
+        proc = _run(["config", "--get", "remote.origin.url"], cwd=repo)
+    except GitError:
+        return None
+    url = proc.stdout.strip()
+    return url or None
+
+
+def github_slug(repo: Path) -> Optional[str]:
+    """``owner/repo`` for a GitHub ``origin`` remote, or None when there is none."""
+    url = origin_url(repo)
+    if not url:
+        return None
+    m = _GITHUB_ORIGIN.match(url)
+    return f"{m['owner']}/{m['repo']}" if m else None
 
 
 

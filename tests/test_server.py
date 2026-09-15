@@ -450,6 +450,17 @@ class TestAuth(ServerTestCase):
         self.assertEqual(srv.board_url("127.0.0.1", 8321, None), "http://127.0.0.1:8321/")
 
 
+class TestRepoSlug(ServerTestCase):
+    def test_board_carries_github_slug_when_origin_is_github(self):
+        # no GitHub origin: the board reports null, so the button stays hidden
+        _, board = self.call("GET", "/api/projects/alpha/board")
+        self.assertIsNone(board["repo_slug"])
+        # add a GitHub origin and the slug appears
+        git(self.repo, "remote", "add", "origin", "git@github.com:acme/alpha.git")
+        _, board = self.call("GET", "/api/projects/alpha/board")
+        self.assertEqual(board["repo_slug"], "acme/alpha")
+
+
 class TestSettings(ServerTestCase):
     def test_settings_read_write_global_and_per_project(self):
         # GET exposes the catalog, the resolved values, and the raw scopes

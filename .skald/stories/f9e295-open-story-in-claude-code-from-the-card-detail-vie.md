@@ -1,11 +1,12 @@
 ---
 title: "Open story in Claude Code from the card detail view"
-status: "idea"
-rank: 100
+status: "review"
+rank: 10
 tags: ["area:board", "epic:feature-flags"]
 blocked_by: ["716fe0"]
+assignee: "claude"
 created_at: "2026-09-14T23:47:04Z"
-updated_at: "2026-09-14T23:47:04Z"
+updated_at: "2026-09-15T01:57:33Z"
 ---
 ## Requirements
 
@@ -51,17 +52,20 @@ Needs the feature-flag layer (716fe0) for the gating flag. The settings modal
 via `skald config` — but the two ship well together.
 
 ## Acceptance
-- [ ] github_slug parses ssh, https, ssh://, and trailing-.git / slash forms; None otherwise
-- [ ] repo_slug exposed in the board payload
-- [ ] detail modal shows "Open in Claude Code" only when slug present and flag on
-- [ ] deep link has repositories + url-encoded prompt referencing the story; new tab, noopener
-- [ ] prompt does not embed the full body; instructs `skald show` + AGENTS.md
-- [ ] unit tests for github_slug; server/board coverage for the gated button
-- [ ] docs/board.md documents the action and the flag
-- [ ] python3 -m unittest green, ruff clean
+- [x] github_slug parses ssh, https, ssh://, and trailing-.git / slash forms; None otherwise
+- [x] repo_slug exposed in the board payload
+- [x] detail modal shows "Open in Claude Code" only when slug present and flag on
+- [x] deep link has repositories + url-encoded prompt referencing the story; new tab, noopener
+- [x] prompt does not embed the full body; instructs `skald show` + AGENTS.md
+- [x] unit tests for github_slug; server/board coverage for the gated button
+- [x] docs/board.md documents the action and the flag
+- [x] python3 -m unittest green, ruff clean
 
 ## Changelog
 
 The board card detail view can open a story directly in Claude Code on the
 web, with the repository preselected and a prompt prefilled, when the project
 has a GitHub remote. Toggle it with the `claude_code_link` setting.
+
+## [claude] 2026-09-15 01:57 UTC · handoff
+Built the Open in Claude Code action. gitutil.github_slug(repo) parses owner/repo from a GitHub origin (git@, https, ssh://, user@, trailing .git or slash; None for non-github or no origin). Server: repo_slug in the board payload (editable and read-only), via _repo_slug. Board: an accent link in the detail modal action row, shown only when repo_slug is set and the claude_code_link flag resolves on (hidden on new-story and when off); it opens claude.ai/code?repositories=<slug>&prompt=<encoded> in a new tab (rel=noopener). The prompt is short — story id + title, then skald show / claim / .skald/AGENTS.md — never the body; claude.ai does not auto-submit it. Verified in a live browser: button shows with a github origin + flag on, URL well-formed (slash preserved), hides after toggling the flag off. Tests: test_gitutil (form matrix) + TestRepoSlug (board payload); 178 total, ruff clean. Docs: board.md story-dialog + Settings, SPEC 8.

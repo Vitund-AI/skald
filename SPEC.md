@@ -536,7 +536,12 @@ the target (switching project if needed), parent and children, the body
 rendered as Markdown with note headings set in the mono face and the kind
 in the accent colour, story ids in the text (`id`, `#id`, or `project:id`)
 turned into links that open the referenced story, the questions panel, and
-the add-a-note form. Edit
+the add-a-note form. When the project has a GitHub `origin` remote
+(`gitutil.github_slug`, surfaced as `repo_slug` in the board payload) and the
+`claude_code_link` flag resolves on, an "Open in Claude Code" link opens
+`claude.ai/code` with the repository preselected and a short prompt prefilled
+that sends the session to `skald show <id>` and `.skald/AGENTS.md` rather than
+embedding the body; the link is not auto-submitted. Edit
 (or `e`) swaps in the form: title, status, assignee, tags, blockers,
 parent, body with a preview toggle, save with conflict detection, delete;
 Save and Cancel return to view mode, `Esc` leaves edit mode before it

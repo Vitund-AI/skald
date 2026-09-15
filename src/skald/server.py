@@ -305,6 +305,10 @@ class Handler(BaseHTTPRequestHandler):
             d["body_sha256"] = store.body_sha(story)
         return d
 
+    def _repo_slug(self, store: Store) -> Optional[str]:
+        repo = gitutil.root(store.dir)
+        return gitutil.github_slug(repo) if repo else None
+
     def _git_info(self, store: Store) -> dict:
         repo = gitutil.root(store.dir)
         if repo is None:
@@ -464,7 +468,9 @@ class Handler(BaseHTTPRequestHandler):
                     "stories": [snap.story_dict(s, idx) for s in stories],
                     "facets": compute_facets(stories, snap.config),
                     "warnings": warnings, "git": {"available": True, "branch": ref, "changes": []},
+                    "repo_slug": self._repo_slug(store),
                     "identity": self._identity(ws, store), "settings": ws.user.all(),
+                    "features": self._features_payload(ws.user, store.name),
                     "version": snap.sha, "readonly": True, "ref": ref, "sha": snap.sha,
                 })
                 return
@@ -517,6 +523,7 @@ class Handler(BaseHTTPRequestHandler):
                     "facet_limits": store.config.facet_limits,
                     "warnings": warnings + ws.notices,
                     "git": git,
+                    "repo_slug": self._repo_slug(store),
                     "identity": self._identity(ws, store),
                     "settings": ws.user.all(),
                     "features": self._features_payload(ws.user, store.name),

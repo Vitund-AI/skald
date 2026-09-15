@@ -140,6 +140,16 @@ rendered text (`a3f9c2`, `#a3f9c2`, or `project:a3f9c2`) is a link that opens
 that story, switching project for a `project:id`. Claim assigns the
 story to you and starts it.
 
+When the project has a GitHub `origin` remote, an **Open in Claude Code**
+button opens the story as a [Claude Code](https://claude.ai/code) session on
+the web: it preselects the repository and prefills a short prompt that points
+the session at the story (`skald show <id>`, then claim it and follow
+`.skald/AGENTS.md`) rather than embedding the body, since the cloud checkout
+can run `skald` itself. The prompt is not submitted automatically — you review
+it first. The button is hidden when there is no GitHub remote, and it is
+governed by the `claude_code_link` setting (on by default; see
+[Settings](#settings)).
+
 **Edit** (or `e`) switches to the form: title, status, assignee, tags,
 blockers, parent, and the body with a Preview toggle. Save writes it back
 and returns to view mode; it refuses with a message if the file changed on
