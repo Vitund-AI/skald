@@ -1,7 +1,7 @@
-<!-- skald-render 9d79266b03ba0883 -->
+<!-- skald-render 2872a9768d8fe514 -->
 # skald backlog
 
-**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 6
+**3 open** · Idea 1 · Plan 0 · Ready 0 · In progress 1 · Review 1 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -23,18 +23,17 @@ flowchart LR
     n_50b992 --> n_a29da4
     n_716fe0 --> n_0341fc
     n_716fe0 --> n_f9e295
-    classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
+    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
+    class n_a29da4 active
     class n_0341fc,n_50b992,n_716fe0,n_f9e295 done
-    class n_a29da4 backlog
 ```
 
-## Idea (2)
+## Idea (1)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
-| [a29da4](stories/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` |  | `50b992` | 0/6 |
 
 ## Plan (0)
 
@@ -44,9 +43,11 @@ _none_
 
 _none_
 
-## In progress (0)
+## In progress (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [a29da4](stories/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` | claude | `50b992` | 0/6 |
 
 ## Review (1)
 

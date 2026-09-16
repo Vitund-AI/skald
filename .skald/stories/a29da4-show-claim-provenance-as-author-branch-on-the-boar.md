@@ -1,11 +1,12 @@
 ---
 title: "Show claim provenance as author@branch on the board and in ls"
-status: "idea"
-rank: 90
+status: "in_progress"
+rank: 10
 tags: ["area:board", "area:cli"]
 blocked_by: ["50b992"]
+assignee: "claude"
 created_at: "2026-09-15T17:26:47Z"
-updated_at: "2026-09-15T17:26:47Z"
+updated_at: "2026-09-16T03:30:04Z"
 ---
 ## Requirements
 
@@ -41,3 +42,14 @@ worktree — next to the assignee, e.g. `claude@feature-x`, in:
 - [ ] tests cover the rendered provenance
 - [ ] docs updated (board.md)
 - [ ] python3 -m unittest green, ruff clean
+
+## [claude] 2026-09-16 03:30 UTC · decision
+Investigation before building: most of this is already implemented on dev.
+
+- Board card badge already renders 'also <assignee>@<branch>' with a tooltip of every elsewhere-claim (web/index.html card render, reading state.branches.claims). loadBranches() runs on project load and every 30s, so the badge shows without interaction. Acceptance item 1 already met.
+- skald context already prints '<assignee> on <branch> (<status>)' + uncommitted checkout path (cli.py cmd_context); a test asserts 'worker on feature (in_progress)'. Most of item 2 met.
+- docs/board.md already documents the 'also name@branch' marker.
+
+The only untouched surface is skald ls, which shows just the local ASSIGNEE and nothing about elsewhere-claims. Tradeoff: claims_elsewhere snapshots every local branch + reads worktrees; context pays that occasionally, but ls is a frequent snappy table, so unconditional lookup there has a real cost.
+
+Put three options to the maintainer: (A recommended) ls --elsewhere opt-in annotation + a regression test locking in board/context; (B) declare board+context sufficient, add a regression test, close; (C) ls always shows it. Awaiting the decision before building.
