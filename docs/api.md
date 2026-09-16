@@ -38,6 +38,7 @@ as errors.
 | `GET /api/health` | | `{ok, version, pid}`; open, no token |
 | `POST /api/session`, `DELETE /api/session` | `{token}` | Sets or clears the session cookie; open, but the token must match |
 | `GET /api/projects` | | `{projects, settings}` |
+| `GET /api/update[?project=NAME]` | | `{enabled}` alone when the `update_check` flag is off; otherwise `{enabled, current, latest, outdated, checked_at}` from a once-a-day cached PyPI lookup (a final `X.Y.Z` newer by numeric tuple is `outdated`; network failures are swallowed, so `latest` may be null) |
 | `GET /api/settings[?project=NAME]` | | `{settings, features}`; `features` is `{catalog: [{name, label, help, default}], resolved, global, project}` — `global`/`project` map each flag to its explicitly stored value or `null` (inherit), `resolved` to the effective value |
 | `PUT /api/settings` | `{features?: {name: true|false|null}, author?, push?, stale_days?, ...}` | writes global settings; a feature `null` clears it; returns `{settings, features}` |
 | `GET /api/help` | | `{version, commands: [{name, help, usage, arguments, subcommands}]}`, the CLI reference read from the argparse parser |

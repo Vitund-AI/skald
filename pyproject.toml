@@ -68,6 +68,7 @@ ignore = ["E501", "E741"]
 "src/skald/audit.py" = ["S603", "S607"]
 "src/skald/server.py" = ["S104", "S603", "S607"]  # --host 0.0.0.0 opens the board to the LAN on purpose
 "src/skald/cli.py" = ["S603", "S607"]
+"src/skald/update.py" = ["S310"]  # opens one fixed https PyPI URL, never a caller-supplied scheme
 "examples/**" = ["S603", "S607"]
 # Tests drive the CLI and git as subprocesses, open localhost URLs, and bind 0.0.0.0 deliberately.
 "tests/**" = ["S101", "S104", "S310", "S603", "S607"]

@@ -1,7 +1,7 @@
-<!-- skald-render 8964034f023c6b82 -->
+<!-- skald-render 9d79266b03ba0883 -->
 # skald backlog
 
-**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 6
+**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -9,7 +9,7 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 | Epic | Progress | Done | Open |
 | --- | --- | ---: | ---: |
-| `epic:feature-flags` | ▰▰▰▰▰▰▰▰▰▰ 100% | 3 | 0 |
+| `epic:feature-flags` | ▰▰▰▰▰▰▰▰▱▱ 75% | 3 | 1 |
 
 ## Dependencies
 
@@ -48,9 +48,11 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [3eea32](stories/3eea32-opt-in-update-check-show-an-update-available-icon.md) | Opt-in update check: show an update-available icon on the board | `area:board` `epic:feature-flags` | claude |  | 10/10 |
 
 <details><summary><strong>Done (6)</strong></summary>
 

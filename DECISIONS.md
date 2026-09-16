@@ -677,3 +677,21 @@ generic over the catalog: adding a flag is one entry plus wherever it is
 consumed, with no new UI or parser work. Stored values are read tolerantly
 (a hand-edited non-boolean falls through to the next scope) for the same
 reason the flat settings are: the file is meant to be safe to edit by hand.
+
+### D67. The update check is opt-in, server-side, and cached
+The board can show an "update available" icon when a newer `skald-kanban`
+has been released on PyPI, but the check is off by default behind the
+`update_check` feature flag. It makes an outbound request to a third party,
+and Skald is otherwise offline and free of telemetry, so phoning home is a
+choice the user makes rather than a default — one click in the settings
+panel the feature-flag work already built. The check runs in the board
+server, not the browser: the server is Python and already imports
+`urllib.request`, so it needs no dependency and no CDN, avoids CORS against
+PyPI's JSON API, and can cache the result machine-local (`update.json`) so
+PyPI is queried at most once a day. It compares only final `X.Y.Z` releases
+by numeric tuple (a pre-release must not read as an update), validates the
+fetched string before trusting it, and swallows every failure — offline, a
+timeout, bad JSON, a locked-down network — so nothing here can break the
+board or the server; a failed lookup just means no icon. `skald doctor`
+surfaces the same result from the cache without ever making its own network
+call, keeping the diagnostic offline and deterministic.

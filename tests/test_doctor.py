@@ -67,3 +67,19 @@ class TestDoctor(SkaldTestCase):
         by = {r["name"]: r for r in results}
         self.assertEqual(by["python"]["level"], doctor.OK)
         self.assertIn("home", by)
+        self.assertNotIn("update", by)  # no cached update state, and doctor never queries the network
+
+    def test_reports_cached_update_without_network(self):
+        import json as _json
+
+        from skald import update as upd
+        (self.home / "update.json").write_text(_json.dumps({"checked_at": "2099-01-01T00:00:00Z", "latest": "99.0.0"}))
+        # No network: doctor reads only the cache the board left behind.
+        self.addCleanup(setattr, upd, "fetch_latest", upd.fetch_latest)
+
+        def boom(timeout=upd.TIMEOUT):
+            raise AssertionError("doctor must not hit the network")
+        upd.fetch_latest = boom
+        by = {r["name"]: r for r in doctor.run(self.repo)}
+        self.assertIn("update", by)
+        self.assertIn("99.0.0", by["update"]["detail"])
