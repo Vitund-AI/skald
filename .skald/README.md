@@ -1,7 +1,7 @@
-<!-- skald-render d7a3bfd46ff37073 -->
+<!-- skald-render f37b3a040ab9e9a5 -->
 # skald backlog
 
-**4 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 6
+**5 open** · Idea 3 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -29,12 +29,13 @@ flowchart LR
     class n_a29da4 active
 ```
 
-## Idea (2)
+## Idea (3)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
 | [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` |  |  | 0/6 |
+| [938c9c](stories/938c9c-make-the-screenshot-harness-extensible-and-showcas.md) | Make the screenshot harness extensible and showcase the new features | `area:docs` |  |  | 0/7 |
 
 ## Plan (0)
 
