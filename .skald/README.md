@@ -1,7 +1,7 @@
-<!-- skald-render 9ed80d64f7ff5c42 -->
+<!-- skald-render 8964034f023c6b82 -->
 # skald backlog
 
-**4 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 4
+**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -9,7 +9,7 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 | Epic | Progress | Done | Open |
 | --- | --- | ---: | ---: |
-| `epic:feature-flags` | ▰▰▰▰▰▰▰▱▱▱ 67% | 2 | 1 |
+| `epic:feature-flags` | ▰▰▰▰▰▰▰▰▰▰ 100% | 3 | 0 |
 
 ## Dependencies
 
@@ -21,14 +21,12 @@ flowchart LR
     n_a29da4["a29da4<br/>Show claim provenance as author@branch …"]
     n_f9e295["f9e295<br/>Open story in Claude Code from the card…"]
     n_50b992 --> n_a29da4
-    n_716fe0 --> n_f9e295
     n_716fe0 --> n_0341fc
+    n_716fe0 --> n_f9e295
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
-    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_0341fc,n_716fe0 done
+    class n_0341fc,n_50b992,n_716fe0,n_f9e295 done
     class n_a29da4 backlog
-    class n_50b992,n_f9e295 active
 ```
 
 ## Idea (2)
@@ -36,7 +34,7 @@ flowchart LR
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
-| [a29da4](stories/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` |  | 🔒 `50b992` | 0/6 |
+| [a29da4](stories/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` |  | `50b992` | 0/6 |
 
 ## Plan (0)
 
@@ -50,14 +48,11 @@ _none_
 
 _none_
 
-## Review (2)
+## Review (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [f9e295](stories/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
-| [50b992](stories/50b992-warn-when-claiming-a-story-already-active-in-anoth.md) | Warn when claiming a story already active in another local worktree, same author included | `area:cli` | claude |  | 7/7 |
+_none_
 
-<details><summary><strong>Done (4)</strong></summary>
+<details><summary><strong>Done (6)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -65,6 +60,8 @@ _none_
 | [947089](stories/947089-release-sh-tags-the-merge-commit-not-a-skip-ci-ren.md) | release.sh tags the merge commit, not a [skip ci] render HEAD | `area:release` | claude |  | 4/4 |
 | [716fe0](stories/716fe0-machine-local-feature-flag-config-layer.md) | Machine-local feature-flag config layer | `area:config` `epic:feature-flags` | claude |  | 7/7 |
 | [0341fc](stories/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
+| [f9e295](stories/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
+| [50b992](stories/50b992-warn-when-claiming-a-story-already-active-in-anoth.md) | Warn when claiming a story already active in another local worktree, same author included | `area:cli` | claude |  | 7/7 |
 
 </details>
 

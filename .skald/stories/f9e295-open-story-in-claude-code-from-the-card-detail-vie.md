@@ -1,12 +1,12 @@
 ---
 title: "Open story in Claude Code from the card detail view"
-status: "review"
-rank: 10
+status: "done"
+rank: 50
 tags: ["area:board", "epic:feature-flags"]
 blocked_by: ["716fe0"]
 assignee: "claude"
 created_at: "2026-09-14T23:47:04Z"
-updated_at: "2026-09-15T01:57:33Z"
+updated_at: "2026-09-16T03:17:23Z"
 ---
 ## Requirements
 

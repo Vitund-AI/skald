@@ -1,12 +1,12 @@
 ---
 title: "Warn when claiming a story already active in another local worktree, same author included"
-status: "review"
-rank: 20
+status: "done"
+rank: 60
 tags: ["area:cli"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-15T17:22:01Z"
-updated_at: "2026-09-15T17:35:04Z"
+updated_at: "2026-09-16T03:17:34Z"
 ---
 ## Requirements
 
