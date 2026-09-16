@@ -153,6 +153,10 @@
 
 <div id="ro-banner" class="hidden bg-accent-tint border-b border-line text-accent-text text-sm px-4 py-1.5"></div>
 <div id="co-banner" class="hidden bg-warning-tint border-b border-line text-warning-text text-sm px-4 py-1.5"></div>
+<div id="stale-banner" class="hidden items-center gap-3 bg-warning-tint border-b border-line text-warning-text text-sm px-4 py-1.5">
+  <span id="stale-text" class="flex-1"></span>
+  <button id="stale-dismiss" class="text-faint hover:text-ink text-base leading-none" title="Dismiss until the next upgrade">&times;</button>
+</div>
 <div id="empty" class="hidden mx-3 mt-3 rounded-lg border border-dashed border-strong bg-surface px-4 py-3 text-sm text-muted"></div>
 <main id="board" class="flex-1 flex flex-col sm:flex-row gap-3 p-3 overflow-auto"></main>
 <main id="ready-view" class="hidden flex-1 overflow-y-auto p-4"></main>
@@ -1550,6 +1554,26 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       note.classList.add('hidden'); note.classList.remove('inline-flex');
     }
   }
+  async function checkStale() {
+    // The running server holds the code it started with; when a newer package is
+    // installed on disk the server reports stale, and a restart picks it up. Local
+    // and unconditional (no outbound request), unlike the PyPI update note above.
+    const banner = $('stale-banner');
+    try {
+      const d = await api('GET', '/api/health');
+      let dismissed = null;
+      try { dismissed = localStorage.getItem('skald.stale.dismissed'); } catch (e) {}
+      const show = d && d.stale && d.installed && dismissed !== d.installed;
+      banner.classList.toggle('hidden', !show);
+      banner.classList.toggle('flex', !!show);
+      if (show) {
+        state.staleInstalled = d.installed;
+        $('stale-text').textContent = `This board is running skald ${d.version}, but ${d.installed} is installed. Run \`skald server restart\` to load it.`;
+      }
+    } catch (e) {
+      banner.classList.add('hidden'); banner.classList.remove('flex');
+    }
+  }
   async function loadHelpCli() {
     if (state.helpCli) return renderHelpCli();
     $('help-cli').innerHTML = '<div class="text-faint">loading…</div>';
@@ -1607,6 +1631,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       if (!state.readonly) renderGit();
       render();
       if (state.updateCheckedFor !== state.project) { state.updateCheckedFor = state.project; checkUpdate(); }
+      if (!state.staleChecked) { state.staleChecked = true; checkStale(); }
     } catch (err) { $('conn').textContent = 'disconnected'; }
   }
 
@@ -1618,6 +1643,10 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('update-dismiss').addEventListener('click', () => {
     try { localStorage.setItem('skald.update.dismissed', state.updateLatest || ''); } catch (e) {}
     $('update-note').classList.add('hidden'); $('update-note').classList.remove('inline-flex');
+  });
+  $('stale-dismiss').addEventListener('click', () => {
+    try { localStorage.setItem('skald.stale.dismissed', state.staleInstalled || ''); } catch (e) {}
+    $('stale-banner').classList.add('hidden'); $('stale-banner').classList.remove('flex');
   });
   $('settings-btn').addEventListener('click', () => showSettings());
   $('settings-close').addEventListener('click', hideSettings);

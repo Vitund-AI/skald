@@ -695,3 +695,25 @@ timeout, bad JSON, a locked-down network — so nothing here can break the
 board or the server; a failed lookup just means no icon. `skald doctor`
 surfaces the same result from the cache without ever making its own network
 call, keeping the diagnostic offline and deterministic.
+
+### D68. The server detects its own staleness by comparing `__version__` to the installed metadata, and warns rather than restarting itself
+A background board server started before `pip install -U` keeps the old code
+in memory: the running process holds the version compiled into `__version__`
+at import time, while the on-disk `.dist-info` that pip rewrites carries the
+new one. There is no reliable post-install hook to lean on — a wheel install
+executes no project code — so an automatic restart on upgrade is not
+achievable, and an unsolicited restart of something running on the user's
+machine would be the wrong default anyway. Instead the server reads
+`importlib.metadata.version("skald-kanban")` on each `/api/health` and reports
+`installed` and `stale`; the board raises a dismissible banner, `skald server
+status` and `skald doctor` print a note, and `skald server restart` stops and
+starts the server in place (reusing the running server's host and port). A
+warning is non-blocking — it does not interrupt the user or change anything
+they are running — which is the right weight for "you may want to restart" as
+against a question they must answer or an action taken behind their back. The
+staleness test is `is_newer(installed, running)`, strictly newer and final
+releases only, reusing the update-check comparison: an editable install whose
+recorded metadata trails its moved-ahead source would otherwise read as stale
+on every request, so the direction of the comparison is the guard. The
+`doctor` check reads the server's own `stale` flag rather than recomputing a
+version mismatch, so the board and the diagnostic never disagree.

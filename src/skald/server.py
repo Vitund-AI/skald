@@ -388,7 +388,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         rest = parts[1:]
         if rest == ["health"] and method == "GET":
-            self._json(200, {"ok": True, "version": __version__, "pid": os.getpid()})
+            from . import update as upd
+
+            installed = upd.installed_version()
+            self._json(200, {"ok": True, "version": __version__, "pid": os.getpid(),
+                             "installed": installed,
+                             "stale": bool(installed) and upd.is_newer(installed, __version__)})
             return
         if not self._host_ok():
             self._json(403, {"error": "requests must come from this machine"})
@@ -907,6 +912,22 @@ def cmd_server(ws: Workspace, args) -> int:
         else:
             print("server is not running")
         return 0
+    if args.server_cmd == "restart":
+        prev = read_state(home)
+        host = getattr(args, "host", None)
+        port = getattr(args, "port", None)
+        if host is None and prev:
+            host = prev.get("host")
+        if port is None and prev:
+            port = prev.get("port")
+        if host is None:
+            host = ws.user.get("host")
+        if port is None:
+            port = int(ws.user.get("port"))
+        stop_server(home)
+        state = start_server(home, host, int(port))
+        print(f"server restarted at http://{state['host']}:{state['port']}/ (pid {state['pid']})")
+        return 0
     if args.server_cmd == "token":
         from .registry import rotate_token
 
@@ -919,11 +940,14 @@ def cmd_server(ws: Workspace, args) -> int:
     if args.server_cmd == "status":
         state = server_status(home)
         if state:
+            info = health(state["host"], state["port"]) or {}
             print(f"running at http://{state['host']}:{state['port']}/ (pid {state['pid']}, version {state.get('version', '?')})")
+            if info.get("stale"):
+                print(f"a newer package is installed ({info.get('installed')}); run `skald server restart` to pick it up")
             return 0
         print("not running")
         return 1
-    print("usage: skald server start|stop|status|token", file=sys.stderr)
+    print("usage: skald server start|stop|restart|status|token", file=sys.stderr)
     return 1
 
 

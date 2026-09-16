@@ -7,6 +7,7 @@ needs no account: `skald open` carries the key.
 skald open              # ensure the background server is running, open this project
 skald server start      # or manage it explicitly
 skald server status
+skald server restart     # stop and start in place, e.g. after upgrading the package
 skald server stop
 skald serve             # run in the foreground instead
 ```
@@ -15,6 +16,14 @@ The server binds to `127.0.0.1` on port 8321 by default (`skald config port`
 changes it). The page loads Tailwind and marked from CDNs, so styling and
 Markdown preview need internet access; without it the board still works,
 unstyled.
+
+A background server keeps running the code it started with. After
+`pip install -U skald-kanban`, it still serves the old version until it is
+restarted: the board shows a dismissible banner, and `skald server status`
+and `skald doctor` say so, each pointing at `skald server restart`, which
+stops and starts the server in place, reusing its host and port. The warning
+fires only when the installed version is strictly newer than the running one,
+so a source checkout ahead of its recorded version is never flagged.
 
 ## Access
 

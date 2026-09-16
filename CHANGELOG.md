@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The background board server notices when a newer `skald-kanban` has been installed on disk while it kept running the old code: `GET /api/health` now reports `installed` and `stale`, the board shows a dismissible banner, and `skald server status` and `skald doctor` say so. A new `skald server restart` stops and restarts it in place, reusing the running server's host and port, to pick up the upgrade. The check compares the installed version against the running one and only warns when the installed one is strictly newer, so an editable install whose source has moved ahead never false-positives. (165040)
+
 ## 0.8.0 (2026-09-16)
 
 - Completion and API tests pick a unique id prefix, not a fixed slice (ce8ab1)

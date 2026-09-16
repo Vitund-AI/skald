@@ -1,7 +1,7 @@
-<!-- skald-render 208f22a1f25021b4 -->
+<!-- skald-render 795bfd6dc3904196 -->
 # skald backlog
 
-**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -24,9 +24,11 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [165040](stories/165040-warn-when-the-running-board-server-is-older-than-t.md) | Warn when the running board server is older than the installed package; add skald server restart | `area:server` | agent |  |  |
 
 <details><summary><strong>Done (0)</strong></summary>
 

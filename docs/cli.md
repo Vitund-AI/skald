@@ -646,7 +646,7 @@ Run the board in the foreground.
 ## server
 
 ```
-skald server {start,stop,status,token} ...
+skald server {start,stop,restart,status,token} ...
 ```
 
 Manage the background board server.
@@ -671,6 +671,19 @@ skald server stop
 ```
 
 Stop the background server.
+
+### server restart
+
+```
+skald server restart [--host HOST] [--port PORT]
+```
+
+Restart the background server, e.g. to pick up an upgraded package.
+
+| Argument | Description |
+| --- | --- |
+| `--host HOST` | interface to bind (default: the running server's, else skald config host) |
+| `--port PORT` | port (default: the running server's, else skald config port) |
 
 ### server status
 
