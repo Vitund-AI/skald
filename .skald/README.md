@@ -1,7 +1,7 @@
-<!-- skald-render 5bd1b591bcaa6736 -->
+<!-- skald-render ceb819c8165c8c30 -->
 # skald backlog
 
-**3 open** · Idea 1 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 6
+**5 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 3 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -25,15 +25,16 @@ flowchart LR
     n_716fe0 --> n_f9e295
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_0341fc,n_50b992,n_716fe0,n_f9e295 done
     class n_a29da4 active
+    class n_0341fc,n_50b992,n_716fe0,n_f9e295 done
 ```
 
-## Idea (1)
+## Idea (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
+| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` |  |  | 0/6 |
 
 ## Plan (0)
 
@@ -47,12 +48,13 @@ _none_
 
 _none_
 
-## Review (2)
+## Review (3)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [3eea32](stories/3eea32-opt-in-update-check-show-an-update-available-icon.md) | Opt-in update check: show an update-available icon on the board | `area:board` `epic:feature-flags` | claude |  | 10/10 |
 | [a29da4](stories/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` | claude | `50b992` | 6/6 |
+| [938c9c](stories/938c9c-make-the-screenshot-harness-extensible-and-showcas.md) | Make the screenshot harness extensible and showcase the new features | `area:docs` | claude |  | 7/7 |
 
 <details><summary><strong>Done (6)</strong></summary>
 

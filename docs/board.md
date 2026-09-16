@@ -86,6 +86,11 @@ interface still means plaintext HTTP, so do that deliberately.
   story file format, and the full CLI reference generated from the same
   parser as `skald --help`.
 
+Swimlanes by a facet split the board into one lane per value, each with its
+own columns and a progress bar:
+
+![The board split into swimlanes by the area facet: one lane per value (area:docs, area:net, area:platform), each with the full set of columns and a per-lane progress bar](images/swimlanes.png)
+
 ## Columns and cards
 
 Columns come from `.skald/config.json` with their labels and WIP limits; a
