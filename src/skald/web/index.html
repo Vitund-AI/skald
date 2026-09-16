@@ -385,7 +385,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
     lastWrite: 0, help: false, helpCli: null, features: null, settingsOpen: false, repo_slug: null,
     updateCheckedFor: undefined, updateLatest: null,
-    sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
+    sel: { column: null, ids: new Set() }, dragBatch: [], dragFromLane: null, suppressClick: false, locked: false,
     collapsed: new Set(), releasesView: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal'), help = $('help');
@@ -648,6 +648,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const t = story.tags.find(t => t.startsWith(key + ':'));
     return t ? t.slice(key.length + 1) : null;
   }
+  function facetValues(story, key) {
+    return story.tags.filter(t => t.startsWith(key + ':')).map(t => t.slice(key.length + 1)).filter(Boolean);
+  }
   function renderFacetControls() {
     const keys = Object.keys(state.facets || {});
     const box = $('facet-filters');
@@ -693,9 +696,14 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       <span class="inline-block h-1.5 w-12 rounded bg-chip overflow-hidden align-middle"><span class="block h-full bg-info" style="width:${Math.round(100 * story.children.done / story.children.total)}%"></span></span>` : '';
     const nq = openQuestions(story);
     const qBadge = nq ? `<span class="text-[10px] rounded-full bg-warning-tint text-warning-text px-1.5" title="Waiting on a human: ${nq} open question(s)">? ${nq}</span>` : '';
+    // In facet swimlanes a card shows in every lane it belongs to; this marks the ones in more than one,
+    // so it is clear that dragging this card between lanes changes only that lane's membership.
+    const laneKey = state.groupBy && state.groupBy !== '__parent__' ? state.groupBy : null;
+    const nLanes = laneKey ? facetValues(story, laneKey).length : 0;
+    const laneBadge = nLanes > 1 ? `<span class="inline-flex items-center text-faint" title="In ${nLanes} ${esc(laneKey)} lanes; dragging between lanes changes only this one"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg></span>` : '';
     el.innerHTML = `
       <div class="flex items-start gap-1.5">${mark}
-        <div class="text-sm font-medium leading-snug flex-1">${esc(story.title)}</div>${lock}
+        <div class="text-sm font-medium leading-snug flex-1">${esc(story.title)}</div>${laneBadge}${lock}
       </div>
       <div class="mt-1.5 flex flex-wrap gap-1 items-center">${tags}${stale}${cl}${kids}${qBadge}${claimBadge}</div>
       <div class="mt-1.5 flex justify-between gap-2 text-[11px] text-faint font-mono">
@@ -730,6 +738,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     el.addEventListener('dragstart', (e) => {
       cancelHold();
       state.dragging = story.id;
+      // The lane this instance was dragged from, so a drop into another lane knows which value to drop.
+      const fromList = el.closest('.col-list');
+      state.dragFromLane = fromList && fromList.dataset.laneKey !== undefined ? fromList.dataset.laneValue : null;
       state.dragBatch = selected ? [...state.sel.ids] : [story.id];
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', state.dragBatch.join(','));
@@ -738,7 +749,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         if (state.dragBatch.length > 1) board.querySelectorAll('.card.selected').forEach(c => c.classList.add('dragging-batch'));
       }, 0);
     });
-    el.addEventListener('dragend', () => { state.dragging = null; state.dragBatch = []; removePlaceholder(); render(); });
+    el.addEventListener('dragend', () => { state.dragging = null; state.dragBatch = []; state.dragFromLane = null; removePlaceholder(); render(); });
     return el;
   }
 
@@ -775,12 +786,18 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     $('bulk-archive').classList.toggle('hidden', !terminal);
     bar.classList.remove('hidden');
   }
-  async function bulkMove(status, order) {
+  async function bulkMove(status, order, facet) {
     const ids = [...state.sel.ids];
     if (!ids.length || !status) return;
     const warnings = [];
     try {
-      for (const id of ids) { const res = await api('PATCH', `${P()}/stories/${id}`, { status }); warnings.push(...(res.warnings || [])); }
+      for (const id of ids) {
+        const body = { status };
+        const tags = facet && facet.key ? retagForLane(state.stories.find(s => s.id === id), facet.key, facet.from, facet.to) : null;
+        if (tags) body.tags = tags;
+        const res = await api('PATCH', `${P()}/stories/${id}`, body);
+        warnings.push(...(res.warnings || []));
+      }
       if (order) { const res = await api('PATCH', `${P()}/stories/${ids[0]}`, { order }); warnings.push(...(res.warnings || [])); }
       toast(`Moved ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'} to ${status}`);
     } catch (err) { toast(err.message, 'error'); }
@@ -857,11 +874,15 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         rest = state.stories.filter(s => !s.parent);
         if (rest.length) groups.push({ label: 'no parent', stories: rest, meta: null });
       } else {
+        // A story appears in every lane whose key:value it carries, so lane counts (which
+        // count each value) and the cards on screen agree; dragging a card between lanes
+        // then reassigns that one value (see onDrop). The last lane holds stories with none.
         const values = Object.keys(state.facets[key] || {});
-        groups = values.map(v => ({ label: `${key}:${v}`, stories: state.stories.filter(s => facetOf(s, key) === v), meta: state.facets[key][v] }));
-        rest = state.stories.filter(s => facetOf(s, key) === null);
-        if (rest.length) groups.push({ label: `no ${key}`, stories: rest, meta: null });
+        groups = values.map(v => ({ label: `${key}:${v}`, value: v, stories: state.stories.filter(s => facetValues(s, key).includes(v)), meta: state.facets[key][v] }));
+        rest = state.stories.filter(s => facetValues(s, key).length === 0);
+        if (rest.length) groups.push({ label: `no ${key}`, value: '', stories: rest, meta: null });
       }
+      const facetLane = key !== '__parent__';   // parent lanes are not drag-reassignable (that would be reparenting)
       for (const g of groups) {
         const lane = document.createElement('section');
         const pct = g.meta && g.meta.total ? Math.round(100 * g.meta.done / g.meta.total) : null;
@@ -874,7 +895,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
           ${pct === null ? '' : `<span class="inline-block h-1.5 w-24 rounded bg-chip overflow-hidden"><span class="block h-full bg-success" style="width:${pct}%"></span></span><span class="text-xs font-normal text-muted">${g.meta.done}/${g.meta.total}</span>`}${laneTag}</div>`;
         const row = document.createElement('div');
         row.className = 'flex flex-col sm:flex-row gap-3 overflow-x-auto';
-        renderColumns(row, g.stories);
+        renderColumns(row, g.stories, facetLane ? { key, value: g.value } : null);
         lane.appendChild(row);
         board.appendChild(lane);
       }
@@ -883,7 +904,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     board.classList.add('flex', 'flex-col', 'sm:flex-row'); board.classList.remove('grid', 'gap-4', 'content-start');
     renderColumns(board, state.stories);
   }
-  function renderColumns(container, stories) {
+  function renderColumns(container, stories, lane) {
     const known = new Set(state.columns.map(c => c.key));
     const cols = state.columns.slice();
     const orphans = stories.filter(s => !known.has(s.status));
@@ -916,7 +937,11 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       if (!collapsed) {
         const list = document.createElement('div');
         list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 sm:overflow-y-auto';
-        if (col.key !== null && !state.readonly) { list.dataset.status = col.key; list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop); }
+        if (col.key !== null && !state.readonly) {
+          list.dataset.status = col.key;
+          if (lane) { list.dataset.laneKey = lane.key; list.dataset.laneValue = lane.value; }
+          list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop);
+        }
         shown.forEach(s => list.appendChild(cardEl(s)));
         section.appendChild(list);
       }
@@ -1080,12 +1105,24 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     }
     if (before) list.insertBefore(placeholder, before); else list.appendChild(placeholder);
   }
+  // The tags for a story after dragging it from one facet lane to another: drop the source
+  // value, add the target ('' target = the "no key" lane, so just a removal). Null laneKey
+  // (not a facet swimlane, or same lane) means no change.
+  function retagForLane(story, laneKey, fromValue, toValue) {
+    if (!laneKey || fromValue === toValue) return null;
+    let tags = story.tags.slice();
+    if (fromValue) tags = tags.filter(t => t !== `${laneKey}:${fromValue}`);
+    if (toValue) tags.push(`${laneKey}:${toValue}`);
+    return tags;
+  }
   async function onDrop(e) {
     e.preventDefault();
     const list = e.currentTarget;
     const id = state.dragging;
     if (!id || !placeholder) return;
     const status = list.dataset.status;
+    const laneKey = list.dataset.laneKey;                 // set only in facet swimlanes
+    const fromValue = state.dragFromLane, toValue = list.dataset.laneValue;
     const batch = state.dragBatch.length ? state.dragBatch : [id];
     const inBatch = new Set(batch);
     const order = [];
@@ -1095,10 +1132,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     }
     const hidden = state.stories.filter(s => s.status === status && !matches(s) && !inBatch.has(s.id)).map(s => s.id);
     removePlaceholder();
-    state.dragging = null; state.dragBatch = [];
-    if (batch.length > 1) { await bulkMove(status, order.concat(hidden)); return; }
+    state.dragging = null; state.dragBatch = []; state.dragFromLane = null;
+    if (batch.length > 1) { await bulkMove(status, order.concat(hidden), { key: laneKey, from: fromValue, to: toValue }); return; }
     try {
-      const res = await api('PATCH', `${P()}/stories/${id}`, { status, order: order.concat(hidden) });
+      const body = { status, order: order.concat(hidden) };
+      const tags = laneKey ? retagForLane(state.stories.find(s => s.id === id), laneKey, fromValue, toValue) : null;
+      if (tags) body.tags = tags;
+      const res = await api('PATCH', `${P()}/stories/${id}`, body);
       showWarnings(res.warnings);
     } catch (err) { toast(err.message, 'error'); }
     await refresh(true);

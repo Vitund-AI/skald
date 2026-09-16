@@ -717,3 +717,23 @@ recorded metadata trails its moved-ahead source would otherwise read as stale
 on every request, so the direction of the comparison is the guard. The
 `doctor` check reads the server's own `stale` flag rather than recomputing a
 version mismatch, so the board and the diagnostic never disagree.
+
+### D69. A card renders in every facet lane it belongs to, and dragging between lanes reassigns that one value
+`facets()` already counts a story in every `key:value` bucket it carries, but
+the board used to render it only in the first (`facetOf`, first-match), so for
+a story with two values of the grouping key the lane counts and the visible
+cards disagreed. Rendering the card in each of its lanes fixes that, and it is
+what makes dragging between lanes unambiguous: the dragged instance belongs to
+one specific value, so the drop can drop *that* value and add the target's
+without guessing which of several to touch. The alternative — keep the
+single-lane display and, on a drag, collapse all of a key's values to the
+target — silently discards the others; showing every lane and editing one at a
+time never loses data. The tag rewrite is computed client-side (remove
+`key:source`, add `key:target`; a drop into the "no `<key>`" lane is a removal)
+and rides the same single `PATCH` the drop already sends with `status` and
+`order`, so there is no new endpoint and the facet active-limit enforcement on
+that path applies unchanged. Parent lanes are excluded: moving between them is
+reparenting, which carries facet inheritance and cycle checks and is a
+different gesture than retagging. A stacked-lanes icon marks cards that sit in
+more than one lane, so it is visible that a drag there changes only the one
+lane's membership.

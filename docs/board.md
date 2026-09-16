@@ -71,9 +71,15 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Filter** matches title, id, tag, or assignee. `/` focuses it.
 - **Facet filters and swimlanes** appear when stories carry `key:value`
   tags. One dropdown per key filters; "swimlanes by" splits the board into
-  one lane per value with a progress bar per lane. When any story has a
-  parent, "swimlanes by parent" gives one lane per parent, titled, with its
-  children's progress.
+  one lane per value with a progress bar per lane. A card shows in every lane
+  whose value it carries — a story tagged both `area:api` and `area:cli`
+  appears in both, marked with a stacked-lanes icon — plus a "no `<key>`"
+  lane for stories with none. **Dragging a card to another lane reassigns
+  that tag:** drop it in `release:1.1` and its `release:` value changes, drop
+  it in "no release" and the value is removed; other values of the same key
+  stay. When any story has a parent, "swimlanes by parent" gives one lane per
+  parent, titled, with its children's progress; those lanes are not
+  drag-reassignable (that would be reparenting).
 - **Waiting on a human** appears when any story has an open question and
   filters the board to those stories; the count is in the label.
 - **Graph** (`g`) draws the dependency graph.

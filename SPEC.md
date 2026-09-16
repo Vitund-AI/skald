@@ -539,7 +539,15 @@ changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
 A Releases view (a header toggle) lists what shipped grouped by version, newest first, from `GET /api/projects/<p>/releases` (`store.releases()`); a story opens read-only, since it is archived. One filter dropdown per facet key and a swimlane control that splits the
-board by a facet's values with a progress bar per lane.
+board by a facet's values with a progress bar per lane. A card appears in
+every lane whose `key:value` it carries (so a story with two values for the
+grouping key shows in both, marked with a stacked-lanes icon), plus a "no
+`<key>`" lane for stories with none. Dragging a card to another lane
+reassigns that value: the drop drops the source lane's `key:value` and adds
+the target's (a drop into the "no `<key>`" lane just removes it), sent with
+the status and order in the one `PATCH` the drop already makes, so other
+values of the same key are untouched. "Swimlanes by parent" lanes are not
+drag-reassignable, since that would be reparenting.
 A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
 stories that exist only on other branches. When the project has more than

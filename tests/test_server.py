@@ -217,6 +217,26 @@ class TestAPI(ServerTestCase):
         self.assertEqual(self.call("DELETE", f"{P}/stories/{a}?force=1")[0], 204)
         self.assertEqual(self.call("GET", f"{P}/stories/{a}")[0], 404)
 
+    def test_lane_reassign_patch(self):
+        # The board's swimlane drag sends status + retagged tags + order in one PATCH.
+        # This is the server contract it relies on: reassign a facet value and reorder at once.
+        P = "/api/projects/alpha"
+        a = self.call("POST", f"{P}/stories", {"title": "A", "tags": ["release:1.0", "area:api"]})[1]["story"]["id"]
+        self.call("POST", f"{P}/stories", {"title": "B", "tags": ["release:1.0"]})  # stays in release:1.0
+        # Drag A from the release:1.0 lane to release:1.1: drop release:1.0, add release:1.1, keep area:api.
+        _, data = self.call("PATCH", f"{P}/stories/{a}",
+                            {"status": "ready", "tags": ["area:api", "release:1.1"], "order": [a]})
+        self.assertEqual(sorted(data["story"]["tags"]), ["area:api", "release:1.1"])
+        self.assertEqual(data["story"]["status"], "ready")
+        _, board = self.call("GET", f"{P}/board")
+        self.assertEqual(board["facets"]["release"]["1.1"]["total"], 1)
+        self.assertEqual(board["facets"]["release"]["1.0"]["total"], 1)  # B still there
+        # Drag A into the "no release" lane: drop release:1.1, area:api untouched.
+        _, data = self.call("PATCH", f"{P}/stories/{a}", {"status": "ready", "tags": ["area:api"]})
+        self.assertEqual(data["story"]["tags"], ["area:api"])
+        _, board = self.call("GET", f"{P}/board")
+        self.assertNotIn("1.1", board["facets"].get("release", {}))
+
     def test_git_endpoints(self):
         P = "/api/projects/alpha"
         self.call("POST", f"{P}/stories", {"title": "x"})
