@@ -5,7 +5,7 @@ rank: 80
 tags: ["area:board"]
 blocked_by: []
 created_at: "2026-09-16T05:25:26Z"
-updated_at: "2026-09-16T05:25:26Z"
+updated_at: "2026-09-16T05:54:15Z"
 ---
 ## Requirements
 
@@ -57,3 +57,6 @@ the code change above does not depend on it.
 The board now shows the "Swimlanes by…" control even before any story is
 tagged, grayed out with a hint to add `key:value` tags, so the swimlanes
 feature is discoverable instead of hidden until the first facet exists.
+
+## [claude] 2026-09-16 05:54 UTC · decision
+Parked (moved back to idea) by decision. The maintainer's UX concern: dynamically appearing/disappearing header controls shift the layout and break spatial muscle memory. Reframe agreed: the shift already happens today (swimlanes pops in/out with facets); 'always visible + disabled' would actually FIX the shift, not cause it. But a one-off stable-slot change to only swimlanes is the least defensible version. If we ever adopt 'stable header slots' as a principle, do it consistently (swimlanes + a facet-filter entry both get fixed slots), or use a stable 'View ▾' menu that never moves. For now, discoverability is delivered by the docs screenshot (938c9c) with zero UI risk; this story waits until/unless we commit to the stable-slots principle.
