@@ -136,6 +136,13 @@
       </div>
     </div>
   </div>
+  <span id="update-note" class="hidden items-center gap-1">
+    <a id="update-link" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-full border border-accent bg-accent-tint text-accent-text px-2 py-0.5 text-xs hover:bg-hover" title="">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path></svg>
+      <span id="update-label"></span>
+    </a>
+    <button id="update-dismiss" class="text-faint hover:text-ink text-sm leading-none" title="Dismiss until the next release">&times;</button>
+  </span>
   <button id="settings-btn" class="rounded border border-strong px-2 py-1 text-xs bg-surface hover:bg-hover leading-none" title="Settings" aria-label="Settings">
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block align-[-2px]"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
   </button>
@@ -373,6 +380,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
     lastWrite: 0, help: false, helpCli: null, features: null, settingsOpen: false, repo_slug: null,
+    updateCheckedFor: undefined, updateLatest: null,
     sel: { column: null, ids: new Set() }, dragBatch: [], suppressClick: false, locked: false,
     collapsed: new Set(), releasesView: false,
   };
@@ -1517,6 +1525,31 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     renderSettings();
   }
   function hideSettings() { state.settingsOpen = false; $('settings').classList.add('hidden'); $('settings').classList.remove('flex'); }
+
+  // ---- Update check ----------------------------------------------------
+  // Opt-in (the update_check flag): the server asks PyPI at most once a day and
+  // caches, so this is a cheap read. Called once per project view, off the
+  // board-render path, and silent on any failure.
+  async function checkUpdate() {
+    const note = $('update-note');
+    try {
+      const q = state.project ? '?project=' + encodeURIComponent(state.project) : '';
+      const d = await api('GET', '/api/update' + q);
+      let dismissed = null;
+      try { dismissed = localStorage.getItem('skald.update.dismissed'); } catch (e) {}
+      const show = d && d.enabled && d.outdated && d.latest && dismissed !== d.latest;
+      note.classList.toggle('hidden', !show);
+      note.classList.toggle('inline-flex', !!show);
+      if (show) {
+        state.updateLatest = d.latest;
+        $('update-label').textContent = `v${d.latest}`;
+        $('update-link').href = 'https://github.com/Vitund-AI/skald/releases';
+        $('update-link').title = `skald ${d.latest} is available — pip install -U skald-kanban`;
+      }
+    } catch (e) {
+      note.classList.add('hidden'); note.classList.remove('inline-flex');
+    }
+  }
   async function loadHelpCli() {
     if (state.helpCli) return renderHelpCli();
     $('help-cli').innerHTML = '<div class="text-faint">loading…</div>';
@@ -1573,6 +1606,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       $('conn').textContent = data.warnings.length ? `${data.warnings.length} notice(s), see terminal` : '';
       if (!state.readonly) renderGit();
       render();
+      if (state.updateCheckedFor !== state.project) { state.updateCheckedFor = state.project; checkUpdate(); }
     } catch (err) { $('conn').textContent = 'disconnected'; }
   }
 
@@ -1581,6 +1615,10 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('theme-btn').addEventListener('click', cycleTheme);
   $('help-btn').addEventListener('click', () => showHelp());
   $('help-close').addEventListener('click', hideHelp);
+  $('update-dismiss').addEventListener('click', () => {
+    try { localStorage.setItem('skald.update.dismissed', state.updateLatest || ''); } catch (e) {}
+    $('update-note').classList.add('hidden'); $('update-note').classList.remove('inline-flex');
+  });
   $('settings-btn').addEventListener('click', () => showSettings());
   $('settings-close').addEventListener('click', hideSettings);
   $('settings').addEventListener('click', (e) => { if (e.target === $('settings')) hideSettings(); });

@@ -42,6 +42,11 @@ FEATURE_DEFAULTS = {
         "help": "Show a link on the card detail view that opens the story as a Claude Code web session.",
         "default": True,
     },
+    "update_check": {
+        "label": "Check for updates",
+        "help": "Let the board ask PyPI once a day whether a newer skald-kanban has been released, and show an icon when one has. Off by default because it makes an outbound request.",
+        "default": False,
+    },
 }
 
 

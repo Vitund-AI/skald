@@ -412,6 +412,16 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {"projects": entries, "settings": ws.user.all()})
             return
 
+        if rest == ["update"] and method == "GET":
+            project = (query.get("project") or [""])[0].strip() or None
+            if not ws.user.feature("update_check", project):
+                self._json(200, {"enabled": False})
+                return
+            from . import update as upd
+
+            self._json(200, {"enabled": True, **upd.check(self.server.home, __version__)})
+            return
+
         if rest == ["settings"]:
             if method == "GET":
                 project = (query.get("project") or [""])[0].strip() or None

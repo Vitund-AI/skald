@@ -96,7 +96,9 @@ tolerantly (a hand-edited non-boolean falls through to the next scope).
 `-p NAME` scopes it to one project, and `--unset` returns a scope to what it
 inherits. The current flags are: `claude_code_link` (default on) — show a
 link on the board's card detail view that opens the story as a Claude Code
-web session.
+web session; and `update_check` (default off) — let the board ask PyPI once a
+day whether a newer `skald-kanban` has been released and show an icon when
+one has (off by default because it makes an outbound request; see section 7).
 
 ### 2.4 Finding the project
 
@@ -489,6 +491,15 @@ endpoint table; it is the reference.
 `GET /api/help` returns the CLI reference built by `cli.command_reference()`,
 which walks the argparse tree; the board's Help panel renders it, so the
 page never carries its own copy of the command list.
+
+`GET /api/update` backs the board's update icon. It is inert unless the
+`update_check` flag resolves on, in which case the server queries PyPI's JSON
+API for the newest `skald-kanban` (standard-library `urllib`, so no
+dependency and no browser CORS), caches the answer machine-local for a day,
+and returns `{enabled, current, latest, outdated, checked_at}`; only a final
+`X.Y.Z` release newer by numeric tuple counts as an update, and every network
+failure is swallowed so the icon simply does not appear. `skald doctor` reads
+the same cache without ever making the call itself.
 
 `GET/PUT /api/settings` and `GET/PUT /api/projects/<p>/settings` read and
 write the machine-local settings behind the board's settings panel. The

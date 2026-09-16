@@ -73,6 +73,10 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Commit N changes** appears when story files are uncommitted. It commits
   only `.skald/` and, when enabled, the rendered snapshot; with `skald
   config push true` it can push too.
+- **Update available** appears as a small pill only when the opt-in update
+  check is on and a newer `skald-kanban` has been released; it links to the
+  releases page and can be dismissed until the next version. See
+  [Settings](#settings).
 - **Settings** (the gear) opens the settings panel: feature flags and a few
   preferences. See [Settings](#settings).
 - **Theme** cycles Dark, Light, Auto. Dark is the default, Auto follows the
@@ -258,7 +262,11 @@ so it is per-person, per-machine.
 
 Feature flags come from a catalog the server sends, so the panel lists
 whatever flags this version of Skald defines without any per-flag UI. The
-current flag is **Open in Claude Code** (`claude_code_link`), on by default.
+current flags are **Open in Claude Code** (`claude_code_link`, on by default)
+and **Check for updates** (`update_check`, off by default — the board asks
+PyPI at most once a day whether a newer `skald-kanban` has shipped and shows
+an "update available" pill when one has; off by default because it makes an
+outbound request).
 Changes save immediately and the board reflects them at once; the same
 values are settable from the terminal with `skald config features.<name>`
 (and `-p NAME` for one project).

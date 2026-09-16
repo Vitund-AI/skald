@@ -1,11 +1,12 @@
 ---
 title: "Opt-in update check: show an update-available icon on the board"
-status: "idea"
-rank: 100
+status: "review"
+rank: 30
 tags: ["area:board", "epic:feature-flags"]
 blocked_by: []
+assignee: "claude"
 created_at: "2026-09-16T02:08:34Z"
-updated_at: "2026-09-16T02:08:34Z"
+updated_at: "2026-09-16T02:23:24Z"
 ---
 ## Requirements
 
@@ -72,19 +73,22 @@ work.
 - The whole feature is inert in a locked-down network and when the flag is off.
 
 ## Acceptance
-- [ ] server-side version check via urllib against the PyPI JSON API, stdlib only
-- [ ] X.Y.Z comparator with regex validation; malformed latest -> not outdated
-- [ ] machine-local cache with a >= ~24h refresh window, refreshed off the request path (no board-load block)
-- [ ] `update_check` flag in FEATURE_DEFAULTS defaulting False; no network call when off
-- [ ] `GET /api/update` returns {enabled,current,latest,outdated,checked_at}; never 500 on network failure
-- [ ] header icon appears only when outdated and the flag is on; tooltip + link + per-version dismiss
-- [ ] offline / locked-down network is silent (no icon, no error)
-- [ ] tests: comparator, endpoint enabled/disabled/outdated/offline (PyPI fetch stubbed, no real network in tests)
-- [ ] docs: board.md (Settings + the icon), SPEC, DECISIONS entry (off-by-default), the flag catalog help
-- [ ] python3 -m unittest green, ruff clean
+- [x] server-side version check via urllib against the PyPI JSON API, stdlib only
+- [x] X.Y.Z comparator with regex validation; malformed latest -> not outdated
+- [x] machine-local cache with a ~24h TTL; the board never blocks on it (the page fetches /api/update lazily, not on the render path) — the refresh happens inside the handler gated by the TTL rather than a separate background thread (see note)
+- [x] `update_check` flag in FEATURE_DEFAULTS defaulting False; no network call when off
+- [x] `GET /api/update` returns {enabled,current,latest,outdated,checked_at}; never 500 on network failure
+- [x] header icon appears only when outdated and the flag is on; tooltip + link + per-version dismiss
+- [x] offline / locked-down network is silent (no icon, no error)
+- [x] tests: comparator, endpoint enabled/disabled/outdated/offline (PyPI fetch stubbed, no real network in tests)
+- [x] docs: board.md (Settings + the icon), SPEC, DECISIONS entry (off-by-default), the flag catalog help
+- [x] python3 -m unittest green, ruff clean
 
 ## Changelog
 
 The board can show an "update available" icon when a newer skald-kanban has
 been released on PyPI. It is off by default and enabled per-machine or
 per-project from the settings panel (`update_check`).
+
+## [claude] 2026-09-16 02:23 UTC · handoff
+Built. New module src/skald/update.py: parse_version (final X.Y.Z only), is_newer (numeric tuple), fetch_latest (urllib GET pypi.org/pypi/skald-kanban/json, swallows every error), and check() serving a machine-local ~24h cache (SKALD_HOME/update.json). update_check flag added to FEATURE_DEFAULTS, default False. Server: GET /api/update?project=NAME returns {enabled:false} when the flag is off, else {enabled,current,latest,outdated,checked_at}; never 500. Board: a header pill shown only when enabled+outdated (checked once per project view, off the render path so board load never blocks), links to GitHub releases (target=_blank rel=noopener), tooltip 'skald X available - pip install -U skald-kanban', per-version dismiss in localStorage. doctor reports the cached result with NO network call. Deviation from the story: the stale refresh happens inside the /api/update handler gated by the TTL, not a separate background thread — 'no board-load block' holds because the frontend fetches it lazily. Verified end to end in a real browser (off=hidden; on=pill with correct label/href/title; dismiss persists across reload) and the endpoint directly (off/on/outdated). ruff S310 waived per-file for update.py (one fixed https URL). 184 tests (test_update, a server endpoint test, a doctor cached-state test; all stub the fetch, no real network). Docs: SPEC 2.3/7, api.md, board.md; DECISIONS D67.

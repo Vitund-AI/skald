@@ -454,6 +454,22 @@ class TestAuth(ServerTestCase):
         self.assertEqual(srv.board_url("127.0.0.1", 8321, None), "http://127.0.0.1:8321/")
 
 
+class TestUpdateEndpoint(ServerTestCase):
+    def test_disabled_by_default_then_enabled(self):
+        from skald import update as upd
+        self.addCleanup(setattr, upd, "fetch_latest", upd.fetch_latest)
+
+        def fake(timeout=upd.TIMEOUT):
+            return "99.0.0"
+        upd.fetch_latest = fake
+        # off by default: no network, nothing but a disabled flag
+        self.assertEqual(self.call("GET", "/api/update"), (200, {"enabled": False}))
+        # turn the flag on; now the endpoint reports the (stubbed) newer release
+        UserConfig(self.home).set_feature("update_check", True)
+        status, data = self.call("GET", "/api/update")
+        self.assertEqual((status, data["enabled"], data["outdated"], data["latest"]), (200, True, True, "99.0.0"))
+
+
 class TestRepoSlug(ServerTestCase):
     def test_board_carries_github_slug_when_origin_is_github(self):
         # no GitHub origin: the board reports null, so the button stays hidden
@@ -472,7 +488,7 @@ class TestSettings(ServerTestCase):
         self.assertEqual(status, 200)
         self.assertIn("stale_days", data["settings"])
         feats = data["features"]
-        self.assertEqual([c["name"] for c in feats["catalog"]], ["claude_code_link"])
+        self.assertIn("claude_code_link", [c["name"] for c in feats["catalog"]])
         self.assertEqual(feats["resolved"]["claude_code_link"], True)   # built-in default
         self.assertIsNone(feats["global"]["claude_code_link"])          # nothing stored yet
         self.assertEqual(feats["project"], {})                          # no project in the query

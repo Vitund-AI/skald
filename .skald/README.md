@@ -1,7 +1,7 @@
-<!-- skald-render 97b1012fbb2f81f9 -->
+<!-- skald-render 9d79266b03ba0883 -->
 # skald backlog
 
-**3 open** · Idea 3 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 6
+**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -29,13 +29,12 @@ flowchart LR
     class n_a29da4 backlog
 ```
 
-## Idea (3)
+## Idea (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
 | [a29da4](stories/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` |  | `50b992` | 0/6 |
-| [3eea32](stories/3eea32-opt-in-update-check-show-an-update-available-icon.md) | Opt-in update check: show an update-available icon on the board | `area:board` `epic:feature-flags` |  |  | 0/10 |
 
 ## Plan (0)
 
@@ -49,9 +48,11 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [3eea32](stories/3eea32-opt-in-update-check-show-an-update-available-icon.md) | Opt-in update check: show an update-available icon on the board | `area:board` `epic:feature-flags` | claude |  | 10/10 |
 
 <details><summary><strong>Done (6)</strong></summary>
 

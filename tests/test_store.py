@@ -487,7 +487,7 @@ class TestRegistry(SkaldTestCase):
         u = UserConfig(self.home)
         # built-in default when nothing is stored
         self.assertTrue(u.feature("claude_code_link"))
-        self.assertEqual(u.features(), {"claude_code_link": True})
+        self.assertEqual(u.features()["claude_code_link"], True)
         # global override; a project with no override inherits it
         u.set_feature("claude_code_link", False)
         self.assertFalse(u.feature("claude_code_link"))
