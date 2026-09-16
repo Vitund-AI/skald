@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0 (2026-09-16)
+
+- Completion and API tests pick a unique id prefix, not a fixed slice (ce8ab1)
+- `scripts/release.sh` now tags the newest non-skip ancestor of main (the merge commit, which carries the version bump) instead of HEAD, so the tag push always triggers publish. It verifies that commit's version file still reads the release version before tagging. (947089)
+- Machine-local feature-flag config layer (716fe0)
+- Settings modal and API for defaults and per-project options (0341fc)
+- The board card detail view can open a story directly in Claude Code on the web, with the repository preselected and a prompt prefilled, when the project has a GitHub remote. Toggle it with the `claude_code_link` setting. (f9e295)
+- `skald claim` now warns when a story is already active in another local working tree or branch, including when the same name is used in both, so parallel agents do not silently pick up the same story. (50b992)
+- The board can show an "update available" icon when a newer skald-kanban has been released on PyPI. It is off by default and enabled per-machine or per-project from the settings panel (`update_check`). (3eea32)
+- Show claim provenance as author@branch on the board and in ls (a29da4)
+- Make the screenshot harness extensible and showcase the new features (938c9c)
+
 ## 0.7.0 (2026-09-14)
 
 ### Added

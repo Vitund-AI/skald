@@ -5,8 +5,9 @@ rank: 70
 tags: ["area:board", "epic:feature-flags"]
 blocked_by: []
 assignee: "claude"
+released: "0.8.0"
 created_at: "2026-09-16T02:08:34Z"
-updated_at: "2026-09-16T06:58:04Z"
+updated_at: "2026-09-16T07:11:46Z"
 ---
 ## Requirements
 

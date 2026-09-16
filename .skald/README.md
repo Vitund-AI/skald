@@ -1,31 +1,9 @@
-<!-- skald-render cf59ff75f9e42f49 -->
+<!-- skald-render 208f22a1f25021b4 -->
 # skald backlog
 
-**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 9
+**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
-
-## Epics
-
-| Epic | Progress | Done | Open |
-| --- | --- | ---: | ---: |
-| `epic:feature-flags` | ▰▰▰▰▰▰▰▰▰▰ 100% | 4 | 0 |
-
-## Dependencies
-
-```mermaid
-flowchart LR
-    n_0341fc["0341fc<br/>Settings modal and API for defaults and…"]
-    n_50b992["50b992<br/>Warn when claiming a story already acti…"]
-    n_716fe0["716fe0<br/>Machine-local feature-flag config layer"]
-    n_a29da4["a29da4<br/>Show claim provenance as author@branch …"]
-    n_f9e295["f9e295<br/>Open story in Claude Code from the card…"]
-    n_716fe0 --> n_0341fc
-    n_716fe0 --> n_f9e295
-    n_50b992 --> n_a29da4
-    classDef done fill:#d1fae5,stroke:#34d399,color:#475569
-    class n_0341fc,n_50b992,n_716fe0,n_a29da4,n_f9e295 done
-```
 
 ## Idea (2)
 
@@ -50,23 +28,29 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (9)</strong></summary>
+<details><summary><strong>Done (0)</strong></summary>
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [ce8ab1](stories/ce8ab1-completion-and-api-tests-pick-a-unique-id-prefix-n.md) | Completion and API tests pick a unique id prefix, not a fixed slice | `tests` | claude |  | 1/1 |
-| [947089](stories/947089-release-sh-tags-the-merge-commit-not-a-skip-ci-ren.md) | release.sh tags the merge commit, not a [skip ci] render HEAD | `area:release` | claude |  | 4/4 |
-| [716fe0](stories/716fe0-machine-local-feature-flag-config-layer.md) | Machine-local feature-flag config layer | `area:config` `epic:feature-flags` | claude |  | 7/7 |
-| [0341fc](stories/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
-| [f9e295](stories/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
-| [50b992](stories/50b992-warn-when-claiming-a-story-already-active-in-anoth.md) | Warn when claiming a story already active in another local worktree, same author included | `area:cli` | claude |  | 7/7 |
-| [3eea32](stories/3eea32-opt-in-update-check-show-an-update-available-icon.md) | Opt-in update check: show an update-available icon on the board | `area:board` `epic:feature-flags` | claude |  | 10/10 |
-| [a29da4](stories/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` | claude | `50b992` | 6/6 |
-| [938c9c](stories/938c9c-make-the-screenshot-harness-extensible-and-showcas.md) | Make the screenshot harness extensible and showcase the new features | `area:docs` | claude |  | 7/7 |
+_none_
 
 </details>
 
 ## Releases
+
+<details><summary><strong>0.8.0 (9)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [ce8ab1](archive/ce8ab1-completion-and-api-tests-pick-a-unique-id-prefix-n.md) | Completion and API tests pick a unique id prefix, not a fixed slice | `tests` | claude |  | 1/1 |
+| [716fe0](archive/716fe0-machine-local-feature-flag-config-layer.md) | Machine-local feature-flag config layer | `area:config` `epic:feature-flags` | claude |  | 7/7 |
+| [938c9c](archive/938c9c-make-the-screenshot-harness-extensible-and-showcas.md) | Make the screenshot harness extensible and showcase the new features | `area:docs` | claude |  | 7/7 |
+| [f9e295](archive/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` | claude | 🔒 `716fe0` | 8/8 |
+| [3eea32](archive/3eea32-opt-in-update-check-show-an-update-available-icon.md) | Opt-in update check: show an update-available icon on the board | `area:board` `epic:feature-flags` | claude |  | 10/10 |
+| [947089](archive/947089-release-sh-tags-the-merge-commit-not-a-skip-ci-ren.md) | release.sh tags the merge commit, not a [skip ci] render HEAD | `area:release` | claude |  | 4/4 |
+| [0341fc](archive/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` | claude | 🔒 `716fe0` | 8/8 |
+| [a29da4](archive/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` | claude | 🔒 `50b992` | 6/6 |
+| [50b992](archive/50b992-warn-when-claiming-a-story-already-active-in-anoth.md) | Warn when claiming a story already active in another local worktree, same author included | `area:cli` | claude |  | 7/7 |
+
+</details>
 
 <details><summary><strong>0.7.0 (11)</strong></summary>
 
