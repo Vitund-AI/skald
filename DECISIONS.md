@@ -636,3 +636,62 @@ custom properties are already the mechanism, a file is what a user of a
 filesystem-native tool expects to edit, and an empty response when the file
 is absent costs nothing. None of this needs a framework: the page stays one
 HTML file with Tailwind's play CDN, which is what keeps it hackable.
+
+### D65. The release script tags the merge commit, not main's HEAD, to clear the render job's [skip ci]
+The publish workflow keys on the tag push (D63), but GitHub skips every
+workflow for a push whose head commit message carries a skip instruction —
+`[skip ci]` and its documented siblings — and a tag push is not exempt.
+The `skald.yml` render job commits a `[skip ci]` render onto `main` right
+after each merge, so by the time the release script reaches the tag step
+`main`'s HEAD is usually that render commit; tagging it pushed a tag that
+published nothing, silently, which is exactly how the first `v0.7.0` tag
+failed to build. The script now walks back from HEAD along first parents to
+the newest commit whose message is not a skip instruction — the merge
+commit, which carries the version bump — and tags that, after checking the
+commit's version file still reads the release version. Walking back rather
+than waiting for or amending the render commit keeps the step a pure read
+of existing history with no timing assumption: it works whether the render
+job has landed yet or not, and the version check is the backstop if the
+walk ever lands somewhere unexpected. Tagging the merge commit instead of
+the render commit costs nothing for publishing, because the render only
+touches `.skald/README.md`, which is not part of the package.
+
+### D66. Feature flags are machine-local, with a global default and a per-project override, declared in a catalog
+Some board and CLI behaviour is a matter of personal preference on a given
+machine — whether to show the "Open in Claude Code" link, for one — not a
+property of the project that every clone should inherit. So feature flags
+live in the machine-local user config (`SKALD_HOME/config.json`), never in
+the committed `.skald/config.json`. Two scopes cover the real need: a global
+value the user sets once, and a per-project override for the repositories
+where they want something different; resolution is per-project, then global,
+then a built-in default. A committed project-level default was considered and
+declined for now — it would add a fourth resolution layer and put personal
+toggles into the shared repo, and the two machine-local scopes already answer
+"turn this off everywhere except here" and "on only here". Per-project values
+are keyed by project name, not path, because the registry already keys by
+name and a preference should follow the project across worktrees and clones.
+Each flag is declared once in a catalog (`FEATURE_DEFAULTS`: name, label,
+help, default) rather than scattered through the code, so the resolver, the
+`skald config features.<name>` CLI, and the board's settings modal are all
+generic over the catalog: adding a flag is one entry plus wherever it is
+consumed, with no new UI or parser work. Stored values are read tolerantly
+(a hand-edited non-boolean falls through to the next scope) for the same
+reason the flat settings are: the file is meant to be safe to edit by hand.
+
+### D67. The update check is opt-in, server-side, and cached
+The board can show an "update available" icon when a newer `skald-kanban`
+has been released on PyPI, but the check is off by default behind the
+`update_check` feature flag. It makes an outbound request to a third party,
+and Skald is otherwise offline and free of telemetry, so phoning home is a
+choice the user makes rather than a default — one click in the settings
+panel the feature-flag work already built. The check runs in the board
+server, not the browser: the server is Python and already imports
+`urllib.request`, so it needs no dependency and no CDN, avoids CORS against
+PyPI's JSON API, and can cache the result machine-local (`update.json`) so
+PyPI is queried at most once a day. It compares only final `X.Y.Z` releases
+by numeric tuple (a pre-release must not read as an update), validates the
+fetched string before trusting it, and swallows every failure — offline, a
+timeout, bad JSON, a locked-down network — so nothing here can break the
+board or the server; a failed lookup just means no icon. `skald doctor`
+surfaces the same result from the cache without ever making its own network
+call, keeping the diagnostic offline and deterministic.

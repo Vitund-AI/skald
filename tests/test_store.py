@@ -483,6 +483,62 @@ class TestRegistry(SkaldTestCase):
         u.unset("author")
         self.assertEqual(UserConfig(self.home).get("author"), "")
 
+    def test_feature_flag_resolution_and_persistence(self):
+        u = UserConfig(self.home)
+        # built-in default when nothing is stored
+        self.assertTrue(u.feature("claude_code_link"))
+        self.assertEqual(u.features()["claude_code_link"], True)
+        # global override; a project with no override inherits it
+        u.set_feature("claude_code_link", False)
+        self.assertFalse(u.feature("claude_code_link"))
+        self.assertFalse(u.feature("claude_code_link", "alpha"))
+        # per-project override beats the global, and does not touch it
+        u.set_feature("claude_code_link", True, "alpha")
+        self.assertTrue(u.feature("claude_code_link", "alpha"))
+        self.assertFalse(u.feature("claude_code_link"))
+        self.assertFalse(u.feature("claude_code_link", "beta"))  # a different project still inherits global
+        # survives a reload
+        self.assertTrue(UserConfig(self.home).feature("claude_code_link", "alpha"))
+        # unsetting a scope falls back to the next; empty blocks are pruned away
+        u.unset_feature("claude_code_link", "alpha")
+        self.assertFalse(u.feature("claude_code_link", "alpha"))
+        self.assertNotIn("projects", u.data)
+        u.unset_feature("claude_code_link")
+        self.assertTrue(u.feature("claude_code_link"))
+        self.assertEqual(u.data, {})
+        # unknown flag and a bad project name are errors
+        with self.assertRaises(SkaldError):
+            u.feature("nope")
+        with self.assertRaises(SkaldError):
+            u.set_feature("claude_code_link", True, "Bad Name")
+        # the catalog carries what the UI needs
+        cat = UserConfig(self.home).feature_catalog()
+        self.assertEqual(cat[0]["name"], "claude_code_link")
+        self.assertEqual({"name", "label", "help", "default"}, set(cat[0]))
+
+    def test_taking_a_story_active_elsewhere_warns(self):
+        a = self.new("Shared", "--status", "ready")
+        b = self.new("Movable", "--status", "ready")
+        c = self.new("Backlogged", "--status", "ready")
+        d = self.new("Solo", "--status", "ready")
+        active = self.store().config.first_active_key
+
+        def other(name):
+            return [{"branch": "feature", "assignee": name, "status": "in_progress", "checkout": "/wt"}]
+
+        # Same name in another working tree still warns: the name is not a reliable key.
+        _, warns = self.store().claim(a, "claude", elsewhere={a: other("claude")})
+        self.assertTrue(any(f"{a} is already active as claude on branch feature" in w for w in warns), warns)
+        # A move into an active column warns the same way, not only claim.
+        _, warns = self.store().update(b, status=active, elsewhere={b: other("agent")})
+        self.assertTrue(any(f"{b} is already active as agent on branch feature" in w for w in warns), warns)
+        # An update that does not make the story active is silent.
+        _, warns = self.store().update(c, title="renamed", elsewhere={c: other("agent")})
+        self.assertFalse(any("already active" in w for w in warns), warns)
+        # No elsewhere-claim, no warning.
+        _, warns = self.store().claim(d, "claude", elsewhere={})
+        self.assertFalse(any("already active" in w for w in warns), warns)
+
     def test_workspace_current_and_autoregister(self):
         Registry(self.home).remove("alpha")
         (self.skald_dir / "config.json").unlink()
@@ -514,6 +570,16 @@ class TestUserConfigCoercion(SkaldTestCase):
         u.save()
         again = UserConfig(self.home)
         self.assertEqual((again.get("stale_days"), again.get("push"), again.get("port"), again.get("author")), (7, True, 8321, ""))
+
+    def test_hand_edited_feature_flags_are_tolerated(self):
+        u = UserConfig(self.home)
+        # a string "false" is read as the boolean; garbage falls through to the built-in default
+        u.data.update({"features": {"claude_code_link": "false"},
+                       "projects": {"alpha": {"features": {"claude_code_link": "nonsense"}}}})
+        u.save()
+        again = UserConfig(self.home)
+        self.assertFalse(again.feature("claude_code_link"))                 # "false" coerced
+        self.assertFalse(again.feature("claude_code_link", "alpha"))        # garbage -> falls back to global
 
 
 class TestSnapshots(SkaldTestCase):
@@ -847,7 +913,7 @@ class TestClaimAwareness(SkaldTestCase):
         self.assertIn("claimed by codex on branch agent/two", notes[0])
         self.assertEqual(self.store().next_story(for_author="codex", elsewhere=elsewhere).id, a.id)
         story, warnings = self.store().claim(a.id, "claude", elsewhere=elsewhere)
-        self.assertTrue(any("also claimed by codex" in w for w in warnings))
+        self.assertTrue(any("already active as codex on branch agent/two" in w for w in warnings))
 
 
 class TestDiffStates(SkaldTestCase):

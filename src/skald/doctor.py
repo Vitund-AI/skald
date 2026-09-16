@@ -186,6 +186,12 @@ def _context(results: list[dict], home: Path) -> None:
     if os.environ.get("SKALD_AUTHOR"):
         where.append(f"SKALD_AUTHOR={os.environ['SKALD_AUTHOR']}")
     results.append(_r("home", INFO, f"config home {home}" + (f"; {', '.join(where)}" if where else "")))
+    # A newer release, only if a previous board check already cached one; never queries the network here.
+    from . import update as upd
+
+    state = upd.read_state(home)
+    if state.get("latest") and upd.is_newer(state["latest"], __version__):
+        results.append(_r("update", INFO, f"skald {state['latest']} is available (installed {__version__}); pip install -U skald-kanban"))
 
 
 def run(cwd: Optional[Path] = None) -> list[dict]:

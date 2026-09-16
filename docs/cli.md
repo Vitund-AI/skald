@@ -73,7 +73,7 @@ Create .skald/ here (or register an existing one).
 ## ls
 
 ```
-skald ls [--status COLUMN] [--tag TAG] [--assignee ASSIGNEE] [--unblocked] [--questions] [--parent ID] [--all] [--archived] [--release VERSION] [--all-projects] [--branch REF] [--all-branches] [--json] [--compact]
+skald ls [--status COLUMN] [--tag TAG] [--assignee ASSIGNEE] [--unblocked] [--questions] [--parent ID] [--all] [--archived] [--release VERSION] [--all-projects] [--elsewhere] [--branch REF] [--all-branches] [--json] [--compact]
 ```
 
 List stories.
@@ -90,6 +90,7 @@ List stories.
 | `--archived` | include archived stories |
 | `--release VERSION` | only stories shipped in this version (implies --archived and --all) |
 | `--all-projects` | every registered project |
+| `--elsewhere` | annotate stories claimed in another local worktree or branch as →name@branch (scans branches, so off by default) |
 | `--branch REF` | read stories from a git ref instead of the working tree |
 | `--all-branches` | stories that exist only on, or differ on, other branches |
 | `--json` | print JSON |
@@ -592,9 +593,9 @@ Get or set a user setting.
 
 | Argument | Description |
 | --- | --- |
-| `[key]` | author, push, port, host, or stale_days |
+| `[key]` | author, push, port, host, stale_days, or features.<name> |
 | `[value]` | new value; omit to show the current one |
-| `--unset` | return the key to its default |
+| `--unset` | return the key to its default (with -p NAME, just for that project) |
 
 ## hooks
 

@@ -315,11 +315,21 @@ class TestProjectsAndConfig(SkaldTestCase):
         code, out, _ = self.run_cli("context", "--as", "claude")
         self.assertIn("Claimed on other branches or in other checkouts:", out)
         self.assertIn(f"worker on feature (in_progress), uncommitted in {(wt / '.skald').resolve()}", out)
+        # ls only scans for elsewhere-claims when asked; then it annotates the assignee column
+        code, out, _ = self.run_cli("ls")
+        self.assertNotIn("@feature", out)
+        code, out, _ = self.run_cli("ls", "--elsewhere")
+        self.assertIn("→worker@feature", out)
+        code, out, _ = self.run_cli("ls", "--elsewhere", "--json")
+        self.assertEqual(next(d for d in json.loads(out) if d["id"] == a)["claimed_elsewhere"][0]["branch"], "feature")
         code, out, err = self.run_cli("next", "--json")
         self.assertEqual((code, out.strip()), (1, ""))
         self.assertIn("worker", err)
         code, out, err = self.run_cli("claim", a, "--as", "claude")
         self.assertIn("worker", err)
+        # The same name in both trees still warns: the origin branch is the key, not the name.
+        code, out, err = self.run_cli("claim", a, "--as", "worker")
+        self.assertIn("already active as worker on branch feature", err)
         # use: the worktree becomes the primary, then back.
         code, out, _ = self.run_cli("projects", "use", cwd=wt)
         self.assertIn("now points at", out)
@@ -354,6 +364,31 @@ class TestProjectsAndConfig(SkaldTestCase):
         self.assertEqual(out.strip(), '""')
         code, _, err = self.run_cli("config", "colour", "red")
         self.assertEqual(code, 1)
+
+    def test_config_feature_flags(self):
+        # a flag reads its built-in default and appears in the listing
+        code, out, _ = self.run_cli("config", "features.claude_code_link")
+        self.assertEqual(out.strip(), "true")
+        code, out, _ = self.run_cli("config")
+        self.assertIn("features.claude_code_link = true", out)
+        # a global value overrides the default; a per-project value overrides the global
+        self.run_cli("config", "features.claude_code_link", "false")
+        code, out, _ = self.run_cli("config", "features.claude_code_link")
+        self.assertEqual(out.strip(), "false")
+        code, out, _ = self.run_cli("-p", "alpha", "config", "features.claude_code_link", "true")
+        self.assertEqual(out.strip(), "features.claude_code_link = true for alpha")
+        self.assertEqual(self.run_cli("-p", "alpha", "config", "features.claude_code_link")[1].strip(), "true")
+        self.assertEqual(self.run_cli("config", "features.claude_code_link")[1].strip(), "false")  # global untouched
+        # unset the project override falls back to global; unset global falls back to the default
+        self.run_cli("-p", "alpha", "config", "features.claude_code_link", "--unset")
+        self.assertEqual(self.run_cli("-p", "alpha", "config", "features.claude_code_link")[1].strip(), "false")
+        self.run_cli("config", "features.claude_code_link", "--unset")
+        self.assertEqual(self.run_cli("config", "features.claude_code_link")[1].strip(), "true")
+        # a non-boolean value and an unknown flag are errors
+        self.assertEqual(self.run_cli("config", "features.claude_code_link", "maybe")[0], 1)
+        code, _, err = self.run_cli("config", "features.nope", "true")
+        self.assertEqual(code, 1)
+        self.assertIn("unknown feature", err)
 
 
 class TestGitCommands(SkaldTestCase):

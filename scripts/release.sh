@@ -11,7 +11,8 @@
 #   2. skald release --dry-run, shown for confirmation
 #   3. bumps src/skald/__init__.py, runs skald release, commits the bump, runs the tests
 #   4. pushes dev, opens the pull request dev -> main, waits for its checks, merges it
-#   5. tags main vX.Y.Z and pushes the tag; the publish workflow takes it from there
+#   5. tags the merge commit vX.Y.Z, skipping the render job's [skip ci] commit,
+#      and pushes the tag; the publish workflow takes it from there
 #   6. merges main back into dev (the render job commits on main) and pushes
 set -euo pipefail
 
@@ -109,9 +110,30 @@ git checkout --quiet main
 git pull --quiet origin main
 MAIN_VERSION="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "$VERSION_FILE")"
 [ "$MAIN_VERSION" = "$VERSION" ] || fail "main carries version $MAIN_VERSION, not $VERSION; the tag would be refused"
-git tag -a "v$VERSION" -m "Release $VERSION"
+
+# The publish workflow triggers on the tag push, but GitHub skips every
+# workflow for a push whose head commit message carries a skip instruction
+# ([skip ci] and its documented variants) -- a tag push included. The skald
+# render job commits a "[skip ci]" render onto main right after the merge,
+# so main's HEAD is usually that commit. Tag the newest ancestor that is not
+# a skip commit -- the merge commit, which carries the version bump -- so the
+# tag push actually runs the workflow.
+skips_ci() {  # true if the commit's message tells GitHub Actions to skip
+  git log -1 --format='%B' "$1" | grep -qiF \
+    -e '[skip ci]' -e '[ci skip]' -e '[no ci]' \
+    -e '[skip actions]' -e '[actions skip]' -e '***no_ci***'
+}
+TAG_TARGET="$(git rev-parse HEAD)"
+while skips_ci "$TAG_TARGET"; do
+  echo "skipping [skip ci] commit $(git rev-parse --short "$TAG_TARGET"); tagging its parent instead"
+  TAG_TARGET="$(git rev-parse "$TAG_TARGET^")"
+done
+TARGET_VERSION="$(git show "$TAG_TARGET:$VERSION_FILE" | sed -n 's/^__version__ = "\(.*\)"$/\1/p')"
+[ "$TARGET_VERSION" = "$VERSION" ] || fail "the runnable commit $(git rev-parse --short "$TAG_TARGET") carries version $TARGET_VERSION, not $VERSION; tag by hand"
+
+git tag -a "v$VERSION" -m "Release $VERSION" "$TAG_TARGET"
 git push origin "v$VERSION"
-echo "tag v$VERSION pushed; approve the publish job at:"
+echo "tag v$VERSION pushed at $(git rev-parse --short "$TAG_TARGET"); approve the publish job at:"
 echo "  $("$GH" repo view --json url -q .url)/actions/workflows/publish.yml"
 
 # ---- 6. main back into dev --------------------------------------------------

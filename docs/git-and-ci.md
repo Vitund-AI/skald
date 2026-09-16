@@ -52,9 +52,15 @@ the read-only view; `release` below is the one that writes.
 ```sh
 skald branches                            # per-branch counts and how each differs
 skald ls --all-branches                   # stories that exist only on, or differ on, other branches
+skald ls --elsewhere                       # annotate stories claimed in another worktree/branch as →name@branch
 skald ls --branch feature/x               # a branch's board, read-only
 skald show a3f9c2 --branch origin/main
 ```
+
+`ls --elsewhere` names, in the assignee column, any story that is already
+active in another local working tree or branch (the same information the
+board's `→name@branch` badge and `skald context` show). It scans branches, so
+it is opt-in rather than part of every `ls`.
 
 Skald reads `.skald/` from any branch straight from git objects without
 touching your working tree, so these views show committed state only; for
@@ -78,6 +84,13 @@ epics get a progress table, and the dependency graph is embedded as Mermaid.
 The output is deterministic, with a content hash instead of a timestamp, so
 an unchanged backlog produces no diff. `skald check` warns when the snapshot
 is stale.
+
+The HTML render is a single self-contained file with no external assets, so
+it travels anywhere a file can go. One use of that: away from your desk, an
+agent driving a remote session can `skald render --format html` and hand you
+the file to view on your phone, so you can see the board — columns, epic
+progress, card state — without the board server or a checkout in front of
+you.
 
 ## Hooks
 
@@ -157,8 +170,13 @@ With a `dev` branch for day-to-day work and `main` as the release line:
      checks, merge it. The release commit gets the full matrix before it
      reaches `main`, and a pull request is the shape branch protection on
      `main` requires.
-   - Tag `main` `v1.2.0` and push the tag. The publish workflow checks the
-     tag against the version file, runs the tests, builds, and waits for
+   - Tag `v1.2.0` and push the tag. The tag goes on the merge commit, not
+     on `main`'s HEAD: the render job commits a `[skip ci]` render onto
+     `main` right after the merge, and a tag push whose head commit says
+     `[skip ci]` is skipped by GitHub in full, publish included, so the
+     script walks back to the newest non-skip commit (the merge, which
+     carries the bump) and tags that. The publish workflow checks the tag
+     against the version file, runs the tests, builds, and waits for
      approval on the `pypi` environment before uploading; the script prints
      where to approve.
    - Merge `main` back into `dev` and push, so the render job's commits on

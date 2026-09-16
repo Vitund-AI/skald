@@ -13,7 +13,7 @@ from typing import Optional
 from . import __version__, gitutil
 from .config import ProjectConfig, slugify_name
 from .errors import GitError, NotFoundError, SkaldError
-from .registry import UserConfig, Workspace, find_skald_dir
+from .registry import FEATURE_DEFAULTS, UserConfig, Workspace, coerce_bool, find_skald_dir
 from .store import Store, Story, serialise_story, split_ref
 from .util import read_text
 
@@ -88,7 +88,8 @@ def _print_table(rows: list[list[str]], headers: list[str]) -> None:
         print(fmt.format(*row))
 
 
-def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False) -> list[list[str]]:
+def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False,
+                elsewhere: Optional[dict] = None) -> list[list[str]]:
     rows = []
     for s in stories:
         unmet = store.unmet(s, idx)
@@ -101,7 +102,12 @@ def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False) 
             title = f"{s.title}  (children {done}/{len(kids)})"
         elif s.parent:
             title = f"{s.title}  (child of {s.parent})"
-        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", f"?{q}" if q else "-", s.assignee or "-",
+        assignee = s.assignee or "-"
+        # With --elsewhere, name where this story is claimed in another local tree/branch.
+        for c in (elsewhere or {}).get(s.id, []):
+            mark = f"→{c['assignee']}@{c['branch']}"
+            assignee = mark if assignee == "-" else f"{assignee} {mark}"
+        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", f"?{q}" if q else "-", assignee,
                      ",".join(s.tags) or "-", title])
     return rows
 
@@ -261,6 +267,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--archived", action="store_true", help="include archived stories")
     ls.add_argument("--release", metavar="VERSION", help="only stories shipped in this version (implies --archived and --all)")
     ls.add_argument("--all-projects", action="store_true", help="every registered project")
+    ls.add_argument("--elsewhere", action="store_true", help="annotate stories claimed in another local worktree or branch as →name@branch (scans branches, so off by default)")
     ls.add_argument("--branch", metavar="REF", help="read stories from a git ref instead of the working tree")
     ls.add_argument("--all-branches", action="store_true", help="stories that exist only on, or differ on, other branches")
     ls.add_argument("--json", action="store_true", help="print JSON")
@@ -433,9 +440,9 @@ def build_parser() -> argparse.ArgumentParser:
     pru.add_argument("path", nargs="?", help="a checkout of the project; default: the current directory")
 
     cf = sub.add_parser("config", help="get or set a user setting")
-    cf.add_argument("key", nargs="?", help="author, push, port, host, or stale_days")
+    cf.add_argument("key", nargs="?", help="author, push, port, host, stale_days, or features.<name>")
     cf.add_argument("value", nargs="?", help="new value; omit to show the current one")
-    cf.add_argument("--unset", action="store_true", help="return the key to its default")
+    cf.add_argument("--unset", action="store_true", help="return the key to its default (with -p NAME, just for that project)")
 
     hk = sub.add_parser("hooks", help="print or install hooks: claude (agent), git (pre-commit), github (workflow)")
     hk.add_argument("target", choices=["claude", "git", "github"], help="which hook to print or install")
@@ -598,8 +605,13 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
         sel = _filtered(st, args, stories, idx)
         if getattr(args, "questions", False):
             sel = [s for s in sel if s.open_questions()]
-        rows.extend(_story_rows(st, sel, idx, qualify=args.all_projects))
-        dicts.extend(st.story_dict(s, idx, ws.user.get("stale_days"), compact=args.compact) for s in sel)
+        ew = _elsewhere(ws, st) if getattr(args, "elsewhere", False) else None
+        rows.extend(_story_rows(st, sel, idx, qualify=args.all_projects, elsewhere=ew))
+        for s in sel:
+            d = st.story_dict(s, idx, ws.user.get("stale_days"), compact=args.compact)
+            if ew is not None:
+                d["claimed_elsewhere"] = ew.get(s.id, [])
+            dicts.append(d)
     if args.json:
         print(json.dumps(dicts, indent=2))
     else:
@@ -1719,10 +1731,29 @@ def cmd_projects(ws: Workspace, args) -> int:
 
 def cmd_config(ws: Workspace, args) -> int:
     user = ws.user
+    project = getattr(args, "project", None)
+    scope = f" for {project}" if project else ""
     if args.key is None:
         for k, v in user.all().items():
             print(f"{k} = {json.dumps(v)}")
+        for name in FEATURE_DEFAULTS:
+            print(f"features.{name} = {json.dumps(user.feature(name, project))}")
         print(f"(stored in {user.path})")
+        return 0
+    if args.key.startswith("features."):
+        flag = args.key[len("features."):]
+        if args.unset:
+            user.unset_feature(flag, project)
+            print(f"unset features.{flag}{scope}")
+            return 0
+        if args.value is None:
+            print(json.dumps(user.feature(flag, project)))
+            return 0
+        value = coerce_bool(args.value)
+        if value is None:
+            raise SkaldError(f"features.{flag} must be true or false (got {args.value!r})")
+        user.set_feature(flag, value, project)
+        print(f"features.{flag} = {json.dumps(user.feature(flag, project))}{scope}")
         return 0
     if args.unset:
         user.unset(args.key)

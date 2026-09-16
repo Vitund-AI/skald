@@ -1,12 +1,15 @@
 # Screenshots
 
-- Board and story: a demo project on the lifecycle columns, built by
-  `make-demo.sh` (an epic with children, a claimed story with a checklist
-  and a handoff, questions waiting on a human, a blocked story, two done),
-  served by `skald serve` and captured by `capture.py` in headless Chromium
-  at a device pixel ratio of 2: the board at 1640×560 in the dark and the
-  light theme, and the story dialog at 1640×1080 in the dark theme, open in
-  view mode.
+- Board, story, and swimlanes: a demo project on the lifecycle columns, built
+  by `make-demo.sh` (an epic with children, a claimed story with a checklist
+  and a handoff, questions waiting on a human, a blocked story, two done, and
+  `epic:` / `area:` facets), served by `skald serve` and captured by
+  `capture.py` in headless Chromium at a device pixel ratio of 2. The shots
+  are declared in the `SHOTS` list in `capture.py`: the board at 1640×560 in
+  the dark and light themes, the story dialog at 1640×1080 dark in view mode,
+  and the swimlanes view (grouped by the `area` facet) captured full-height.
+  To showcase a new feature, add it to `make-demo.sh` and add a shot with a
+  `setup(page)` that drives the board to the view.
   The README shows `board-dark.png` and picks `board-light.png` through
   `<picture>` when the reader's GitHub theme is light.
 - Graph and multi-select: this repository's own backlog, 1440×860.
