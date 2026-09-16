@@ -315,6 +315,13 @@ class TestProjectsAndConfig(SkaldTestCase):
         code, out, _ = self.run_cli("context", "--as", "claude")
         self.assertIn("Claimed on other branches or in other checkouts:", out)
         self.assertIn(f"worker on feature (in_progress), uncommitted in {(wt / '.skald').resolve()}", out)
+        # ls only scans for elsewhere-claims when asked; then it annotates the assignee column
+        code, out, _ = self.run_cli("ls")
+        self.assertNotIn("@feature", out)
+        code, out, _ = self.run_cli("ls", "--elsewhere")
+        self.assertIn("→worker@feature", out)
+        code, out, _ = self.run_cli("ls", "--elsewhere", "--json")
+        self.assertEqual(next(d for d in json.loads(out) if d["id"] == a)["claimed_elsewhere"][0]["branch"], "feature")
         code, out, err = self.run_cli("next", "--json")
         self.assertEqual((code, out.strip()), (1, ""))
         self.assertIn("worker", err)

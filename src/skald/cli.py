@@ -88,7 +88,8 @@ def _print_table(rows: list[list[str]], headers: list[str]) -> None:
         print(fmt.format(*row))
 
 
-def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False) -> list[list[str]]:
+def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False,
+                elsewhere: Optional[dict] = None) -> list[list[str]]:
     rows = []
     for s in stories:
         unmet = store.unmet(s, idx)
@@ -101,7 +102,12 @@ def _story_rows(store: Store, stories: list[Story], idx, qualify: bool = False) 
             title = f"{s.title}  (children {done}/{len(kids)})"
         elif s.parent:
             title = f"{s.title}  (child of {s.parent})"
-        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", f"?{q}" if q else "-", s.assignee or "-",
+        assignee = s.assignee or "-"
+        # With --elsewhere, name where this story is claimed in another local tree/branch.
+        for c in (elsewhere or {}).get(s.id, []):
+            mark = f"→{c['assignee']}@{c['branch']}"
+            assignee = mark if assignee == "-" else f"{assignee} {mark}"
+        rows.append([sid, s.status, str(s.rank), ",".join(unmet) or "-", f"?{q}" if q else "-", assignee,
                      ",".join(s.tags) or "-", title])
     return rows
 
@@ -261,6 +267,7 @@ def build_parser() -> argparse.ArgumentParser:
     ls.add_argument("--archived", action="store_true", help="include archived stories")
     ls.add_argument("--release", metavar="VERSION", help="only stories shipped in this version (implies --archived and --all)")
     ls.add_argument("--all-projects", action="store_true", help="every registered project")
+    ls.add_argument("--elsewhere", action="store_true", help="annotate stories claimed in another local worktree or branch as →name@branch (scans branches, so off by default)")
     ls.add_argument("--branch", metavar="REF", help="read stories from a git ref instead of the working tree")
     ls.add_argument("--all-branches", action="store_true", help="stories that exist only on, or differ on, other branches")
     ls.add_argument("--json", action="store_true", help="print JSON")
@@ -598,8 +605,13 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
         sel = _filtered(st, args, stories, idx)
         if getattr(args, "questions", False):
             sel = [s for s in sel if s.open_questions()]
-        rows.extend(_story_rows(st, sel, idx, qualify=args.all_projects))
-        dicts.extend(st.story_dict(s, idx, ws.user.get("stale_days"), compact=args.compact) for s in sel)
+        ew = _elsewhere(ws, st) if getattr(args, "elsewhere", False) else None
+        rows.extend(_story_rows(st, sel, idx, qualify=args.all_projects, elsewhere=ew))
+        for s in sel:
+            d = st.story_dict(s, idx, ws.user.get("stale_days"), compact=args.compact)
+            if ew is not None:
+                d["claimed_elsewhere"] = ew.get(s.id, [])
+            dicts.append(d)
     if args.json:
         print(json.dumps(dicts, indent=2))
     else:

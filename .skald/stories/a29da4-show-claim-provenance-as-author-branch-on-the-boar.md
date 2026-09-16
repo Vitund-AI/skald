@@ -1,12 +1,12 @@
 ---
 title: "Show claim provenance as author@branch on the board and in ls"
-status: "in_progress"
-rank: 10
+status: "review"
+rank: 40
 tags: ["area:board", "area:cli"]
 blocked_by: ["50b992"]
 assignee: "claude"
 created_at: "2026-09-15T17:26:47Z"
-updated_at: "2026-09-16T03:30:04Z"
+updated_at: "2026-09-16T04:50:09Z"
 ---
 ## Requirements
 
@@ -36,12 +36,12 @@ worktree — next to the assignee, e.g. `claude@feature-x`, in:
 - Keep it local-branches/worktrees only, consistent with `claims_elsewhere`.
 
 ## Acceptance
-- [ ] the board claimed-elsewhere badge reads assignee@branch
-- [ ] ls / context show the origin branch for an elsewhere-claim
-- [ ] no change to the stored assignee field or the story format
-- [ ] tests cover the rendered provenance
-- [ ] docs updated (board.md)
-- [ ] python3 -m unittest green, ruff clean
+- [x] the board claimed-elsewhere badge reads assignee@branch
+- [x] ls / context show the origin branch for an elsewhere-claim
+- [x] no change to the stored assignee field or the story format
+- [x] tests cover the rendered provenance
+- [x] docs updated (board.md)
+- [x] python3 -m unittest green, ruff clean
 
 ## [claude] 2026-09-16 03:30 UTC · decision
 Investigation before building: most of this is already implemented on dev.
@@ -53,3 +53,6 @@ Investigation before building: most of this is already implemented on dev.
 The only untouched surface is skald ls, which shows just the local ASSIGNEE and nothing about elsewhere-claims. Tradeoff: claims_elsewhere snapshots every local branch + reads worktrees; context pays that occasionally, but ls is a frequent snappy table, so unconditional lookup there has a real cost.
 
 Put three options to the maintainer: (A recommended) ls --elsewhere opt-in annotation + a regression test locking in board/context; (B) declare board+context sufficient, add a regression test, close; (C) ls always shows it. Awaiting the decision before building.
+
+## [claude] 2026-09-16 04:50 UTC · handoff
+Option A built. The board badge (also name@branch) and skald context already showed provenance, so this adds the only missing surface: skald ls --elsewhere. Opt-in (it scans branches/worktrees via claims_elsewhere, so off by default to keep plain ls fast). When passed, the assignee column is annotated →name@branch per elsewhere-claim, and --json rows gain a claimed_elsewhere list. No change to the stored assignee field or the story format — display only. Verified with two worktrees (default ls clean; --elsewhere shows →worker@feature; --json carries the branch). Completion offers --elsewhere automatically. Tests: added ls/--elsewhere/--json assertions to the worktree CLI test (board badge data covered by the /branches server test; context already tested). Docs: git-and-ci.md Other branches + cli.md regen; board.md already documents the badge. 184 tests, ruff clean.

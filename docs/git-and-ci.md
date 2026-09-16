@@ -52,9 +52,15 @@ the read-only view; `release` below is the one that writes.
 ```sh
 skald branches                            # per-branch counts and how each differs
 skald ls --all-branches                   # stories that exist only on, or differ on, other branches
+skald ls --elsewhere                       # annotate stories claimed in another worktree/branch as →name@branch
 skald ls --branch feature/x               # a branch's board, read-only
 skald show a3f9c2 --branch origin/main
 ```
+
+`ls --elsewhere` names, in the assignee column, any story that is already
+active in another local working tree or branch (the same information the
+board's `→name@branch` badge and `skald context` show). It scans branches, so
+it is opt-in rather than part of every `ls`.
 
 Skald reads `.skald/` from any branch straight from git objects without
 touching your working tree, so these views show committed state only; for
