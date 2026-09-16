@@ -1,12 +1,12 @@
 ---
 title: "Make the screenshot harness extensible and showcase the new features"
-status: "review"
-rank: 50
+status: "done"
+rank: 90
 tags: ["area:docs"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-16T05:37:18Z"
-updated_at: "2026-09-16T06:01:15Z"
+updated_at: "2026-09-16T06:58:04Z"
 ---
 ## Requirements
 

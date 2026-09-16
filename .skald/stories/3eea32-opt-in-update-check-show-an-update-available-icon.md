@@ -1,12 +1,12 @@
 ---
 title: "Opt-in update check: show an update-available icon on the board"
-status: "review"
-rank: 30
+status: "done"
+rank: 70
 tags: ["area:board", "epic:feature-flags"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-16T02:08:34Z"
-updated_at: "2026-09-16T02:23:24Z"
+updated_at: "2026-09-16T06:58:04Z"
 ---
 ## Requirements
 
