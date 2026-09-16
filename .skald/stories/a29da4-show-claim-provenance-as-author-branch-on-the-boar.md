@@ -1,12 +1,12 @@
 ---
 title: "Show claim provenance as author@branch on the board and in ls"
-status: "review"
-rank: 40
+status: "done"
+rank: 80
 tags: ["area:board", "area:cli"]
 blocked_by: ["50b992"]
 assignee: "claude"
 created_at: "2026-09-15T17:26:47Z"
-updated_at: "2026-09-16T04:50:09Z"
+updated_at: "2026-09-16T06:58:04Z"
 ---
 ## Requirements
 
