@@ -1,12 +1,12 @@
 ---
 title: "Edit tags as chips in the card modal: inline key/value quick-edit in view mode, chip editor in the edit form"
-status: "review"
+status: "done"
 rank: 30
 tags: ["area:board"]
 blocked_by: []
 assignee: "agent"
 created_at: "2026-09-17T01:24:53Z"
-updated_at: "2026-09-17T01:25:58Z"
+updated_at: "2026-09-17T04:43:18Z"
 ---
 ## Requirements
 

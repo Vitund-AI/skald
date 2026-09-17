@@ -1,12 +1,12 @@
 ---
 title: "Warn when the running board server is older than the installed package; add skald server restart"
-status: "review"
+status: "done"
 rank: 10
 tags: ["area:server"]
 blocked_by: []
 assignee: "agent"
 created_at: "2026-09-16T16:15:55Z"
-updated_at: "2026-09-16T16:24:53Z"
+updated_at: "2026-09-17T04:43:11Z"
 ---
 ## Requirements
 

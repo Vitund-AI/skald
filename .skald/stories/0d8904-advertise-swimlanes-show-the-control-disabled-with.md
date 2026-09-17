@@ -1,11 +1,11 @@
 ---
 title: "Advertise swimlanes: show the control disabled with a hint when no facets exist"
 status: "idea"
-rank: 80
-tags: ["area:board"]
+rank: 10
+tags: ["area:board", "release:0.9.0"]
 blocked_by: []
 created_at: "2026-09-16T05:25:26Z"
-updated_at: "2026-09-16T05:54:15Z"
+updated_at: "2026-09-17T04:46:24Z"
 ---
 ## Requirements
 

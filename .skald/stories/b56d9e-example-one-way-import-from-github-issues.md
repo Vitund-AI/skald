@@ -1,11 +1,11 @@
 ---
 title: "Example: one-way import from GitHub issues"
 status: "idea"
-rank: 70
-tags: ["examples", "roadmap"]
+rank: 20
+tags: ["examples", "release:0.9.0", "roadmap"]
 blocked_by: []
 created_at: "2026-09-12T20:39:49Z"
-updated_at: "2026-09-12T20:39:49Z"
+updated_at: "2026-09-17T04:46:59Z"
 ---
 ## Requirements
 

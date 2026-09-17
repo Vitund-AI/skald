@@ -1,12 +1,12 @@
 ---
 title: "Drag a card between facet swimlanes to reassign its tag; show a card in every lane it belongs to"
-status: "review"
+status: "done"
 rank: 20
 tags: ["area:board"]
 blocked_by: []
 assignee: "agent"
 created_at: "2026-09-16T22:55:42Z"
-updated_at: "2026-09-16T23:04:37Z"
+updated_at: "2026-09-17T04:43:16Z"
 ---
 ## Requirements
 

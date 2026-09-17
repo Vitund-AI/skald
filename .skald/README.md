@@ -1,7 +1,7 @@
-<!-- skald-render bec16278436b8712 -->
+<!-- skald-render 4599bf1a07e311ff -->
 # skald backlog
 
-**5 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 3 · Done 0
+**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 3
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -9,8 +9,8 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
-| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
-| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` |  |  | 0/6 |
+| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` `release:0.9.0` |  |  | 0/6 |
+| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `release:0.9.0` `roadmap` |  |  |  |
 
 ## Plan (0)
 
@@ -24,17 +24,17 @@ _none_
 
 _none_
 
-## Review (3)
+## Review (0)
+
+_none_
+
+<details><summary><strong>Done (3)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [165040](stories/165040-warn-when-the-running-board-server-is-older-than-t.md) | Warn when the running board server is older than the installed package; add skald server restart | `area:server` | agent |  |  |
 | [b07b64](stories/b07b64-drag-a-card-between-facet-swimlanes-to-reassign-it.md) | Drag a card between facet swimlanes to reassign its tag; show a card in every lane it belongs to | `area:board` | agent |  |  |
 | [dd6065](stories/dd6065-edit-tags-as-chips-in-the-card-modal-inline-key-va.md) | Edit tags as chips in the card modal: inline key/value quick-edit in view mode, chip editor in the edit form | `area:board` | agent |  |  |
-
-<details><summary><strong>Done (0)</strong></summary>
-
-_none_
 
 </details>
 
