@@ -160,7 +160,10 @@ the pointer when neither exists.
 - `columns` is a non-empty ordered list. `key` matches `^[a-z][a-z0-9_]{0,31}$`
   and is unique. `role` is one of `backlog`, `ready`, `active`, `done`,
   `closed`. At least one column must be `done` or `closed`. `limit` is an
-  optional positive integer. Several columns may share a role.
+  optional positive integer. `collapsible` is an optional boolean: the board
+  collapses `done` and `closed` columns by default, and this overrides that per
+  column (a backlog `icebox` opts in, a `done` column can pin itself open).
+  Several columns may share a role.
 - Unknown top-level keys are preserved.
 - `facet_limits` (optional): `{"<facet key>": N}`. At most N stories per
   value of that key may be active at once, counting stories active here and
@@ -656,8 +659,9 @@ board without touching the package.
 
 Layout: columns are flex items with a 15rem floor and a 28rem ceiling, so
 five columns fit a laptop screen and ten scroll; below the `sm` breakpoint
-they stack vertically. A terminal column (a `done` or `closed` role) carries
-a caret that collapses it to a labeled strip showing its count, click to
+they stack vertically. A terminal column (a `done` or `closed` role), or any
+column whose `collapsible` flag is true, carries a caret that collapses it to a
+labeled strip showing its count, click to
 expand; the set of collapsed columns is per project in `localStorage`
 (`skald.collapsed:<project>`), a viewing preference that changes no data and
 no config, so a finished `Done` or "won't do" column stops crowding the

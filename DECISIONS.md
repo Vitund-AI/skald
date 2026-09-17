@@ -792,3 +792,15 @@ deliberately not enforced — reviving to idea/plan rather than straight to read
 is documented guidance, not a rule; enforcing it is parked as its own idea,
 since a transition engine is the enterprise-workflow path this tool avoids
 until users clearly need it.
+
+### D73. Column collapsing is a per-column flag, defaulting to the terminal roles
+The board let only `done` and `closed` columns collapse to a strip, which read
+as "finished work you can fold away". An icebox is not finished but wants the
+same fold, so rather than widen the hardcoded role check (which would also
+collapse `idea`/`plan`, unwanted) or invent a role for the icebox (rejected in
+D72), each column carries an optional `collapsible` boolean. Unset keeps the
+old behaviour — the board still collapses terminal columns by default — so no
+existing config changes; true opts a column in (the lifecycle icebox) and false
+could pin a noisy `done` column open. It sits beside `limit` as another
+per-column display attribute, and the board reads the effective value as
+`col.collapsible ?? isTerminalRole(col.role)`.

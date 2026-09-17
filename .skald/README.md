@@ -1,7 +1,7 @@
-<!-- skald-render 6852c22216f0e65f -->
+<!-- skald-render 73cdbf8f215b37bf -->
 # skald backlog
 
-**5 open** · Idea 3 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 0
+**6 open** · Idea 3 · Plan 0 · Ready 0 · In progress 0 · Review 3 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -25,12 +25,13 @@ _none_
 
 _none_
 
-## Review (2)
+## Review (3)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [1b3c19](stories/1b3c19-refuse-a-release-when-stories-tagged-for-the-versi.md) | Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override | `area:release` | agent |  |  |
 | [f0e40d](stories/f0e40d-icebox-column-in-the-lifecycle-preset-plus-a-confi.md) | Icebox column in the lifecycle preset, plus a configurable default_status for new stories | `roadmap` | agent |  |  |
+| [2565dc](stories/2565dc-make-columns-collapsible-via-a-config-flag-ship-th.md) | Make columns collapsible via a config flag; ship the lifecycle icebox collapsible | `roadmap` | agent |  |  |
 
 <details><summary><strong>Done (0)</strong></summary>
 

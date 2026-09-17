@@ -34,7 +34,7 @@ DEFAULT_COLUMNS = [
 # below rather than the leftmost column. Waiting on a human is a condition, not a stage, so it is a
 # derived flag (open questions) rather than a column.
 LIFECYCLE_COLUMNS = [
-    {"key": "icebox", "label": "Icebox", "role": "backlog"},
+    {"key": "icebox", "label": "Icebox", "role": "backlog", "collapsible": True},
     {"key": "idea", "label": "Idea", "role": "backlog"},
     {"key": "plan", "label": "Plan", "role": "backlog"},
     {"key": "ready", "label": "Ready", "role": "ready"},
@@ -58,18 +58,24 @@ def slugify_name(text: str) -> str:
 
 
 class Column:
-    __slots__ = ("key", "label", "role", "limit")
+    __slots__ = ("key", "label", "role", "limit", "collapsible")
 
-    def __init__(self, key: str, label: str, role: str, limit: int | None = None):
+    def __init__(self, key: str, label: str, role: str, limit: int | None = None,
+                 collapsible: bool | None = None):
         self.key = key
         self.label = label
         self.role = role
         self.limit = limit
+        # None: the board collapses done/closed columns by default. true/false overrides that,
+        # so a backlog column such as an icebox can be collapsible too, or a done column pinned open.
+        self.collapsible = collapsible
 
     def to_dict(self) -> dict:
         d = {"key": self.key, "label": self.label, "role": self.role}
         if self.limit is not None:
             d["limit"] = self.limit
+        if self.collapsible is not None:
+            d["collapsible"] = self.collapsible
         return d
 
 
@@ -126,7 +132,10 @@ class ProjectConfig:
             limit = c.get("limit")
             if limit is not None and (isinstance(limit, bool) or not isinstance(limit, int) or limit < 1):
                 raise ConfigError(f"{where}: columns[{i}].limit must be a positive integer")
-            columns.append(Column(key, label.strip(), role, limit))
+            collapsible = c.get("collapsible")
+            if collapsible is not None and not isinstance(collapsible, bool):
+                raise ConfigError(f"{where}: columns[{i}].collapsible must be true or false")
+            columns.append(Column(key, label.strip(), role, limit, collapsible))
         extra = {k: v for k, v in data.items() if k not in ("format", "name", "columns")}
         try:
             return cls(name, columns, extra)

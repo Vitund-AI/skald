@@ -186,7 +186,8 @@ starts until a person moves it on. The leading `icebox` is cold storage for
 work you've deliberately shelved (see
 [Conventions](conventions.md#parking-work-youre-not-doing-now)); because it
 leads the board, the preset sets `default_status` to `idea` so new stories are
-captured there, not in the icebox. Moving from a backlog column into ready
+captured there, not in the icebox, and marks the icebox `collapsible` so it
+folds away like a done column. Moving from a backlog column into ready
 while the story has an open question warns, the same way unchecked
 acceptance warns on the move to done. "Waiting on a human" is not a column,
 because it is a condition that can hold at any stage: it is the question
