@@ -48,6 +48,12 @@ class TestAPI(ServerTestCase):
             self.assertIn(b"<title>Skald</title>", res.read())
         status, data = self.call("GET", "/api/health")
         self.assertEqual((status, data["ok"]), (200, True))
+        # The health payload carries what the staleness check reads: the running
+        # version, the installed on-disk version, and whether the latter is newer.
+        self.assertIn("version", data)
+        self.assertIn("installed", data)
+        self.assertIn("stale", data)
+        self.assertIsInstance(data["stale"], bool)
         status, data = self.call("GET", "/api/projects")
         self.assertEqual([p["name"] for p in data["projects"]], ["alpha"])
         self.assertIn("stale_days", data["settings"])
@@ -62,6 +68,25 @@ class TestAPI(ServerTestCase):
         self.assertEqual(self.call("GET", "/api/projects/nope/board")[0], 404)
         with urlopen(self.base + "/favicon.ico") as res:
             self.assertEqual(res.status, 204)
+
+    def test_health_stale_tracks_installed_version(self):
+        from unittest import mock
+
+        from skald import __version__
+        # A newer package on disk than the running server → stale.
+        with mock.patch("skald.update.installed_version", return_value="999.0.0"):
+            _, data = self.call("GET", "/api/health")
+            self.assertEqual((data["installed"], data["stale"]), ("999.0.0", True))
+        # An older one (an editable install whose source has moved ahead) → not stale.
+        with mock.patch("skald.update.installed_version", return_value="0.0.1"):
+            _, data = self.call("GET", "/api/health")
+            self.assertEqual((data["installed"], data["stale"]), ("0.0.1", False))
+        # The same version, or none resolvable, is never stale.
+        with mock.patch("skald.update.installed_version", return_value=__version__):
+            self.assertFalse(self.call("GET", "/api/health")[1]["stale"])
+        with mock.patch("skald.update.installed_version", return_value=None):
+            _, data = self.call("GET", "/api/health")
+            self.assertEqual((data["installed"], data["stale"]), (None, False))
 
     def test_help_reference_matches_parser(self):
         from skald.cli import build_parser, command_reference
@@ -82,7 +107,7 @@ class TestAPI(ServerTestCase):
         self.assertIn("title", flags)
         self.assertIn("--tags TAGS", flags)
         server = next(c for c in data["commands"] if c["name"] == "server")
-        self.assertEqual([s["name"] for s in server["subcommands"]], ["server start", "server stop", "server status", "server token"])
+        self.assertEqual([s["name"] for s in server["subcommands"]], ["server start", "server stop", "server restart", "server status", "server token"])
         self.assertTrue(all(s["help"] for s in server["subcommands"]))
         render = next(c for c in data["commands"] if c["name"] == "render")
         fmt = next(a for a in render["arguments"] if a["flags"][0].startswith("--format"))
@@ -192,6 +217,26 @@ class TestAPI(ServerTestCase):
         self.assertEqual(self.call("DELETE", f"{P}/stories/{a}?force=1")[0], 204)
         self.assertEqual(self.call("GET", f"{P}/stories/{a}")[0], 404)
 
+    def test_lane_reassign_patch(self):
+        # The board's swimlane drag sends status + retagged tags + order in one PATCH.
+        # This is the server contract it relies on: reassign a facet value and reorder at once.
+        P = "/api/projects/alpha"
+        a = self.call("POST", f"{P}/stories", {"title": "A", "tags": ["release:1.0", "area:api"]})[1]["story"]["id"]
+        self.call("POST", f"{P}/stories", {"title": "B", "tags": ["release:1.0"]})  # stays in release:1.0
+        # Drag A from the release:1.0 lane to release:1.1: drop release:1.0, add release:1.1, keep area:api.
+        _, data = self.call("PATCH", f"{P}/stories/{a}",
+                            {"status": "ready", "tags": ["area:api", "release:1.1"], "order": [a]})
+        self.assertEqual(sorted(data["story"]["tags"]), ["area:api", "release:1.1"])
+        self.assertEqual(data["story"]["status"], "ready")
+        _, board = self.call("GET", f"{P}/board")
+        self.assertEqual(board["facets"]["release"]["1.1"]["total"], 1)
+        self.assertEqual(board["facets"]["release"]["1.0"]["total"], 1)  # B still there
+        # Drag A into the "no release" lane: drop release:1.1, area:api untouched.
+        _, data = self.call("PATCH", f"{P}/stories/{a}", {"status": "ready", "tags": ["area:api"]})
+        self.assertEqual(data["story"]["tags"], ["area:api"])
+        _, board = self.call("GET", f"{P}/board")
+        self.assertNotIn("1.1", board["facets"].get("release", {}))
+
     def test_git_endpoints(self):
         P = "/api/projects/alpha"
         self.call("POST", f"{P}/stories", {"title": "x"})
@@ -285,6 +330,34 @@ class TestDaemon(SkaldTestCase):
         self.assertFalse(srv.stop_server(self.home))
         code, out, _ = self.run_cli("server", "status")
         self.assertEqual((code, out.strip()), (1, "not running"))
+
+    def test_restart_replaces_process_on_same_port(self):
+        state = srv.start_server(self.home, "127.0.0.1", 0)
+        port = state["port"]
+        try:
+            code, out, err = self.run_cli("server", "restart")
+            self.assertEqual(code, 0, err)
+            self.assertIn("restarted", out)
+            new = srv.server_status(self.home)
+            self.assertIsNotNone(new)
+            self.assertEqual(new["port"], port)          # the running server's port is reused
+            self.assertNotEqual(new["pid"], state["pid"])  # a fresh process
+            self.assertIsNotNone(srv.health("127.0.0.1", port))
+        finally:
+            srv.stop_server(self.home)
+        deadline = time.time() + 5
+        while time.time() < deadline and srv.pid_alive(state["pid"]):
+            time.sleep(0.1)
+        self.assertFalse(srv.pid_alive(state["pid"]))
+
+    def test_restart_when_stopped_just_starts(self):
+        self.assertIsNone(srv.server_status(self.home))
+        try:
+            code, out, err = self.run_cli("server", "restart", "--port", "0")
+            self.assertEqual(code, 0, err)
+            self.assertIsNotNone(srv.server_status(self.home))
+        finally:
+            srv.stop_server(self.home)
 
     def test_stale_state_file_is_ignored(self):
         self.home.mkdir(parents=True, exist_ok=True)

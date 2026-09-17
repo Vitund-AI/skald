@@ -457,7 +457,7 @@ story or configuration. Commands that print stories take `--json`.
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Section 10b. |
 | `serve [--host H] [--port P] [--open]` | Foreground server. |
-| `server start\|stop\|status` | Background server via `server.json`. |
+| `server start\|stop\|restart\|status` | Background server via `server.json`. `restart` stops and starts in place, reusing the running server's host and port, to pick up an upgraded package; `status` reports when a newer package is installed than the running server. |
 | `open` | Start if needed, open the browser on the current project. |
 | `docs [--out PATH] [--stdout] [--check]` | Writes `docs/cli.md` from `docs_markdown()`, which walks `command_reference()`; a repository test fails when the committed file is stale, and `--check` does the same for CI. |
 | `completion bash\|zsh\|fish` | Prints a shim that calls the hidden `_complete -- CWORD WORD...` for candidates (`value<TAB>description` lines). `completion.py` derives commands and flags from `command_reference()` and reads the store for ids, columns, tags, authors, templates, branches, and projects; it never raises into the shell. `_complete` is intercepted before argparse and absent from `--help` and the reference. |
@@ -491,6 +491,18 @@ endpoint table; it is the reference.
 `GET /api/help` returns the CLI reference built by `cli.command_reference()`,
 which walks the argparse tree; the board's Help panel renders it, so the
 page never carries its own copy of the command list.
+
+`GET /api/health` is the unauthenticated liveness probe: `{ok, version, pid}`
+plus `installed` (the on-disk version from `importlib.metadata`, `null` when it
+cannot be read) and `stale` (true when `installed` is a final release strictly
+newer than the running `version`). A long-running server holds the version
+compiled into `__version__` at import time while `importlib.metadata` reads the
+`.dist-info` that `pip install -U` rewrites, so the two diverge exactly when the
+running code is out of date. The board raises a dismissible banner, `skald server
+status` prints a note, and `skald doctor` warns, each pointing at `skald server
+restart`, which stops and restarts the server in place (reusing its host and
+port). The strictly-newer guard keeps an editable install, whose recorded
+version can trail its source, from ever reading as stale.
 
 `GET /api/update` backs the board's update icon. It is inert unless the
 `update_check` flag resolves on, in which case the server queries PyPI's JSON
@@ -527,7 +539,15 @@ changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
 A Releases view (a header toggle) lists what shipped grouped by version, newest first, from `GET /api/projects/<p>/releases` (`store.releases()`); a story opens read-only, since it is archived. One filter dropdown per facet key and a swimlane control that splits the
-board by a facet's values with a progress bar per lane.
+board by a facet's values with a progress bar per lane. A card appears in
+every lane whose `key:value` it carries (so a story with two values for the
+grouping key shows in both, marked with a stacked-lanes icon), plus a "no
+`<key>`" lane for stories with none. Dragging a card to another lane
+reassigns that value: the drop drops the source lane's `key:value` and adds
+the target's (a drop into the "no `<key>`" lane just removes it), sent with
+the status and order in the one `PATCH` the drop already makes, so other
+values of the same key are untouched. "Swimlanes by parent" lanes are not
+drag-reassignable, since that would be reparenting.
 A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
 stories that exist only on other branches. When the project has more than
@@ -548,7 +568,11 @@ Story dialog: the id first (a click copies it, shift-click copies
 `project:id`), created and updated dates, the title as a heading, then
 Story and History tabs. The Story tab opens in view mode: a status select
 for a quick move, assignee, tag chips, claim, dependency chips that open
-the target (switching project if needed), parent and children, the body
+the target (switching project if needed), parent and children, the body.
+The tag chips are editable in place: clicking one opens a small key/value
+editor (empty key is a plain tag, a key makes a `key:value` facet), a "+ tag"
+button adds one, and each change is written immediately with a `tags` `PATCH`,
+the same quick-edit weight as the status select. The body
 rendered as Markdown with note headings set in the mono face and the kind
 in the accent colour, story ids in the text (`id`, `#id`, or `project:id`)
 turned into links that open the referenced story, the questions panel, and
@@ -558,7 +582,8 @@ the add-a-note form. When the project has a GitHub `origin` remote
 `claude.ai/code` with the repository preselected and a short prompt prefilled
 that sends the session to `skald show <id>` and `.skald/AGENTS.md` rather than
 embedding the body; the link is not auto-submitted. Edit
-(or `e`) swaps in the form: title, status, assignee, tags, blockers,
+(or `e`) swaps in the form: title, status, assignee, tags (the same chips
+with a key/value add row, staged and saved with the form), blockers,
 parent, body with a preview toggle, save with conflict detection, delete;
 Save and Cancel return to view mode, `Esc` leaves edit mode before it
 closes the dialog. A new story opens in edit mode. An open story is kept

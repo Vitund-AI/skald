@@ -16,6 +16,7 @@ from urllib.request import Request, urlopen
 
 from .util import atomic_write, now_iso, parse_iso
 
+DIST_NAME = "skald-kanban"
 PYPI_JSON = "https://pypi.org/pypi/skald-kanban/json"
 TTL_SECONDS = 24 * 60 * 60
 TIMEOUT = 2.5
@@ -39,6 +40,24 @@ def is_newer(latest: str, current: str) -> bool:
         return False
     n = max(len(a), len(b))
     return a + (0,) * (n - len(a)) > b + (0,) * (n - len(b))
+
+
+def installed_version() -> Optional[str]:
+    """The on-disk installed version of the package, or None if it cannot be read.
+
+    A long-running process holds the version compiled into ``skald.__version__``
+    at import time; this reads the ``.dist-info`` metadata that ``pip install -U``
+    rewrites. The two diverge exactly when the running code is stale, which is how
+    the server detects that it needs restarting after an upgrade.
+    """
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        return version(DIST_NAME)
+    except PackageNotFoundError:
+        return None
+    except Exception:
+        return None
 
 
 def fetch_latest(timeout: float = TIMEOUT) -> Optional[str]:

@@ -7,6 +7,7 @@ needs no account: `skald open` carries the key.
 skald open              # ensure the background server is running, open this project
 skald server start      # or manage it explicitly
 skald server status
+skald server restart     # stop and start in place, e.g. after upgrading the package
 skald server stop
 skald serve             # run in the foreground instead
 ```
@@ -15,6 +16,14 @@ The server binds to `127.0.0.1` on port 8321 by default (`skald config port`
 changes it). The page loads Tailwind and marked from CDNs, so styling and
 Markdown preview need internet access; without it the board still works,
 unstyled.
+
+A background server keeps running the code it started with. After
+`pip install -U skald-kanban`, it still serves the old version until it is
+restarted: the board shows a dismissible banner, and `skald server status`
+and `skald doctor` say so, each pointing at `skald server restart`, which
+stops and starts the server in place, reusing its host and port. The warning
+fires only when the installed version is strictly newer than the running one,
+so a source checkout ahead of its recorded version is never flagged.
 
 ## Access
 
@@ -62,9 +71,15 @@ interface still means plaintext HTTP, so do that deliberately.
 - **Filter** matches title, id, tag, or assignee. `/` focuses it.
 - **Facet filters and swimlanes** appear when stories carry `key:value`
   tags. One dropdown per key filters; "swimlanes by" splits the board into
-  one lane per value with a progress bar per lane. When any story has a
-  parent, "swimlanes by parent" gives one lane per parent, titled, with its
-  children's progress.
+  one lane per value with a progress bar per lane. A card shows in every lane
+  whose value it carries — a story tagged both `area:api` and `area:cli`
+  appears in both, marked with a stacked-lanes icon — plus a "no `<key>`"
+  lane for stories with none. **Dragging a card to another lane reassigns
+  that tag:** drop it in `release:1.1` and its `release:` value changes, drop
+  it in "no release" and the value is removed; other values of the same key
+  stay. When any story has a parent, "swimlanes by parent" gives one lane per
+  parent, titled, with its children's progress; those lanes are not
+  drag-reassignable (that would be reparenting).
 - **Waiting on a human** appears when any story has an open question and
   filters the board to those stories; the count is in the label.
 - **Graph** (`g`) draws the dependency graph.
@@ -151,6 +166,14 @@ story to you and starts it; if the story is already active in another local
 working tree or branch, a toast names that branch, so two agents do not
 unknowingly work it at once even when they share a name.
 
+The **tags are editable in place**: click a chip to open a small editor with
+a key and a value — leave the key empty for a plain label, or set it
+(`release`, `area`, `epic`) to make a `key:value` facet the filters and
+swimlanes pick up — and "+ tag" adds one. Each change is written immediately,
+the same weight as moving the status select, so you can retag without opening
+the full edit form. (The Edit form has the same chips with a key/value add
+row, staged and saved with the rest of the fields.)
+
 When the project has a GitHub `origin` remote, an **Open in Claude Code**
 button opens the story as a [Claude Code](https://claude.ai/code) session on
 the web: it preselects the repository and prefills a short prompt that points
@@ -161,8 +184,9 @@ it first. The button is hidden when there is no GitHub remote, and it is
 governed by the `claude_code_link` setting (on by default; see
 [Settings](#settings)).
 
-**Edit** (or `e`) switches to the form: title, status, assignee, tags,
-blockers, parent, and the body with a Preview toggle. Save writes it back
+**Edit** (or `e`) switches to the form: title, status, assignee, tags (the
+chip editor again, here staged and saved with everything else), blockers,
+parent, and the body with a Preview toggle. Save writes it back
 and returns to view mode; it refuses with a message if the file changed on
 disk while you were editing, so nothing is silently overwritten. Cancel, or
 `Esc`, drops the edits and returns to view mode; `Esc` again closes the

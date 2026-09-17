@@ -695,3 +695,61 @@ timeout, bad JSON, a locked-down network — so nothing here can break the
 board or the server; a failed lookup just means no icon. `skald doctor`
 surfaces the same result from the cache without ever making its own network
 call, keeping the diagnostic offline and deterministic.
+
+### D68. The server detects its own staleness by comparing `__version__` to the installed metadata, and warns rather than restarting itself
+A background board server started before `pip install -U` keeps the old code
+in memory: the running process holds the version compiled into `__version__`
+at import time, while the on-disk `.dist-info` that pip rewrites carries the
+new one. There is no reliable post-install hook to lean on — a wheel install
+executes no project code — so an automatic restart on upgrade is not
+achievable, and an unsolicited restart of something running on the user's
+machine would be the wrong default anyway. Instead the server reads
+`importlib.metadata.version("skald-kanban")` on each `/api/health` and reports
+`installed` and `stale`; the board raises a dismissible banner, `skald server
+status` and `skald doctor` print a note, and `skald server restart` stops and
+starts the server in place (reusing the running server's host and port). A
+warning is non-blocking — it does not interrupt the user or change anything
+they are running — which is the right weight for "you may want to restart" as
+against a question they must answer or an action taken behind their back. The
+staleness test is `is_newer(installed, running)`, strictly newer and final
+releases only, reusing the update-check comparison: an editable install whose
+recorded metadata trails its moved-ahead source would otherwise read as stale
+on every request, so the direction of the comparison is the guard. The
+`doctor` check reads the server's own `stale` flag rather than recomputing a
+version mismatch, so the board and the diagnostic never disagree.
+
+### D69. A card renders in every facet lane it belongs to, and dragging between lanes reassigns that one value
+`facets()` already counts a story in every `key:value` bucket it carries, but
+the board used to render it only in the first (`facetOf`, first-match), so for
+a story with two values of the grouping key the lane counts and the visible
+cards disagreed. Rendering the card in each of its lanes fixes that, and it is
+what makes dragging between lanes unambiguous: the dragged instance belongs to
+one specific value, so the drop can drop *that* value and add the target's
+without guessing which of several to touch. The alternative — keep the
+single-lane display and, on a drag, collapse all of a key's values to the
+target — silently discards the others; showing every lane and editing one at a
+time never loses data. The tag rewrite is computed client-side (remove
+`key:source`, add `key:target`; a drop into the "no `<key>`" lane is a removal)
+and rides the same single `PATCH` the drop already sends with `status` and
+`order`, so there is no new endpoint and the facet active-limit enforcement on
+that path applies unchanged. Parent lanes are excluded: moving between them is
+reparenting, which carries facet inheritance and cycle checks and is a
+different gesture than retagging. A stacked-lanes icon marks cards that sit in
+more than one lane, so it is visible that a drag there changes only the one
+lane's membership.
+
+### D70. Tags are edited as chips over two parts, immediately in view mode and staged in the edit form
+A tag is a plain label or a `key:value` facet, and typing them as one
+comma-separated string made the colon syntax a thing to remember and a whole
+line to re-parse to change one value. The dialog now edits them as chips over
+two fields, a key (optional) and a value, so a facet never has to be typed
+with its colon and a plain label is just an empty key. The two surfaces differ
+by weight, matching the rest of the board: in view mode a chip is a quick-edit
+like the status select — click it, change the value, and a `tags` `PATCH`
+writes immediately — while the full Edit form stages the chip set in
+`state.editTags` and saves it atomically with title, body, and the other
+fields. Both reuse one pair of helpers (`parseTag`/`makeTag`); the immediate
+path re-reads the story after each write so the board and the open dialog stay
+in step. No API changed — `PATCH {tags}` already replaced the list — so this is
+entirely client-side. A value typed into the add row but not yet added is
+folded in on Save, so a half-finished tag is never silently dropped.
