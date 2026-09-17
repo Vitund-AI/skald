@@ -1,10 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.8.1 (2026-09-16)
 
 - The background board server notices when a newer `skald-kanban` has been installed on disk while it kept running the old code: `GET /api/health` now reports `installed` and `stale`, the board shows a dismissible banner, and `skald server status` and `skald doctor` say so. A new `skald server restart` stops and restarts it in place, reusing the running server's host and port, to pick up the upgrade. The check compares the installed version against the running one and only warns when the installed one is strictly newer, so an editable install whose source has moved ahead never false-positives. (165040)
 - Facet swimlanes now show a card in every lane whose `key:value` it carries (a story with two values for the grouping key appears in both, marked with a stacked-lanes icon), so the lane counts and the cards on screen agree. Dragging a card to another lane reassigns that tag — into a value lane sets it, into the "no `<key>`" lane removes it — leaving other values of the same key untouched; "swimlanes by parent" lanes stay non-reassignable. (b07b64)
 - The card dialog edits tags as chips instead of one comma-separated string. In view mode a chip is clickable: a small key/value editor (empty key for a plain label, a key for a `key:value` facet) edits it and "+ tag" adds one, written immediately like the status quick-move. The Edit form has the same chips with a key/value add row, staged and saved with the rest of the fields. (dd6065)
+
+### Stories
+
+- Warn when the running board server is older than the installed package; add skald server restart (165040)
+- Drag a card between facet swimlanes to reassign its tag; show a card in every lane it belongs to (b07b64)
+- Edit tags as chips in the card modal: inline key/value quick-edit in view mode, chip editor in the edit form (dd6065)
 
 ## 0.8.0 (2026-09-16)
 

@@ -5,8 +5,9 @@ rank: 30
 tags: ["area:board"]
 blocked_by: []
 assignee: "agent"
+released: "0.8.1"
 created_at: "2026-09-17T01:24:53Z"
-updated_at: "2026-09-17T04:43:18Z"
+updated_at: "2026-09-17T04:48:22Z"
 ---
 ## Requirements
 

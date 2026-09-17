@@ -1,7 +1,7 @@
-<!-- skald-render 4599bf1a07e311ff -->
+<!-- skald-render ffd362d9fe770622 -->
 # skald backlog
 
-**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 3
+**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -28,17 +28,23 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (3)</strong></summary>
+<details><summary><strong>Done (0)</strong></summary>
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [165040](stories/165040-warn-when-the-running-board-server-is-older-than-t.md) | Warn when the running board server is older than the installed package; add skald server restart | `area:server` | agent |  |  |
-| [b07b64](stories/b07b64-drag-a-card-between-facet-swimlanes-to-reassign-it.md) | Drag a card between facet swimlanes to reassign its tag; show a card in every lane it belongs to | `area:board` | agent |  |  |
-| [dd6065](stories/dd6065-edit-tags-as-chips-in-the-card-modal-inline-key-va.md) | Edit tags as chips in the card modal: inline key/value quick-edit in view mode, chip editor in the edit form | `area:board` | agent |  |  |
+_none_
 
 </details>
 
 ## Releases
+
+<details><summary><strong>0.8.1 (3)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [b07b64](archive/b07b64-drag-a-card-between-facet-swimlanes-to-reassign-it.md) | Drag a card between facet swimlanes to reassign its tag; show a card in every lane it belongs to | `area:board` | agent |  |  |
+| [dd6065](archive/dd6065-edit-tags-as-chips-in-the-card-modal-inline-key-va.md) | Edit tags as chips in the card modal: inline key/value quick-edit in view mode, chip editor in the edit form | `area:board` | agent |  |  |
+| [165040](archive/165040-warn-when-the-running-board-server-is-older-than-t.md) | Warn when the running board server is older than the installed package; add skald server restart | `area:server` | agent |  |  |
+
+</details>
 
 <details><summary><strong>0.8.0 (9)</strong></summary>
 
