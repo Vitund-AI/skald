@@ -77,6 +77,7 @@ class ProjectConfig:
         self.extra = dict(extra or {})
         self._validate_columns()
         self.facet_limits = self._parse_facet_limits(self.extra.get("facet_limits"))
+        self.block_release_on_incomplete = self._parse_bool_flag("block_release_on_incomplete")
 
     # -- construction ----------------------------------------------------
 
@@ -161,6 +162,14 @@ class ProjectConfig:
                 raise ConfigError(f"facet_limits[{key!r}] must be a positive integer")
             out[key] = value
         return out
+
+    def _parse_bool_flag(self, key: str) -> bool:
+        value = self.extra.get(key)
+        if value is None:
+            return False
+        if not isinstance(value, bool):
+            raise ConfigError(f"'{key}' must be true or false")
+        return value
 
     def _validate_columns(self) -> None:
         seen = set()

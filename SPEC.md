@@ -167,6 +167,10 @@ the pointer when neither exists.
   stories claimed on other branches or in other checkouts. `lane` is the
   conventional key. Keys match the column-key pattern; values are positive
   integers.
+- `block_release_on_incomplete` (optional boolean, default false): when true,
+  `skald release <v>` refuses, changing nothing, while any story tagged
+  `release:<v>` for the version is not in a terminal column; `--allow-incomplete`
+  overrides it. See section 8.
 - `init --columns default|lifecycle` chooses the initial set for a new
   `config.json` (`COLUMN_PRESETS`); the lifecycle set is `idea` and `plan`
   (both `backlog`), then `ready`, `in_progress`, `review`, `done`. An
@@ -371,7 +375,11 @@ terminal column, so the ones still to do are named before the release goes
 out. A value targets the version when it equals it or is a dotted prefix of
 it either way, so `release:0.6` covers `0.6.x` and matches the `0.6.0`
 release. It is an ordinary facet, so the board filters and swimlanes on it
-with no special support; only the warning knows the name.
+with no special support; only the warning knows the name. When
+`block_release_on_incomplete` is set in `config.json`, that same set is a
+gate rather than a warning: `skald release` (dry run and real alike) refuses
+and changes nothing while any targeted story is still open, unless
+`--allow-incomplete` is given.
 
 ### 4.6 Other branches
 
@@ -440,7 +448,7 @@ story or configuration. Commands that print stories take `--json`.
 | `rm <id> [--force]` | Delete a story file. Refuses while other stories depend on it or are its children; with `--force`, removes the id from their `blocked_by` and clears their `parent`, printing each change, so no dangling reference is left. |
 | `log <id>` | `git log --follow` on the file. |
 | `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |
-| `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit]` | Section 4.5b. |
+| `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit] [--allow-incomplete]` | Section 4.5b. `--allow-incomplete` overrides the `block_release_on_incomplete` gate. |
 | `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
 | `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |

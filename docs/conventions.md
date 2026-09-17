@@ -13,7 +13,7 @@ required, and you can invent your own.
 | `lane:<name>` | `facet_limits` (a WIP cap per value), `skald status` busy lanes, and `skald next`, which skips a story whose lane is already busy | parallel agents need non-overlapping tracks, so at most N run in a lane at once |
 | `effort:<tier>` | `skald next --tag effort:<tier>`; the [model-routing example](../examples/model-routing/) | you route a story to a class of agent (a model or cost tier); an agent skips a tier it does not match |
 | `area:<name>` | grouping and filtering like any facet; `skald import` can set it automatically from a path or a label | you want to mark which part of the codebase a story touches |
-| `release:<v>` | `skald release`, which warns about a story tagged for the version that is not done yet; the board filter | you are planning what a version should carry |
+| `release:<v>` | `skald release`, which warns about a story tagged for the version that is not done yet (or refuses outright when `block_release_on_incomplete` is set in `config.json`, unless `--allow-incomplete`); the board filter | you are planning what a version should carry |
 
 `model:<name>` and cost are conventions too, carried by the note author and a
 tag rather than a field, so the intended and the actual model can be joined

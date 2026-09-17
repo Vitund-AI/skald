@@ -160,7 +160,12 @@ With a `dev` branch for day-to-day work and `main` as the release line:
    on origin; `skald` and a logged-in `gh` must be on the path. Then, in
    order, and each step visible:
 
-   - `skald release 1.2.0 --dry-run`, shown for confirmation.
+   - `skald release 1.2.0 --dry-run`, shown for confirmation. If
+     `block_release_on_incomplete` is set in `config.json` and a story is
+     still tagged `release:1.2.0` without being done, both the dry run and
+     the real run refuse here, naming the stories, so the release stops
+     before the version bump; finish or untag them, or pass
+     `scripts/release.sh 1.2.0 --allow-incomplete` to release anyway.
    - Bump `src/skald/__init__.py`, `skald release 1.2.0` (changelog
      section, `released:` stamps, archive, commit), commit the bump, run
      the tests. The bump and the release land together because the version

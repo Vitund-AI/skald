@@ -716,7 +716,7 @@ Start the server if needed and open the board for this project.
 ## release
 
 ```
-skald release [--changelog PATH] [--date DATE] [--dry-run] [--no-commit] version
+skald release [--changelog PATH] [--date DATE] [--dry-run] [--no-commit] [--allow-incomplete] version
 ```
 
 Record a version: a changelog section from the done column, then archive those stories.
@@ -728,6 +728,7 @@ Record a version: a changelog section from the done column, then archive those s
 | `--date DATE` | YYYY-MM-DD (default: today) |
 | `--dry-run` | print the section and the stories; change nothing |
 | `--no-commit` | write and archive but do not commit |
+| `--allow-incomplete` | release even if stories tagged for this version are not done (overrides config.json block_release_on_incomplete) |
 
 ## docs
 
