@@ -919,8 +919,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       const allInColumn = col.key === null ? items.length : state.stories.filter(s => s.status === col.key).length;
       const over = col.limit && allInColumn > col.limit;
       const count = col.limit ? `${allInColumn}/${col.limit}` : `${items.length}`;
-      // A finished column (done or closed) can be collapsed to a labeled strip; the choice is per viewer.
-      const collapsible = isTerminalRole(col.role);
+      // A column can be collapsed to a labeled strip; the choice is per viewer. Done and closed
+      // columns collapse by default; a column's `collapsible` flag overrides that (e.g. an icebox).
+      const collapsible = col.collapsible != null ? col.collapsible : isTerminalRole(col.role);
       const collapsed = collapsible && state.collapsed.has(col.key);
       // Columns share the width on wide screens, keep a floor so many columns scroll, and stack on phones.
       section.className = collapsed

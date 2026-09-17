@@ -118,7 +118,9 @@ header that collapses it to a labeled strip showing its count; click the
 strip to expand it again. It is a per-viewer preference kept in your
 browser, so a large `Done` column or a "won't do" column can stop crowding
 the active work without hiding it from anyone else or changing anything on
-disk.
+disk. Any column can opt in or out with a `collapsible` boolean in its
+`config.json` entry — the `lifecycle` preset's `icebox` sets it, so parked
+work folds away the same as done work.
 
 A card shows the title, tags, checklist progress, id, assignee, and age.
 Markers:
