@@ -1,7 +1,7 @@
-<!-- skald-render d27c022ea8f31990 -->
+<!-- skald-render bec16278436b8712 -->
 # skald backlog
 
-**4 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 0
+**5 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 3 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -24,12 +24,13 @@ _none_
 
 _none_
 
-## Review (2)
+## Review (3)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [165040](stories/165040-warn-when-the-running-board-server-is-older-than-t.md) | Warn when the running board server is older than the installed package; add skald server restart | `area:server` | agent |  |  |
 | [b07b64](stories/b07b64-drag-a-card-between-facet-swimlanes-to-reassign-it.md) | Drag a card between facet swimlanes to reassign its tag; show a card in every lane it belongs to | `area:board` | agent |  |  |
+| [dd6065](stories/dd6065-edit-tags-as-chips-in-the-card-modal-inline-key-va.md) | Edit tags as chips in the card modal: inline key/value quick-edit in view mode, chip editor in the edit form | `area:board` | agent |  |  |
 
 <details><summary><strong>Done (0)</strong></summary>
 

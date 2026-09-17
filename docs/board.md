@@ -166,6 +166,14 @@ story to you and starts it; if the story is already active in another local
 working tree or branch, a toast names that branch, so two agents do not
 unknowingly work it at once even when they share a name.
 
+The **tags are editable in place**: click a chip to open a small editor with
+a key and a value — leave the key empty for a plain label, or set it
+(`release`, `area`, `epic`) to make a `key:value` facet the filters and
+swimlanes pick up — and "+ tag" adds one. Each change is written immediately,
+the same weight as moving the status select, so you can retag without opening
+the full edit form. (The Edit form has the same chips with a key/value add
+row, staged and saved with the rest of the fields.)
+
 When the project has a GitHub `origin` remote, an **Open in Claude Code**
 button opens the story as a [Claude Code](https://claude.ai/code) session on
 the web: it preselects the repository and prefills a short prompt that points
@@ -176,8 +184,9 @@ it first. The button is hidden when there is no GitHub remote, and it is
 governed by the `claude_code_link` setting (on by default; see
 [Settings](#settings)).
 
-**Edit** (or `e`) switches to the form: title, status, assignee, tags,
-blockers, parent, and the body with a Preview toggle. Save writes it back
+**Edit** (or `e`) switches to the form: title, status, assignee, tags (the
+chip editor again, here staged and saved with everything else), blockers,
+parent, and the body with a Preview toggle. Save writes it back
 and returns to view mode; it refuses with a message if the file changed on
 disk while you were editing, so nothing is silently overwritten. Cancel, or
 `Esc`, drops the edits and returns to view mode; `Esc` again closes the

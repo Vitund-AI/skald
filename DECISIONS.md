@@ -737,3 +737,19 @@ reparenting, which carries facet inheritance and cycle checks and is a
 different gesture than retagging. A stacked-lanes icon marks cards that sit in
 more than one lane, so it is visible that a drag there changes only the one
 lane's membership.
+
+### D70. Tags are edited as chips over two parts, immediately in view mode and staged in the edit form
+A tag is a plain label or a `key:value` facet, and typing them as one
+comma-separated string made the colon syntax a thing to remember and a whole
+line to re-parse to change one value. The dialog now edits them as chips over
+two fields, a key (optional) and a value, so a facet never has to be typed
+with its colon and a plain label is just an empty key. The two surfaces differ
+by weight, matching the rest of the board: in view mode a chip is a quick-edit
+like the status select — click it, change the value, and a `tags` `PATCH`
+writes immediately — while the full Edit form stages the chip set in
+`state.editTags` and saves it atomically with title, body, and the other
+fields. Both reuse one pair of helpers (`parseTag`/`makeTag`); the immediate
+path re-reads the story after each write so the board and the open dialog stay
+in step. No API changed — `PATCH {tags}` already replaced the list — so this is
+entirely client-side. A value typed into the add row but not yet added is
+folded in on Save, so a half-finished tag is never silently dropped.

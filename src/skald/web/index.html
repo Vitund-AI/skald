@@ -208,6 +208,7 @@
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l1.5 3.5L10 8 6.5 9.5 5 13 3.5 9.5 0 8l3.5-1.5z" transform="translate(2 1)"></path><path d="M18 13l1 2.5 2.5 1-2.5 1L18 20l-1-2.5-2.5-1 2.5-1z"></path></svg>
           Open in Claude Code</a>
       </div>
+      <div id="m-tag-editor" class="hidden flex flex-wrap items-end gap-2 rounded border border-strong bg-canvas px-2 py-2"></div>
       <div id="m-deps" class="text-xs hidden flex flex-wrap gap-2"></div>
       <div id="m-family" class="hidden grid gap-1 min-w-0 text-xs">
         <div id="m-parent-chip"></div>
@@ -231,17 +232,19 @@
         <span class="text-muted">Title</span>
         <input id="m-title" class="min-w-0 w-full rounded border border-strong px-2 py-1.5 text-base font-medium">
       </label>
-      <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
         <label class="grid gap-1 min-w-0"><span class="text-muted">Status</span>
           <select id="m-status" class="min-w-0 w-full rounded border border-strong px-2 py-1.5"></select></label>
         <label class="grid gap-1 min-w-0"><span class="text-muted">Assignee</span>
           <input id="m-assignee" class="min-w-0 w-full rounded border border-strong px-2 py-1.5"></label>
-        <label class="grid gap-1 min-w-0"><span class="text-muted">Tags</span>
-          <input id="m-tags" class="min-w-0 w-full rounded border border-strong px-2 py-1.5" placeholder="a, b"></label>
         <label class="grid gap-1 min-w-0"><span class="text-muted">Blocked by</span>
           <input id="m-blockers" class="min-w-0 w-full rounded border border-strong px-2 py-1.5 font-mono" placeholder="id, project:id"></label>
         <label class="grid gap-1 min-w-0"><span class="text-muted">Parent</span>
           <input id="m-parent" class="min-w-0 w-full rounded border border-strong px-2 py-1.5 font-mono" placeholder="id" title="This story is one piece of the parent; empty for none"></label>
+      </div>
+      <div class="grid gap-1 text-sm">
+        <span class="text-muted">Tags</span>
+        <div id="m-tags-editor" class="rounded border border-strong px-2 py-2 flex flex-wrap items-end gap-1.5" title="A tag is a plain label or key:value; key:value tags become facets (filters and swimlanes)"></div>
       </div>
       <div class="grid gap-1 text-sm">
         <div class="flex items-center gap-3">
@@ -385,7 +388,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
     lastWrite: 0, help: false, helpCli: null, features: null, settingsOpen: false, repo_slug: null,
     updateCheckedFor: undefined, updateLatest: null,
-    sel: { column: null, ids: new Set() }, dragBatch: [], dragFromLane: null, suppressClick: false, locked: false,
+    sel: { column: null, ids: new Set() }, dragBatch: [], dragFromLane: null, editTags: [], suppressClick: false, locked: false,
     collapsed: new Set(), releasesView: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal'), help = $('help');
@@ -1271,7 +1274,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     $('m-status-quick').value = s.status;
     $('m-status-quick').disabled = state.readonly || s.archived;
     $('m-view-assignee').textContent = s.assignee ? `@${s.assignee}` : 'unassigned';
-    $('m-view-tags').innerHTML = s.tags.map(tag => `<span class="inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(tag)}</span>`).join('');
+    renderViewTags(s);
     renderMarkdown($('m-rendered'), s.body);
     linkifyRefs($('m-rendered'));
     renderClaudeLink(s);
@@ -1292,6 +1295,93 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     a.classList.toggle('hidden', !on);
     if (on) a.href = 'https://claude.ai/code?repositories=' + encodeURI(state.repo_slug)
       + '&prompt=' + encodeURIComponent(claudePrompt(s));
+  }
+
+  // ---- Tags ------------------------------------------------------------
+  // A tag is a plain label or a `key:value` facet. Both editors work in those
+  // two parts so a facet never has to be typed with its colon by hand.
+  function parseTag(t) { const i = t.indexOf(':'); return i < 0 ? { key: '', value: t } : { key: t.slice(0, i), value: t.slice(i + 1) }; }
+  function makeTag(key, value) { key = key.trim(); value = value.trim(); return key ? `${key}:${value}` : value; }
+
+  // View mode: chips are buttons; clicking one edits it in place, "+ tag" adds one,
+  // each change is written immediately (like the quick status move). Read-only when the
+  // story is archived or a branch snapshot: plain chips, no editor.
+  function renderViewTags(s) {
+    const box = $('m-view-tags'), editor = $('m-tag-editor');
+    editor.classList.add('hidden'); editor.innerHTML = '';
+    const ro = state.readonly || s.archived;
+    box.innerHTML = s.tags.map(t => ro
+      ? `<span class="inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px]">${esc(t)}</span>`
+      : `<button type="button" class="tag-chip inline-block rounded-full bg-chip text-muted px-2 py-0.5 text-[11px] hover:text-ink" data-tag="${esc(t)}" title="Edit this tag">${esc(t)}</button>`
+    ).join(' ') + (ro ? '' : ` <button type="button" id="m-tag-add" class="rounded-full border border-dashed border-strong text-muted px-2 py-0.5 text-[11px] hover:text-ink hover:bg-hover" title="Add a tag">+ tag</button>`);
+    if (ro) return;
+    box.querySelectorAll('.tag-chip').forEach(b => b.addEventListener('click', () => openTagEditor(s, b.dataset.tag)));
+    $('m-tag-add').addEventListener('click', () => openTagEditor(s, null));
+  }
+  function openTagEditor(s, tag) {
+    const box = $('m-tag-editor'), p = tag ? parseTag(tag) : { key: '', value: '' };
+    box.innerHTML = `
+      <label class="grid gap-1 text-xs"><span class="text-muted">Key (optional)</span>
+        <input class="te-key w-28 rounded border border-strong px-2 py-1 text-sm" placeholder="e.g. release"></label>
+      <label class="grid gap-1 text-xs"><span class="text-muted">Value</span>
+        <input class="te-val w-32 rounded border border-strong px-2 py-1 text-sm" placeholder="e.g. 1.2.0"></label>
+      <button type="button" class="te-save rounded bg-accent text-white px-3 py-1 text-sm hover:bg-accent-hover">Save</button>
+      ${tag ? '<button type="button" class="te-remove rounded px-3 py-1 text-sm text-danger-text hover:bg-danger-tint">Remove</button>' : ''}
+      <button type="button" class="te-cancel rounded border border-strong px-3 py-1 text-sm hover:bg-hover">Cancel</button>`;
+    box.classList.remove('hidden');
+    const keyI = box.querySelector('.te-key'), valI = box.querySelector('.te-val');
+    keyI.value = p.key; valI.value = p.value; valI.focus();
+    const close = () => { box.classList.add('hidden'); box.innerHTML = ''; };
+    const save = async () => {
+      if (!valI.value.trim()) { valI.focus(); return; }
+      const nt = makeTag(keyI.value, valI.value);
+      const tags = s.tags.filter(x => x !== tag);   // editing replaces the old value
+      if (!tags.includes(nt)) tags.push(nt);
+      close(); await commitViewTags(tags);
+    };
+    box.querySelector('.te-save').addEventListener('click', save);
+    [keyI, valI].forEach(inp => inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); save(); } else if (e.key === 'Escape') { e.preventDefault(); close(); }
+    }));
+    const rm = box.querySelector('.te-remove');
+    if (rm) rm.addEventListener('click', async () => { close(); await commitViewTags(s.tags.filter(x => x !== tag)); });
+    box.querySelector('.te-cancel').addEventListener('click', close);
+  }
+  async function commitViewTags(tags) {
+    try { const res = await api('PATCH', `${P()}/stories/${state.modal}`, { tags }); showWarnings(res.warnings); await openModal(state.modal); }
+    catch (err) { toast(err.message, 'error'); }
+  }
+
+  // Edit pane: the full set as removable chips (click to edit, × to remove) plus a
+  // persistent key/value add row. Staged in state.editTags and saved with the form.
+  function renderEditTags() {
+    const box = $('m-tags-editor'); if (!box) return;
+    box.innerHTML = state.editTags.map((t, i) =>
+      `<span class="inline-flex items-center gap-1 rounded-full bg-chip text-muted px-2 py-0.5 text-xs">
+         <button type="button" class="tag-edit hover:text-ink" data-i="${i}" title="Edit">${esc(t)}</button>
+         <button type="button" class="tag-x text-faint hover:text-danger-text leading-none text-sm" data-i="${i}" title="Remove" aria-label="Remove ${esc(t)}">&times;</button>
+       </span>`).join('') + `
+      <span class="inline-flex items-end gap-1">
+        <input class="tag-key w-24 rounded border border-strong px-2 py-1 text-xs" placeholder="key (optional)">
+        <input class="tag-val w-28 rounded border border-strong px-2 py-1 text-xs" placeholder="value">
+        <button type="button" class="tag-add rounded border border-strong px-2 py-1 text-xs hover:bg-hover">Add</button>
+      </span>`;
+    const keyI = box.querySelector('.tag-key'), valI = box.querySelector('.tag-val');
+    const add = () => {
+      if (!valI.value.trim()) { valI.focus(); return; }
+      const t = makeTag(keyI.value, valI.value);
+      if (!state.editTags.includes(t)) state.editTags.push(t);
+      renderEditTags(); $('m-tags-editor').querySelector('.tag-key').focus();
+    };
+    box.querySelector('.tag-add').addEventListener('click', add);
+    [keyI, valI].forEach(inp => inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }));
+    box.querySelectorAll('.tag-x').forEach(b => b.addEventListener('click', () => { state.editTags.splice(+b.dataset.i, 1); renderEditTags(); }));
+    box.querySelectorAll('.tag-edit').forEach(b => b.addEventListener('click', () => {
+      const [t] = state.editTags.splice(+b.dataset.i, 1), p = parseTag(t);
+      renderEditTags();
+      const box2 = $('m-tags-editor');
+      box2.querySelector('.tag-key').value = p.key; box2.querySelector('.tag-val').value = p.value; box2.querySelector('.tag-val').focus();
+    }));
   }
   // The family: a chip for the parent, a chip per child with its state, and a way to add one.
   function renderFamily(s) {
@@ -1332,11 +1422,11 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.modal = 'new'; state.loaded = null;
       $('m-id').textContent = 'new story'; $('m-meta').textContent = ''; $('m-heading').textContent = '';
       $('m-title').value = ''; $('m-status').value = (state.columns.find(c => c.role === 'backlog') || state.columns[0] || {}).key;
-      $('m-tags').value = ''; $('m-blockers').value = ''; $('m-assignee').value = '';
+      state.editTags = []; renderEditTags(); $('m-blockers').value = ''; $('m-assignee').value = '';
       $('m-parent').value = state.newParent || ''; $('m-family').classList.add('hidden');
       $('m-body').value = ''; $('m-deps').classList.add('hidden'); $('m-dirty').textContent = '';
       $('m-claude').classList.add('hidden');
-      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = false; });
+      ['m-title', 'm-status', 'm-assignee', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = false; });
       $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden'); $('m-preview-btn').textContent = 'Preview';
       ['m-delete', 'm-cancel', 'tab-history', 'm-edit-btn'].forEach(i => $(i).classList.add('hidden'));
       state.editing = true;
@@ -1357,7 +1447,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       state.answering = null;
       renderQuestions(qs);
       $('m-title').value = s.title; $('m-status').value = s.status; $('m-assignee').value = s.assignee || '';
-      $('m-tags').value = s.tags.join(', '); $('m-blockers').value = s.blocked_by.join(', ');
+      state.editTags = s.tags.slice(); renderEditTags(); $('m-blockers').value = s.blocked_by.join(', ');
       $('m-parent').value = s.parent || '';
       $('m-body').value = s.body; $('m-dirty').textContent = '';
       renderDeps(s);
@@ -1366,7 +1456,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       $('m-note').value = '';
       $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden'); $('m-preview-btn').textContent = 'Preview';
       ['m-delete', 'm-cancel', 'tab-history'].forEach(i => $(i).classList.remove('hidden'));
-      ['m-title', 'm-status', 'm-assignee', 'm-tags', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = ro; });
+      ['m-title', 'm-status', 'm-assignee', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = ro; });
       ['m-claim', 'm-note-wrap', 'm-edit-btn'].forEach(i => $(i).classList.toggle('hidden', ro));
       if (state.readonly) $('m-meta').textContent += ` · read-only (${state.ref})`;
       else if (s.archived) $('m-meta').textContent += ' · read-only';
@@ -1395,7 +1485,11 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
 
   async function saveModal() {
     const title = $('m-title').value, status = $('m-status').value, assignee = $('m-assignee').value.trim();
-    const tags = splitList($('m-tags').value), blocked_by = splitList($('m-blockers').value), body = $('m-body').value;
+    const tags = state.editTags.slice();
+    // Fold in a tag typed in the add row but not yet "Added", so Save never drops it.
+    const kv = $('m-tags-editor'), pk = kv && kv.querySelector('.tag-key'), pv = kv && kv.querySelector('.tag-val');
+    if (pv && pv.value.trim()) { const t = makeTag(pk.value, pv.value); if (!tags.includes(t)) tags.push(t); }
+    const blocked_by = splitList($('m-blockers').value), body = $('m-body').value;
     try {
       const parent = $('m-parent').value.trim();
       if (state.modal === 'new') {

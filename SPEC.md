@@ -568,7 +568,11 @@ Story dialog: the id first (a click copies it, shift-click copies
 `project:id`), created and updated dates, the title as a heading, then
 Story and History tabs. The Story tab opens in view mode: a status select
 for a quick move, assignee, tag chips, claim, dependency chips that open
-the target (switching project if needed), parent and children, the body
+the target (switching project if needed), parent and children, the body.
+The tag chips are editable in place: clicking one opens a small key/value
+editor (empty key is a plain tag, a key makes a `key:value` facet), a "+ tag"
+button adds one, and each change is written immediately with a `tags` `PATCH`,
+the same quick-edit weight as the status select. The body
 rendered as Markdown with note headings set in the mono face and the kind
 in the accent colour, story ids in the text (`id`, `#id`, or `project:id`)
 turned into links that open the referenced story, the questions panel, and
@@ -578,7 +582,8 @@ the add-a-note form. When the project has a GitHub `origin` remote
 `claude.ai/code` with the repository preselected and a short prompt prefilled
 that sends the session to `skald show <id>` and `.skald/AGENTS.md` rather than
 embedding the body; the link is not auto-submitted. Edit
-(or `e`) swaps in the form: title, status, assignee, tags, blockers,
+(or `e`) swaps in the form: title, status, assignee, tags (the same chips
+with a key/value add row, staged and saved with the form), blockers,
 parent, body with a preview toggle, save with conflict detection, delete;
 Save and Cancel return to view mode, `Esc` leaves edit mode before it
 closes the dialog. A new story opens in edit mode. An open story is kept
