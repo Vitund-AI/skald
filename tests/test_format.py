@@ -115,6 +115,22 @@ class TestProjectConfig(unittest.TestCase):
         self.assertTrue(c.is_closed("nope"))
         self.assertEqual(c.column("doing").limit, 2)
 
+    def test_default_status_override(self):
+        cols = [
+            {"key": "icebox", "label": "Icebox", "role": "backlog"},
+            {"key": "idea", "label": "Idea", "role": "backlog"},
+            {"key": "ready", "label": "Ready", "role": "ready"},
+            {"key": "done", "label": "Done", "role": "done"},
+        ]
+        # Without the override, the first backlog column wins (here the leading icebox).
+        self.assertEqual(ProjectConfig.from_dict({"name": "x", "columns": cols}).default_key, "icebox")
+        # With it, new stories land in the named column instead.
+        c = ProjectConfig.from_dict({"name": "x", "columns": cols, "default_status": "idea"})
+        self.assertEqual(c.default_key, "idea")
+        self.assertEqual(c.to_dict()["default_status"], "idea")  # round-trips
+        with self.assertRaises(ConfigError):
+            ProjectConfig.from_dict({"name": "x", "columns": cols, "default_status": "nope"})
+
     def test_validation(self):
         bad = [
             ({"name": "Bad Name"}, "invalid project name"),

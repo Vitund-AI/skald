@@ -171,16 +171,22 @@ the pointer when neither exists.
   `skald release <v>` refuses, changing nothing, while any story tagged
   `release:<v>` for the version is not in a terminal column; `--allow-incomplete`
   overrides it. See section 8.
+- `default_status` (optional): the column key new stories go to, overriding the
+  "first backlog column" default. Must be an existing column key. It lets the
+  leftmost column be something other than the capture point, such as an
+  `icebox` cold-storage column at the front of the board.
 - `init --columns default|lifecycle` chooses the initial set for a new
-  `config.json` (`COLUMN_PRESETS`); the lifecycle set is `idea` and `plan`
-  (both `backlog`), then `ready`, `in_progress`, `review`, `done`. An
-  existing `config.json` is never rewritten.
+  `config.json` (`COLUMN_PRESETS`); the lifecycle set is an `icebox` for parked
+  work, `idea` and `plan` (all `backlog`), then `ready`, `in_progress`,
+  `review`, `done`, and it writes `default_status: "idea"` so new stories start
+  in `idea` rather than the leading `icebox`. An existing `config.json` is
+  never rewritten.
 
 **Role semantics:**
 
 | Role | Meaning |
 | --- | --- |
-| `backlog` | New stories go to the first backlog column (else the first column). |
+| `backlog` | New stories go to `default_status` if set, else the first backlog column (else the first column). |
 | `ready` | `next` draws from these. |
 | `active` | `claim` moves into the first active column. Stale marking applies. |
 | `done` | Terminal. Satisfies dependencies. Hidden from `ls` by default. Archivable. |

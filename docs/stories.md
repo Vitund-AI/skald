@@ -172,6 +172,7 @@ planning as well as execution:
 
 | Column | Role | Meaning |
 | --- | --- | --- |
+| `icebox` | backlog | parked: decided against for now, not dropped |
 | `idea` | backlog | captured; nobody has thought about it yet |
 | `plan` | backlog | someone is writing the requirements and design |
 | `ready` | ready | decided; `next` picks from here |
@@ -179,9 +180,13 @@ planning as well as execution:
 | `review` | active | |
 | `done` | done | |
 
-Two backlog-role columns give a gate with no new rule: not in ready means
+The backlog-role columns give a gate with no new rule: not in ready means
 not schedulable, so an agent can capture an idea or draft a plan and nothing
-starts until a person moves it on. Moving from a backlog column into ready
+starts until a person moves it on. The leading `icebox` is cold storage for
+work you've deliberately shelved (see
+[Conventions](conventions.md#parking-work-youre-not-doing-now)); because it
+leads the board, the preset sets `default_status` to `idea` so new stories are
+captured there, not in the icebox. Moving from a backlog column into ready
 while the story has an open question warns, the same way unchecked
 acceptance warns on the move to done. "Waiting on a human" is not a column,
 because it is a condition that can hold at any stage: it is the question

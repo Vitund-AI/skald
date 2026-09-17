@@ -26,10 +26,15 @@ DEFAULT_COLUMNS = [
     {"key": "done", "label": "Done", "role": "done"},
 ]
 
-# The lifecycle set: two backlog-role columns before ready, so a story is captured (idea), then
-# designed (plan), and only becomes schedulable when a person moves it to ready. Waiting on a human
-# is a condition, not a stage, so it is a derived flag (open questions) rather than a column.
+# The lifecycle set: an icebox for parked work, then two backlog-role columns, so a story is
+# captured (idea), designed (plan), and only becomes schedulable when a person moves it to ready.
+# Icebox is cold storage for work decided against for now but not dropped (that is won't-do, a
+# closed column): being backlog-role it is never scheduled by next/ready nor swept into a release.
+# It leads the board as a side pocket, so new stories are pointed at `idea` with `default_status`
+# below rather than the leftmost column. Waiting on a human is a condition, not a stage, so it is a
+# derived flag (open questions) rather than a column.
 LIFECYCLE_COLUMNS = [
+    {"key": "icebox", "label": "Icebox", "role": "backlog"},
     {"key": "idea", "label": "Idea", "role": "backlog"},
     {"key": "plan", "label": "Plan", "role": "backlog"},
     {"key": "ready", "label": "Ready", "role": "ready"},
@@ -37,6 +42,8 @@ LIFECYCLE_COLUMNS = [
     {"key": "review", "label": "Review", "role": "active"},
     {"key": "done", "label": "Done", "role": "done"},
 ]
+# Per-preset default column for new stories, where the leftmost column is not the intended default.
+PRESET_DEFAULT_STATUS = {"lifecycle": "idea"}
 
 COLUMN_PRESETS = {"default": DEFAULT_COLUMNS, "lifecycle": LIFECYCLE_COLUMNS}
 
@@ -78,6 +85,7 @@ class ProjectConfig:
         self._validate_columns()
         self.facet_limits = self._parse_facet_limits(self.extra.get("facet_limits"))
         self.block_release_on_incomplete = self._parse_bool_flag("block_release_on_incomplete")
+        self._default_status = self._parse_default_status()
 
     # -- construction ----------------------------------------------------
 
@@ -163,6 +171,16 @@ class ProjectConfig:
             out[key] = value
         return out
 
+    def _parse_default_status(self) -> str | None:
+        """``default_status``: the column new stories go to, overriding "first backlog"."""
+        value = self.extra.get("default_status")
+        if value is None:
+            return None
+        if not isinstance(value, str) or self.column(value) is None:
+            raise ConfigError(
+                f"'default_status' must be one of the column keys: {', '.join(c.key for c in self.columns)}")
+        return value
+
     def _parse_bool_flag(self, key: str) -> bool:
         value = self.extra.get(key)
         if value is None:
@@ -217,7 +235,9 @@ class ProjectConfig:
 
     @property
     def default_key(self) -> str:
-        """Where new stories go: the first backlog column, else the first column."""
+        """Where new stories go: ``default_status`` if set, else the first backlog column, else the first column."""
+        if self._default_status:
+            return self._default_status
         for c in self.columns:
             if c.role == "backlog":
                 return c.key

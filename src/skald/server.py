@@ -533,6 +533,7 @@ class Handler(BaseHTTPRequestHandler):
                     "checkout": {"id": checkout_id(store.dir), "path": str(store.dir),
                                  "primary": ws.registry.path_of(store.name) == store.dir},
                     "columns": [c.to_dict() for c in store.config.columns],
+                    "default_status": store.config.default_key,
                     "stories": [store.story_dict(s, idx, ws.user.get("stale_days")) for s in stories],
                     "facets": compute_facets(stories, store.config),
                     "facet_limits": store.config.facet_limits,

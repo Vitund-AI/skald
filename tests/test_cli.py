@@ -39,8 +39,10 @@ class TestInit(SkaldTestCase):
         code, out, err = self.run_cli("init", "--columns", "lifecycle", cwd=repo)
         self.assertEqual(code, 0, err)
         cfg = ProjectConfig.load(repo / ".skald" / "config.json")
-        self.assertEqual([c.key for c in cfg.columns], ["idea", "plan", "ready", "in_progress", "review", "done"])
-        self.assertEqual([c.role for c in cfg.columns][:3], ["backlog", "backlog", "ready"])
+        self.assertEqual([c.key for c in cfg.columns], ["icebox", "idea", "plan", "ready", "in_progress", "review", "done"])
+        self.assertEqual([c.role for c in cfg.columns][:4], ["backlog", "backlog", "backlog", "ready"])
+        # icebox leads the board, but new stories default to idea via default_status, not the leftmost column.
+        self.assertEqual(cfg.default_key, "idea")
         code, out, err = self.run_cli("init", "--columns", "lifecycle", cwd=repo)
         self.assertIn("columns unchanged", out)
         # next never picks from idea or plan; moving plan to ready with an open question warns.

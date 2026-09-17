@@ -68,7 +68,7 @@ Create .skald/ here (or register an existing one).
 | Argument | Description |
 | --- | --- |
 | `--name NAME` | project name (default: the directory name) |
-| `--columns COLUMNS` | column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (idea, plan, ready, in_progress, review, done) One of: `default`, `lifecycle`. |
+| `--columns COLUMNS` | column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (icebox, idea, plan, ready, in_progress, review, done) One of: `default`, `lifecycle`. |
 
 ## ls
 
