@@ -772,3 +772,23 @@ what it permits), and `release.sh` forwards it so the whole flow has one
 escape hatch. It is a plain string in the script, not a bash array, because an
 empty array expanded under `set -u` is an unbound-variable error on the bash
 3.2 that ships with macOS.
+
+### D72. Parking work is a column (Icebox), and a `default_status` key frees the leftmost slot for it
+Work decided against for now but not dropped is a flow state, not a facet or a
+priority: a card is either in play or parked, and that mutual exclusivity is
+the mark of a status, so it belongs in a column. The `lifecycle` preset gains
+an `icebox` (`backlog` role), which for free stays out of `next`/ready and out
+of releases (both key off roles — ready and terminal) and is revived by a drag.
+It is kept distinct from won't-do (`closed`), which is a final decision that
+lands in the changelog; icebox is temporary. Placing it at the *front* of the
+board reads best as cold storage, but "new stories go to the first backlog
+column" would then capture every new card in the icebox. Rather than special-
+case the icebox, the fix is a general `default_status` config key naming the
+column new stories default to; the preset sets it to `idea`. That keeps column
+order a pure display choice, decoupled from where capture happens, and it is
+one validated key threaded through the one place the default is computed
+(`config.default_key`, which both the CLI and the board read). Transitions are
+deliberately not enforced — reviving to idea/plan rather than straight to ready
+is documented guidance, not a rule; enforcing it is parked as its own idea,
+since a transition engine is the enterprise-workflow path this tool avoids
+until users clearly need it.

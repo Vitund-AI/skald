@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The `lifecycle` column preset now leads with an `icebox` column for parking work you've decided against for now but not dropped (that's still won't-do). Being a `backlog` column it never shows in `skald next` or the ready view and is never swept into a release, and reviving it is a drag back into the flow. A new `config.json` key `default_status` names the column new stories go to, so the leading icebox doesn't capture them — the preset sets it to `idea`. The board's New-story form honours it too. (f0e40d)
 - `skald release` can refuse to ship while a story is still tagged for the version. Set `block_release_on_incomplete` to `true` in `config.json` and the release (dry run and real alike) stops, changing nothing, while any story tagged `release:<v>` for the version is not in a done or closed column, naming the stories; `--allow-incomplete` overrides it, and `scripts/release.sh` forwards the same flag. Off by default, so the existing warning is unchanged. (1b3c19)
 
 ## 0.8.1 (2026-09-16)

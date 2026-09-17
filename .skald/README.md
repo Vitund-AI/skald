@@ -1,16 +1,17 @@
-<!-- skald-render 2582e3c68e297dad -->
+<!-- skald-render 6852c22216f0e65f -->
 # skald backlog
 
-**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 0
+**5 open** · Idea 3 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Idea (2)
+## Idea (3)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` `release:0.9.0` |  |  | 0/6 |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `release:0.9.0` `roadmap` |  |  |  |
+| [05e3b1](stories/05e3b1-optional-enforced-guarded-column-transitions-workf.md) | Optional enforced/guarded column transitions (workflow rules) | `roadmap` |  |  |  |
 
 ## Plan (0)
 
@@ -24,11 +25,12 @@ _none_
 
 _none_
 
-## Review (1)
+## Review (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [1b3c19](stories/1b3c19-refuse-a-release-when-stories-tagged-for-the-versi.md) | Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override | `area:release` | agent |  |  |
+| [f0e40d](stories/f0e40d-icebox-column-in-the-lifecycle-preset-plus-a-confi.md) | Icebox column in the lifecycle preset, plus a configurable default_status for new stories | `roadmap` | agent |  |  |
 
 <details><summary><strong>Done (0)</strong></summary>
 

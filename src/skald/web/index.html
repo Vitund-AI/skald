@@ -388,7 +388,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
     lastWrite: 0, help: false, helpCli: null, features: null, settingsOpen: false, repo_slug: null,
     updateCheckedFor: undefined, updateLatest: null,
-    sel: { column: null, ids: new Set() }, dragBatch: [], dragFromLane: null, editTags: [], suppressClick: false, locked: false,
+    sel: { column: null, ids: new Set() }, dragBatch: [], dragFromLane: null, editTags: [], defaultStatus: null, suppressClick: false, locked: false,
     collapsed: new Set(), releasesView: false,
   };
   const board = $('board'), readyView = $('ready-view'), modal = $('modal'), help = $('help');
@@ -1421,7 +1421,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       fillStatusSelect(null);
       state.modal = 'new'; state.loaded = null;
       $('m-id').textContent = 'new story'; $('m-meta').textContent = ''; $('m-heading').textContent = '';
-      $('m-title').value = ''; $('m-status').value = (state.columns.find(c => c.role === 'backlog') || state.columns[0] || {}).key;
+      $('m-title').value = ''; $('m-status').value = state.defaultStatus || (state.columns.find(c => c.role === 'backlog') || state.columns[0] || {}).key;
       state.editTags = []; renderEditTags(); $('m-blockers').value = ''; $('m-assignee').value = '';
       $('m-parent').value = state.newParent || ''; $('m-family').classList.add('hidden');
       $('m-body').value = ''; $('m-deps').classList.add('hidden'); $('m-dirty').textContent = '';
@@ -1744,6 +1744,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       const data = await api('GET', `${P()}/board${state.ref ? '?ref=' + encodeURIComponent(state.ref) : ''}`);
       const prevHead = state.git && state.git.head;
       state.columns = data.columns; state.stories = data.stories; state.settings = data.settings;
+      state.defaultStatus = data.default_status || null;
       state.identity = data.identity; state.git = data.git; state.version = data.version;
       state.features = data.features || null;
       state.repo_slug = data.repo_slug || null;

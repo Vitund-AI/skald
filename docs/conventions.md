@@ -35,6 +35,30 @@ time; `skald status` reports the busy lanes, `skald next` passes over a
 story whose lane is taken, and the board turns a full lane's count red. See
 [Stories](stories.md#lanes) for the worked example.
 
+## Parking work you're not doing now
+
+Work you've decided against *for now* — but that isn't a won't-do — is a flow
+state, not a facet or a priority, so it belongs in a column, not a tag. Don't
+reach for `area:deferred` or `priority:on-hold`: "is this in play?" isn't the
+question those answer, and a card is either parked or in the flow (mutually
+exclusive), which is the signature of a status.
+
+The convention is an **Icebox** column with the `backlog` role — the `lifecycle`
+preset ships one at the front of the board. Because it's `backlog`, parked work
+never shows up in `skald next` or the ready view and is never swept into a
+release, and reviving it is a drag back into the flow. Keep it distinct from
+**won't-do** (a `closed` column): won't-do is a final, recorded decision that
+lands in the changelog's "Not doing"; Icebox is temporary and comes back.
+
+Since the Icebox leads the board, the preset also sets `default_status` to
+`idea`, so new stories are captured in Idea rather than the leftmost column
+(add your own to any config where the first column isn't the capture point).
+
+One guideline, not enforced: **revive to Idea or Plan, not straight to Ready.**
+A plan parked for a while may be stale; sending it back through grooming is the
+chance to re-validate it before anyone executes it. Skald won't stop you moving
+it twice — it just doesn't make the risky jump the easy one.
+
 ## Inventing your own
 
 A new `key:value` tag is a facet the moment you write it: `skald facets`
