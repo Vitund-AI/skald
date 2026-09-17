@@ -483,6 +483,7 @@ def build_parser() -> argparse.ArgumentParser:
     rl.add_argument("--date", help="YYYY-MM-DD (default: today)")
     rl.add_argument("--dry-run", action="store_true", help="print the section and the stories; change nothing")
     rl.add_argument("--no-commit", action="store_true", help="write and archive but do not commit")
+    rl.add_argument("--allow-incomplete", action="store_true", help="release even if stories tagged for this version are not done (overrides config.json block_release_on_incomplete)")
     dc = sub.add_parser("docs", help="write the CLI reference (docs/cli.md) from the parser")
     dc.add_argument("--out", metavar="PATH", help="default: docs/cli.md at the repository root")
     dc.add_argument("--stdout", action="store_true", help="print instead of writing")
@@ -1588,6 +1589,13 @@ def cmd_release(ws: Workspace, store: Store, args) -> int:
     repo = _repo_of(store)
     plan = rel.plan(store, args.version, args.date)
     _warn(plan.warnings)
+    if plan.blocking and store.config.block_release_on_incomplete and not args.allow_incomplete:
+        ids = ", ".join(s.id for s in plan.blocking)
+        n = len(plan.blocking)
+        raise SkaldError(
+            f"{n} stor{'y' if n == 1 else 'ies'} tagged release:{plan.version} not done ({ids}); "
+            f"finish them, drop the release: tag, or pass --allow-incomplete "
+            f"(block_release_on_incomplete is set in config.json)")
     if args.dry_run:
         sys.stdout.write(plan.section())
         print(f"\nwould archive {len(plan.stories)} stor{'y' if len(plan.stories) == 1 else 'ies'} with released: {plan.version}")

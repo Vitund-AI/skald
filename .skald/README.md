@@ -1,7 +1,7 @@
-<!-- skald-render ffd362d9fe770622 -->
+<!-- skald-render 2582e3c68e297dad -->
 # skald backlog
 
-**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**3 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -24,9 +24,11 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [1b3c19](stories/1b3c19-refuse-a-release-when-stories-tagged-for-the-versi.md) | Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override | `area:release` | agent |  |  |
 
 <details><summary><strong>Done (0)</strong></summary>
 

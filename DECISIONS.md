@@ -753,3 +753,22 @@ path re-reads the story after each write so the board and the open dialog stay
 in step. No API changed — `PATCH {tags}` already replaced the list — so this is
 entirely client-side. A value typed into the add row but not yet added is
 folded in on Save, so a half-finished tag is never silently dropped.
+
+### D71. A release can be gated on its `release:<v>` stories being done, opt-in in project config
+The `release:<v>` facet already warned about stories tagged for the version
+that were not done — the ones that would miss the release. Turning that
+warning into a refusal is opt-in through `block_release_on_incomplete` in the
+project's `config.json`, not a machine-local feature flag: a release policy
+should be uniform for everyone who ships the project, so it belongs in the
+committed, shared config, next to `facet_limits`. Default off keeps the
+existing warn-only behaviour for projects that have not asked for the gate.
+The gate reuses the exact set the warning already computes (`plan.blocking`),
+so warning and refusal never disagree, and it fires on `--dry-run` as well as
+the real run: `scripts/release.sh` previews with a dry run before it bumps the
+version, and a gate that only tripped on the real run would let the script
+change the version file first. The override is `--allow-incomplete` (chosen
+over a longer `--with-incomplete-stories` for concision while still reading as
+what it permits), and `release.sh` forwards it so the whole flow has one
+escape hatch. It is a plain string in the script, not a bash array, because an
+empty array expanded under `set -u` is an unbound-variable error on the bash
+3.2 that ships with macOS.

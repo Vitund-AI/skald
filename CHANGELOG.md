@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `skald release` can refuse to ship while a story is still tagged for the version. Set `block_release_on_incomplete` to `true` in `config.json` and the release (dry run and real alike) stops, changing nothing, while any story tagged `release:<v>` for the version is not in a done or closed column, naming the stories; `--allow-incomplete` overrides it, and `scripts/release.sh` forwards the same flag. Off by default, so the existing warning is unchanged. (1b3c19)
+
 ## 0.8.1 (2026-09-16)
 
 - The background board server notices when a newer `skald-kanban` has been installed on disk while it kept running the old code: `GET /api/health` now reports `installed` and `stale`, the board shows a dismissible banner, and `skald server status` and `skald doctor` say so. A new `skald server restart` stops and restarts it in place, reusing the running server's host and port, to pick up the upgrade. The check compares the installed version against the running one and only warns when the installed one is strictly newer, so an editable install whose source has moved ahead never false-positives. (165040)
