@@ -762,6 +762,10 @@ JSON-RPC 2.0 with `initialize`, `notifications/initialized`, `ping`,
 capability is offered. Each tool mirrors a CLI command, takes an optional
 `project`, and returns JSON text. Skald errors are returned as tool results
 with `isError: true`, never as JSON-RPC errors, so the agent sees the message.
+Any MCP client attaches by launching `skald mcp` over stdio (Claude Code via
+`claude mcp add skald -- skald mcp`, others via their `mcpServers` config); the
+default project is the one containing the server's working directory. See
+`docs/working-with-agents.md`.
 
 ## 11. Future
 

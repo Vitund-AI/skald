@@ -133,8 +133,9 @@ git add .skald src && git commit --trailer "Skald-Story: a3f9c2"
 For Claude Code, `skald hooks claude --install --as claude` adds a
 SessionStart hook that runs `skald context` so every session begins
 oriented without reading the whole backlog, a Stop hook that refuses to end
-with a broken backlog, and a skill that loads the contract. Agents without a
-shell can use `skald mcp`.
+with a broken backlog, and a skill that loads the contract. Any agent that
+speaks MCP — Cursor, Windsurf, Zed, or Claude Code itself — attaches to
+`skald mcp` over stdio; see [Working with agents](docs/working-with-agents.md#mcp-for-agents-without-a-shell).
 
 ## Documentation
 
