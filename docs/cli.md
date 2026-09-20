@@ -27,6 +27,7 @@ error or not found, 2 corrupt story or configuration.
 - [`note`](#note) append a note to a story
 - [`answer`](#answer) close a story's open question with a decision note that names it; nothing else closes one
 - [`import`](#import) bring a folder of Markdown records into the backlog, driven by a mapping file
+- [`export`](#export) write the whole backlog as one flat file for analytics or migration
 - [`rm`](#rm) delete a story
 - [`log`](#log) git history of a story
 - [`archive`](#archive) move done and closed stories to .skald/archive/
@@ -310,6 +311,20 @@ Bring a folder of Markdown records into the backlog, driven by a mapping file.
 | `--rm` | delete each source file after importing it, so one commit carries removal and creation |
 | `--dry-run` | print what would be written, per file, and write nothing |
 | `--as AUTHOR` | author label for the extracted notes (default: import) |
+
+## export
+
+```
+skald export [--format {json,jsonl,csv}] [--archived] [--out PATH]
+```
+
+Write the whole backlog as one flat file for analytics or migration.
+
+| Argument | Description |
+| --- | --- |
+| `--format FORMAT` | json array, one JSON object per line (jsonl), or csv with a column per facet One of: `json`, `jsonl`, `csv`. |
+| `--archived` | include archived (shipped and dropped) stories |
+| `--out PATH` | write to PATH (default: stdout; - is also stdout) |
 
 ## rm
 

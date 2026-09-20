@@ -55,6 +55,9 @@ the branch and shows up in pull request diffs.
   and carry `Skald-Story` trailers. `diff`, `activity`, and `changelog` read
   history back; `render` commits a snapshot GitHub shows in place; `release`
   turns the done column into a changelog section and a versioned archive.
+- **Never locked in.** The backlog is plain Markdown in your repo, and
+  `skald export --format json|jsonl|csv` dumps the whole thing as one flat
+  file for analytics in a spreadsheet or a migration to another tracker.
 - **More than one repository.** A machine-local index gives you one board
   and `project:id` dependencies across every repository you use Skald in.
 - **Nothing to run.** Python standard library only, Python 3.10 or newer,
@@ -130,8 +133,9 @@ git add .skald src && git commit --trailer "Skald-Story: a3f9c2"
 For Claude Code, `skald hooks claude --install --as claude` adds a
 SessionStart hook that runs `skald context` so every session begins
 oriented without reading the whole backlog, a Stop hook that refuses to end
-with a broken backlog, and a skill that loads the contract. Agents without a
-shell can use `skald mcp`.
+with a broken backlog, and a skill that loads the contract. Any agent that
+speaks MCP — Cursor, Windsurf, Zed, or Claude Code itself — attaches to
+`skald mcp` over stdio; see [Working with agents](docs/working-with-agents.md#mcp-for-agents-without-a-shell).
 
 ## Documentation
 

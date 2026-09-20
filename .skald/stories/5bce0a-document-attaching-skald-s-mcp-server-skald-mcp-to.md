@@ -1,11 +1,12 @@
 ---
 title: "Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients"
-status: "idea"
-rank: 40
+status: "review"
+rank: 50
 tags: ["area:docs", "epic:integrations", "roadmap"]
 blocked_by: []
+assignee: "agent"
 created_at: "2026-09-20T00:58:33Z"
-updated_at: "2026-09-20T00:58:33Z"
+updated_at: "2026-09-20T02:32:28Z"
 ---
 ## Requirements
 

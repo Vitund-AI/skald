@@ -804,3 +804,19 @@ existing config changes; true opts a column in (the lifecycle icebox) and false
 could pin a noisy `done` column open. It sits beside `limit` as another
 per-column display attribute, and the board reads the effective value as
 `col.collapsible ?? isTerminalRole(col.role)`.
+
+### D74. `export` emits one flat record per story; csv flattens, json keeps structure
+`skald export` exists so a backlog can leave for a spreadsheet or another
+tracker, the inverse of `import`. The stories are already plain Markdown in git
+and `ls --json` emits per-story JSON, so export adds the thing those don't: one
+*stable, documented* flat record per story, decoupled from the internal
+`story_dict` shape, so downstream tooling can rely on the field set. Facets are
+kept as a `key -> [values]` map in json/jsonl (structured, faithful to
+multi-value keys) and flattened in csv to one `facet.<key>` column per key
+present with values joined by `|`, because a spreadsheet wants columns, not
+nested objects — the csv is a projection of the json record, not a different
+dataset. Three formats cover the audiences: `json` for a program, `jsonl` for
+streaming into line-oriented tools (`jq`, load jobs) and appending, `csv` for
+Excel. It reuses `load_all` (already sorted, so output is deterministic) and
+`story_dict`, stays read-only, and writes the "wrote N stories" line to stderr
+so a redirected file holds only the data.

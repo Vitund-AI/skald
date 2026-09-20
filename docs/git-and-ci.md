@@ -92,6 +92,29 @@ the file to view on your phone, so you can see the board — columns, epic
 progress, card state — without the board server or a checkout in front of
 you.
 
+## Exporting the backlog
+
+The stories are already plain Markdown in git, so you are never locked in —
+but for analytics or a migration to another tracker you often want the whole
+backlog as one flat file. `skald export` writes it, read-only:
+
+```sh
+skald export --format json                  # an array of every story, to stdout
+skald export --format jsonl --out bl.jsonl  # one JSON object per line (streams into jq)
+skald export --format csv --archived --out backlog.csv   # a spreadsheet, shipped work included
+```
+
+Each story becomes one record with a stable field set — `id`, `title`,
+`status`, `role`, `rank`, `assignee`, `parent`, `tags`, `blocked_by`, the
+derived `blocked`/`stale`/`open_questions` flags, checklist counts, the
+timestamps, `released`, and `archived`. `json` is an array and `jsonl` is one
+object per line (with the facets grouped under a `facets` key); `csv` flattens
+for a spreadsheet — lists join with `|`, and each facet key present becomes its
+own `facet.<key>` column, so a product manager can pivot on `facet.release` or
+`facet.area` in Excel. `--archived` adds shipped and dropped work; `--out`
+writes a file (otherwise stdout), and the confirmation line goes to stderr so a
+redirected file stays clean.
+
 ## Hooks
 
 ```sh

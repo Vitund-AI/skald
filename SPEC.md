@@ -453,6 +453,7 @@ story or configuration. Commands that print stories take `--json`.
 | `new` accepts `--parent ID [--no-inherit]`; `set` accepts `parent=ID` and `parent=-`; `ls --parent ID` lists children; `ls` marks parents `(children done/total)` and children `(child of ID)`. |
 | `answer <id> "text"\|- [--as N] [--question N] [--all] [--withdraw]` | Writes a decision whose leading lines name the questions it closes (`Answers Q3 [author] stamp · first line`); prints which it closed and how many remain. `--question` takes the stable number (3 or Q3); with one question open it is the default, several open refuse, none open refuse (`note --kind decision` records a choice). `--all` names every open question; `--withdraw` writes `Withdraws` for a question dropped rather than answered. |
 | `import PATH... [--map FILE] [--status C] [--tag T] [--rewrite-links ROOT] [--rm] [--dry-run] [--as N]` | Mapping-driven import of Markdown records (`importer.py`): the mapping is validated first (regexes, `$N` against group counts, subjects, columns, rule shapes); title from the H1, body kept byte for byte apart from stripped lines and extracted note blocks, notes backdated with their original stamps, status and tags from rules (`on` is `filename`, `relpath`, `path`, or `body`; `--tag` adds fixed tags), `created_at` from a regex else the commit that added the file else now; links rewritten across `ROOT` and inside the new stories, resolved against the referencing file's ancestors up to `ROOT` and the project root; sources removed with `--rm`; any problem aborts before anything is written. No MCP tool. See `docs/importing.md`. |
+| `export [--format json\|jsonl\|csv] [--archived] [--out PATH]` | The whole project's backlog as one flat file, for analytics or migration; read-only. One stable record per story in `load_all` order: `id`, `project`, `title`, `status`, `role`, `rank`, `assignee`, `parent`, `tags`, `facets` (key → values), `blocked_by`, `blocked`, `stale`, `open_questions`, `checklist_done`/`_total`, `created_at`, `updated_at`, `released`, `archived`. `json` is an array, `jsonl` one object per line; `csv` flattens — lists joined by `\|`, one `facet.<key>` column per facet key present (sorted). `--archived` includes archived stories. `--out` writes a file (default stdout; the "wrote" note goes to stderr). No MCP tool. |
 | `audit <id> [--notes] [--no-note] [--as N] [--json]` | Extracts paths, `path:line` references, and commit hashes from the prelude (plus notes with `--notes`); checks existence, line count, and `git cat-file -e`; lists referenced files changed since the newest `audit` note (else `created_at`); appends an `audit` note with the summary unless `--no-note`. `audit.py`. |
 | `rm <id> [--force]` | Delete a story file. Refuses while other stories depend on it or are its children; with `--force`, removes the id from their `blocked_by` and clears their `parent`, printing each change, so no dangling reference is left. |
 | `log <id>` | `git log --follow` on the file. |
@@ -761,6 +762,10 @@ JSON-RPC 2.0 with `initialize`, `notifications/initialized`, `ping`,
 capability is offered. Each tool mirrors a CLI command, takes an optional
 `project`, and returns JSON text. Skald errors are returned as tool results
 with `isError: true`, never as JSON-RPC errors, so the agent sees the message.
+Any MCP client attaches by launching `skald mcp` over stdio (Claude Code via
+`claude mcp add skald -- skald mcp`, others via their `mcpServers` config); the
+default project is the one containing the server's working directory. See
+`docs/working-with-agents.md`.
 
 ## 11. Future
 
