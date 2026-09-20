@@ -1,17 +1,28 @@
-<!-- skald-render 73cdbf8f215b37bf -->
+<!-- skald-render 8a36f883c99851fa -->
 # skald backlog
 
-**6 open** · Idea 3 · Plan 0 · Ready 0 · In progress 0 · Review 3 · Done 0
+**11 open** · Idea 8 · Plan 0 · Ready 0 · In progress 0 · Review 3 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Idea (3)
+## Epics
+
+| Epic | Progress | Done | Open |
+| --- | --- | ---: | ---: |
+| `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 2 |
+
+## Idea (8)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` `release:0.9.0` |  |  | 0/6 |
 | [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `release:0.9.0` `roadmap` |  |  |  |
 | [05e3b1](stories/05e3b1-optional-enforced-guarded-column-transitions-workf.md) | Optional enforced/guarded column transitions (workflow rules) | `roadmap` |  |  |  |
+| [5bce0a](stories/5bce0a-document-attaching-skald-s-mcp-server-skald-mcp-to.md) | Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients | `area:docs` `epic:integrations` `roadmap` |  |  |  |
+| [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
+| [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | Declare the v1 schema-freeze guarantee and a format-migration contract (skald migrate) | `area:docs` `roadmap` |  |  |  |
+| [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `roadmap` |  |  |  |
+| [164b96](stories/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` |  |  |  |
 
 ## Plan (0)
 
