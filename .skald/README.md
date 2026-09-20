@@ -1,7 +1,7 @@
-<!-- skald-render 8a36f883c99851fa -->
+<!-- skald-render 4ba175792d94ed08 -->
 # skald backlog
 
-**11 open** · Idea 8 · Plan 0 · Ready 0 · In progress 0 · Review 3 · Done 0
+**11 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 4 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -11,7 +11,7 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 | --- | --- | ---: | ---: |
 | `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 2 |
 
-## Idea (8)
+## Idea (7)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -22,7 +22,6 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
 | [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | Declare the v1 schema-freeze guarantee and a format-migration contract (skald migrate) | `area:docs` `roadmap` |  |  |  |
 | [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `roadmap` |  |  |  |
-| [164b96](stories/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` |  |  |  |
 
 ## Plan (0)
 
@@ -36,13 +35,14 @@ _none_
 
 _none_
 
-## Review (3)
+## Review (4)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [1b3c19](stories/1b3c19-refuse-a-release-when-stories-tagged-for-the-versi.md) | Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override | `area:release` | agent |  |  |
 | [f0e40d](stories/f0e40d-icebox-column-in-the-lifecycle-preset-plus-a-confi.md) | Icebox column in the lifecycle preset, plus a configurable default_status for new stories | `roadmap` | agent |  |  |
 | [2565dc](stories/2565dc-make-columns-collapsible-via-a-config-flag-ship-th.md) | Make columns collapsible via a config flag; ship the lifecycle icebox collapsible | `roadmap` | agent |  |  |
+| [164b96](stories/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` | agent |  |  |
 
 <details><summary><strong>Done (0)</strong></summary>
 

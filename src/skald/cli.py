@@ -359,6 +359,11 @@ def build_parser() -> argparse.ArgumentParser:
     imp.add_argument("--dry-run", action="store_true", help="print what would be written, per file, and write nothing")
     imp.add_argument("--as", dest="author", help="author label for the extracted notes (default: import)")
 
+    ex = sub.add_parser("export", help="write the whole backlog as one flat file for analytics or migration")
+    ex.add_argument("--format", choices=["json", "jsonl", "csv"], default="json", help="json array, one JSON object per line (jsonl), or csv with a column per facet")
+    ex.add_argument("--archived", action="store_true", help="include archived (shipped and dropped) stories")
+    ex.add_argument("--out", metavar="PATH", help="write to PATH (default: stdout; - is also stdout)")
+
     rm = sub.add_parser("rm", help="delete a story")
     rm.add_argument("id", help="story id or unique prefix")
     rm.add_argument("--force", action="store_true", help="delete even if other stories depend on it or are its children; their references are cleared")
@@ -627,6 +632,96 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
 def _elsewhere(ws: Workspace, store: Store) -> dict:
     """Claims on other branches and in other checkouts' working trees (see Store.claims_elsewhere)."""
     return store.claims_elsewhere(checkouts=ws.other_checkouts(store))
+
+
+# The columns a CSV export always carries, before one `facet.<key>` column per facet key present.
+EXPORT_CSV_CORE = [
+    "id", "project", "title", "status", "role", "rank", "assignee", "parent",
+    "blocked", "stale", "open_questions", "checklist_done", "checklist_total",
+    "created_at", "updated_at", "released", "archived", "tags", "blocked_by",
+]
+
+
+def export_records(store: Store, stories, idx, stale_days) -> list[dict]:
+    """One flat, stable record per story: core fields, facets grouped by key, and the cheap derived flags."""
+    from .store import split_facet
+
+    records = []
+    for s in stories:
+        d = store.story_dict(s, idx, stale_days)
+        facets: dict[str, list] = {}
+        for tag in s.tags:
+            fv = split_facet(tag)
+            if fv:
+                facets.setdefault(fv[0], []).append(fv[1])
+        records.append({
+            "id": s.id,
+            "project": store.name,
+            "title": d.get("title", ""),
+            "status": s.status,
+            "role": store.config.role(s.status),
+            "rank": s.rank,
+            "assignee": d.get("assignee", ""),
+            "parent": s.parent,
+            "tags": list(s.tags),
+            "facets": facets,
+            "blocked_by": list(s.blocked_by),
+            "blocked": bool(d.get("blocked")),
+            "stale": bool(d.get("stale")),
+            "open_questions": d.get("questions", {}).get("open", 0),
+            "checklist_done": d.get("checklist", {}).get("done", 0),
+            "checklist_total": d.get("checklist", {}).get("total", 0),
+            "created_at": s.created_at,
+            "updated_at": s.updated_at,
+            "released": s.fields.get("released", "") or "",
+            "archived": s.archived,
+        })
+    return records
+
+
+def export_text(records: list[dict], fmt: str) -> str:
+    """Serialise the flat records. json: an array; jsonl: one object per line; csv: flattened,
+    with lists joined by '|' and a `facet.<key>` column per facet key present, keys sorted."""
+    if fmt == "json":
+        return json.dumps(records, indent=2) + "\n"
+    if fmt == "jsonl":
+        return "".join(json.dumps(r) + "\n" for r in records)
+    import csv
+    import io
+
+    keys = sorted({k for r in records for k in r["facets"]})
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(EXPORT_CSV_CORE + [f"facet.{k}" for k in keys])
+    for r in records:
+        row = []
+        for col in EXPORT_CSV_CORE:
+            v = r[col]
+            if isinstance(v, bool):
+                v = "true" if v else "false"
+            elif isinstance(v, list):
+                v = "|".join(v)
+            row.append(v)
+        row += ["|".join(r["facets"].get(k, [])) for k in keys]
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+def cmd_export(ws: Workspace, store: Store, args) -> int:
+    stories, warnings = store.load_all(include_archived=args.archived)
+    _warn(warnings)
+    idx = {s.id: s for s in stories}
+    records = export_records(store, stories, idx, ws.user.get("stale_days"))
+    text = export_text(records, args.format)
+    out = getattr(args, "out", None)
+    if out and out != "-":
+        from .util import atomic_write
+
+        atomic_write(Path(out), text)
+        print(f"wrote {len(records)} stor{'y' if len(records) == 1 else 'ies'} to {out}", file=sys.stderr)
+    else:
+        sys.stdout.write(text)
+    return 0
 
 
 def cmd_next(ws: Workspace, args, store: Optional[Store]) -> int:
@@ -2121,7 +2216,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
-    "commits", "diff", "activity", "digest", "graph", "release", "audit", "import",
+    "commits", "diff", "activity", "digest", "graph", "release", "audit", "import", "export",
 }
 
 
@@ -2202,6 +2297,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_audit(ws, store, args)
     if args.command == "import":
         return cmd_import(ws, store, args)
+    if args.command == "export":
+        return cmd_export(ws, store, args)
     if args.command == "next":
         return cmd_next(ws, args, store)
     if args.command == "show":

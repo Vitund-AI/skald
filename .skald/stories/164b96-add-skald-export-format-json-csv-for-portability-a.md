@@ -1,11 +1,12 @@
 ---
 title: "Add skald export --format json|csv for portability and analytics"
-status: "idea"
-rank: 80
+status: "review"
+rank: 40
 tags: ["roadmap"]
 blocked_by: []
+assignee: "agent"
 created_at: "2026-09-20T00:59:14Z"
-updated_at: "2026-09-20T00:59:14Z"
+updated_at: "2026-09-20T01:19:04Z"
 ---
 ## Requirements
 

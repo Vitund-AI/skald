@@ -55,6 +55,9 @@ the branch and shows up in pull request diffs.
   and carry `Skald-Story` trailers. `diff`, `activity`, and `changelog` read
   history back; `render` commits a snapshot GitHub shows in place; `release`
   turns the done column into a changelog section and a versioned archive.
+- **Never locked in.** The backlog is plain Markdown in your repo, and
+  `skald export --format json|jsonl|csv` dumps the whole thing as one flat
+  file for analytics in a spreadsheet or a migration to another tracker.
 - **More than one repository.** A machine-local index gives you one board
   and `project:id` dependencies across every repository you use Skald in.
 - **Nothing to run.** Python standard library only, Python 3.10 or newer,
