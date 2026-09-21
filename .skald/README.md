@@ -1,7 +1,7 @@
-<!-- skald-render 07058e5302793c67 -->
+<!-- skald-render ba5c623370f60d5f -->
 # skald backlog
 
-**11 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 5 · Done 0
+**12 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 6 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -34,7 +34,7 @@ _none_
 
 _none_
 
-## Review (5)
+## Review (6)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -43,6 +43,7 @@ _none_
 | [2565dc](stories/2565dc-make-columns-collapsible-via-a-config-flag-ship-th.md) | Make columns collapsible via a config flag; ship the lifecycle icebox collapsible | `roadmap` | agent |  |  |
 | [164b96](stories/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` | agent |  |  |
 | [5bce0a](stories/5bce0a-document-attaching-skald-s-mcp-server-skald-mcp-to.md) | Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients | `area:docs` `epic:integrations` `roadmap` | agent |  |  |
+| [bf771b](stories/bf771b-board-reset-the-card-modal-scroll-to-the-top-when.md) | Board: reset the card modal scroll to the top when a story is opened | `area:board` | claude |  |  |
 
 <details><summary><strong>Done (0)</strong></summary>
 

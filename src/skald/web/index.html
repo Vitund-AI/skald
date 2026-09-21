@@ -1418,6 +1418,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
 
   async function openModal(id) {
     if (state.help) hideHelp();
+    const prevId = state.modal;
     if (id === null) {
       fillStatusSelect(null);
       state.modal = 'new'; state.loaded = null;
@@ -1432,6 +1433,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       ['m-delete', 'm-cancel', 'tab-history', 'm-edit-btn'].forEach(i => $(i).classList.add('hidden'));
       state.editing = true;
       showModal(); $('m-title').focus();
+      if (id !== prevId) modal.firstElementChild.scrollTop = 0;
       return;
     }
     try {
@@ -1465,6 +1467,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       setEditing(false);
       setStoryHash(s.id);
       if (!modal.classList.contains('flex')) showModal();
+      if (id !== prevId) modal.firstElementChild.scrollTop = 0;
     } catch (err) { toast(err.message, 'error'); }
   }
   async function loadHistory() {
