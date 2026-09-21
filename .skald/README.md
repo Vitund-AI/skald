@@ -1,7 +1,7 @@
-<!-- skald-render 07058e5302793c67 -->
+<!-- skald-render c4f4b32a2ba171ac -->
 # skald backlog
 
-**11 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 5 · Done 0
+**12 open** · Idea 6 · Plan 0 · Ready 1 · In progress 0 · Review 5 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -26,9 +26,11 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 _none_
 
-## Ready (0)
+## Ready (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [bf771b](stories/bf771b-board-reset-the-card-modal-scroll-to-the-top-when.md) | Board: reset the card modal scroll to the top when a story is opened | `area:board` |  |  |  |
 
 ## In progress (0)
 
