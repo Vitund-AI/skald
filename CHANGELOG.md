@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The card detail modal now opens scrolled to the top. Opening a story after scrolling down in a previous one no longer inherits the old scroll position; the reset keys on the story changing, so saving or adding a note to the open story keeps your place. (bf771b)
 - Documented attaching `skald mcp` to any MCP client, not just Claude Code: the standard `mcpServers` config, Cursor's `.cursor/mcp.json`, the `PATH`/`uvx` and default-project gotchas, and pointing the client's rules at `.skald/AGENTS.md`. The full tool list in the docs now matches the server. (5bce0a)
 - `skald export --format json|jsonl|csv [--archived] [--out PATH]` dumps the whole backlog as one flat file for analytics or a migration to another tracker (the inverse of `skald import`). One stable record per story — core fields, facets grouped by key, and the derived blocked/stale/open-question flags. `json` is an array, `jsonl` one object per line (streams into `jq`), and `csv` flattens with a `facet.<key>` column per facet so a PM can pivot in a spreadsheet. Read-only, standard library. (164b96)
 - Board columns can opt into the collapse-to-a-strip control with a `collapsible` boolean in their `config.json` entry, not just `done`/`closed` columns. The `lifecycle` preset's `icebox` sets it, so parked work folds away the same as done work; a `done` column could equally pin itself open. (2565dc)
