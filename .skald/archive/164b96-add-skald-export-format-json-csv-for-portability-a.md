@@ -5,8 +5,9 @@ rank: 50
 tags: ["roadmap"]
 blocked_by: []
 assignee: "agent"
+released: "0.9.0"
 created_at: "2026-09-20T00:59:14Z"
-updated_at: "2026-09-29T17:20:51Z"
+updated_at: "2026-09-29T18:20:30Z"
 ---
 ## Requirements
 

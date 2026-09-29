@@ -5,8 +5,9 @@ rank: 20
 tags: ["area:config", "release:0.9.0"]
 blocked_by: []
 assignee: "claude"
+released: "0.9.0"
 created_at: "2026-09-29T01:17:09Z"
-updated_at: "2026-09-29T17:20:51Z"
+updated_at: "2026-09-29T18:20:30Z"
 ---
 ## Requirements
 

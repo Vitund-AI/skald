@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 (2026-09-29)
 
 - A new example, [`examples/github-issues`](examples/github-issues/), pulls a repository's GitHub issues into the backlog as stories tagged `gh:<number>`, with labels as tags and comments as dated notes. It is safe to re-run: issues already imported are skipped (archived stories included), and it reports issues and stories that have drifted apart instead of overwriting either side. It only reads from GitHub. (b56d9e)
 - A new `facets.exclude` list in `config.json` keeps chosen tag keys out of the facet filters, swimlanes, the rendered board, and `skald facets`, so machine tags such as `gh:12` stay searchable tags without cluttering the board. Excluding a key never changes what `release:` or `lane:` tags do. (668824)
@@ -10,6 +10,17 @@
 - Board columns can opt into the collapse-to-a-strip control with a `collapsible` boolean in their `config.json` entry, not just `done`/`closed` columns. The `lifecycle` preset's `icebox` sets it, so parked work folds away the same as done work; a `done` column could equally pin itself open. (2565dc)
 - The `lifecycle` column preset now leads with an `icebox` column for parking work you've decided against for now but not dropped (that's still won't-do). Being a `backlog` column it never shows in `skald next` or the ready view and is never swept into a release, and reviving it is a drag back into the flow. A new `config.json` key `default_status` names the column new stories go to, so the leading icebox doesn't capture them — the preset sets it to `idea`. The board's New-story form honours it too. (f0e40d)
 - `skald release` can refuse to ship while a story is still tagged for the version. Set `block_release_on_incomplete` to `true` in `config.json` and the release (dry run and real alike) stops, changing nothing, while any story tagged `release:<v>` for the version is not in a done or closed column, naming the stories; `--allow-incomplete` overrides it, and `scripts/release.sh` forwards the same flag. Off by default, so the existing warning is unchanged. (1b3c19)
+
+### Stories
+
+- Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override (1b3c19)
+- A new `facets.exclude` list in `config.json` keeps chosen tag keys out of the facet filters, swimlanes, the rendered board, and `skald facets`, so machine tags such as `gh:12` stay searchable tags without cluttering the board. Excluding a key never changes what `release:` or `lane:` tags do. (668824)
+- Icebox column in the lifecycle preset, plus a configurable default_status for new stories (f0e40d)
+- Make columns collapsible via a config flag; ship the lifecycle icebox collapsible (2565dc)
+- Add skald export --format json|csv for portability and analytics (164b96)
+- Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients (5bce0a)
+- Board: reset the card modal scroll to the top when a story is opened (bf771b)
+- A new example, `examples/github-issues`, pulls a repository's GitHub issues into the backlog as stories tagged `gh:<number>`, with labels as tags and comments as notes. It is safe to re-run: issues already imported are skipped, and it reports issues and stories that have drifted apart instead of overwriting either side. (b56d9e)
 
 ## 0.8.1 (2026-09-16)
 

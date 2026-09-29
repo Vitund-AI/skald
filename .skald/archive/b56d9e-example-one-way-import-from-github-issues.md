@@ -5,8 +5,9 @@ rank: 80
 tags: ["examples", "release:0.9.0", "roadmap"]
 blocked_by: ["668824"]
 assignee: "claude"
+released: "0.9.0"
 created_at: "2026-09-12T20:39:49Z"
-updated_at: "2026-09-29T17:20:51Z"
+updated_at: "2026-09-29T18:20:30Z"
 ---
 ## Requirements
 

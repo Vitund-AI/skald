@@ -5,8 +5,9 @@ rank: 10
 tags: ["area:release"]
 blocked_by: []
 assignee: "agent"
+released: "0.9.0"
 created_at: "2026-09-17T04:57:46Z"
-updated_at: "2026-09-29T01:09:49Z"
+updated_at: "2026-09-29T18:20:30Z"
 ---
 ## Requirements
 
