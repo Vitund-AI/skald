@@ -820,3 +820,21 @@ streaming into line-oriented tools (`jq`, load jobs) and appending, `csv` for
 Excel. It reuses `load_all` (already sorted, so output is deterministic) and
 `story_dict`, stays read-only, and writes the "wrote N stories" line to stderr
 so a redirected file holds only the data.
+
+### D75. `facets.exclude` hides a tag key from facet views without changing what it means
+Any `key:value` tag is a facet, which is right for categories and wrong for
+identifiers: a `gh:<number>` tag from the GitHub sync example has one value
+per story, so as a facet it is a filter with hundreds of entries and a
+swimlane per issue. `config.json` gains `"facets": {"exclude": [...]}`. The
+exclusion lives in `store.facets()`, the one function every facet *view*
+reads (board filters and swimlanes, the rendered facet and epic sections,
+`skald facets` and `skald epics`), so a key drops out of all of them at once
+and nowhere else: the tag is still stored, shown on the card, and matched by
+`--tag`, and behaviour keyed on tags (`release:` gating, `facet_limits`
+lanes) parses tags itself and is untouched. A key cannot be both excluded and
+a lane, since a WIP limit on something the board won't show is a trap.
+`export` keeps excluded keys because it exports data, not a view. The value
+is an object, not a bare list, so an `include` allowlist can be added later
+without a second top-level key; it is not added now because an allowlist
+silently turns off every new convention key (`effort:`, say) until someone
+remembers to list it, and nobody has needed one.

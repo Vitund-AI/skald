@@ -102,7 +102,10 @@ interface still means plaintext HTTP, so do that deliberately.
   parser as `skald --help`.
 
 Swimlanes by a facet split the board into one lane per value, each with its
-own columns and a progress bar:
+own columns and a progress bar. A key listed under `facets.exclude` in
+`config.json` (an identifier such as `gh:12`) is left out of the facet
+filters and the swimlane choices; see
+[Conventions](conventions.md#keeping-a-key-out-of-the-facet-views).
 
 ![The board split into swimlanes by the area facet: one lane per value (area:docs, area:net, area:platform), each with the full set of columns and a per-lane progress bar](images/swimlanes.png)
 

@@ -170,6 +170,16 @@ the pointer when neither exists.
   stories claimed on other branches or in other checkouts. `lane` is the
   conventional key. Keys match the column-key pattern; values are positive
   integers.
+- `facets` (optional): `{"exclude": ["<tag key>", ...]}`. An excluded key's
+  `key:value` tags stay tags (they are stored, shown on the card, and matched
+  by `--tag`) but are left out of every facet view: `store.facets()` skips
+  them, so the board's facet filters and swimlanes, the rendered facet and
+  epic sections, and `skald facets` / `skald epics` never list them.
+  Exclusion changes no behaviour: `release:` gating and `facet_limits` lanes
+  read tags directly. Keys match the column-key pattern, unknown keys inside
+  `facets` are an error, and a key may not be both excluded and in
+  `facet_limits`. `skald export` still carries excluded keys, since it exports
+  data, not a view. See DECISIONS D75.
 - `block_release_on_incomplete` (optional boolean, default false): when true,
   `skald release <v>` refuses, changing nothing, while any story tagged
   `release:<v>` for the version is not in a terminal column; `--allow-incomplete`
