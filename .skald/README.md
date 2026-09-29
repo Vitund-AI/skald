@@ -1,7 +1,7 @@
-<!-- skald-render 5922e2ba246f0751 -->
+<!-- skald-render ab72cacafd08a249 -->
 # skald backlog
 
-**8 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 6
+**6 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 8
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -21,9 +21,9 @@ flowchart LR
     n_b56d9e --> n_b24938
     n_668824 --> n_b56d9e
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
-    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+    classDef done fill:#d1fae5,stroke:#34d399,color:#475569
     class n_b24938 backlog
-    class n_668824,n_b56d9e active
+    class n_668824,n_b56d9e done
 ```
 
 ## Idea (6)
@@ -35,7 +35,7 @@ flowchart LR
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
 | [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | Declare the v1 schema-freeze guarantee and a format-migration contract (skald migrate) | `area:docs` `roadmap` |  |  |  |
 | [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `roadmap` |  |  |  |
-| [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
+| [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | `b56d9e` |  |
 
 ## Plan (0)
 
@@ -49,23 +49,22 @@ _none_
 
 _none_
 
-## Review (2)
+## Review (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [668824](stories/668824-exclude-tag-keys-from-facets-with-a-facets-exclude.md) | Exclude tag keys from facets with a facets.exclude config key | `area:config` `release:0.9.0` | claude |  | 5/5 |
-| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` | claude | 🔒 `668824` | 6/6 |
+_none_
 
-<details><summary><strong>Done (6)</strong></summary>
+<details><summary><strong>Done (8)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [1b3c19](stories/1b3c19-refuse-a-release-when-stories-tagged-for-the-versi.md) | Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override | `area:release` | agent |  |  |
+| [668824](stories/668824-exclude-tag-keys-from-facets-with-a-facets-exclude.md) | Exclude tag keys from facets with a facets.exclude config key | `area:config` `release:0.9.0` | claude |  | 5/5 |
 | [f0e40d](stories/f0e40d-icebox-column-in-the-lifecycle-preset-plus-a-confi.md) | Icebox column in the lifecycle preset, plus a configurable default_status for new stories | `roadmap` | agent |  |  |
 | [2565dc](stories/2565dc-make-columns-collapsible-via-a-config-flag-ship-th.md) | Make columns collapsible via a config flag; ship the lifecycle icebox collapsible | `roadmap` | agent |  |  |
 | [164b96](stories/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` | agent |  |  |
 | [5bce0a](stories/5bce0a-document-attaching-skald-s-mcp-server-skald-mcp-to.md) | Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients | `area:docs` `epic:integrations` `roadmap` | agent |  |  |
 | [bf771b](stories/bf771b-board-reset-the-card-modal-scroll-to-the-top-when.md) | Board: reset the card modal scroll to the top when a story is opened | `area:board` | claude |  |  |
+| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` | claude | `668824` | 6/6 |
 
 </details>
 

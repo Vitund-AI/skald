@@ -1,12 +1,12 @@
 ---
 title: "Example: re-runnable one-way sync from GitHub issues"
-status: "review"
-rank: 20
+status: "done"
+rank: 80
 tags: ["examples", "release:0.9.0", "roadmap"]
 blocked_by: ["668824"]
 assignee: "claude"
 created_at: "2026-09-12T20:39:49Z"
-updated_at: "2026-09-29T01:23:42Z"
+updated_at: "2026-09-29T17:20:51Z"
 ---
 ## Requirements
 

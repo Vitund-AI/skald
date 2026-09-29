@@ -1,12 +1,12 @@
 ---
 title: "Exclude tag keys from facets with a facets.exclude config key"
-status: "review"
-rank: 10
+status: "done"
+rank: 20
 tags: ["area:config", "release:0.9.0"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-29T01:17:09Z"
-updated_at: "2026-09-29T01:20:25Z"
+updated_at: "2026-09-29T17:20:51Z"
 ---
 ## Requirements
 

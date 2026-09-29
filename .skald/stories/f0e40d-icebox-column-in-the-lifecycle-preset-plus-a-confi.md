@@ -1,12 +1,12 @@
 ---
 title: "Icebox column in the lifecycle preset, plus a configurable default_status for new stories"
 status: "done"
-rank: 20
+rank: 30
 tags: ["roadmap"]
 blocked_by: []
 assignee: "agent"
 created_at: "2026-09-17T06:09:24Z"
-updated_at: "2026-09-29T01:09:49Z"
+updated_at: "2026-09-29T17:20:51Z"
 ---
 ## Requirements
 
