@@ -1,12 +1,12 @@
 ---
 title: "Make columns collapsible via a config flag; ship the lifecycle icebox collapsible"
-status: "review"
+status: "done"
 rank: 30
 tags: ["roadmap"]
 blocked_by: []
 assignee: "agent"
 created_at: "2026-09-17T16:14:34Z"
-updated_at: "2026-09-17T16:15:32Z"
+updated_at: "2026-09-29T01:09:49Z"
 ---
 ## Requirements
 

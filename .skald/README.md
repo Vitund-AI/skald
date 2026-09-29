@@ -1,7 +1,7 @@
-<!-- skald-render ba5c623370f60d5f -->
+<!-- skald-render e349160f6fc86ec5 -->
 # skald backlog
 
-**12 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 6 · Done 0
+**6 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -9,7 +9,7 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 | Epic | Progress | Done | Open |
 | --- | --- | ---: | ---: |
-| `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 2 |
+| `epic:integrations` | ▰▰▰▰▰▱▱▱▱▱ 50% | 1 | 1 |
 
 ## Idea (6)
 
@@ -34,7 +34,11 @@ _none_
 
 _none_
 
-## Review (6)
+## Review (0)
+
+_none_
+
+<details><summary><strong>Done (6)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -44,10 +48,6 @@ _none_
 | [164b96](stories/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` | agent |  |  |
 | [5bce0a](stories/5bce0a-document-attaching-skald-s-mcp-server-skald-mcp-to.md) | Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients | `area:docs` `epic:integrations` `roadmap` | agent |  |  |
 | [bf771b](stories/bf771b-board-reset-the-card-modal-scroll-to-the-top-when.md) | Board: reset the card modal scroll to the top when a story is opened | `area:board` | claude |  |  |
-
-<details><summary><strong>Done (0)</strong></summary>
-
-_none_
 
 </details>
 

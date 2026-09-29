@@ -1,12 +1,12 @@
 ---
 title: "Board: reset the card modal scroll to the top when a story is opened"
-status: "review"
+status: "done"
 rank: 60
 tags: ["area:board"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-21T20:19:31Z"
-updated_at: "2026-09-21T20:36:56Z"
+updated_at: "2026-09-29T01:09:49Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override"
-status: "review"
+status: "done"
 rank: 10
 tags: ["area:release"]
 blocked_by: []
 assignee: "agent"
 created_at: "2026-09-17T04:57:46Z"
-updated_at: "2026-09-17T05:03:43Z"
+updated_at: "2026-09-29T01:09:49Z"
 ---
 ## Requirements
 
