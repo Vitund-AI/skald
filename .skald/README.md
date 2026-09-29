@@ -1,7 +1,7 @@
-<!-- skald-render 5784c0b07335c8a1 -->
+<!-- skald-render 5922e2ba246f0751 -->
 # skald backlog
 
-**8 open** · Idea 6 · Plan 0 · Ready 1 · In progress 0 · Review 1 · Done 6
+**8 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -21,11 +21,9 @@ flowchart LR
     n_b56d9e --> n_b24938
     n_668824 --> n_b56d9e
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
-    classDef ready fill:#dbeafe,stroke:#60a5fa,color:#1e293b
     classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
-    class n_668824 active
-    class n_b56d9e ready
     class n_b24938 backlog
+    class n_668824,n_b56d9e active
 ```
 
 ## Idea (6)
@@ -43,21 +41,20 @@ flowchart LR
 
 _none_
 
-## Ready (1)
+## Ready (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` |  | 🔒 `668824` | 0/6 |
+_none_
 
 ## In progress (0)
 
 _none_
 
-## Review (1)
+## Review (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [668824](stories/668824-exclude-tag-keys-from-facets-with-a-facets-exclude.md) | Exclude tag keys from facets with a facets.exclude config key | `area:config` `release:0.9.0` | claude |  | 5/5 |
+| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` | claude | 🔒 `668824` | 6/6 |
 
 <details><summary><strong>Done (6)</strong></summary>
 

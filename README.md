@@ -79,7 +79,7 @@ each project's README in September 2026; follow the links for current detail.
 | More than one repository | Yes: one board, `project:id` references | One project per workspace | Separate repos with routing and sync | Per repository, pushed to remotes | Per repository |
 | Work in progress across worktrees | Board shows each checkout's working tree; a claim in a worktree is seen before it is committed | Files per checkout; the MCP server follows the current worktree | Not documented | Shared: issues are git objects, not files | Files per checkout |
 | Committed snapshot | `skald render` writes Markdown or HTML with a dependency graph | `backlog board export` writes a Markdown report | No | No | No |
-| Sync with hosted trackers | No | No | No | Bridges to GitHub and GitLab | Import and export with GitHub and GitLab |
+| Sync with hosted trackers | No; a one-way, re-runnable GitHub issues import [example](examples/github-issues/) | No | No | Bridges to GitHub and GitLab | Import and export with GitHub and GitLab |
 | Runtime | Python, standard library only | TypeScript on Bun or Node | Go | Go | Shell, `jq`, `curl` |
 
 Skald is a good fit when agents do most of the work, a human wants to see
@@ -152,7 +152,7 @@ speaks MCP — Cursor, Windsurf, Zed, or Claude Code itself — attaches to
 | [CLI reference](docs/cli.md) | You need the exact flags. Generated from the parser. |
 | [HTTP API](docs/api.md) | You are scripting against the board server. |
 | [Troubleshooting](docs/troubleshooting.md) | Something printed an error or looks wrong. |
-| [Examples](examples/) | Worked setups on top of the core: routing stories to model-pinned agents by tag, with a report on what each model finished. |
+| [Examples](examples/) | Worked setups on top of the core: routing stories to model-pinned agents by tag, with a report on what each model finished; pulling GitHub issues into the backlog. |
 
 The design is in [SPEC.md](SPEC.md) and the reasoning behind non-obvious
 choices in [DECISIONS.md](DECISIONS.md).
