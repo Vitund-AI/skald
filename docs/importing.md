@@ -10,6 +10,10 @@ skald import docs/backlog --map skald-import.json --rm --rewrite-links .
 git add -A && git commit -m "Move the backlog into Skald"
 ```
 
+Coming from GitHub issues rather than a folder? The
+[github-issues example](../examples/github-issues/) pulls them in directly,
+and can be re-run to pick up new issues without duplicating old ones.
+
 ## What it does with each file
 
 - **Title** comes from the first `# H1` line, which is dropped from the

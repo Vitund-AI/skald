@@ -1,7 +1,7 @@
-<!-- skald-render ba5c623370f60d5f -->
+<!-- skald-render 5922e2ba246f0751 -->
 # skald backlog
 
-**12 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 6 · Done 0
+**8 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -9,18 +9,33 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 | Epic | Progress | Done | Open |
 | --- | --- | ---: | ---: |
-| `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 2 |
+| `epic:integrations` | ▰▰▰▱▱▱▱▱▱▱ 33% | 1 | 2 |
+
+## Dependencies
+
+```mermaid
+flowchart LR
+    n_668824["668824<br/>Exclude tag keys from facets with a fac…"]
+    n_b24938["b24938<br/>Close the linked GitHub issue when its …"]
+    n_b56d9e["b56d9e<br/>Example: re-runnable one-way sync from …"]
+    n_b56d9e --> n_b24938
+    n_668824 --> n_b56d9e
+    classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
+    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+    class n_b24938 backlog
+    class n_668824,n_b56d9e active
+```
 
 ## Idea (6)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
-| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` `release:0.9.0` |  |  | 0/6 |
-| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `release:0.9.0` `roadmap` |  |  |  |
+| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` |  |  | 0/6 |
 | [05e3b1](stories/05e3b1-optional-enforced-guarded-column-transitions-workf.md) | Optional enforced/guarded column transitions (workflow rules) | `roadmap` |  |  |  |
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
 | [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | Declare the v1 schema-freeze guarantee and a format-migration contract (skald migrate) | `area:docs` `roadmap` |  |  |  |
 | [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `roadmap` |  |  |  |
+| [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
 
 ## Plan (0)
 
@@ -34,7 +49,14 @@ _none_
 
 _none_
 
-## Review (6)
+## Review (2)
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [668824](stories/668824-exclude-tag-keys-from-facets-with-a-facets-exclude.md) | Exclude tag keys from facets with a facets.exclude config key | `area:config` `release:0.9.0` | claude |  | 5/5 |
+| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` | claude | 🔒 `668824` | 6/6 |
+
+<details><summary><strong>Done (6)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -44,10 +66,6 @@ _none_
 | [164b96](stories/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` | agent |  |  |
 | [5bce0a](stories/5bce0a-document-attaching-skald-s-mcp-server-skald-mcp-to.md) | Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients | `area:docs` `epic:integrations` `roadmap` | agent |  |  |
 | [bf771b](stories/bf771b-board-reset-the-card-modal-scroll-to-the-top-when.md) | Board: reset the card modal scroll to the top when a story is opened | `area:board` | claude |  |  |
-
-<details><summary><strong>Done (0)</strong></summary>
-
-_none_
 
 </details>
 

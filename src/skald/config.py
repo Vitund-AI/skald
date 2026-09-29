@@ -90,6 +90,7 @@ class ProjectConfig:
         self.extra = dict(extra or {})
         self._validate_columns()
         self.facet_limits = self._parse_facet_limits(self.extra.get("facet_limits"))
+        self.facet_exclude = self._parse_facets(self.extra.get("facets"), self.facet_limits)
         self.block_release_on_incomplete = self._parse_bool_flag("block_release_on_incomplete")
         self._default_status = self._parse_default_status()
 
@@ -179,6 +180,29 @@ class ProjectConfig:
                 raise ConfigError(f"facet_limits[{key!r}] must be a positive integer")
             out[key] = value
         return out
+
+    @staticmethod
+    def _parse_facets(raw, limits: dict[str, int]) -> frozenset[str]:
+        """``facets.exclude``: tag keys that stay plain tags and are left out of every facet view.
+
+        An object rather than a bare list so an ``include`` allowlist can join it later.
+        """
+        if raw is None:
+            return frozenset()
+        if not isinstance(raw, dict):
+            raise ConfigError("'facets' must be an object, e.g. {\"exclude\": [\"gh\"]}")
+        unknown = sorted(set(raw) - {"exclude"})
+        if unknown:
+            raise ConfigError(f"facets: unknown key {unknown[0]!r} (supported: exclude)")
+        exclude = raw.get("exclude", [])
+        if not isinstance(exclude, list):
+            raise ConfigError("facets.exclude must be a list of tag keys")
+        for key in exclude:
+            if not isinstance(key, str) or not KEY_RE.match(key):
+                raise ConfigError(f"facets.exclude: key must match {KEY_RE.pattern} (got {key!r})")
+            if key in limits:
+                raise ConfigError(f"facets.exclude: {key!r} is also in facet_limits; a lane key must stay a facet")
+        return frozenset(exclude)
 
     def _parse_default_status(self) -> str | None:
         """``default_status``: the column new stories go to, overriding "first backlog"."""

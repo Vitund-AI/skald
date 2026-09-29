@@ -656,6 +656,43 @@ class TestFacets(SkaldTestCase):
         self.assertEqual(f["epic"]["billing"]["total"], 1)
         self.assertEqual(f["area"]["web"]["ids"], [a.id])
 
+    def test_facets_exclude_hides_keys_but_keeps_tags_and_meaning(self):
+        import json as _json
+
+        from skald import release as rel
+        from skald.config import ProjectConfig
+        from skald.errors import ConfigError
+        from skald.store import facets
+        cfg_path = self.skald_dir / "config.json"
+        data = _json.loads(cfg_path.read_text())
+        data["facets"] = {"exclude": ["gh", "release"]}
+        data["facet_limits"] = {"lane": 1}
+        cfg_path.write_text(_json.dumps(data))
+        s = self.store()
+        self.assertEqual(s.config.facet_exclude, frozenset({"gh", "release"}))
+        a, _ = s.create("a", tags=["gh:12", "epic:auth", "release:9.9.9", "lane:db"], status="ready")
+        s.create("b", tags=["gh:13", "lane:db"], status="ready")
+        s.create("shipped", status="done")  # something for the release plan to take
+        stories, _ = s.load_all(include_archived=True)
+        # Excluded keys are gone from the facet view; the rest are untouched.
+        self.assertEqual(list(facets(stories, s.config)), ["epic", "lane"])
+        # They are still tags on the story...
+        self.assertIn("gh:12", s.get(a.id).tags)
+        # ...and release: still gates, lane: still limits.
+        plan = rel.plan(s, "9.9.9")
+        self.assertTrue(any(f"{a.id} is tagged release:9.9.9 but is not done" in w for w in plan.warnings), plan.warnings)
+        s.claim(a.id, "one")
+        self.assertEqual(s.busy_lanes(), {"lane": {"db": [a.id]}})
+        # The key round-trips through save.
+        self.assertEqual(s.config.to_dict()["facets"], {"exclude": ["gh", "release"]})
+        # Validation: shape, key syntax, unknown keys, and overlap with a lane key.
+        for bad in (["gh"], {"exclude": "gh"}, {"exclude": ["Bad Key"]}, {"exlude": ["gh"]},
+                    {"exclude": ["lane"]}):
+            data["facets"] = bad
+            cfg_path.write_text(_json.dumps(data))
+            with self.assertRaises(ConfigError, msg=repr(bad)):
+                ProjectConfig.load(cfg_path)
+
 
 class TestNotesAndAcceptance(SkaldTestCase):
     def test_parse_notes_requirements_and_kinds(self):

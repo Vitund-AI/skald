@@ -35,6 +35,25 @@ time; `skald status` reports the busy lanes, `skald next` passes over a
 story whose lane is taken, and the board turns a full lane's count red. See
 [Stories](stories.md#lanes) for the worked example.
 
+## Keeping a key out of the facet views
+
+Some `key:value` tags are identifiers, not categories: `gh:12` links a story
+to a GitHub issue, and every story has a different value. As facets they
+would add a filter with one entry per issue and a useless swimlane option.
+List the key under `facets.exclude` in `.skald/config.json`:
+
+```json
+{ "facets": { "exclude": ["gh"] } }
+```
+
+An excluded key is still a tag. It stays in the story file, shows on the
+card, and `skald ls --tag gh:12` and `skald next --tag` still match it. It
+just no longer appears in the board's facet filters and swimlanes, the
+rendered board's facet and epic sections, or `skald facets`. Excluding a key
+never changes behaviour: `release:` still gates a release, and a key named in
+`facet_limits` cannot be excluded at all (that is a config error), because a
+lane you can't see is a trap. `skald export` still includes excluded keys.
+
 ## Parking work you're not doing now
 
 Work you've decided against *for now* — but that isn't a won't-do — is a flow
@@ -64,6 +83,7 @@ it twice — it just doesn't make the risky jump the easy one.
 A new `key:value` tag is a facet the moment you write it: `skald facets`
 lists it with per-value done and open counts, the board gives it a filter
 and a swimlane, `skald ls --tag key:value` selects it, and `skald next
---tag key:value` routes by it. Add it to `facet_limits` to make it a lane.
+--tag key:value` routes by it. Add it to `facet_limits` to make it a lane,
+or to `facets.exclude` to keep it a plain tag.
 Facets are cheap, so prefer one over a new field or a new column when you
 just need to slice the board a different way.

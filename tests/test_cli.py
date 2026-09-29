@@ -552,6 +552,17 @@ class TestFacetCommands(SkaldTestCase):
         code, out, _ = self.run_cli("ls", "--all-projects", "--tag", "epic:auth", "--all", "--json", cwd=self.tmp)
         self.assertEqual(len(json.loads(out)), 3)
 
+    def test_facets_exclude_keeps_tag_queries(self):
+        cfg_path = self.skald_dir / "config.json"
+        data = json.loads(cfg_path.read_text())
+        data["facets"] = {"exclude": ["gh"]}
+        cfg_path.write_text(json.dumps(data))
+        a = self.new("Imported", "--tags", "gh:12,epic:auth", "--status", "ready")
+        code, out, _ = self.run_cli("facets", "--json")
+        self.assertEqual(list(json.loads(out)), ["epic"])
+        code, out, _ = self.run_cli("ls", "--tag", "gh:12", "--json")
+        self.assertEqual([s["id"] for s in json.loads(out)], [a])
+
 
 class TestAgentOrientation(SkaldTestCase):
     def test_context_resume_and_note_kinds(self):
