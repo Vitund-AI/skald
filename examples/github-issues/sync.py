@@ -150,7 +150,7 @@ def main(argv=None) -> int:
     for r in created:
         at = f" as {r['id']}" if "id" in r else ""
         print(f"{verb} #{r['issue']}{at}: {r['title']}  [{', '.join(r['tags'])}]  {r['notes']} note(s)")
-    print(f"{len(created)} {verb.split()[-1]}, {skipped} already imported")
+    print(f"{len(created)} {'to create' if args.dry_run else 'created'}, {skipped} already imported")
     if drifted:
         print("\nDrift (not changed; settle it by hand):")
         for d in drifted:
