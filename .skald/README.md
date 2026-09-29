@@ -1,7 +1,7 @@
-<!-- skald-render e349160f6fc86ec5 -->
+<!-- skald-render 35df526d5383fe6e -->
 # skald backlog
 
-**6 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 6
+**8 open** · Idea 6 · Plan 0 · Ready 2 · In progress 0 · Review 0 · Done 6
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -9,26 +9,44 @@ Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in 
 
 | Epic | Progress | Done | Open |
 | --- | --- | ---: | ---: |
-| `epic:integrations` | ▰▰▰▰▰▱▱▱▱▱ 50% | 1 | 1 |
+| `epic:integrations` | ▰▰▰▱▱▱▱▱▱▱ 33% | 1 | 2 |
+
+## Dependencies
+
+```mermaid
+flowchart LR
+    n_668824["668824<br/>Exclude tag keys from facets with a fac…"]
+    n_b24938["b24938<br/>Close the linked GitHub issue when its …"]
+    n_b56d9e["b56d9e<br/>Example: re-runnable one-way sync from …"]
+    n_b56d9e --> n_b24938
+    n_668824 --> n_b56d9e
+    classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
+    classDef ready fill:#dbeafe,stroke:#60a5fa,color:#1e293b
+    class n_b24938 backlog
+    class n_668824,n_b56d9e ready
+```
 
 ## Idea (6)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
-| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` `release:0.9.0` |  |  | 0/6 |
-| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `release:0.9.0` `roadmap` |  |  |  |
+| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` |  |  | 0/6 |
 | [05e3b1](stories/05e3b1-optional-enforced-guarded-column-transitions-workf.md) | Optional enforced/guarded column transitions (workflow rules) | `roadmap` |  |  |  |
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
 | [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | Declare the v1 schema-freeze guarantee and a format-migration contract (skald migrate) | `area:docs` `roadmap` |  |  |  |
 | [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `roadmap` |  |  |  |
+| [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
 
 ## Plan (0)
 
 _none_
 
-## Ready (0)
+## Ready (2)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [668824](stories/668824-exclude-tag-keys-from-facets-with-a-facets-exclude.md) | Exclude tag keys from facets with a facets.exclude config key | `area:config` `release:0.9.0` |  |  | 0/5 |
+| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` |  | 🔒 `668824` | 0/6 |
 
 ## In progress (0)
 
