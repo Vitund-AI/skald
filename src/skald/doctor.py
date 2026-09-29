@@ -118,11 +118,12 @@ def _server(results: list[dict], home: Path) -> None:
             if info is None:
                 results.append(_r("server", WARN, f"process {pid} is alive but not answering on {host}:{port}",
                                   "skald server stop, then skald open"))
-            elif info.get("version") != __version__:
-                results.append(_r("server", WARN, f"server is version {info.get('version')}, package is {__version__}",
-                                  "restart it: skald server stop, then skald open"))
+            elif info.get("stale"):
+                results.append(_r("server", WARN,
+                                  f"server is running {info.get('version')}, but {info.get('installed')} is installed",
+                                  "restart it: skald server restart"))
             else:
-                results.append(_r("server", OK, f"running on {host}:{port} (version {__version__})"))
+                results.append(_r("server", OK, f"running on {host}:{port} (version {info.get('version', __version__)})"))
     tp = token_path(home)
     if tp.exists() and not sys.platform.startswith("win"):
         mode = tp.stat().st_mode

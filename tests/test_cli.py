@@ -39,8 +39,10 @@ class TestInit(SkaldTestCase):
         code, out, err = self.run_cli("init", "--columns", "lifecycle", cwd=repo)
         self.assertEqual(code, 0, err)
         cfg = ProjectConfig.load(repo / ".skald" / "config.json")
-        self.assertEqual([c.key for c in cfg.columns], ["idea", "plan", "ready", "in_progress", "review", "done"])
-        self.assertEqual([c.role for c in cfg.columns][:3], ["backlog", "backlog", "ready"])
+        self.assertEqual([c.key for c in cfg.columns], ["icebox", "idea", "plan", "ready", "in_progress", "review", "done"])
+        self.assertEqual([c.role for c in cfg.columns][:4], ["backlog", "backlog", "backlog", "ready"])
+        # icebox leads the board, but new stories default to idea via default_status, not the leftmost column.
+        self.assertEqual(cfg.default_key, "idea")
         code, out, err = self.run_cli("init", "--columns", "lifecycle", cwd=repo)
         self.assertIn("columns unchanged", out)
         # next never picks from idea or plan; moving plan to ready with an open question warns.
@@ -549,6 +551,17 @@ class TestFacetCommands(SkaldTestCase):
         self.assertTrue(all(":" in i for i in auth["ids"]))
         code, out, _ = self.run_cli("ls", "--all-projects", "--tag", "epic:auth", "--all", "--json", cwd=self.tmp)
         self.assertEqual(len(json.loads(out)), 3)
+
+    def test_facets_exclude_keeps_tag_queries(self):
+        cfg_path = self.skald_dir / "config.json"
+        data = json.loads(cfg_path.read_text())
+        data["facets"] = {"exclude": ["gh"]}
+        cfg_path.write_text(json.dumps(data))
+        a = self.new("Imported", "--tags", "gh:12,epic:auth", "--status", "ready")
+        code, out, _ = self.run_cli("facets", "--json")
+        self.assertEqual(list(json.loads(out)), ["epic"])
+        code, out, _ = self.run_cli("ls", "--tag", "gh:12", "--json")
+        self.assertEqual([s["id"] for s in json.loads(out)], [a])
 
 
 class TestAgentOrientation(SkaldTestCase):

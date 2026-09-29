@@ -27,6 +27,7 @@ error or not found, 2 corrupt story or configuration.
 - [`note`](#note) append a note to a story
 - [`answer`](#answer) close a story's open question with a decision note that names it; nothing else closes one
 - [`import`](#import) bring a folder of Markdown records into the backlog, driven by a mapping file
+- [`export`](#export) write the whole backlog as one flat file for analytics or migration
 - [`rm`](#rm) delete a story
 - [`log`](#log) git history of a story
 - [`archive`](#archive) move done and closed stories to .skald/archive/
@@ -68,7 +69,7 @@ Create .skald/ here (or register an existing one).
 | Argument | Description |
 | --- | --- |
 | `--name NAME` | project name (default: the directory name) |
-| `--columns COLUMNS` | column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (idea, plan, ready, in_progress, review, done) One of: `default`, `lifecycle`. |
+| `--columns COLUMNS` | column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (icebox, idea, plan, ready, in_progress, review, done) One of: `default`, `lifecycle`. |
 
 ## ls
 
@@ -310,6 +311,20 @@ Bring a folder of Markdown records into the backlog, driven by a mapping file.
 | `--rm` | delete each source file after importing it, so one commit carries removal and creation |
 | `--dry-run` | print what would be written, per file, and write nothing |
 | `--as AUTHOR` | author label for the extracted notes (default: import) |
+
+## export
+
+```
+skald export [--format {json,jsonl,csv}] [--archived] [--out PATH]
+```
+
+Write the whole backlog as one flat file for analytics or migration.
+
+| Argument | Description |
+| --- | --- |
+| `--format FORMAT` | json array, one JSON object per line (jsonl), or csv with a column per facet One of: `json`, `jsonl`, `csv`. |
+| `--archived` | include archived (shipped and dropped) stories |
+| `--out PATH` | write to PATH (default: stdout; - is also stdout) |
 
 ## rm
 
@@ -646,7 +661,7 @@ Run the board in the foreground.
 ## server
 
 ```
-skald server {start,stop,status,token} ...
+skald server {start,stop,restart,status,token} ...
 ```
 
 Manage the background board server.
@@ -671,6 +686,19 @@ skald server stop
 ```
 
 Stop the background server.
+
+### server restart
+
+```
+skald server restart [--host HOST] [--port PORT]
+```
+
+Restart the background server, e.g. to pick up an upgraded package.
+
+| Argument | Description |
+| --- | --- |
+| `--host HOST` | interface to bind (default: the running server's, else skald config host) |
+| `--port PORT` | port (default: the running server's, else skald config port) |
 
 ### server status
 
@@ -703,7 +731,7 @@ Start the server if needed and open the board for this project.
 ## release
 
 ```
-skald release [--changelog PATH] [--date DATE] [--dry-run] [--no-commit] version
+skald release [--changelog PATH] [--date DATE] [--dry-run] [--no-commit] [--allow-incomplete] version
 ```
 
 Record a version: a changelog section from the done column, then archive those stories.
@@ -715,6 +743,7 @@ Record a version: a changelog section from the done column, then archive those s
 | `--date DATE` | YYYY-MM-DD (default: today) |
 | `--dry-run` | print the section and the stories; change nothing |
 | `--no-commit` | write and archive but do not commit |
+| `--allow-incomplete` | release even if stories tagged for this version are not done (overrides config.json block_release_on_incomplete) |
 
 ## docs
 

@@ -4,6 +4,7 @@
 #   scripts/release.sh 1.2.0            # do it
 #   scripts/release.sh 1.2.0 --dry-run  # run every check and the release preview; change nothing
 #   scripts/release.sh 1.2.0 --yes      # no confirmation prompts
+#   scripts/release.sh 1.2.0 --allow-incomplete  # release even with stories still tagged for it
 #
 # What it does, in order, stopping at the first thing that is not as expected:
 #   1. checks: on dev, clean tree, in step with origin/dev, version well-formed and newer,
@@ -19,10 +20,12 @@ set -euo pipefail
 VERSION=""
 DRY_RUN=0
 YES=0
+ALLOW_INCOMPLETE=""   # a fixed flag word or empty; expanded unquoted below (safe on bash 3.2 with set -u)
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --yes) YES=1 ;;
+    --allow-incomplete) ALLOW_INCOMPLETE="--allow-incomplete" ;;
     -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
     -*) echo "unknown option: $arg" >&2; exit 2 ;;
     *) VERSION="$arg" ;;
@@ -73,7 +76,7 @@ echo "tools: $SKALD, $GH"
 
 # ---- 2. the release preview -------------------------------------------------
 say "skald release $VERSION --dry-run"
-"$SKALD" release "$VERSION" --dry-run
+"$SKALD" release "$VERSION" --dry-run $ALLOW_INCOMPLETE
 
 if [ "$DRY_RUN" = 1 ]; then
   say "dry run: every check passed; nothing was changed"
@@ -86,7 +89,7 @@ confirm "Release $VERSION with this section?"
 say "bump $VERSION_FILE and run the release"
 sed -i.bak "s/^__version__ = \"$CURRENT\"$/__version__ = \"$VERSION\"/" "$VERSION_FILE" && rm -f "$VERSION_FILE.bak"
 grep -q "^__version__ = \"$VERSION\"$" "$VERSION_FILE" || fail "the bump did not take"
-"$SKALD" release "$VERSION"
+"$SKALD" release "$VERSION" $ALLOW_INCOMPLETE
 git add "$VERSION_FILE"
 git commit --quiet -m "Bump to $VERSION"
 

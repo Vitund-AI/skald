@@ -13,7 +13,7 @@ required, and you can invent your own.
 | `lane:<name>` | `facet_limits` (a WIP cap per value), `skald status` busy lanes, and `skald next`, which skips a story whose lane is already busy | parallel agents need non-overlapping tracks, so at most N run in a lane at once |
 | `effort:<tier>` | `skald next --tag effort:<tier>`; the [model-routing example](../examples/model-routing/) | you route a story to a class of agent (a model or cost tier); an agent skips a tier it does not match |
 | `area:<name>` | grouping and filtering like any facet; `skald import` can set it automatically from a path or a label | you want to mark which part of the codebase a story touches |
-| `release:<v>` | `skald release`, which warns about a story tagged for the version that is not done yet; the board filter | you are planning what a version should carry |
+| `release:<v>` | `skald release`, which warns about a story tagged for the version that is not done yet (or refuses outright when `block_release_on_incomplete` is set in `config.json`, unless `--allow-incomplete`); the board filter | you are planning what a version should carry |
 
 `model:<name>` and cost are conventions too, carried by the note author and a
 tag rather than a field, so the intended and the actual model can be joined
@@ -35,11 +35,55 @@ time; `skald status` reports the busy lanes, `skald next` passes over a
 story whose lane is taken, and the board turns a full lane's count red. See
 [Stories](stories.md#lanes) for the worked example.
 
+## Keeping a key out of the facet views
+
+Some `key:value` tags are identifiers, not categories: `gh:12` links a story
+to a GitHub issue, and every story has a different value. As facets they
+would add a filter with one entry per issue and a useless swimlane option.
+List the key under `facets.exclude` in `.skald/config.json`:
+
+```json
+{ "facets": { "exclude": ["gh"] } }
+```
+
+An excluded key is still a tag. It stays in the story file, shows on the
+card, and `skald ls --tag gh:12` and `skald next --tag` still match it. It
+just no longer appears in the board's facet filters and swimlanes, the
+rendered board's facet and epic sections, or `skald facets`. Excluding a key
+never changes behaviour: `release:` still gates a release, and a key named in
+`facet_limits` cannot be excluded at all (that is a config error), because a
+lane you can't see is a trap. `skald export` still includes excluded keys.
+
+## Parking work you're not doing now
+
+Work you've decided against *for now* — but that isn't a won't-do — is a flow
+state, not a facet or a priority, so it belongs in a column, not a tag. Don't
+reach for `area:deferred` or `priority:on-hold`: "is this in play?" isn't the
+question those answer, and a card is either parked or in the flow (mutually
+exclusive), which is the signature of a status.
+
+The convention is an **Icebox** column with the `backlog` role — the `lifecycle`
+preset ships one at the front of the board. Because it's `backlog`, parked work
+never shows up in `skald next` or the ready view and is never swept into a
+release, and reviving it is a drag back into the flow. Keep it distinct from
+**won't-do** (a `closed` column): won't-do is a final, recorded decision that
+lands in the changelog's "Not doing"; Icebox is temporary and comes back.
+
+Since the Icebox leads the board, the preset also sets `default_status` to
+`idea`, so new stories are captured in Idea rather than the leftmost column
+(add your own to any config where the first column isn't the capture point).
+
+One guideline, not enforced: **revive to Idea or Plan, not straight to Ready.**
+A plan parked for a while may be stale; sending it back through grooming is the
+chance to re-validate it before anyone executes it. Skald won't stop you moving
+it twice — it just doesn't make the risky jump the easy one.
+
 ## Inventing your own
 
 A new `key:value` tag is a facet the moment you write it: `skald facets`
 lists it with per-value done and open counts, the board gives it a filter
 and a swimlane, `skald ls --tag key:value` selects it, and `skald next
---tag key:value` routes by it. Add it to `facet_limits` to make it a lane.
+--tag key:value` routes by it. Add it to `facet_limits` to make it a lane,
+or to `facets.exclude` to keep it a plain tag.
 Facets are cheap, so prefer one over a new field or a new column when you
 just need to slice the board a different way.

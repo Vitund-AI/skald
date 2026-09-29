@@ -103,17 +103,57 @@ workflow as a skill whenever backlog work comes up.
 
 ## MCP for agents without a shell
 
+`skald mcp` speaks the Model Context Protocol over stdio (newline-delimited
+JSON-RPC 2.0, protocol `2024-11-05`) and offers the operations as tools:
+`skald_status`, `skald_columns`, `skald_list`, `skald_next`, `skald_show`,
+`skald_new`, `skald_move`, `skald_claim`, `skald_note`, `skald_audit`,
+`skald_answer`, `skald_context`, `skald_resume`, `skald_set`, `skald_tag`,
+`skald_block`, and `skald_check`. Every tool takes an optional `project`
+argument; without it the project is the one containing the server's working
+directory. It runs locally over stdio and needs no token — unlike the board,
+nothing leaves the machine. Warnings come back inside results, never as errors.
+
+**Claude Code** registers it in one line, from inside the project:
+
 ```sh
 claude mcp add skald -- skald mcp
 ```
 
-`skald mcp` speaks the Model Context Protocol over stdio and exposes the
-operations as tools: `skald_status`, `skald_columns`, `skald_list`,
-`skald_next`, `skald_show`, `skald_new`, `skald_move`, `skald_claim`,
-`skald_note`, `skald_context`, `skald_resume`, `skald_set`, `skald_tag`,
-`skald_block`, and `skald_check`. Every tool takes an optional `project`
-argument; without it the project is the one containing the current
-directory. Warnings come back inside results, never as errors.
+**Any other MCP client** launches the same command over stdio. The config
+shape shared by Claude Desktop, Cursor, Windsurf, and most clients is an
+`mcpServers` map:
+
+```json
+{
+  "mcpServers": {
+    "skald": {
+      "command": "skald",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+- **Cursor** reads that from `.cursor/mcp.json` in the repo — project-scoped,
+  so the repo is the default project and the config travels in git — or from
+  `~/.cursor/mcp.json` for every project.
+- **Other clients** (Windsurf, Zed, and the rest) take the same `command` and
+  `args`; put them wherever that client keeps its MCP servers.
+
+Three things make it work:
+
+- **`skald` on `PATH`.** A GUI client may not inherit your shell's `PATH`, so
+  the server fails to start. Use an absolute path in `command`, or run it
+  without a global install with `"command": "uvx", "args": ["--from",
+  "skald-kanban", "skald", "mcp"]`.
+- **The right project.** A per-repo config (like `.cursor/mcp.json`) runs in
+  the repo, so the default project is right. With a global config, set the
+  client's working directory to the repo or pass `project` (a registered name)
+  to each tool — and run any `skald` command in the repo once (or `skald
+  init`) so it is registered on this machine.
+- **The contract.** Point the client's rules or instructions file at
+  `.skald/AGENTS.md`, so the agent follows the same claim → work → note →
+  acceptance flow the CLI agents do.
 
 ## Other agents
 

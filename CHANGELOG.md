@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.9.0 (2026-09-29)
+
+- A new example, [`examples/github-issues`](examples/github-issues/), pulls a repository's GitHub issues into the backlog as stories tagged `gh:<number>`, with labels as tags and comments as dated notes. It is safe to re-run: issues already imported are skipped (archived stories included), and it reports issues and stories that have drifted apart instead of overwriting either side. It only reads from GitHub. (b56d9e)
+- A new `facets.exclude` list in `config.json` keeps chosen tag keys out of the facet filters, swimlanes, the rendered board, and `skald facets`, so machine tags such as `gh:12` stay searchable tags without cluttering the board. Excluding a key never changes what `release:` or `lane:` tags do. (668824)
+- The card detail modal now opens scrolled to the top. Opening a story after scrolling down in a previous one no longer inherits the old scroll position; the reset keys on the story changing, so saving or adding a note to the open story keeps your place. (bf771b)
+- Documented attaching `skald mcp` to any MCP client, not just Claude Code: the standard `mcpServers` config, Cursor's `.cursor/mcp.json`, the `PATH`/`uvx` and default-project gotchas, and pointing the client's rules at `.skald/AGENTS.md`. The full tool list in the docs now matches the server. (5bce0a)
+- `skald export --format json|jsonl|csv [--archived] [--out PATH]` dumps the whole backlog as one flat file for analytics or a migration to another tracker (the inverse of `skald import`). One stable record per story — core fields, facets grouped by key, and the derived blocked/stale/open-question flags. `json` is an array, `jsonl` one object per line (streams into `jq`), and `csv` flattens with a `facet.<key>` column per facet so a PM can pivot in a spreadsheet. Read-only, standard library. (164b96)
+- Board columns can opt into the collapse-to-a-strip control with a `collapsible` boolean in their `config.json` entry, not just `done`/`closed` columns. The `lifecycle` preset's `icebox` sets it, so parked work folds away the same as done work; a `done` column could equally pin itself open. (2565dc)
+- The `lifecycle` column preset now leads with an `icebox` column for parking work you've decided against for now but not dropped (that's still won't-do). Being a `backlog` column it never shows in `skald next` or the ready view and is never swept into a release, and reviving it is a drag back into the flow. A new `config.json` key `default_status` names the column new stories go to, so the leading icebox doesn't capture them — the preset sets it to `idea`. The board's New-story form honours it too. (f0e40d)
+- `skald release` can refuse to ship while a story is still tagged for the version. Set `block_release_on_incomplete` to `true` in `config.json` and the release (dry run and real alike) stops, changing nothing, while any story tagged `release:<v>` for the version is not in a done or closed column, naming the stories; `--allow-incomplete` overrides it, and `scripts/release.sh` forwards the same flag. Off by default, so the existing warning is unchanged. (1b3c19)
+
+### Stories
+
+- Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override (1b3c19)
+- A new `facets.exclude` list in `config.json` keeps chosen tag keys out of the facet filters, swimlanes, the rendered board, and `skald facets`, so machine tags such as `gh:12` stay searchable tags without cluttering the board. Excluding a key never changes what `release:` or `lane:` tags do. (668824)
+- Icebox column in the lifecycle preset, plus a configurable default_status for new stories (f0e40d)
+- Make columns collapsible via a config flag; ship the lifecycle icebox collapsible (2565dc)
+- Add skald export --format json|csv for portability and analytics (164b96)
+- Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients (5bce0a)
+- Board: reset the card modal scroll to the top when a story is opened (bf771b)
+- A new example, `examples/github-issues`, pulls a repository's GitHub issues into the backlog as stories tagged `gh:<number>`, with labels as tags and comments as notes. It is safe to re-run: issues already imported are skipped, and it reports issues and stories that have drifted apart instead of overwriting either side. (b56d9e)
+
+## 0.8.1 (2026-09-16)
+
+- The background board server notices when a newer `skald-kanban` has been installed on disk while it kept running the old code: `GET /api/health` now reports `installed` and `stale`, the board shows a dismissible banner, and `skald server status` and `skald doctor` say so. A new `skald server restart` stops and restarts it in place, reusing the running server's host and port, to pick up the upgrade. The check compares the installed version against the running one and only warns when the installed one is strictly newer, so an editable install whose source has moved ahead never false-positives. (165040)
+- Facet swimlanes now show a card in every lane whose `key:value` it carries (a story with two values for the grouping key appears in both, marked with a stacked-lanes icon), so the lane counts and the cards on screen agree. Dragging a card to another lane reassigns that tag — into a value lane sets it, into the "no `<key>`" lane removes it — leaving other values of the same key untouched; "swimlanes by parent" lanes stay non-reassignable. (b07b64)
+- The card dialog edits tags as chips instead of one comma-separated string. In view mode a chip is clickable: a small key/value editor (empty key for a plain label, a key for a `key:value` facet) edits it and "+ tag" adds one, written immediately like the status quick-move. The Edit form has the same chips with a key/value add row, staged and saved with the rest of the fields. (dd6065)
+
+### Stories
+
+- Warn when the running board server is older than the installed package; add skald server restart (165040)
+- Drag a card between facet swimlanes to reassign its tag; show a card in every lane it belongs to (b07b64)
+- Edit tags as chips in the card modal: inline key/value quick-edit in view mode, chip editor in the edit form (dd6065)
+
 ## 0.8.0 (2026-09-16)
 
 - Completion and API tests pick a unique id prefix, not a fixed slice (ce8ab1)

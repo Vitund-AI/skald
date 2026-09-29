@@ -160,23 +160,46 @@ the pointer when neither exists.
 - `columns` is a non-empty ordered list. `key` matches `^[a-z][a-z0-9_]{0,31}$`
   and is unique. `role` is one of `backlog`, `ready`, `active`, `done`,
   `closed`. At least one column must be `done` or `closed`. `limit` is an
-  optional positive integer. Several columns may share a role.
+  optional positive integer. `collapsible` is an optional boolean: the board
+  collapses `done` and `closed` columns by default, and this overrides that per
+  column (a backlog `icebox` opts in, a `done` column can pin itself open).
+  Several columns may share a role.
 - Unknown top-level keys are preserved.
 - `facet_limits` (optional): `{"<facet key>": N}`. At most N stories per
   value of that key may be active at once, counting stories active here and
   stories claimed on other branches or in other checkouts. `lane` is the
   conventional key. Keys match the column-key pattern; values are positive
   integers.
+- `facets` (optional): `{"exclude": ["<tag key>", ...]}`. An excluded key's
+  `key:value` tags stay tags (they are stored, shown on the card, and matched
+  by `--tag`) but are left out of every facet view: `store.facets()` skips
+  them, so the board's facet filters and swimlanes, the rendered facet and
+  epic sections, and `skald facets` / `skald epics` never list them.
+  Exclusion changes no behaviour: `release:` gating and `facet_limits` lanes
+  read tags directly. Keys match the column-key pattern, unknown keys inside
+  `facets` are an error, and a key may not be both excluded and in
+  `facet_limits`. `skald export` still carries excluded keys, since it exports
+  data, not a view. See DECISIONS D75.
+- `block_release_on_incomplete` (optional boolean, default false): when true,
+  `skald release <v>` refuses, changing nothing, while any story tagged
+  `release:<v>` for the version is not in a terminal column; `--allow-incomplete`
+  overrides it. See section 8.
+- `default_status` (optional): the column key new stories go to, overriding the
+  "first backlog column" default. Must be an existing column key. It lets the
+  leftmost column be something other than the capture point, such as an
+  `icebox` cold-storage column at the front of the board.
 - `init --columns default|lifecycle` chooses the initial set for a new
-  `config.json` (`COLUMN_PRESETS`); the lifecycle set is `idea` and `plan`
-  (both `backlog`), then `ready`, `in_progress`, `review`, `done`. An
-  existing `config.json` is never rewritten.
+  `config.json` (`COLUMN_PRESETS`); the lifecycle set is an `icebox` for parked
+  work, `idea` and `plan` (all `backlog`), then `ready`, `in_progress`,
+  `review`, `done`, and it writes `default_status: "idea"` so new stories start
+  in `idea` rather than the leading `icebox`. An existing `config.json` is
+  never rewritten.
 
 **Role semantics:**
 
 | Role | Meaning |
 | --- | --- |
-| `backlog` | New stories go to the first backlog column (else the first column). |
+| `backlog` | New stories go to `default_status` if set, else the first backlog column (else the first column). |
 | `ready` | `next` draws from these. |
 | `active` | `claim` moves into the first active column. Stale marking applies. |
 | `done` | Terminal. Satisfies dependencies. Hidden from `ls` by default. Archivable. |
@@ -371,7 +394,11 @@ terminal column, so the ones still to do are named before the release goes
 out. A value targets the version when it equals it or is a dotted prefix of
 it either way, so `release:0.6` covers `0.6.x` and matches the `0.6.0`
 release. It is an ordinary facet, so the board filters and swimlanes on it
-with no special support; only the warning knows the name.
+with no special support; only the warning knows the name. When
+`block_release_on_incomplete` is set in `config.json`, that same set is a
+gate rather than a warning: `skald release` (dry run and real alike) refuses
+and changes nothing while any targeted story is still open, unless
+`--allow-incomplete` is given.
 
 ### 4.6 Other branches
 
@@ -436,11 +463,12 @@ story or configuration. Commands that print stories take `--json`.
 | `new` accepts `--parent ID [--no-inherit]`; `set` accepts `parent=ID` and `parent=-`; `ls --parent ID` lists children; `ls` marks parents `(children done/total)` and children `(child of ID)`. |
 | `answer <id> "text"\|- [--as N] [--question N] [--all] [--withdraw]` | Writes a decision whose leading lines name the questions it closes (`Answers Q3 [author] stamp · first line`); prints which it closed and how many remain. `--question` takes the stable number (3 or Q3); with one question open it is the default, several open refuse, none open refuse (`note --kind decision` records a choice). `--all` names every open question; `--withdraw` writes `Withdraws` for a question dropped rather than answered. |
 | `import PATH... [--map FILE] [--status C] [--tag T] [--rewrite-links ROOT] [--rm] [--dry-run] [--as N]` | Mapping-driven import of Markdown records (`importer.py`): the mapping is validated first (regexes, `$N` against group counts, subjects, columns, rule shapes); title from the H1, body kept byte for byte apart from stripped lines and extracted note blocks, notes backdated with their original stamps, status and tags from rules (`on` is `filename`, `relpath`, `path`, or `body`; `--tag` adds fixed tags), `created_at` from a regex else the commit that added the file else now; links rewritten across `ROOT` and inside the new stories, resolved against the referencing file's ancestors up to `ROOT` and the project root; sources removed with `--rm`; any problem aborts before anything is written. No MCP tool. See `docs/importing.md`. |
+| `export [--format json\|jsonl\|csv] [--archived] [--out PATH]` | The whole project's backlog as one flat file, for analytics or migration; read-only. One stable record per story in `load_all` order: `id`, `project`, `title`, `status`, `role`, `rank`, `assignee`, `parent`, `tags`, `facets` (key → values), `blocked_by`, `blocked`, `stale`, `open_questions`, `checklist_done`/`_total`, `created_at`, `updated_at`, `released`, `archived`. `json` is an array, `jsonl` one object per line; `csv` flattens — lists joined by `\|`, one `facet.<key>` column per facet key present (sorted). `--archived` includes archived stories. `--out` writes a file (default stdout; the "wrote" note goes to stderr). No MCP tool. |
 | `audit <id> [--notes] [--no-note] [--as N] [--json]` | Extracts paths, `path:line` references, and commit hashes from the prelude (plus notes with `--notes`); checks existence, line count, and `git cat-file -e`; lists referenced files changed since the newest `audit` note (else `created_at`); appends an `audit` note with the summary unless `--no-note`. `audit.py`. |
 | `rm <id> [--force]` | Delete a story file. Refuses while other stories depend on it or are its children; with `--force`, removes the id from their `blocked_by` and clears their `parent`, printing each change, so no dangling reference is left. |
 | `log <id>` | `git log --follow` on the file. |
 | `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |
-| `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit]` | Section 4.5b. |
+| `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit] [--allow-incomplete]` | Section 4.5b. `--allow-incomplete` overrides the `block_release_on_incomplete` gate. |
 | `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
 | `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |
@@ -457,7 +485,7 @@ story or configuration. Commands that print stories take `--json`.
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Section 10b. |
 | `serve [--host H] [--port P] [--open]` | Foreground server. |
-| `server start\|stop\|status` | Background server via `server.json`. |
+| `server start\|stop\|restart\|status` | Background server via `server.json`. `restart` stops and starts in place, reusing the running server's host and port, to pick up an upgraded package; `status` reports when a newer package is installed than the running server. |
 | `open` | Start if needed, open the browser on the current project. |
 | `docs [--out PATH] [--stdout] [--check]` | Writes `docs/cli.md` from `docs_markdown()`, which walks `command_reference()`; a repository test fails when the committed file is stale, and `--check` does the same for CI. |
 | `completion bash\|zsh\|fish` | Prints a shim that calls the hidden `_complete -- CWORD WORD...` for candidates (`value<TAB>description` lines). `completion.py` derives commands and flags from `command_reference()` and reads the store for ids, columns, tags, authors, templates, branches, and projects; it never raises into the shell. `_complete` is intercepted before argparse and absent from `--help` and the reference. |
@@ -491,6 +519,18 @@ endpoint table; it is the reference.
 `GET /api/help` returns the CLI reference built by `cli.command_reference()`,
 which walks the argparse tree; the board's Help panel renders it, so the
 page never carries its own copy of the command list.
+
+`GET /api/health` is the unauthenticated liveness probe: `{ok, version, pid}`
+plus `installed` (the on-disk version from `importlib.metadata`, `null` when it
+cannot be read) and `stale` (true when `installed` is a final release strictly
+newer than the running `version`). A long-running server holds the version
+compiled into `__version__` at import time while `importlib.metadata` reads the
+`.dist-info` that `pip install -U` rewrites, so the two diverge exactly when the
+running code is out of date. The board raises a dismissible banner, `skald server
+status` prints a note, and `skald doctor` warns, each pointing at `skald server
+restart`, which stops and restarts the server in place (reusing its host and
+port). The strictly-newer guard keeps an editable install, whose recorded
+version can trail its source, from ever reading as stale.
 
 `GET /api/update` backs the board's update icon. It is inert unless the
 `update_check` flag resolves on, in which case the server queries PyPI's JSON
@@ -527,7 +567,15 @@ changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
 A Releases view (a header toggle) lists what shipped grouped by version, newest first, from `GET /api/projects/<p>/releases` (`store.releases()`); a story opens read-only, since it is archived. One filter dropdown per facet key and a swimlane control that splits the
-board by a facet's values with a progress bar per lane.
+board by a facet's values with a progress bar per lane. A card appears in
+every lane whose `key:value` it carries (so a story with two values for the
+grouping key shows in both, marked with a stacked-lanes icon), plus a "no
+`<key>`" lane for stories with none. Dragging a card to another lane
+reassigns that value: the drop drops the source lane's `key:value` and adds
+the target's (a drop into the "no `<key>`" lane just removes it), sent with
+the status and order in the one `PATCH` the drop already makes, so other
+values of the same key are untouched. "Swimlanes by parent" lanes are not
+drag-reassignable, since that would be reparenting.
 A branch dropdown switches to a read-only snapshot of another branch with a
 banner, no dragging, disabled fields, and no write buttons; a badge counts
 stories that exist only on other branches. When the project has more than
@@ -548,7 +596,11 @@ Story dialog: the id first (a click copies it, shift-click copies
 `project:id`), created and updated dates, the title as a heading, then
 Story and History tabs. The Story tab opens in view mode: a status select
 for a quick move, assignee, tag chips, claim, dependency chips that open
-the target (switching project if needed), parent and children, the body
+the target (switching project if needed), parent and children, the body.
+The tag chips are editable in place: clicking one opens a small key/value
+editor (empty key is a plain tag, a key makes a `key:value` facet), a "+ tag"
+button adds one, and each change is written immediately with a `tags` `PATCH`,
+the same quick-edit weight as the status select. The body
 rendered as Markdown with note headings set in the mono face and the kind
 in the accent colour, story ids in the text (`id`, `#id`, or `project:id`)
 turned into links that open the referenced story, the questions panel, and
@@ -558,7 +610,8 @@ the add-a-note form. When the project has a GitHub `origin` remote
 `claude.ai/code` with the repository preselected and a short prompt prefilled
 that sends the session to `skald show <id>` and `.skald/AGENTS.md` rather than
 embedding the body; the link is not auto-submitted. Edit
-(or `e`) swaps in the form: title, status, assignee, tags, blockers,
+(or `e`) swaps in the form: title, status, assignee, tags (the same chips
+with a key/value add row, staged and saved with the form), blockers,
 parent, body with a preview toggle, save with conflict detection, delete;
 Save and Cancel return to view mode, `Esc` leaves edit mode before it
 closes the dialog. A new story opens in edit mode. An open story is kept
@@ -617,8 +670,9 @@ board without touching the package.
 
 Layout: columns are flex items with a 15rem floor and a 28rem ceiling, so
 five columns fit a laptop screen and ten scroll; below the `sm` breakpoint
-they stack vertically. A terminal column (a `done` or `closed` role) carries
-a caret that collapses it to a labeled strip showing its count, click to
+they stack vertically. A terminal column (a `done` or `closed` role), or any
+column whose `collapsible` flag is true, carries a caret that collapses it to a
+labeled strip showing its count, click to
 expand; the set of collapsed columns is per project in `localStorage`
 (`skald.collapsed:<project>`), a viewing preference that changes no data and
 no config, so a finished `Done` or "won't do" column stops crowding the
@@ -718,6 +772,10 @@ JSON-RPC 2.0 with `initialize`, `notifications/initialized`, `ping`,
 capability is offered. Each tool mirrors a CLI command, takes an optional
 `project`, and returns JSON text. Skald errors are returned as tool results
 with `isError: true`, never as JSON-RPC errors, so the agent sees the message.
+Any MCP client attaches by launching `skald mcp` over stdio (Claude Code via
+`claude mcp add skald -- skald mcp`, others via their `mcpServers` config); the
+default project is the one containing the server's working directory. See
+`docs/working-with-agents.md`.
 
 ## 11. Future
 

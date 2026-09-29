@@ -1,11 +1,11 @@
 ---
 title: "Advertise swimlanes: show the control disabled with a hint when no facets exist"
 status: "idea"
-rank: 80
+rank: 10
 tags: ["area:board"]
 blocked_by: []
 created_at: "2026-09-16T05:25:26Z"
-updated_at: "2026-09-16T05:54:15Z"
+updated_at: "2026-09-29T01:17:37Z"
 ---
 ## Requirements
 
@@ -60,3 +60,6 @@ feature is discoverable instead of hidden until the first facet exists.
 
 ## [claude] 2026-09-16 05:54 UTC · decision
 Parked (moved back to idea) by decision. The maintainer's UX concern: dynamically appearing/disappearing header controls shift the layout and break spatial muscle memory. Reframe agreed: the shift already happens today (swimlanes pops in/out with facets); 'always visible + disabled' would actually FIX the shift, not cause it. But a one-off stable-slot change to only swimlanes is the least defensible version. If we ever adopt 'stable header slots' as a principle, do it consistently (swimlanes + a facet-filter entry both get fixed slots), or use a stable 'View ▾' menu that never moves. For now, discoverability is delivered by the docs screenshot (938c9c) with zero UI risk; this story waits until/unless we commit to the stable-slots principle.
+
+## [claude] 2026-09-29 01:17 UTC · decision
+Taken off release:0.9.0 with the maintainer (2026-09-29): stays parked until the stable-header-slots principle is adopted; not release work.

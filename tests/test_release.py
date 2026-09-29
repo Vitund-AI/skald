@@ -61,6 +61,40 @@ class TestRelease(SkaldTestCase):
         self.assertFalse(rel.release_matches("0.7", "0.6.0"))
         self.assertFalse(rel.release_matches("0.60", "0.6.0"))
 
+    def _set_config(self, **keys):
+        cfg = json.loads((self.skald_dir / "config.json").read_text())
+        cfg.update(keys)
+        (self.skald_dir / "config.json").write_text(json.dumps(cfg))
+
+    def test_block_release_on_incomplete_gate(self):
+        self.new("Planned, not done", "--status", "ready", "--tags", "release:1.2.0")
+        # Off (default): only a warning, the release still goes through.
+        code, _out, err = self.run_cli("release", "1.2.0", "--no-commit", "--date", "2026-09-09")
+        self.assertEqual(code, 0)
+        self.assertIn("is tagged release:1.2.0 but is not done", err)
+
+    def test_block_release_on_incomplete_refuses_and_override(self):
+        self.new("Planned, not done", "--status", "ready", "--tags", "release:1.2.0")
+        self._set_config(block_release_on_incomplete=True)
+        # The gate refuses the real run and the dry run alike, and changes nothing.
+        for extra in ([], ["--dry-run"]):
+            code, _out, err = self.run_cli("release", "1.2.0", "--no-commit", "--date", "2026-09-09", *extra)
+            self.assertNotEqual(code, 0)
+            self.assertIn("not done", err)
+            self.assertIn("--allow-incomplete", err)
+        self.assertFalse((self.repo / "CHANGELOG.md").exists())  # nothing was written
+        # --allow-incomplete overrides the gate.
+        code, _out, _err = self.run_cli("release", "1.2.0", "--no-commit", "--date", "2026-09-09", "--allow-incomplete")
+        self.assertEqual(code, 0)
+        self.assertTrue((self.repo / "CHANGELOG.md").exists())
+
+    def test_block_release_flag_must_be_boolean(self):
+        from skald.config import ProjectConfig
+        from skald.errors import ConfigError
+
+        with self.assertRaises(ConfigError):
+            ProjectConfig.from_dict({"name": "x", "block_release_on_incomplete": "yes"})
+
     def test_releases_groups_shipped_by_version(self):
         s = self.store()
         rel.apply(s, rel.plan(s, "0.5.0", "2026-01-01"), self.repo / "CHANGELOG.md")

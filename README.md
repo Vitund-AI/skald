@@ -55,6 +55,9 @@ the branch and shows up in pull request diffs.
   and carry `Skald-Story` trailers. `diff`, `activity`, and `changelog` read
   history back; `render` commits a snapshot GitHub shows in place; `release`
   turns the done column into a changelog section and a versioned archive.
+- **Never locked in.** The backlog is plain Markdown in your repo, and
+  `skald export --format json|jsonl|csv` dumps the whole thing as one flat
+  file for analytics in a spreadsheet or a migration to another tracker.
 - **More than one repository.** A machine-local index gives you one board
   and `project:id` dependencies across every repository you use Skald in.
 - **Nothing to run.** Python standard library only, Python 3.10 or newer,
@@ -76,7 +79,7 @@ each project's README in September 2026; follow the links for current detail.
 | More than one repository | Yes: one board, `project:id` references | One project per workspace | Separate repos with routing and sync | Per repository, pushed to remotes | Per repository |
 | Work in progress across worktrees | Board shows each checkout's working tree; a claim in a worktree is seen before it is committed | Files per checkout; the MCP server follows the current worktree | Not documented | Shared: issues are git objects, not files | Files per checkout |
 | Committed snapshot | `skald render` writes Markdown or HTML with a dependency graph | `backlog board export` writes a Markdown report | No | No | No |
-| Sync with hosted trackers | No | No | No | Bridges to GitHub and GitLab | Import and export with GitHub and GitLab |
+| Sync with hosted trackers | No; a one-way, re-runnable GitHub issues import [example](examples/github-issues/) | No | No | Bridges to GitHub and GitLab | Import and export with GitHub and GitLab |
 | Runtime | Python, standard library only | TypeScript on Bun or Node | Go | Go | Shell, `jq`, `curl` |
 
 Skald is a good fit when agents do most of the work, a human wants to see
@@ -130,8 +133,9 @@ git add .skald src && git commit --trailer "Skald-Story: a3f9c2"
 For Claude Code, `skald hooks claude --install --as claude` adds a
 SessionStart hook that runs `skald context` so every session begins
 oriented without reading the whole backlog, a Stop hook that refuses to end
-with a broken backlog, and a skill that loads the contract. Agents without a
-shell can use `skald mcp`.
+with a broken backlog, and a skill that loads the contract. Any agent that
+speaks MCP — Cursor, Windsurf, Zed, or Claude Code itself — attaches to
+`skald mcp` over stdio; see [Working with agents](docs/working-with-agents.md#mcp-for-agents-without-a-shell).
 
 ## Documentation
 
@@ -148,7 +152,7 @@ shell can use `skald mcp`.
 | [CLI reference](docs/cli.md) | You need the exact flags. Generated from the parser. |
 | [HTTP API](docs/api.md) | You are scripting against the board server. |
 | [Troubleshooting](docs/troubleshooting.md) | Something printed an error or looks wrong. |
-| [Examples](examples/) | Worked setups on top of the core: routing stories to model-pinned agents by tag, with a report on what each model finished. |
+| [Examples](examples/) | Worked setups on top of the core: routing stories to model-pinned agents by tag, with a report on what each model finished; pulling GitHub issues into the backlog. |
 
 The design is in [SPEC.md](SPEC.md) and the reasoning behind non-obvious
 choices in [DECISIONS.md](DECISIONS.md).

@@ -115,6 +115,43 @@ class TestProjectConfig(unittest.TestCase):
         self.assertTrue(c.is_closed("nope"))
         self.assertEqual(c.column("doing").limit, 2)
 
+    def test_column_collapsible_flag(self):
+        from skald.config import COLUMN_PRESETS
+        data = {"name": "x", "columns": [
+            {"key": "icebox", "label": "Icebox", "role": "backlog", "collapsible": True},
+            {"key": "ready", "label": "Ready", "role": "ready"},
+            {"key": "done", "label": "Done", "role": "done", "collapsible": False},
+        ]}
+        c = ProjectConfig.from_dict(data)
+        by_key = {col.key: col for col in c.columns}
+        self.assertEqual(by_key["icebox"].collapsible, True)   # a backlog column opted in
+        self.assertEqual(by_key["done"].collapsible, False)    # a done column pinned open
+        self.assertIsNone(by_key["ready"].collapsible)         # unset: board falls back to the role
+        self.assertEqual(by_key["icebox"].to_dict()["collapsible"], True)  # round-trips
+        self.assertNotIn("collapsible", by_key["ready"].to_dict())         # omitted when unset
+        with self.assertRaises(ConfigError):
+            ProjectConfig.from_dict({"name": "x", "columns": [
+                {"key": "a", "label": "A", "role": "done", "collapsible": "yes"}]})
+        # The lifecycle preset ships the icebox collapsible.
+        icebox = next(col for col in COLUMN_PRESETS["lifecycle"] if col["key"] == "icebox")
+        self.assertTrue(icebox["collapsible"])
+
+    def test_default_status_override(self):
+        cols = [
+            {"key": "icebox", "label": "Icebox", "role": "backlog"},
+            {"key": "idea", "label": "Idea", "role": "backlog"},
+            {"key": "ready", "label": "Ready", "role": "ready"},
+            {"key": "done", "label": "Done", "role": "done"},
+        ]
+        # Without the override, the first backlog column wins (here the leading icebox).
+        self.assertEqual(ProjectConfig.from_dict({"name": "x", "columns": cols}).default_key, "icebox")
+        # With it, new stories land in the named column instead.
+        c = ProjectConfig.from_dict({"name": "x", "columns": cols, "default_status": "idea"})
+        self.assertEqual(c.default_key, "idea")
+        self.assertEqual(c.to_dict()["default_status"], "idea")  # round-trips
+        with self.assertRaises(ConfigError):
+            ProjectConfig.from_dict({"name": "x", "columns": cols, "default_status": "nope"})
+
     def test_validation(self):
         bad = [
             ({"name": "Bad Name"}, "invalid project name"),

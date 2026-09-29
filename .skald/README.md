@@ -1,16 +1,39 @@
-<!-- skald-render 208f22a1f25021b4 -->
+<!-- skald-render 7ebda5ba3792d680 -->
 # skald backlog
 
-**2 open** · Idea 2 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**6 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
-## Idea (2)
+## Epics
+
+| Epic | Progress | Done | Open |
+| --- | --- | ---: | ---: |
+| `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 2 |
+
+## Dependencies
+
+```mermaid
+flowchart LR
+    n_b24938["b24938<br/>Close the linked GitHub issue when its …"]
+    n_b56d9e["b56d9e<br/>(missing)"]
+    n_b56d9e --> n_b24938
+    classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
+    classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    class n_b24938 backlog
+    class n_b56d9e unknown
+```
+
+## Idea (6)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
-| [b56d9e](stories/b56d9e-example-one-way-import-from-github-issues.md) | Example: one-way import from GitHub issues | `examples` `roadmap` |  |  |  |
 | [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` |  |  | 0/6 |
+| [05e3b1](stories/05e3b1-optional-enforced-guarded-column-transitions-workf.md) | Optional enforced/guarded column transitions (workflow rules) | `roadmap` |  |  |  |
+| [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
+| [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | Declare the v1 schema-freeze guarantee and a format-migration contract (skald migrate) | `area:docs` `roadmap` |  |  |  |
+| [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `roadmap` |  |  |  |
+| [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
 
 ## Plan (0)
 
@@ -35,6 +58,31 @@ _none_
 </details>
 
 ## Releases
+
+<details><summary><strong>0.9.0 (8)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [164b96](archive/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` | agent |  |  |
+| [bf771b](archive/bf771b-board-reset-the-card-modal-scroll-to-the-top-when.md) | Board: reset the card modal scroll to the top when a story is opened | `area:board` | claude |  |  |
+| [5bce0a](archive/5bce0a-document-attaching-skald-s-mcp-server-skald-mcp-to.md) | Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients | `area:docs` `epic:integrations` `roadmap` | agent |  |  |
+| [b56d9e](archive/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` | claude | 🔒 `668824` | 6/6 |
+| [668824](archive/668824-exclude-tag-keys-from-facets-with-a-facets-exclude.md) | Exclude tag keys from facets with a facets.exclude config key | `area:config` `release:0.9.0` | claude |  | 5/5 |
+| [f0e40d](archive/f0e40d-icebox-column-in-the-lifecycle-preset-plus-a-confi.md) | Icebox column in the lifecycle preset, plus a configurable default_status for new stories | `roadmap` | agent |  |  |
+| [2565dc](archive/2565dc-make-columns-collapsible-via-a-config-flag-ship-th.md) | Make columns collapsible via a config flag; ship the lifecycle icebox collapsible | `roadmap` | agent |  |  |
+| [1b3c19](archive/1b3c19-refuse-a-release-when-stories-tagged-for-the-versi.md) | Refuse a release when stories tagged for the version are not done, gated by config, with --allow-incomplete to override | `area:release` | agent |  |  |
+
+</details>
+
+<details><summary><strong>0.8.1 (3)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [b07b64](archive/b07b64-drag-a-card-between-facet-swimlanes-to-reassign-it.md) | Drag a card between facet swimlanes to reassign its tag; show a card in every lane it belongs to | `area:board` | agent |  |  |
+| [dd6065](archive/dd6065-edit-tags-as-chips-in-the-card-modal-inline-key-va.md) | Edit tags as chips in the card modal: inline key/value quick-edit in view mode, chip editor in the edit form | `area:board` | agent |  |  |
+| [165040](archive/165040-warn-when-the-running-board-server-is-older-than-t.md) | Warn when the running board server is older than the installed package; add skald server restart | `area:server` | agent |  |  |
+
+</details>
 
 <details><summary><strong>0.8.0 (9)</strong></summary>
 

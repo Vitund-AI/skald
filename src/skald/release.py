@@ -46,6 +46,7 @@ class Release:
         self.changes = changes
         self.closed = closed
         self.warnings: list[str] = []
+        self.blocking: list[Story] = []  # open stories tagged for this version (the release gate acts on these)
 
     @property
     def stories(self) -> list[Story]:
@@ -98,6 +99,7 @@ def plan(store: Store, version: str, date: Optional[str] = None) -> Release:
             continue  # done ships, closed is a deliberate drop; both archive with this release
         targeted = [fv[1] for t in s.tags if (fv := split_facet(t)) and fv[0] == "release" and release_matches(fv[1], version)]
         if targeted:
+            release.blocking.append(s)
             release.warnings.append(f"{s.id} is tagged release:{targeted[0]} but is not done ({s.status}); it will not be in this release")
     return release
 

@@ -26,10 +26,15 @@ DEFAULT_COLUMNS = [
     {"key": "done", "label": "Done", "role": "done"},
 ]
 
-# The lifecycle set: two backlog-role columns before ready, so a story is captured (idea), then
-# designed (plan), and only becomes schedulable when a person moves it to ready. Waiting on a human
-# is a condition, not a stage, so it is a derived flag (open questions) rather than a column.
+# The lifecycle set: an icebox for parked work, then two backlog-role columns, so a story is
+# captured (idea), designed (plan), and only becomes schedulable when a person moves it to ready.
+# Icebox is cold storage for work decided against for now but not dropped (that is won't-do, a
+# closed column): being backlog-role it is never scheduled by next/ready nor swept into a release.
+# It leads the board as a side pocket, so new stories are pointed at `idea` with `default_status`
+# below rather than the leftmost column. Waiting on a human is a condition, not a stage, so it is a
+# derived flag (open questions) rather than a column.
 LIFECYCLE_COLUMNS = [
+    {"key": "icebox", "label": "Icebox", "role": "backlog", "collapsible": True},
     {"key": "idea", "label": "Idea", "role": "backlog"},
     {"key": "plan", "label": "Plan", "role": "backlog"},
     {"key": "ready", "label": "Ready", "role": "ready"},
@@ -37,6 +42,8 @@ LIFECYCLE_COLUMNS = [
     {"key": "review", "label": "Review", "role": "active"},
     {"key": "done", "label": "Done", "role": "done"},
 ]
+# Per-preset default column for new stories, where the leftmost column is not the intended default.
+PRESET_DEFAULT_STATUS = {"lifecycle": "idea"}
 
 COLUMN_PRESETS = {"default": DEFAULT_COLUMNS, "lifecycle": LIFECYCLE_COLUMNS}
 
@@ -51,18 +58,24 @@ def slugify_name(text: str) -> str:
 
 
 class Column:
-    __slots__ = ("key", "label", "role", "limit")
+    __slots__ = ("key", "label", "role", "limit", "collapsible")
 
-    def __init__(self, key: str, label: str, role: str, limit: int | None = None):
+    def __init__(self, key: str, label: str, role: str, limit: int | None = None,
+                 collapsible: bool | None = None):
         self.key = key
         self.label = label
         self.role = role
         self.limit = limit
+        # None: the board collapses done/closed columns by default. true/false overrides that,
+        # so a backlog column such as an icebox can be collapsible too, or a done column pinned open.
+        self.collapsible = collapsible
 
     def to_dict(self) -> dict:
         d = {"key": self.key, "label": self.label, "role": self.role}
         if self.limit is not None:
             d["limit"] = self.limit
+        if self.collapsible is not None:
+            d["collapsible"] = self.collapsible
         return d
 
 
@@ -77,6 +90,9 @@ class ProjectConfig:
         self.extra = dict(extra or {})
         self._validate_columns()
         self.facet_limits = self._parse_facet_limits(self.extra.get("facet_limits"))
+        self.facet_exclude = self._parse_facets(self.extra.get("facets"), self.facet_limits)
+        self.block_release_on_incomplete = self._parse_bool_flag("block_release_on_incomplete")
+        self._default_status = self._parse_default_status()
 
     # -- construction ----------------------------------------------------
 
@@ -117,7 +133,10 @@ class ProjectConfig:
             limit = c.get("limit")
             if limit is not None and (isinstance(limit, bool) or not isinstance(limit, int) or limit < 1):
                 raise ConfigError(f"{where}: columns[{i}].limit must be a positive integer")
-            columns.append(Column(key, label.strip(), role, limit))
+            collapsible = c.get("collapsible")
+            if collapsible is not None and not isinstance(collapsible, bool):
+                raise ConfigError(f"{where}: columns[{i}].collapsible must be true or false")
+            columns.append(Column(key, label.strip(), role, limit, collapsible))
         extra = {k: v for k, v in data.items() if k not in ("format", "name", "columns")}
         try:
             return cls(name, columns, extra)
@@ -161,6 +180,47 @@ class ProjectConfig:
                 raise ConfigError(f"facet_limits[{key!r}] must be a positive integer")
             out[key] = value
         return out
+
+    @staticmethod
+    def _parse_facets(raw, limits: dict[str, int]) -> frozenset[str]:
+        """``facets.exclude``: tag keys that stay plain tags and are left out of every facet view.
+
+        An object rather than a bare list so an ``include`` allowlist can join it later.
+        """
+        if raw is None:
+            return frozenset()
+        if not isinstance(raw, dict):
+            raise ConfigError("'facets' must be an object, e.g. {\"exclude\": [\"gh\"]}")
+        unknown = sorted(set(raw) - {"exclude"})
+        if unknown:
+            raise ConfigError(f"facets: unknown key {unknown[0]!r} (supported: exclude)")
+        exclude = raw.get("exclude", [])
+        if not isinstance(exclude, list):
+            raise ConfigError("facets.exclude must be a list of tag keys")
+        for key in exclude:
+            if not isinstance(key, str) or not KEY_RE.match(key):
+                raise ConfigError(f"facets.exclude: key must match {KEY_RE.pattern} (got {key!r})")
+            if key in limits:
+                raise ConfigError(f"facets.exclude: {key!r} is also in facet_limits; a lane key must stay a facet")
+        return frozenset(exclude)
+
+    def _parse_default_status(self) -> str | None:
+        """``default_status``: the column new stories go to, overriding "first backlog"."""
+        value = self.extra.get("default_status")
+        if value is None:
+            return None
+        if not isinstance(value, str) or self.column(value) is None:
+            raise ConfigError(
+                f"'default_status' must be one of the column keys: {', '.join(c.key for c in self.columns)}")
+        return value
+
+    def _parse_bool_flag(self, key: str) -> bool:
+        value = self.extra.get(key)
+        if value is None:
+            return False
+        if not isinstance(value, bool):
+            raise ConfigError(f"'{key}' must be true or false")
+        return value
 
     def _validate_columns(self) -> None:
         seen = set()
@@ -208,7 +268,9 @@ class ProjectConfig:
 
     @property
     def default_key(self) -> str:
-        """Where new stories go: the first backlog column, else the first column."""
+        """Where new stories go: ``default_status`` if set, else the first backlog column, else the first column."""
+        if self._default_status:
+            return self._default_status
         for c in self.columns:
             if c.role == "backlog":
                 return c.key

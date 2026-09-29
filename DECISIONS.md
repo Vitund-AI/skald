@@ -695,3 +695,146 @@ timeout, bad JSON, a locked-down network — so nothing here can break the
 board or the server; a failed lookup just means no icon. `skald doctor`
 surfaces the same result from the cache without ever making its own network
 call, keeping the diagnostic offline and deterministic.
+
+### D68. The server detects its own staleness by comparing `__version__` to the installed metadata, and warns rather than restarting itself
+A background board server started before `pip install -U` keeps the old code
+in memory: the running process holds the version compiled into `__version__`
+at import time, while the on-disk `.dist-info` that pip rewrites carries the
+new one. There is no reliable post-install hook to lean on — a wheel install
+executes no project code — so an automatic restart on upgrade is not
+achievable, and an unsolicited restart of something running on the user's
+machine would be the wrong default anyway. Instead the server reads
+`importlib.metadata.version("skald-kanban")` on each `/api/health` and reports
+`installed` and `stale`; the board raises a dismissible banner, `skald server
+status` and `skald doctor` print a note, and `skald server restart` stops and
+starts the server in place (reusing the running server's host and port). A
+warning is non-blocking — it does not interrupt the user or change anything
+they are running — which is the right weight for "you may want to restart" as
+against a question they must answer or an action taken behind their back. The
+staleness test is `is_newer(installed, running)`, strictly newer and final
+releases only, reusing the update-check comparison: an editable install whose
+recorded metadata trails its moved-ahead source would otherwise read as stale
+on every request, so the direction of the comparison is the guard. The
+`doctor` check reads the server's own `stale` flag rather than recomputing a
+version mismatch, so the board and the diagnostic never disagree.
+
+### D69. A card renders in every facet lane it belongs to, and dragging between lanes reassigns that one value
+`facets()` already counts a story in every `key:value` bucket it carries, but
+the board used to render it only in the first (`facetOf`, first-match), so for
+a story with two values of the grouping key the lane counts and the visible
+cards disagreed. Rendering the card in each of its lanes fixes that, and it is
+what makes dragging between lanes unambiguous: the dragged instance belongs to
+one specific value, so the drop can drop *that* value and add the target's
+without guessing which of several to touch. The alternative — keep the
+single-lane display and, on a drag, collapse all of a key's values to the
+target — silently discards the others; showing every lane and editing one at a
+time never loses data. The tag rewrite is computed client-side (remove
+`key:source`, add `key:target`; a drop into the "no `<key>`" lane is a removal)
+and rides the same single `PATCH` the drop already sends with `status` and
+`order`, so there is no new endpoint and the facet active-limit enforcement on
+that path applies unchanged. Parent lanes are excluded: moving between them is
+reparenting, which carries facet inheritance and cycle checks and is a
+different gesture than retagging. A stacked-lanes icon marks cards that sit in
+more than one lane, so it is visible that a drag there changes only the one
+lane's membership.
+
+### D70. Tags are edited as chips over two parts, immediately in view mode and staged in the edit form
+A tag is a plain label or a `key:value` facet, and typing them as one
+comma-separated string made the colon syntax a thing to remember and a whole
+line to re-parse to change one value. The dialog now edits them as chips over
+two fields, a key (optional) and a value, so a facet never has to be typed
+with its colon and a plain label is just an empty key. The two surfaces differ
+by weight, matching the rest of the board: in view mode a chip is a quick-edit
+like the status select — click it, change the value, and a `tags` `PATCH`
+writes immediately — while the full Edit form stages the chip set in
+`state.editTags` and saves it atomically with title, body, and the other
+fields. Both reuse one pair of helpers (`parseTag`/`makeTag`); the immediate
+path re-reads the story after each write so the board and the open dialog stay
+in step. No API changed — `PATCH {tags}` already replaced the list — so this is
+entirely client-side. A value typed into the add row but not yet added is
+folded in on Save, so a half-finished tag is never silently dropped.
+
+### D71. A release can be gated on its `release:<v>` stories being done, opt-in in project config
+The `release:<v>` facet already warned about stories tagged for the version
+that were not done — the ones that would miss the release. Turning that
+warning into a refusal is opt-in through `block_release_on_incomplete` in the
+project's `config.json`, not a machine-local feature flag: a release policy
+should be uniform for everyone who ships the project, so it belongs in the
+committed, shared config, next to `facet_limits`. Default off keeps the
+existing warn-only behaviour for projects that have not asked for the gate.
+The gate reuses the exact set the warning already computes (`plan.blocking`),
+so warning and refusal never disagree, and it fires on `--dry-run` as well as
+the real run: `scripts/release.sh` previews with a dry run before it bumps the
+version, and a gate that only tripped on the real run would let the script
+change the version file first. The override is `--allow-incomplete` (chosen
+over a longer `--with-incomplete-stories` for concision while still reading as
+what it permits), and `release.sh` forwards it so the whole flow has one
+escape hatch. It is a plain string in the script, not a bash array, because an
+empty array expanded under `set -u` is an unbound-variable error on the bash
+3.2 that ships with macOS.
+
+### D72. Parking work is a column (Icebox), and a `default_status` key frees the leftmost slot for it
+Work decided against for now but not dropped is a flow state, not a facet or a
+priority: a card is either in play or parked, and that mutual exclusivity is
+the mark of a status, so it belongs in a column. The `lifecycle` preset gains
+an `icebox` (`backlog` role), which for free stays out of `next`/ready and out
+of releases (both key off roles — ready and terminal) and is revived by a drag.
+It is kept distinct from won't-do (`closed`), which is a final decision that
+lands in the changelog; icebox is temporary. Placing it at the *front* of the
+board reads best as cold storage, but "new stories go to the first backlog
+column" would then capture every new card in the icebox. Rather than special-
+case the icebox, the fix is a general `default_status` config key naming the
+column new stories default to; the preset sets it to `idea`. That keeps column
+order a pure display choice, decoupled from where capture happens, and it is
+one validated key threaded through the one place the default is computed
+(`config.default_key`, which both the CLI and the board read). Transitions are
+deliberately not enforced — reviving to idea/plan rather than straight to ready
+is documented guidance, not a rule; enforcing it is parked as its own idea,
+since a transition engine is the enterprise-workflow path this tool avoids
+until users clearly need it.
+
+### D73. Column collapsing is a per-column flag, defaulting to the terminal roles
+The board let only `done` and `closed` columns collapse to a strip, which read
+as "finished work you can fold away". An icebox is not finished but wants the
+same fold, so rather than widen the hardcoded role check (which would also
+collapse `idea`/`plan`, unwanted) or invent a role for the icebox (rejected in
+D72), each column carries an optional `collapsible` boolean. Unset keeps the
+old behaviour — the board still collapses terminal columns by default — so no
+existing config changes; true opts a column in (the lifecycle icebox) and false
+could pin a noisy `done` column open. It sits beside `limit` as another
+per-column display attribute, and the board reads the effective value as
+`col.collapsible ?? isTerminalRole(col.role)`.
+
+### D74. `export` emits one flat record per story; csv flattens, json keeps structure
+`skald export` exists so a backlog can leave for a spreadsheet or another
+tracker, the inverse of `import`. The stories are already plain Markdown in git
+and `ls --json` emits per-story JSON, so export adds the thing those don't: one
+*stable, documented* flat record per story, decoupled from the internal
+`story_dict` shape, so downstream tooling can rely on the field set. Facets are
+kept as a `key -> [values]` map in json/jsonl (structured, faithful to
+multi-value keys) and flattened in csv to one `facet.<key>` column per key
+present with values joined by `|`, because a spreadsheet wants columns, not
+nested objects — the csv is a projection of the json record, not a different
+dataset. Three formats cover the audiences: `json` for a program, `jsonl` for
+streaming into line-oriented tools (`jq`, load jobs) and appending, `csv` for
+Excel. It reuses `load_all` (already sorted, so output is deterministic) and
+`story_dict`, stays read-only, and writes the "wrote N stories" line to stderr
+so a redirected file holds only the data.
+
+### D75. `facets.exclude` hides a tag key from facet views without changing what it means
+Any `key:value` tag is a facet, which is right for categories and wrong for
+identifiers: a `gh:<number>` tag from the GitHub sync example has one value
+per story, so as a facet it is a filter with hundreds of entries and a
+swimlane per issue. `config.json` gains `"facets": {"exclude": [...]}`. The
+exclusion lives in `store.facets()`, the one function every facet *view*
+reads (board filters and swimlanes, the rendered facet and epic sections,
+`skald facets` and `skald epics`), so a key drops out of all of them at once
+and nowhere else: the tag is still stored, shown on the card, and matched by
+`--tag`, and behaviour keyed on tags (`release:` gating, `facet_limits`
+lanes) parses tags itself and is untouched. A key cannot be both excluded and
+a lane, since a WIP limit on something the board won't show is a trap.
+`export` keeps excluded keys because it exports data, not a view. The value
+is an object, not a bare list, so an `include` allowlist can be added later
+without a second top-level key; it is not added now because an allowlist
+silently turns off every new convention key (`effort:`, say) until someone
+remembers to list it, and nobody has needed one.

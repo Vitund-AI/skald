@@ -254,7 +254,7 @@ def build_parser() -> argparse.ArgumentParser:
     init = sub.add_parser("init", help="create .skald/ here (or register an existing one)")
     init.add_argument("--name", help="project name (default: the directory name)")
     init.add_argument("--columns", choices=["default", "lifecycle"], default="default",
-                      help="column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (idea, plan, ready, in_progress, review, done)")
+                      help="column set for a new config.json: default (backlog, ready, in_progress, review, done) or lifecycle (icebox, idea, plan, ready, in_progress, review, done)")
 
     ls = sub.add_parser("ls", help="list stories")
     ls.add_argument("--status", metavar="COLUMN", help="only this column")
@@ -358,6 +358,11 @@ def build_parser() -> argparse.ArgumentParser:
     imp.add_argument("--rm", action="store_true", help="delete each source file after importing it, so one commit carries removal and creation")
     imp.add_argument("--dry-run", action="store_true", help="print what would be written, per file, and write nothing")
     imp.add_argument("--as", dest="author", help="author label for the extracted notes (default: import)")
+
+    ex = sub.add_parser("export", help="write the whole backlog as one flat file for analytics or migration")
+    ex.add_argument("--format", choices=["json", "jsonl", "csv"], default="json", help="json array, one JSON object per line (jsonl), or csv with a column per facet")
+    ex.add_argument("--archived", action="store_true", help="include archived (shipped and dropped) stories")
+    ex.add_argument("--out", metavar="PATH", help="write to PATH (default: stdout; - is also stdout)")
 
     rm = sub.add_parser("rm", help="delete a story")
     rm.add_argument("id", help="story id or unique prefix")
@@ -469,6 +474,9 @@ def build_parser() -> argparse.ArgumentParser:
     ss.add_argument("--host", help="interface to bind (default: from skald config host)")
     ss.add_argument("--port", type=int, help="port (default: from skald config port)")
     srvs.add_parser("stop", help="stop the background server")
+    sr = srvs.add_parser("restart", help="restart the background server, e.g. to pick up an upgraded package")
+    sr.add_argument("--host", help="interface to bind (default: the running server's, else skald config host)")
+    sr.add_argument("--port", type=int, help="port (default: the running server's, else skald config port)")
     srvs.add_parser("status", help="show whether the background server is running")
     tk = srvs.add_parser("token", help="print the board's access token (scripts send it as Authorization: Bearer)")
     tk.add_argument("--rotate", action="store_true", help="replace it; existing browser sessions stop working")
@@ -480,6 +488,7 @@ def build_parser() -> argparse.ArgumentParser:
     rl.add_argument("--date", help="YYYY-MM-DD (default: today)")
     rl.add_argument("--dry-run", action="store_true", help="print the section and the stories; change nothing")
     rl.add_argument("--no-commit", action="store_true", help="write and archive but do not commit")
+    rl.add_argument("--allow-incomplete", action="store_true", help="release even if stories tagged for this version are not done (overrides config.json block_release_on_incomplete)")
     dc = sub.add_parser("docs", help="write the CLI reference (docs/cli.md) from the parser")
     dc.add_argument("--out", metavar="PATH", help="default: docs/cli.md at the repository root")
     dc.add_argument("--stdout", action="store_true", help="print instead of writing")
@@ -524,10 +533,11 @@ def cmd_init(ws: Workspace, args) -> int:
             lines.append(f"kept {cfg_path.name} (project '{config.name}')")
     else:
         name = slugify_name(args.name) if args.name else slugify_name(skald_dir.parent.name)
-        from .config import COLUMN_PRESETS, Column
+        from .config import COLUMN_PRESETS, PRESET_DEFAULT_STATUS, Column
 
         preset = getattr(args, "columns", None) or "default"
-        config = ProjectConfig(name, [Column(**c) for c in COLUMN_PRESETS[preset]])
+        extra = {"default_status": PRESET_DEFAULT_STATUS[preset]} if preset in PRESET_DEFAULT_STATUS else None
+        config = ProjectConfig(name, [Column(**c) for c in COLUMN_PRESETS[preset]], extra=extra)
         config.save(cfg_path)
         lines.append(f"wrote {cfg_path.name} (project '{name}', columns: {config.describe()})")
 
@@ -622,6 +632,96 @@ def cmd_ls(ws: Workspace, args, store: Optional[Store]) -> int:
 def _elsewhere(ws: Workspace, store: Store) -> dict:
     """Claims on other branches and in other checkouts' working trees (see Store.claims_elsewhere)."""
     return store.claims_elsewhere(checkouts=ws.other_checkouts(store))
+
+
+# The columns a CSV export always carries, before one `facet.<key>` column per facet key present.
+EXPORT_CSV_CORE = [
+    "id", "project", "title", "status", "role", "rank", "assignee", "parent",
+    "blocked", "stale", "open_questions", "checklist_done", "checklist_total",
+    "created_at", "updated_at", "released", "archived", "tags", "blocked_by",
+]
+
+
+def export_records(store: Store, stories, idx, stale_days) -> list[dict]:
+    """One flat, stable record per story: core fields, facets grouped by key, and the cheap derived flags."""
+    from .store import split_facet
+
+    records = []
+    for s in stories:
+        d = store.story_dict(s, idx, stale_days)
+        facets: dict[str, list] = {}
+        for tag in s.tags:
+            fv = split_facet(tag)
+            if fv:
+                facets.setdefault(fv[0], []).append(fv[1])
+        records.append({
+            "id": s.id,
+            "project": store.name,
+            "title": d.get("title", ""),
+            "status": s.status,
+            "role": store.config.role(s.status),
+            "rank": s.rank,
+            "assignee": d.get("assignee", ""),
+            "parent": s.parent,
+            "tags": list(s.tags),
+            "facets": facets,
+            "blocked_by": list(s.blocked_by),
+            "blocked": bool(d.get("blocked")),
+            "stale": bool(d.get("stale")),
+            "open_questions": d.get("questions", {}).get("open", 0),
+            "checklist_done": d.get("checklist", {}).get("done", 0),
+            "checklist_total": d.get("checklist", {}).get("total", 0),
+            "created_at": s.created_at,
+            "updated_at": s.updated_at,
+            "released": s.fields.get("released", "") or "",
+            "archived": s.archived,
+        })
+    return records
+
+
+def export_text(records: list[dict], fmt: str) -> str:
+    """Serialise the flat records. json: an array; jsonl: one object per line; csv: flattened,
+    with lists joined by '|' and a `facet.<key>` column per facet key present, keys sorted."""
+    if fmt == "json":
+        return json.dumps(records, indent=2) + "\n"
+    if fmt == "jsonl":
+        return "".join(json.dumps(r) + "\n" for r in records)
+    import csv
+    import io
+
+    keys = sorted({k for r in records for k in r["facets"]})
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(EXPORT_CSV_CORE + [f"facet.{k}" for k in keys])
+    for r in records:
+        row = []
+        for col in EXPORT_CSV_CORE:
+            v = r[col]
+            if isinstance(v, bool):
+                v = "true" if v else "false"
+            elif isinstance(v, list):
+                v = "|".join(v)
+            row.append(v)
+        row += ["|".join(r["facets"].get(k, [])) for k in keys]
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+def cmd_export(ws: Workspace, store: Store, args) -> int:
+    stories, warnings = store.load_all(include_archived=args.archived)
+    _warn(warnings)
+    idx = {s.id: s for s in stories}
+    records = export_records(store, stories, idx, ws.user.get("stale_days"))
+    text = export_text(records, args.format)
+    out = getattr(args, "out", None)
+    if out and out != "-":
+        from .util import atomic_write
+
+        atomic_write(Path(out), text)
+        print(f"wrote {len(records)} stor{'y' if len(records) == 1 else 'ies'} to {out}", file=sys.stderr)
+    else:
+        sys.stdout.write(text)
+    return 0
 
 
 def cmd_next(ws: Workspace, args, store: Optional[Store]) -> int:
@@ -1585,6 +1685,13 @@ def cmd_release(ws: Workspace, store: Store, args) -> int:
     repo = _repo_of(store)
     plan = rel.plan(store, args.version, args.date)
     _warn(plan.warnings)
+    if plan.blocking and store.config.block_release_on_incomplete and not args.allow_incomplete:
+        ids = ", ".join(s.id for s in plan.blocking)
+        n = len(plan.blocking)
+        raise SkaldError(
+            f"{n} stor{'y' if n == 1 else 'ies'} tagged release:{plan.version} not done ({ids}); "
+            f"finish them, drop the release: tag, or pass --allow-incomplete "
+            f"(block_release_on_incomplete is set in config.json)")
     if args.dry_run:
         sys.stdout.write(plan.section())
         print(f"\nwould archive {len(plan.stories)} stor{'y' if len(plan.stories) == 1 else 'ies'} with released: {plan.version}")
@@ -2109,7 +2216,7 @@ PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
-    "commits", "diff", "activity", "digest", "graph", "release", "audit", "import",
+    "commits", "diff", "activity", "digest", "graph", "release", "audit", "import", "export",
 }
 
 
@@ -2190,6 +2297,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_audit(ws, store, args)
     if args.command == "import":
         return cmd_import(ws, store, args)
+    if args.command == "export":
+        return cmd_export(ws, store, args)
     if args.command == "next":
         return cmd_next(ws, args, store)
     if args.command == "show":

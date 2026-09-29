@@ -1511,12 +1511,15 @@ def split_facet(tag: str) -> Optional[tuple[str, str]]:
 
 
 def facets(stories: list[Story], config: ProjectConfig) -> dict[str, dict[str, dict]]:
-    """Group stories by ``key:value`` tags: ``{key: {value: {total, done, open, ids}}}``."""
+    """Group stories by ``key:value`` tags: ``{key: {value: {total, done, open, ids}}}``.
+
+    Keys in the config's ``facets.exclude`` are skipped: they stay tags, but no facet view shows them.
+    """
     out: dict[str, dict[str, dict]] = {}
     for s in stories:
         for tag in s.tags:
             parts = split_facet(tag)
-            if not parts:
+            if not parts or parts[0] in config.facet_exclude:
                 continue
             key, value = parts
             bucket = out.setdefault(key, {}).setdefault(value, {"total": 0, "done": 0, "open": 0, "ids": []})

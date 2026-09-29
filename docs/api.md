@@ -35,7 +35,7 @@ as errors.
 
 | Method and path | Body | Result |
 | --- | --- | --- |
-| `GET /api/health` | | `{ok, version, pid}`; open, no token |
+| `GET /api/health` | | `{ok, version, pid, installed, stale}`; open, no token. `installed` is the on-disk package version (`null` if unreadable) and `stale` is true when it is a final release strictly newer than the running `version` — the board banner, `skald server status`, and `skald doctor` read it to prompt `skald server restart` after an upgrade |
 | `POST /api/session`, `DELETE /api/session` | `{token}` | Sets or clears the session cookie; open, but the token must match |
 | `GET /api/projects` | | `{projects, settings}` |
 | `GET /api/update[?project=NAME]` | | `{enabled}` alone when the `update_check` flag is off; otherwise `{enabled, current, latest, outdated, checked_at}` from a once-a-day cached PyPI lookup (a final `X.Y.Z` newer by numeric tuple is `outdated`; network failures are swallowed, so `latest` may be null) |
