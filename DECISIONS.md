@@ -838,3 +838,30 @@ is an object, not a bare list, so an `include` allowlist can be added later
 without a second top-level key; it is not added now because an allowlist
 silently turns off every new convention key (`effort:`, say) until someone
 remembers to list it, and nobody has needed one.
+
+### D76. Mutations take a per-checkout OS file lock, held across read and write, kept outside the repository
+`atomic_write` already meant a reader never sees half a story file, but not
+that two writers see each other: `claim`, `move`, `tag`, and `new` each read
+the backlog, decide, and write, so two running at once lose one update (a
+story claimed by both, a tag dropped, two stories on one rank). Agents
+sharing a checkout, such as subagents of one session or the board server's
+threads, hit exactly this. Every mutating `Store` method now runs under an
+exclusive lock that covers its read as well as its write; `skald tag` and
+`skald block`, which used to read in the CLI and write in the store, moved
+into `Store.edit_tags` and `Store.edit_blockers` so the whole cycle sits
+inside the lock. The lock is an OS lock (`fcntl.flock`, `msvcrt.locking`;
+standard library on both) rather than a lock file whose existence is the
+lock, because the OS releases it when a process dies, so a crashed agent
+cannot wedge the backlog and there is no stale-lock cleanup to get wrong.
+The file lives under the machine-local config home, keyed by a hash of the
+`.skald/` path, never in the repository, because `.skald/` is committed and
+agents are told to `git add .skald`. It is per checkout, matching what can
+actually collide (worktrees have their own files), re-entrant per thread so
+a locked method may call another, serialises threads in one process before
+touching the file, and is never held across a git call, so the critical
+section is milliseconds. Waiting is bounded (`SKALD_LOCK_TIMEOUT`, 30s) and
+ends in an error rather than a hang. Readers stay lock-free: they can only
+ever see a whole file. The board's PATCH still sends whole values, so an
+edit made against a stale board can overwrite a newer change; that is a UI
+freshness problem, already narrowed by live updates, not a lost update
+between two writers that both saw current state.

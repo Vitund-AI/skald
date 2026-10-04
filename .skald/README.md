@@ -1,7 +1,7 @@
-<!-- skald-render 29aa610782013923 -->
+<!-- skald-render fa3a157388cfa449 -->
 # skald backlog
 
-**9 open** · Idea 5 · Plan 1 · Ready 3 · In progress 0 · Review 0 · Done 0
+**9 open** · Idea 5 · Plan 1 · Ready 2 · In progress 0 · Review 1 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -36,10 +36,12 @@ flowchart LR
     n_c9e05f --> n_04e801
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef ready fill:#dbeafe,stroke:#60a5fa,color:#1e293b
+    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_04e801,n_b24938 backlog
-    class n_0a2011,n_80c968,n_c9e05f ready
+    class n_80c968 active
+    class n_0a2011,n_c9e05f ready
     class n_b56d9e unknown
+    class n_04e801,n_b24938 backlog
 ```
 
 ## Idea (5)
@@ -58,21 +60,22 @@ flowchart LR
 | --- | --- | --- | --- | --- | --- |
 | [04e801](stories/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` |  | 🔒 `0a2011`, `80c968`, `c9e05f` | 0/4 |
 
-## Ready (3)
+## Ready (2)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | 1.0 compatibility promise: declare the stable surface, pin the --json fields, add skald migrate | `area:release` `release:1.0.0` `roadmap` |  |  | 0/7 |
 | [c9e05f](stories/c9e05f-document-every-board-http-api-route-and-test-that.md) | Document every board HTTP API route, and test that docs/api.md stays complete | `area:docs` `release:1.0.0` |  |  | 0/5 |
-| [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `release:1.0.0` `roadmap` |  |  | 0/6 |
 
 ## In progress (0)
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `release:1.0.0` `roadmap` | claude |  | 6/6 |
 
 <details><summary><strong>Done (0)</strong></summary>
 

@@ -14,7 +14,7 @@ from typing import Any, Callable, Optional
 from . import __version__
 from .errors import SkaldError
 from .registry import Workspace
-from .store import Store, normalise_tags, split_ref
+from .store import Store
 
 PROTOCOL_VERSION = "2024-11-05"
 
@@ -247,22 +247,11 @@ class McpServer:
 
     def tool_skald_tag(self, args: dict) -> Any:
         store = self._store(args)
-        story = store.get(args["id"])
-        tags = (set(story.tags) | set(normalise_tags(args.get("add", [])))) - set(normalise_tags(args.get("remove", [])))
-        return self._with_warnings(store, *store.update(story.id, tags=sorted(tags)))
+        return self._with_warnings(store, *store.edit_tags(args["id"], args.get("add", []), args.get("remove", [])))
 
     def tool_skald_block(self, args: dict) -> Any:
         store = self._store(args)
-        story = store.get(args["id"])
-        current = set(story.blocked_by)
-        for r in args.get("remove", []):
-            project, sid = split_ref(r.lower())
-            if project is None or project == store.name:
-                current.discard(store.resolve(sid))
-            else:
-                current.discard(r.lower())
-        current |= {a.lower() for a in args.get("add", [])}
-        return self._with_warnings(store, *store.update(story.id, blocked_by=sorted(current)))
+        return self._with_warnings(store, *store.edit_blockers(args["id"], args.get("add", []), args.get("remove", [])))
 
     def tool_skald_check(self, args: dict) -> Any:
         store = self._store(args)

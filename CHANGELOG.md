@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Concurrent `skald` commands in one checkout no longer overwrite each other. Every command that changes stories now holds a short lock across its read and its write, so two agents claiming the same story at the same moment take turns (the second sees it taken), tags and notes added at once are all kept, and new stories get distinct ranks. The lock lives in the machine-local config directory, never in the repository, is released automatically if a process dies, and times out after 30 seconds (`SKALD_LOCK_TIMEOUT`) with a clear error. (80c968)
+
 ## 0.9.0 (2026-09-29)
 
 - A new example, [`examples/github-issues`](examples/github-issues/), pulls a repository's GitHub issues into the backlog as stories tagged `gh:<number>`, with labels as tags and comments as dated notes. It is safe to re-run: issues already imported are skipped (archived stories included), and it reports issues and stories that have drifted apart instead of overwriting either side. It only reads from GitHub. (b56d9e)

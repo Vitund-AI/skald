@@ -48,6 +48,7 @@ src/skald/
   __main__.py        python -m skald
   errors.py          exception hierarchy with exit codes and HTTP statuses
   util.py            timestamps, slugs, atomic writes, checklist parsing
+  lock.py            the per-checkout mutation lock (section 4.7)
   config.py          ProjectConfig: .skald/config.json, columns and roles
   store.py           story format and the per-project Store
   registry.py        config home, Registry (projects.json), UserConfig, Workspace
@@ -84,6 +85,8 @@ else `$XDG_CONFIG_HOME/skald` defaulting to `~/.config/skald`. It holds:
   `port 8321`, `host "127.0.0.1"`, `stale_days 3`. It also carries the
   feature flags (below), which is why nothing in this file is committed.
 - `server.json` and `server.log`: the background server's pid, host, port.
+- `locks/`: one empty lock file per checkout that has been written to
+  (section 4.7). Safe to delete when no `skald` command is running.
 
 Feature flags are machine-local boolean toggles for board and CLI behaviour,
 declared once in a catalog (`FEATURE_DEFAULTS`: name, label, help, built-in
@@ -421,9 +424,26 @@ then not scanned from objects, so nothing is counted twice. The CLI passes
 
 ### 4.7 Concurrency and git
 
-Writes go to a temp file then `os.replace`. Board body edits carry the SHA-256
-of the body they loaded and get 409 on mismatch. Random ids mean branches
-never collide on creation. `check` reports conflict markers.
+Writes go to a temp file then `os.replace`, so a reader never sees half a
+file. Every mutating `Store` method (`create`, `update`, `claim`, `reorder`,
+`answer`, `append_note`, `write_body`, `delete`, `mark_released`, `archive`,
+and the `edit_tags` / `edit_blockers` behind `skald tag` and `skald block`)
+runs its read and its write under an exclusive per-checkout lock
+(`lock.py`), so concurrent commands in one checkout take turns instead of
+losing each other's updates: a story cannot be claimed twice at once, tags
+added at the same moment are all kept, and new stories get distinct ranks.
+The lock is an OS file lock (`fcntl.flock`, or `msvcrt.locking` on Windows)
+on `<config home>/locks/<hash of the .skald path>.lock`, outside the
+repository; the OS drops it if a process dies. It is re-entrant within a
+thread, serialises the board server's threads too, is never held across a
+git call, and gives up after `$SKALD_LOCK_TIMEOUT` seconds (default 30)
+with an error (HTTP 503 from the board). Readers never lock. Separate
+checkouts (worktrees) have separate files and separate locks. Board body
+edits carry the SHA-256 of the body they loaded and get 409 on mismatch;
+other board edits send whole values (a tag list, say) and so are
+last-writer-wins against a change made after the board last refreshed.
+Random ids mean branches never collide on creation. `check` reports
+conflict markers.
 
 ---
 
