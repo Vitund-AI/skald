@@ -28,3 +28,9 @@ class ConflictError(SkaldError):
 
 class GitError(SkaldError):
     http_status = 500
+
+
+class LockTimeoutError(SkaldError):
+    """Another command held the project's mutation lock for longer than the timeout."""
+
+    http_status = 503

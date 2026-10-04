@@ -6,6 +6,7 @@ story id. See SPEC.md for the format.
 """
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
@@ -15,6 +16,7 @@ from typing import Optional
 
 from .config import ProjectConfig
 from .errors import ConflictError, CorruptStoryError, NotFoundError, SkaldError
+from .lock import project_lock
 from .util import atomic_write, checklist_progress, note_stamp, now_iso, parse_iso, parse_when, read_text, sha256_text, slugify
 
 KNOWN_FIELDS = ["title", "status", "rank", "tags", "blocked_by", "assignee", "parent", "released", "created_at", "updated_at"]
@@ -463,6 +465,17 @@ class DepState:
 # --------------------------------------------------------------------------
 
 
+def _mutates(method):
+    """Run a Store method under the checkout's mutation lock, read and write alike (see lock.py)."""
+
+    @functools.wraps(method)
+    def locked(self, *args, **kwargs):
+        with project_lock(self.dir):
+            return method(self, *args, **kwargs)
+
+    return locked
+
+
 class Store:
     """All reads and writes of one project's ``.skald/`` directory go through here.
 
@@ -696,6 +709,7 @@ class Store:
     def templates(self) -> list[str]:
         return sorted(p.stem for p in self._paths(self.templates_dir))
 
+    @_mutates
     def create(self, title: str, status: Optional[str] = None, tags=(), blocked_by=(), body: str = "",
                assignee: str = "", template: Optional[str] = None, parent: Optional[str] = None,
                inherit: bool = True, created_at: Optional[str] = None, wrap: bool = True) -> tuple[Story, list[str]]:
@@ -773,6 +787,7 @@ class Store:
             cur = idx[cur].parent
         return chain
 
+    @_mutates
     def update(self, ref: str, *, title=None, status=None, rank=None, tags=None, blocked_by=None,
                assignee=None, order=None, parent=None,
                elsewhere: Optional[dict] = None) -> tuple[Story, list[str]]:
@@ -889,6 +904,28 @@ class Store:
             return new_index > old_index and new_status != first_active
         return False
 
+    @_mutates
+    def edit_tags(self, ref: str, add=(), remove=()) -> tuple[Story, list[str]]:
+        """Add and remove tags against the story as it is now, under the lock (``skald tag``)."""
+        story = self.get(ref)
+        tags = (set(story.tags) | set(normalise_tags(list(add)))) - set(normalise_tags(list(remove)))
+        return self.update(story.id, tags=sorted(tags))
+
+    @_mutates
+    def edit_blockers(self, ref: str, add=(), remove=()) -> tuple[Story, list[str]]:
+        """Add and remove dependencies against the story as it is now, under the lock (``skald block``)."""
+        story = self.get(ref)
+        current = set(story.blocked_by)
+        for r in remove:
+            project, sid = split_ref(r.lower())
+            if project is None or project == self.name:
+                current.discard(self.resolve(sid))
+            else:
+                current.discard(r.lower())
+        current |= {a.lower() for a in add}
+        return self.update(story.id, blocked_by=sorted(current))
+
+    @_mutates
     def claim(self, ref: str, author: str, stale_days: Optional[int] = None,
               elsewhere: Optional[dict] = None) -> tuple[Story, list[str]]:
         """Assign the story to ``author`` and move it into the first active column if it is not active yet."""
@@ -990,6 +1027,7 @@ class Store:
             return s
         return None
 
+    @_mutates
     def reorder(self, status: str, ids) -> list[Story]:
         self._check_status(status)
         if not isinstance(ids, (list, tuple)):
@@ -1017,6 +1055,7 @@ class Store:
                 changed.append(s)
         return changed
 
+    @_mutates
     def answer(self, ref: str, text: str, author: str = "agent", question=None, all_open: bool = False,
                withdraw: bool = False) -> tuple[Story, list[dict]]:
         """Close questions with a decision note whose leading lines name them; nothing else closes one.
@@ -1054,6 +1093,7 @@ class Store:
         story = self.append_note(ref, "\n".join(lines) + "\n" + text, author, "decision")
         return story, targets
 
+    @_mutates
     def append_note(self, ref: str, text: str, author: str = "agent", kind: Optional[str] = None,
                     at: Optional[str] = None) -> Story:
         """Append a dated note. ``at`` backdates the heading (a migration primitive); the default is now."""
@@ -1083,6 +1123,7 @@ class Store:
         self._write(story)
         return story
 
+    @_mutates
     def write_body(self, ref: str, body: str, base_sha256: Optional[str]) -> Story:
         if not isinstance(body, str):
             raise SkaldError("body must be a string")
@@ -1098,6 +1139,7 @@ class Store:
         stories, _ = self.load_all(include_archived=True)
         return [s for s in stories if any(split_ref(b) in ((None, story_id), (self.name, story_id)) for b in s.blocked_by)]
 
+    @_mutates
     def delete(self, ref: str, force: bool = False, notes: Optional[list] = None) -> Story:
         """Delete a story. With ``force``, references to it are cleared rather than left dangling,
         and each change is described in ``notes``: the backlog is never left in a state ``check`` calls corrupt."""
@@ -1140,6 +1182,7 @@ class Store:
             out.append({"version": ver, "stories": sorted(by_ver[ver], key=lambda s: s.title.lower())})
         return out
 
+    @_mutates
     def mark_released(self, ref: str, version: str) -> Story:
         """Record the version a story shipped in (``released`` in the frontmatter)."""
         story = self.get(ref)
@@ -1149,6 +1192,7 @@ class Store:
         self._write(story)
         return story
 
+    @_mutates
     def archive(self, dry_run: bool = False, ids=None) -> list[Story]:
         """Move every story in a terminal column to ``.skald/archive/``, or only ``ids``.
 

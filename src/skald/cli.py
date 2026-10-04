@@ -14,7 +14,7 @@ from . import __version__, gitutil
 from .config import ProjectConfig, slugify_name
 from .errors import GitError, NotFoundError, SkaldError
 from .registry import FEATURE_DEFAULTS, UserConfig, Workspace, coerce_bool, find_skald_dir
-from .store import Store, Story, serialise_story, split_ref
+from .store import Store, Story, serialise_story
 from .util import read_text
 
 
@@ -1186,26 +1186,14 @@ def cmd_tag_block(store: Store, argv: list[str]) -> int:
     if len(argv) < 2:
         raise SkaldError(f"usage: skald {argv[0]} <id> +item -item ...")
     ref, rest = argv[1], argv[2:]
-    story = store.get(ref)
     if argv[0] == "tag":
         add, remove = _parse_plus_minus(rest, "tag")
-        from .store import normalise_tags
-
-        tags = set(story.tags) | set(normalise_tags(add))
-        tags -= set(normalise_tags(remove))
-        story, warnings = store.update(story.id, tags=sorted(tags))
+        story, warnings = store.edit_tags(ref, add, remove)
         _warn(warnings)
         print(f"{story.id} tags: {', '.join(story.tags) or '-'}")
     else:
         add, remove = _parse_plus_minus(rest, "id")
-        current = set(story.blocked_by)
-        for r in remove:
-            project, sid = split_ref(r.lower())
-            if project is None or project == store.name:
-                current.discard(store.resolve(sid))
-            else:
-                current.discard(r.lower())
-        story, warnings = store.update(story.id, blocked_by=sorted(current | set(a.lower() for a in add)))
+        story, warnings = store.edit_blockers(ref, add, remove)
         _warn(warnings)
         print(f"{story.id} blocked_by: {', '.join(story.blocked_by) or '-'}")
     return 0

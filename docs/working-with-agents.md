@@ -196,6 +196,11 @@ has not been touched for `stale_days` (three by default, see
 [Multiple projects](multi-project.md) for settings) is offered to `next`
 again with a warning.
 
+Agents sharing one checkout (subagents of one session, say) are safe too:
+commands that change stories take turns on a short per-checkout lock, so
+two `claim`s at the same moment cannot both win, and tags or notes added at
+once are all kept.
+
 Dependencies never resolve across branches: a blocker done on `feature/x`
 does not unblock anything on `main` until it merges.
 
