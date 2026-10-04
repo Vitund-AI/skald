@@ -16,5 +16,5 @@ the reasoning behind it in [DECISIONS.md](../DECISIONS.md).
 | [Multiple projects](multi-project.md) | You have more than one repository, or several checkouts of one, or want cross-project dependencies and one board for all of them. |
 | [Importing](importing.md) | You have an existing folder of Markdown records to bring into the backlog. |
 | [CLI reference](cli.md) | You need the exact flags. Generated from the parser, so it is always current. |
-| [HTTP API](api.md) | You are scripting against the board server. |
+| [HTTP API](api.md) | You want the board server's routes. Internal to the board; scripts should use `--json` or MCP. |
 | [Troubleshooting](troubleshooting.md) | Something printed an error or looks wrong. |

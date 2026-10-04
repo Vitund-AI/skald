@@ -1,11 +1,12 @@
 ---
 title: "Document every board HTTP API route, and test that docs/api.md stays complete"
-status: "ready"
-rank: 20
+status: "review"
+rank: 10
 tags: ["area:docs", "release:1.0.0"]
 blocked_by: []
+assignee: "claude"
 created_at: "2026-10-04T02:42:04Z"
-updated_at: "2026-10-04T02:42:04Z"
+updated_at: "2026-10-04T17:06:05Z"
 ---
 ## Requirements
 
@@ -27,8 +28,11 @@ truth and has grown since some rows were written.
   it internal, document it for our own reference, revisit after 1.0.)
 
 ## Acceptance
-- [ ] every route in server.py has a row in docs/api.md with method, path, params/body, and response
-- [ ] auth and the Host check are described once, near the top
-- [ ] a test fails when a server route is missing from docs/api.md
-- [ ] the internal-API note is at the top of docs/api.md
-- [ ] python3 -m unittest green, ruff clean
+- [x] every route in server.py has a row in docs/api.md with method, path, params/body, and response
+- [x] auth and the Host check are described once, near the top
+- [x] a test fails when a server route is missing from docs/api.md
+- [x] the internal-API note is at the top of docs/api.md
+- [x] python3 -m unittest green, ruff clean
+
+## [claude] 2026-10-04 17:06 UTC · handoff
+Done. docs/api.md rewritten against Handler._dispatch: an 'internal to the board' banner (0a2011 Q1), conventions (HEAD as GET; errors 400/401/403/404/405/409/422/500/503), the board's own page and assets (/, /index.html, /theme.css, /favicon.ico), and corrected shapes that had drifted: /ready {stories, warnings}; /board adds project, path, default_status, facet_limits, repo_slug and the ?ref snapshot's own field set; /branches adds available and per-branch current; /git adds available, head; /version {version}; events data and keepalive; PATCH aliases on both settings routes; Host check skipped on 0.0.0.0. tests/test_api_docs.py reads the routes from _dispatch with ast and fails both ways (server route missing from the doc; doc route the server lacks); mutation-checked by deleting the templates row and adding a bogus POST, both caught. SPEC 7, README and docs/README rows, CHANGELOG. unittest 210 OK, ruff clean.

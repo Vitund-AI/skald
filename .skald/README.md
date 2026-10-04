@@ -1,7 +1,7 @@
-<!-- skald-render 4035a17c1c3cec73 -->
+<!-- skald-render 2bafffe05a409cba -->
 # skald backlog
 
-**8 open** · Idea 5 · Plan 1 · Ready 2 · In progress 0 · Review 0 · Done 1
+**8 open** · Idea 5 · Plan 1 · Ready 1 · In progress 0 · Review 1 · Done 1
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -35,12 +35,14 @@ flowchart LR
     n_c9e05f --> n_04e801
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef ready fill:#dbeafe,stroke:#60a5fa,color:#1e293b
+    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_0a2011,n_c9e05f ready
+    class n_0a2011 ready
+    class n_b56d9e unknown
     class n_04e801,n_b24938 backlog
     class n_80c968 done
-    class n_b56d9e unknown
+    class n_c9e05f active
 ```
 
 ## Idea (5)
@@ -59,20 +61,21 @@ flowchart LR
 | --- | --- | --- | --- | --- | --- |
 | [04e801](stories/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` |  | 🔒 `0a2011`, `80c968`, `c9e05f` | 0/4 |
 
-## Ready (2)
+## Ready (1)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | 1.0 compatibility promise: declare the stable surface, pin the --json fields, add skald migrate | `area:release` `release:1.0.0` `roadmap` |  |  | 0/7 |
-| [c9e05f](stories/c9e05f-document-every-board-http-api-route-and-test-that.md) | Document every board HTTP API route, and test that docs/api.md stays complete | `area:docs` `release:1.0.0` |  |  | 0/5 |
 
 ## In progress (0)
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [c9e05f](stories/c9e05f-document-every-board-http-api-route-and-test-that.md) | Document every board HTTP API route, and test that docs/api.md stays complete | `area:docs` `release:1.0.0` | claude |  | 5/5 |
 
 <details><summary><strong>Done (1)</strong></summary>
 
