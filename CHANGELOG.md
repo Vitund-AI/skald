@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `docs/api.md` now documents every route the board server handles, with response shapes checked against the code, and says plainly that the HTTP API is internal to the board: it may change in any release, so scripts should use `--json` output or MCP. A test fails if a route is ever missing from the page or listed there without existing. (c9e05f)
 - Concurrent `skald` commands in one checkout no longer overwrite each other. Every command that changes stories now holds a short lock across its read and its write, so two agents claiming the same story at the same moment take turns (the second sees it taken), tags and notes added at once are all kept, and new stories get distinct ranks. The lock lives in the machine-local config directory, never in the repository, is released automatically if a process dies, and times out after 30 seconds (`SKALD_LOCK_TIMEOUT`) with a clear error. (80c968)
 
 ## 0.9.0 (2026-09-29)

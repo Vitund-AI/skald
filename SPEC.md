@@ -514,6 +514,11 @@ story or configuration. Commands that print stories take `--json`.
 
 ## 7. HTTP API
 
+The HTTP API is internal to the board: it is documented route by route in
+docs/api.md (kept complete by `tests/test_api_docs.py`), but it is not part
+of the 1.x compatibility promise and may change in any release. Scripts use
+`--json` or MCP.
+
 `ThreadingHTTPServer`, bound to `127.0.0.1` by default. Project names in
 URLs are resolved through the registry; the API never accepts a filesystem
 path.
