@@ -21,12 +21,14 @@ truth and has grown since some rows were written.
 - A test that enumerates the server's routes and fails if one is missing
   from docs/api.md, so the doc cannot fall behind again (the same idea as
   `skald docs --check` for the CLI).
-- A line at the top of docs/api.md stating its stability status, filled in
-  from 0a2011 Q1 (stable for 1.x, or documented but internal to the board).
+- A note at the top of docs/api.md: the API is internal to the board, not
+  covered by the 1.x compatibility promise, and may change in any release;
+  scripts should use `--json` or MCP. (0a2011 Q1, decided 2026-10-04: keep
+  it internal, document it for our own reference, revisit after 1.0.)
 
 ## Acceptance
 - [ ] every route in server.py has a row in docs/api.md with method, path, params/body, and response
 - [ ] auth and the Host check are described once, near the top
 - [ ] a test fails when a server route is missing from docs/api.md
-- [ ] stability status stated at the top of docs/api.md
+- [ ] the internal-API note is at the top of docs/api.md
 - [ ] python3 -m unittest green, ruff clean

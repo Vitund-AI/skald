@@ -1,7 +1,7 @@
-<!-- skald-render fa3a157388cfa449 -->
+<!-- skald-render 4035a17c1c3cec73 -->
 # skald backlog
 
-**9 open** · Idea 5 · Plan 1 · Ready 2 · In progress 0 · Review 1 · Done 0
+**8 open** · Idea 5 · Plan 1 · Ready 2 · In progress 0 · Review 0 · Done 1
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -12,7 +12,6 @@ Waiting on a human.
 | Story | Question | Asked |
 | --- | --- | --- |
 | [a73397](stories/a73397-run-local-agent-sessions-from-the-board-launch-cla.md) Run local agent sessions from the board: launch Claude Code (or any agent CLI) on a story in a terminal streamed to the browser | Q1: Q1: Product direction: should Skald run agents, or only coordinate them? Running them is the bigger change and needs its own decision. If yes, the next questions are Windows (POSIX-only, or an optional pywinpty extra) and lifecycle (Skald owns the processes, or sessions run in tmux so they survive restarts and can be attached from a terminal). | claude, 2026-10-04 |
-| [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) 1.0 compatibility promise: declare the stable surface, pin the --json fields, add skald migrate | Q1: Q1: Is the board's HTTP API part of the 1.x stability promise, or documented but internal to the board? The maintainer wants it documented either way (c9e05f). Stable means scripts written against /api can rely on it until 2.0, but every board feature that needs a new response shape becomes additive-only. Internal keeps the board free to evolve, and scripts are pointed at the CLI's --json and MCP instead. Leaning internal unless someone is already scripting against it. | claude, 2026-10-04 |
 
 ## Epics
 
@@ -36,12 +35,12 @@ flowchart LR
     n_c9e05f --> n_04e801
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef ready fill:#dbeafe,stroke:#60a5fa,color:#1e293b
-    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+    classDef done fill:#d1fae5,stroke:#34d399,color:#475569
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_80c968 active
     class n_0a2011,n_c9e05f ready
-    class n_b56d9e unknown
     class n_04e801,n_b24938 backlog
+    class n_80c968 done
+    class n_b56d9e unknown
 ```
 
 ## Idea (5)
@@ -71,15 +70,15 @@ flowchart LR
 
 _none_
 
-## Review (1)
+## Review (0)
+
+_none_
+
+<details><summary><strong>Done (1)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `release:1.0.0` `roadmap` | claude |  | 6/6 |
-
-<details><summary><strong>Done (0)</strong></summary>
-
-_none_
 
 </details>
 

@@ -1,12 +1,12 @@
 ---
 title: "Serialize concurrent mutations for multi-agent safety (advisory file lock)"
-status: "review"
+status: "done"
 rank: 10
 tags: ["area:store", "release:1.0.0", "roadmap"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-20T00:59:03Z"
-updated_at: "2026-10-04T03:11:29Z"
+updated_at: "2026-10-04T16:52:21Z"
 ---
 ## Requirements
 
