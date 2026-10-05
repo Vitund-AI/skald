@@ -1,7 +1,7 @@
-<!-- skald-render dfa6683b99371095 -->
+<!-- skald-render a187d36401c2c503 -->
 # skald backlog
 
-**7 open** · Idea 5 · Plan 0 · Ready 0 · In progress 1 · Review 1 · Done 2
+**5 open** · Idea 5 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 4
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -34,13 +34,11 @@ flowchart LR
     n_80c968 --> n_04e801
     n_c9e05f --> n_04e801
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
-    classDef active fill:#fef3c7,stroke:#f59e0b,color:#1e293b
     classDef done fill:#d1fae5,stroke:#34d399,color:#475569
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_80c968,n_c9e05f done
-    class n_b56d9e unknown
-    class n_04e801,n_0a2011 active
     class n_b24938 backlog
+    class n_04e801,n_0a2011,n_80c968,n_c9e05f done
+    class n_b56d9e unknown
 ```
 
 ## Idea (5)
@@ -61,24 +59,22 @@ _none_
 
 _none_
 
-## In progress (1)
+## In progress (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [04e801](stories/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` | claude | 🔒 `0a2011`, `80c968`, `c9e05f` | 3/4 |
+_none_
 
-## Review (1)
+## Review (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | 1.0 compatibility promise: declare the stable surface, pin the --json fields, add skald migrate | `area:release` `release:1.0.0` `roadmap` | claude |  | 7/7 |
+_none_
 
-<details><summary><strong>Done (2)</strong></summary>
+<details><summary><strong>Done (4)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `release:1.0.0` `roadmap` | claude |  | 6/6 |
 | [c9e05f](stories/c9e05f-document-every-board-http-api-route-and-test-that.md) | Document every board HTTP API route, and test that docs/api.md stays complete | `area:docs` `release:1.0.0` | claude |  | 5/5 |
+| [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | 1.0 compatibility promise: declare the stable surface, pin the --json fields, add skald migrate | `area:release` `release:1.0.0` `roadmap` | claude |  | 7/7 |
+| [04e801](stories/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` | claude | `0a2011`, `80c968`, `c9e05f` | 4/4 |
 
 </details>
 
