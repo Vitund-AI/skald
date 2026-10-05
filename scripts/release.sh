@@ -103,6 +103,17 @@ PR_URL="$("$GH" pr create --base main --head dev --title "Release $VERSION" \
   --body "Release $VERSION: the changelog section, released stamps, and archive from \`skald release\`, and the version bump. Tag v$VERSION follows the merge." )"
 echo "$PR_URL"
 say "waiting for the checks on the pull request"
+# GitHub registers a new pull request's checks a few seconds after it opens. Until
+# then `gh pr checks` says "no checks reported" and exits 1, which --watch would
+# take for a failed check, so wait for the checks to appear first.
+waited=0
+while :; do
+  out="$("$GH" pr checks "$PR_URL" 2>&1 || true)"
+  case "$out" in *"no checks reported"*) ;; *) break ;; esac
+  [ "$waited" -lt 300 ] || fail "no checks appeared on $PR_URL after 5 minutes; check the workflows ran, then rerun from step 4 by hand"
+  sleep 5
+  waited=$((waited + 5))
+done
 "$GH" pr checks "$PR_URL" --watch --fail-fast || fail "a check failed on the pull request; fix on dev and rerun from step 4 by hand"
 confirm "Checks passed. Merge $PR_URL into main?"
 "$GH" pr merge "$PR_URL" --merge
