@@ -158,7 +158,8 @@ Three things make it work:
 ## Other agents
 
 Anything that can run a command can use Skald: the CLI is the interface,
-`--json` output is stable, and the contract is plain Markdown. Point the
+`--json` output is stable for 1.x (see the Compatibility section of
+[SPEC.md](../SPEC.md#10d-compatibility-1x)), and the contract is plain Markdown. Point the
 agent's instructions file at `.skald/AGENTS.md` and give it a name to use
 with `--as`. Notes made without `--as` are labelled `agent`; `SKALD_AUTHOR`
 in the environment sets the default.

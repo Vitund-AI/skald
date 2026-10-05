@@ -1,0 +1,1217 @@
+{
+ "cli": {
+  "activity": [
+   "--help",
+   "--json",
+   "--since",
+   "--until"
+  ],
+  "answer": [
+   "--all",
+   "--as",
+   "--help",
+   "--question",
+   "--withdraw"
+  ],
+  "archive": [
+   "--dry-run",
+   "--help"
+  ],
+  "audit": [
+   "--as",
+   "--help",
+   "--json",
+   "--no-note",
+   "--notes"
+  ],
+  "block": [
+   "--help"
+  ],
+  "branches": [
+   "--help",
+   "--json"
+  ],
+  "changelog": [
+   "--help",
+   "--json",
+   "--since",
+   "--until"
+  ],
+  "check": [
+   "--help",
+   "--hook",
+   "--json"
+  ],
+  "claim": [
+   "--as",
+   "--help"
+  ],
+  "columns": [
+   "--help",
+   "--json"
+  ],
+  "commit": [
+   "--help",
+   "--message",
+   "--no-trailers",
+   "--push"
+  ],
+  "commits": [
+   "--all-branches",
+   "--help",
+   "--json",
+   "--no-children"
+  ],
+  "completion": [
+   "--help"
+  ],
+  "config": [
+   "--help",
+   "--unset"
+  ],
+  "context": [
+   "--as",
+   "--help",
+   "--json"
+  ],
+  "diff": [
+   "--help",
+   "--json",
+   "--markdown",
+   "--since",
+   "--until"
+  ],
+  "digest": [
+   "--help",
+   "--json",
+   "--limit",
+   "--since",
+   "--until"
+  ],
+  "docs": [
+   "--check",
+   "--help",
+   "--out",
+   "--stdout"
+  ],
+  "doctor": [
+   "--help",
+   "--json"
+  ],
+  "epics": [
+   "--all-projects",
+   "--help",
+   "--json"
+  ],
+  "export": [
+   "--archived",
+   "--format",
+   "--help",
+   "--out"
+  ],
+  "facets": [
+   "--all-projects",
+   "--help",
+   "--json"
+  ],
+  "graph": [
+   "--all",
+   "--archived",
+   "--format",
+   "--help"
+  ],
+  "hooks": [
+   "--as",
+   "--help",
+   "--install",
+   "--strict"
+  ],
+  "import": [
+   "--as",
+   "--dry-run",
+   "--help",
+   "--map",
+   "--rewrite-links",
+   "--rm",
+   "--status",
+   "--tag"
+  ],
+  "init": [
+   "--columns",
+   "--help",
+   "--name"
+  ],
+  "log": [
+   "--help",
+   "--json"
+  ],
+  "ls": [
+   "--all",
+   "--all-branches",
+   "--all-projects",
+   "--archived",
+   "--assignee",
+   "--branch",
+   "--compact",
+   "--elsewhere",
+   "--help",
+   "--json",
+   "--parent",
+   "--questions",
+   "--release",
+   "--status",
+   "--tag",
+   "--unblocked"
+  ],
+  "mcp": [
+   "--help"
+  ],
+  "migrate": [
+   "--check",
+   "--help",
+   "--json"
+  ],
+  "move": [
+   "--help"
+  ],
+  "mv": [
+   "--help"
+  ],
+  "new": [
+   "--assignee",
+   "--blocked-by",
+   "--body",
+   "--created-at",
+   "--help",
+   "--json",
+   "--no-inherit",
+   "--parent",
+   "--status",
+   "--tags",
+   "--template"
+  ],
+  "next": [
+   "--all-projects",
+   "--as",
+   "--compact",
+   "--help",
+   "--json",
+   "--tag"
+  ],
+  "note": [
+   "--as",
+   "--at",
+   "--help",
+   "--kind"
+  ],
+  "open": [
+   "--help"
+  ],
+  "projects": [
+   "--help",
+   "--json"
+  ],
+  "projects rm": [
+   "--help"
+  ],
+  "projects use": [
+   "--help"
+  ],
+  "release": [
+   "--allow-incomplete",
+   "--changelog",
+   "--date",
+   "--dry-run",
+   "--help",
+   "--no-commit"
+  ],
+  "render": [
+   "--archived",
+   "--enable",
+   "--format",
+   "--help",
+   "--out",
+   "--stage",
+   "--stdout"
+  ],
+  "resume": [
+   "--full",
+   "--help",
+   "--json",
+   "--section"
+  ],
+  "rm": [
+   "--force",
+   "--help"
+  ],
+  "serve": [
+   "--help",
+   "--host",
+   "--open",
+   "--port"
+  ],
+  "server": [
+   "--help"
+  ],
+  "server restart": [
+   "--help",
+   "--host",
+   "--port"
+  ],
+  "server start": [
+   "--help",
+   "--host",
+   "--port"
+  ],
+  "server status": [
+   "--help"
+  ],
+  "server stop": [
+   "--help"
+  ],
+  "server token": [
+   "--help",
+   "--rotate"
+  ],
+  "set": [
+   "--help"
+  ],
+  "show": [
+   "--branch",
+   "--help",
+   "--json"
+  ],
+  "status": [
+   "--help",
+   "--json"
+  ],
+  "tag": [
+   "--help"
+  ],
+  "templates": [
+   "--help"
+  ],
+  "unarchive": [
+   "--help"
+  ]
+ },
+ "json": {
+  "activity": [
+   "[].author",
+   "[].date",
+   "[].event",
+   "[].id",
+   "[].sha",
+   "[].subject",
+   "[].title"
+  ],
+  "audit": [
+   "changed_since",
+   "changed_since.audited_before",
+   "changed_since.paths",
+   "changed_since.since",
+   "commits",
+   "commits.checked",
+   "commits.missing",
+   "commits.unchecked",
+   "id",
+   "lines",
+   "lines.checked",
+   "lines.past_end",
+   "noted",
+   "paths",
+   "paths.checked",
+   "paths.missing",
+   "title"
+  ],
+  "branches": [
+   "[].current",
+   "[].differ",
+   "[].name",
+   "[].only_here",
+   "[].only_there",
+   "[].remote",
+   "[].sha",
+   "[].stories"
+  ],
+  "changelog": [
+   "[].id",
+   "[].status",
+   "[].tags",
+   "[].title"
+  ],
+  "check": [
+   "ok",
+   "problems",
+   "uncommitted",
+   "warnings"
+  ],
+  "columns": [
+   "[].key",
+   "[].label",
+   "[].role"
+  ],
+  "commits": [
+   "[].author",
+   "[].date",
+   "[].sha",
+   "[].story",
+   "[].subject"
+  ],
+  "context": [
+   "author",
+   "branch",
+   "claimed_elsewhere",
+   "mine",
+   "mine[].archived",
+   "mine[].assignee",
+   "mine[].blocked",
+   "mine[].blocked_by",
+   "mine[].checklist",
+   "mine[].checklist.done",
+   "mine[].checklist.total",
+   "mine[].has_handoff",
+   "mine[].id",
+   "mine[].last_note",
+   "mine[].parent",
+   "mine[].project",
+   "mine[].questions",
+   "mine[].questions.open",
+   "mine[].stale",
+   "mine[].status",
+   "mine[].tags",
+   "mine[].title",
+   "mine[].unmet",
+   "mine[].updated_at",
+   "next",
+   "next.acceptance",
+   "next.acceptance.done",
+   "next.acceptance.total",
+   "next.archived",
+   "next.assignee",
+   "next.blocked",
+   "next.blocked_by",
+   "next.checklist",
+   "next.checklist.done",
+   "next.checklist.total",
+   "next.children",
+   "next.children.done",
+   "next.children.total",
+   "next.has_handoff",
+   "next.id",
+   "next.last_note",
+   "next.project",
+   "next.questions",
+   "next.questions.open",
+   "next.stale",
+   "next.status",
+   "next.tags",
+   "next.title",
+   "next.unmet",
+   "next.updated_at",
+   "project",
+   "ready_blocked",
+   "ready_blocked[].id",
+   "ready_blocked[].title",
+   "ready_blocked[].unmet",
+   "stale_claims",
+   "uncommitted",
+   "waiting",
+   "waiting[].author",
+   "waiting[].id",
+   "waiting[].number",
+   "waiting[].open",
+   "waiting[].question",
+   "waiting[].stamp",
+   "waiting[].status",
+   "waiting[].title",
+   "waiting_more",
+   "warnings"
+  ],
+  "diff": [
+   "added",
+   "added[].acceptance",
+   "added[].acceptance.done",
+   "added[].acceptance.total",
+   "added[].archived",
+   "added[].assignee",
+   "added[].blocked_by",
+   "added[].checklist",
+   "added[].checklist.done",
+   "added[].checklist.total",
+   "added[].id",
+   "added[].parent",
+   "added[].questions",
+   "added[].questions.open",
+   "added[].status",
+   "added[].tags",
+   "added[].title",
+   "added[].updated_at",
+   "changed",
+   "removed",
+   "since",
+   "until"
+  ],
+  "digest": [
+   "since",
+   "stories",
+   "stories[].archived",
+   "stories[].body",
+   "stories[].created",
+   "stories[].deleted",
+   "stories[].id",
+   "stories[].last",
+   "stories[].latest_note",
+   "stories[].latest_note.author",
+   "stories[].latest_note.first",
+   "stories[].latest_note.kind",
+   "stories[].latest_note.stamp",
+   "stories[].moves",
+   "stories[].notes",
+   "stories[].questions",
+   "stories[].questions[].number",
+   "stories[].questions[].text",
+   "stories[].status",
+   "stories[].title",
+   "until"
+  ],
+  "doctor": [
+   "checks",
+   "checks[].detail",
+   "checks[].fix",
+   "checks[].level",
+   "checks[].name",
+   "failed",
+   "ok",
+   "warned"
+  ],
+  "epics": [
+   "{}",
+   "{}{}",
+   "{}{}.done",
+   "{}{}.ids",
+   "{}{}.open",
+   "{}{}.title",
+   "{}{}.total"
+  ],
+  "export": [
+   "[].archived",
+   "[].assignee",
+   "[].blocked",
+   "[].blocked_by",
+   "[].checklist_done",
+   "[].checklist_total",
+   "[].created_at",
+   "[].facets",
+   "[].facets{}",
+   "[].id",
+   "[].open_questions",
+   "[].parent",
+   "[].project",
+   "[].rank",
+   "[].released",
+   "[].role",
+   "[].stale",
+   "[].status",
+   "[].tags",
+   "[].title",
+   "[].updated_at"
+  ],
+  "facets": [
+   "{}",
+   "{}{}",
+   "{}{}.done",
+   "{}{}.ids",
+   "{}{}.open",
+   "{}{}.total"
+  ],
+  "http GET /api/health": [
+   "installed",
+   "ok",
+   "pid",
+   "stale",
+   "version"
+  ],
+  "http GET /api/projects": [
+   "projects",
+   "projects[].checkouts",
+   "projects[].exists",
+   "projects[].name",
+   "projects[].path",
+   "projects[].registered_at"
+  ],
+  "http GET /api/ready": [
+   "stories",
+   "stories[].acceptance",
+   "stories[].acceptance.done",
+   "stories[].acceptance.total",
+   "stories[].archived",
+   "stories[].assignee",
+   "stories[].blocked",
+   "stories[].blocked_by",
+   "stories[].checklist",
+   "stories[].checklist.done",
+   "stories[].checklist.total",
+   "stories[].children",
+   "stories[].children.done",
+   "stories[].children.total",
+   "stories[].created_at",
+   "stories[].deps",
+   "stories[].filename",
+   "stories[].id",
+   "stories[].project",
+   "stories[].questions",
+   "stories[].questions.open",
+   "stories[].rank",
+   "stories[].role",
+   "stories[].stale",
+   "stories[].status",
+   "stories[].tags",
+   "stories[].title",
+   "stories[].unmet",
+   "stories[].updated_at",
+   "warnings"
+  ],
+  "http GET events hello": [
+   "version"
+  ],
+  "http GET story": [
+   "acceptance",
+   "acceptance.done",
+   "acceptance.total",
+   "archived",
+   "assignee",
+   "blocked",
+   "blocked_by",
+   "body",
+   "body_sha256",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "children",
+   "children[].done",
+   "children[].id",
+   "children[].status",
+   "children[].title",
+   "created_at",
+   "deps",
+   "filename",
+   "id",
+   "project",
+   "questions",
+   "questions.open",
+   "rank",
+   "role",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "http GET version": [
+   "version"
+  ],
+  "http PATCH story": [
+   "story",
+   "story.archived",
+   "story.assignee",
+   "story.blocked",
+   "story.blocked_by",
+   "story.checklist",
+   "story.checklist.done",
+   "story.checklist.total",
+   "story.created_at",
+   "story.deps",
+   "story.deps[].closed",
+   "story.deps[].ref",
+   "story.deps[].satisfied",
+   "story.deps[].state",
+   "story.filename",
+   "story.id",
+   "story.project",
+   "story.questions",
+   "story.questions.items",
+   "story.questions.items[].author",
+   "story.questions.items[].closed_by",
+   "story.questions.items[].kind",
+   "story.questions.items[].number",
+   "story.questions.items[].stamp",
+   "story.questions.items[].text",
+   "story.questions.open",
+   "story.rank",
+   "story.role",
+   "story.stale",
+   "story.status",
+   "story.tags",
+   "story.title",
+   "story.unmet",
+   "story.updated_at",
+   "warnings"
+  ],
+  "http POST claim": [
+   "story",
+   "story.archived",
+   "story.assignee",
+   "story.blocked",
+   "story.blocked_by",
+   "story.checklist",
+   "story.checklist.done",
+   "story.checklist.total",
+   "story.created_at",
+   "story.deps",
+   "story.deps[].closed",
+   "story.deps[].ref",
+   "story.deps[].satisfied",
+   "story.deps[].state",
+   "story.filename",
+   "story.id",
+   "story.project",
+   "story.questions",
+   "story.questions.closed",
+   "story.questions.closed[].author",
+   "story.questions.closed[].closed_by",
+   "story.questions.closed[].closed_by.author",
+   "story.questions.closed[].closed_by.how",
+   "story.questions.closed[].closed_by.stamp",
+   "story.questions.closed[].kind",
+   "story.questions.closed[].number",
+   "story.questions.closed[].stamp",
+   "story.questions.closed[].text",
+   "story.questions.open",
+   "story.rank",
+   "story.role",
+   "story.stale",
+   "story.status",
+   "story.tags",
+   "story.title",
+   "story.unmet",
+   "story.updated_at",
+   "warnings"
+  ],
+  "http POST notes": [
+   "archived",
+   "assignee",
+   "blocked",
+   "blocked_by",
+   "body",
+   "body_sha256",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "created_at",
+   "deps",
+   "deps[].closed",
+   "deps[].ref",
+   "deps[].satisfied",
+   "deps[].state",
+   "filename",
+   "id",
+   "project",
+   "questions",
+   "questions.closed",
+   "questions.closed[].author",
+   "questions.closed[].closed_by",
+   "questions.closed[].closed_by.author",
+   "questions.closed[].closed_by.how",
+   "questions.closed[].closed_by.stamp",
+   "questions.closed[].kind",
+   "questions.closed[].number",
+   "questions.closed[].stamp",
+   "questions.closed[].text",
+   "questions.open",
+   "rank",
+   "role",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "http POST stories": [
+   "story",
+   "story.archived",
+   "story.assignee",
+   "story.blocked",
+   "story.blocked_by",
+   "story.checklist",
+   "story.checklist.done",
+   "story.checklist.total",
+   "story.created_at",
+   "story.deps",
+   "story.filename",
+   "story.id",
+   "story.parent",
+   "story.project",
+   "story.questions",
+   "story.questions.open",
+   "story.rank",
+   "story.role",
+   "story.stale",
+   "story.status",
+   "story.tags",
+   "story.title",
+   "story.unmet",
+   "story.updated_at",
+   "warnings"
+  ],
+  "http PUT body": [
+   "acceptance",
+   "acceptance.done",
+   "acceptance.total",
+   "archived",
+   "assignee",
+   "blocked",
+   "blocked_by",
+   "body",
+   "body_sha256",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "created_at",
+   "deps",
+   "filename",
+   "id",
+   "project",
+   "questions",
+   "questions.open",
+   "rank",
+   "role",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "log": [
+   "[].author",
+   "[].date",
+   "[].sha",
+   "[].subject"
+  ],
+  "ls": [
+   "[].acceptance",
+   "[].acceptance.done",
+   "[].acceptance.total",
+   "[].archived",
+   "[].assignee",
+   "[].blocked",
+   "[].blocked_by",
+   "[].checklist",
+   "[].checklist.done",
+   "[].checklist.total",
+   "[].children",
+   "[].children.done",
+   "[].children.total",
+   "[].created_at",
+   "[].deps",
+   "[].deps[].closed",
+   "[].deps[].ref",
+   "[].deps[].satisfied",
+   "[].deps[].state",
+   "[].filename",
+   "[].id",
+   "[].parent",
+   "[].project",
+   "[].questions",
+   "[].questions.items",
+   "[].questions.items[].author",
+   "[].questions.items[].closed_by",
+   "[].questions.items[].kind",
+   "[].questions.items[].number",
+   "[].questions.items[].stamp",
+   "[].questions.items[].text",
+   "[].questions.open",
+   "[].rank",
+   "[].role",
+   "[].stale",
+   "[].status",
+   "[].tags",
+   "[].title",
+   "[].unmet",
+   "[].updated_at"
+  ],
+  "ls --compact": [
+   "[].acceptance",
+   "[].acceptance.done",
+   "[].acceptance.total",
+   "[].archived",
+   "[].assignee",
+   "[].blocked",
+   "[].blocked_by",
+   "[].checklist",
+   "[].checklist.done",
+   "[].checklist.total",
+   "[].children",
+   "[].children.done",
+   "[].children.total",
+   "[].id",
+   "[].parent",
+   "[].project",
+   "[].questions",
+   "[].questions.open",
+   "[].stale",
+   "[].status",
+   "[].tags",
+   "[].title",
+   "[].unmet",
+   "[].updated_at"
+  ],
+  "migrate": [
+   "current",
+   "explicit",
+   "format",
+   "needed",
+   "steps",
+   "stories"
+  ],
+  "new": [
+   "archived",
+   "assignee",
+   "blocked",
+   "blocked_by",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "created_at",
+   "deps",
+   "filename",
+   "id",
+   "project",
+   "questions",
+   "questions.open",
+   "rank",
+   "role",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "next": [
+   "acceptance",
+   "acceptance.done",
+   "acceptance.total",
+   "archived",
+   "assignee",
+   "blocked",
+   "blocked_by",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "created_at",
+   "deps",
+   "filename",
+   "id",
+   "project",
+   "questions",
+   "questions.open",
+   "rank",
+   "role",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "next --compact": [
+   "acceptance",
+   "acceptance.done",
+   "acceptance.total",
+   "archived",
+   "assignee",
+   "blocked",
+   "blocked_by",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "id",
+   "project",
+   "questions",
+   "questions.open",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "projects": [
+   "[].checkouts",
+   "[].exists",
+   "[].name",
+   "[].path",
+   "[].registered_at"
+  ],
+  "resume": [
+   "archived",
+   "assignee",
+   "audit",
+   "blocked",
+   "blocked_by",
+   "blockers",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "closed_questions",
+   "decisions",
+   "deps",
+   "id",
+   "latest",
+   "latest.author",
+   "latest.kind",
+   "latest.stamp",
+   "latest.text",
+   "note_count",
+   "open_questions",
+   "parent",
+   "parent_story",
+   "parent_story.id",
+   "parent_story.requirements",
+   "parent_story.status",
+   "parent_story.title",
+   "project",
+   "questions",
+   "questions.open",
+   "requirements",
+   "sections",
+   "sections[].heading",
+   "sections[].lines",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "show": [
+   "acceptance",
+   "acceptance.done",
+   "acceptance.total",
+   "archived",
+   "assignee",
+   "blocked",
+   "blocked_by",
+   "body",
+   "body_sha256",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "created_at",
+   "deps",
+   "filename",
+   "id",
+   "project",
+   "questions",
+   "questions.open",
+   "rank",
+   "role",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "status": [
+   "branch",
+   "counts",
+   "counts{}",
+   "lanes",
+   "lanes{}",
+   "path",
+   "project",
+   "ready_unblocked",
+   "uncommitted",
+   "unknown_status",
+   "warnings"
+  ]
+ },
+ "mcp": {
+  "skald_answer": {
+   "arguments": [
+    "all",
+    "as",
+    "id",
+    "project",
+    "question",
+    "text",
+    "withdraw"
+   ],
+   "required": [
+    "id",
+    "text"
+   ]
+  },
+  "skald_audit": {
+   "arguments": [
+    "as",
+    "id",
+    "note",
+    "notes",
+    "project"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  "skald_block": {
+   "arguments": [
+    "add",
+    "id",
+    "project",
+    "remove"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  "skald_check": {
+   "arguments": [
+    "project"
+   ],
+   "required": []
+  },
+  "skald_claim": {
+   "arguments": [
+    "as",
+    "id",
+    "project"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  "skald_columns": {
+   "arguments": [
+    "project"
+   ],
+   "required": []
+  },
+  "skald_context": {
+   "arguments": [
+    "as",
+    "project"
+   ],
+   "required": []
+  },
+  "skald_list": {
+   "arguments": [
+    "all",
+    "assignee",
+    "project",
+    "status",
+    "tag",
+    "unblocked"
+   ],
+   "required": []
+  },
+  "skald_move": {
+   "arguments": [
+    "id",
+    "project",
+    "status"
+   ],
+   "required": [
+    "id",
+    "status"
+   ]
+  },
+  "skald_new": {
+   "arguments": [
+    "assignee",
+    "blocked_by",
+    "body",
+    "created_at",
+    "inherit",
+    "parent",
+    "project",
+    "status",
+    "tags",
+    "template",
+    "title"
+   ],
+   "required": [
+    "title"
+   ]
+  },
+  "skald_next": {
+   "arguments": [
+    "as",
+    "project",
+    "tag"
+   ],
+   "required": []
+  },
+  "skald_note": {
+   "arguments": [
+    "as",
+    "at",
+    "id",
+    "kind",
+    "project",
+    "text"
+   ],
+   "required": [
+    "id",
+    "text"
+   ]
+  },
+  "skald_resume": {
+   "arguments": [
+    "full",
+    "id",
+    "project",
+    "section"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  "skald_set": {
+   "arguments": [
+    "assignee",
+    "blocked_by",
+    "id",
+    "parent",
+    "project",
+    "rank",
+    "tags",
+    "title"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  "skald_show": {
+   "arguments": [
+    "id",
+    "project"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  "skald_status": {
+   "arguments": [
+    "project"
+   ],
+   "required": []
+  },
+  "skald_tag": {
+   "arguments": [
+    "add",
+    "id",
+    "project",
+    "remove"
+   ],
+   "required": [
+    "id"
+   ]
+  }
+ }
+}

@@ -382,6 +382,10 @@ def build_parser() -> argparse.ArgumentParser:
     ck.add_argument("--json", action="store_true", help="print JSON")
     ck.add_argument("--hook", action="store_true", help="also fail on uncommitted story changes (for agent stop hooks)")
 
+    mg = sub.add_parser("migrate", help="upgrade the backlog to the story format this version writes (a no-op when current)")
+    mg.add_argument("--check", action="store_true", help="change nothing; exit 1 if a migration is needed (for CI)")
+    mg.add_argument("--json", action="store_true", help="print JSON")
+
     doc = sub.add_parser("doctor", help="check the environment and wiring: prerequisites, config, registry, server, hooks")
     doc.add_argument("--json", action="store_true", help="print JSON")
 
@@ -1249,6 +1253,25 @@ def _uncommitted(store: Store) -> tuple[Optional[Path], list[dict]]:
         return repo, gitutil.changes(repo, _skald_rel(store, repo))
     except GitError:
         return repo, []
+
+
+def cmd_migrate(store: Store, args) -> int:
+    from . import migrate
+
+    result = migrate.plan(store) if args.check else migrate.apply(store)
+    _warn(result["warnings"])
+    if args.json:
+        print(json.dumps({k: v for k, v in result.items() if k != "warnings"}, indent=2))
+    elif not result["needed"]:
+        implicit = "" if result["explicit"] else " (implicit: config.json has no format key)"
+        print(f"already at the current format ({result['current']}){implicit}; "
+              f"{result['stories']} stories read, nothing to migrate")
+    elif args.check:
+        print(f"migration needed: format {result['format']} -> {result['current']} ({', '.join(result['steps'])}); "
+              "run `skald migrate`")
+    else:
+        print(f"migrated format {result['format']} -> {result['current']}; commit .skald/")
+    return 1 if args.check and result["needed"] else 0
 
 
 def cmd_check(store: Store, args) -> int:
@@ -2205,6 +2228,7 @@ PROJECT_COMMANDS = {
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
     "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
     "commits", "diff", "activity", "digest", "graph", "release", "audit", "import", "export",
+    "migrate",
 }
 
 
@@ -2287,6 +2311,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return cmd_import(ws, store, args)
     if args.command == "export":
         return cmd_export(ws, store, args)
+    if args.command == "migrate":
+        return cmd_migrate(store, args)
     if args.command == "next":
         return cmd_next(ws, args, store)
     if args.command == "show":

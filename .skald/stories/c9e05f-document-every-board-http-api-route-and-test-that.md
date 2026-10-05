@@ -1,12 +1,12 @@
 ---
 title: "Document every board HTTP API route, and test that docs/api.md stays complete"
-status: "review"
-rank: 10
+status: "done"
+rank: 20
 tags: ["area:docs", "release:1.0.0"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-04T02:42:04Z"
-updated_at: "2026-10-04T17:06:05Z"
+updated_at: "2026-10-05T19:02:52Z"
 ---
 ## Requirements
 

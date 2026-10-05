@@ -618,6 +618,11 @@ vulnerable release on PyPI is yanked rather than deleted, because
 yanking hides it from resolvers while keeping existing pins and lockfiles
 intact, and deleting breaks them and burns the number.
 
+Addendum, at 1.0. The policy is unchanged; what changed is that upgrading
+within 1.x is now promised to be safe (D78), which is what makes "the fix is
+the latest release" a fair answer.
+
+
 ### D64. The board wears the Vitund tokens, dark first, and a theme file overrides them
 The board had grown its own palette a class at a time: Tailwind's amber
 here, violet there, a `dark:` variant on each. Adopting one design system
@@ -887,3 +892,28 @@ one-way: a board route can join the data plane in a minor release once its
 shape has settled, but nothing leaves the data plane before 2.0.
 `tests/test_api_docs.py` places every route in exactly one plane and pins
 the data-plane set, so a demotion fails CI rather than shipping.
+
+### D78. 1.0 promises what tools build on, and a recorded baseline holds it
+1.0 is a semver promise, and Skald had made it loosely: docs called `--json`
+"stable" without saying which fields, and nothing would have stopped a
+refactor dropping one. The promise is now written down (SPEC section 10d)
+and covers what scripts, agents, and backlogs depend on: the data format,
+CLI commands and flags, `--json` and `export` field sets, MCP tools and
+arguments, the HTTP data plane (D77), and the agent contract. It leaves out
+what people read rather than parse (text output, the rendered snapshot, the
+board) and the Python modules, so those stay free to improve. The rule is
+additive-only with a deprecation window, because removing a field breaks a
+consumer silently while adding one breaks nobody. The checkable part is
+recorded, not hand-listed: `tests/test_contract.py` runs every `--json`
+command, `export`, and the data-plane routes against a fixture rich enough
+to show every optional field, reduces each output to field paths (with
+data-keyed maps such as facets collapsed so values never become contract),
+and compares them, along with every command's flags and every MCP tool's
+arguments, to `tests/contract.json`. Anything missing fails; additions pass
+and are recorded on purpose. A new required MCP argument also fails, since
+it breaks every existing caller. The command and tool checks need no
+fixture, so a crash elsewhere cannot hide a lost flag. `skald migrate`
+ships at format 1 as a no-op so the upgrade path is a real command, callable
+and testable, before any format change needs it; steps are registered per
+format, run under the mutation lock, and rewrite `format` after each, so a
+run is resumable and a second run finds nothing to do.

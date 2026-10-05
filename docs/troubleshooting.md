@@ -73,6 +73,11 @@ process (or a board server request) and stop it. A dead process releases
 the lock by itself. Raise the wait with `SKALD_LOCK_TIMEOUT=60` if a very
 large archive or release really needs longer.
 
+**`format N is newer than this version of Skald understands`**
+The backlog was written by a newer Skald. Upgrade with `pip install
+--upgrade skald-kanban` (or pipx/uv). Going the other way, `skald migrate`
+upgrades an older backlog in place; at the current format it just says so.
+
 **Conflict markers after a merge**
 `skald check` reports them. Resolve the file like any other Markdown
 conflict; the frontmatter must end up with one value per line.

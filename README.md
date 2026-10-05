@@ -155,7 +155,9 @@ speaks MCP — Cursor, Windsurf, Zed, or Claude Code itself — attaches to
 | [Examples](examples/) | Worked setups on top of the core: routing stories to model-pinned agents by tag, with a report on what each model finished; pulling GitHub issues into the backlog. |
 
 The design is in [SPEC.md](SPEC.md) and the reasoning behind non-obvious
-choices in [DECISIONS.md](DECISIONS.md).
+choices in [DECISIONS.md](DECISIONS.md). What 1.x keeps stable (the story
+format, CLI flags and `--json` fields, MCP tools, and the HTTP data plane) is
+in its [Compatibility](SPEC.md#10d-compatibility-1x) section.
 
 ## Development
 
