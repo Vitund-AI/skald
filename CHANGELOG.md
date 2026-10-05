@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `scripts/release.sh` no longer stops at the pull request to `main` when GitHub has not yet registered its checks. It used to read the "no checks reported" that `gh pr checks` prints in the first seconds after the PR opens as a failed check, stopping before the merge, the tag, and the publish; it now waits up to five minutes for the checks to appear, then watches them as before.
+
 ## 1.0.0 (2026-10-05)
 
 - Skald is 1.0. The package is now marked Production/Stable, and upgrading within 1.x is safe by promise: what scripts, agents, and backlogs rely on stays put until 2.0 (see the Compatibility section of SPEC.md). (04e801)
