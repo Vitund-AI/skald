@@ -28,8 +28,8 @@ flowchart LR
     n_b56d9e --> n_b24938
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_b24938 backlog
     class n_b56d9e unknown
+    class n_b24938 backlog
 ```
 
 ## Idea (5)
