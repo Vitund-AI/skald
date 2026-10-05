@@ -28,6 +28,10 @@ import sys
 FIELDS = "number,title,body,labels,createdAt,url,state,comments,author"
 
 
+class SkaldFailed(Exception):
+    """A skald command exited non-zero; the message is its stderr."""
+
+
 def skald(args: argparse.Namespace, *argv: str, stdin: str | None = None) -> str:
     cmd = [sys.executable, "-m", "skald"]
     if args.project:
@@ -36,7 +40,7 @@ def skald(args: argparse.Namespace, *argv: str, stdin: str | None = None) -> str
     proc = subprocess.run(cmd + list(argv), input=stdin, capture_output=True, text=True, encoding="utf-8",
                           env={**os.environ, "PYTHONUTF8": "1"})
     if proc.returncode != 0:
-        sys.exit(f"skald {' '.join(argv[:2])} failed: {proc.stderr.strip()}")
+        raise SkaldFailed(f"skald {' '.join(argv[:2])} failed: {proc.stderr.strip()}")
     return proc.stdout
 
 
@@ -76,7 +80,9 @@ def body_of(issue: dict) -> str:
 
 
 def login(who) -> str:
-    return (who or {}).get("login") or "ghost"
+    """A GitHub login as a note author. Bots are `name[bot]`, and an author may not hold brackets."""
+    name = re.sub(r"\[bot\]$", " (bot)", (who or {}).get("login") or "")
+    return re.sub(r"[\[\]\r\n]", "", name).strip() or "ghost"
 
 
 def drift(issue: dict, story: dict) -> list[str]:
@@ -112,11 +118,17 @@ def main(argv=None) -> int:
         sys.stdout.reconfigure(errors="replace")  # an emoji title must not crash a cp1252 console
 
     issues = sorted(fetch(args), key=lambda i: i["number"])
-    stories = json.loads(skald(args, "ls", "--all", "--archived", "--json") or "[]")
+    try:
+        stories = json.loads(skald(args, "ls", "--all", "--archived", "--json") or "[]")
+        columns = json.loads(skald(args, "columns", "--json") or "[]")
+    except SkaldFailed as e:
+        sys.exit(str(e))
+    # A closed issue imported with --state all is finished work: it lands in the first done column.
+    done_column = next((c["key"] for c in columns if c["role"] == "done"), None)
     prefix = f"{args.key}:"
     linked = {t[len(prefix):]: s for s in stories for t in s["tags"] if t.startswith(prefix)}
 
-    created, skipped, drifted = [], 0, []
+    created, skipped, drifted, failed = [], 0, [], []
     for issue in issues:
         story = linked.get(str(issue["number"]))
         if story:
@@ -135,17 +147,29 @@ def main(argv=None) -> int:
             new = ["new", "--tags", ",".join(tags), "--body", "-", "--created-at", issue["createdAt"], "--json"]
             if args.status:
                 new += ["--status", args.status]
-            # The title goes after --, so one that starts with a dash is not read as a flag.
-            row["id"] = json.loads(skald(args, *new, "--", issue["title"].strip(), stdin=body_of(issue)))["id"]
-            for c in comments:
-                skald(args, "note", row["id"], "-", "--as", login(c.get("author")), "--kind", "comment",
-                      "--at", c["createdAt"], stdin=(c.get("body") or "").strip() or "(empty comment)")
+            elif state == "CLOSED" and done_column:
+                new += ["--status", done_column]
+            # One issue failing is reported, not fatal: the rest still import, and the exit code says so.
+            try:
+                # The title goes after --, so one that starts with a dash is not read as a flag.
+                row["id"] = json.loads(skald(args, *new, "--", issue["title"].strip(), stdin=body_of(issue)))["id"]
+                for i, c in enumerate(comments, 1):
+                    try:
+                        skald(args, "note", row["id"], "-", "--as", login(c.get("author")), "--kind", "comment",
+                              "--at", c["createdAt"], stdin=(c.get("body") or "").strip() or "(empty comment)")
+                    except SkaldFailed as e:
+                        failed.append({"issue": issue["number"], "story": row["id"],
+                                       "error": f"comment {i} not added (add it by hand): {e}"})
+            except SkaldFailed as e:
+                failed.append({"issue": issue["number"], "error": str(e)})
+                continue
         created.append(row)
 
-    summary = {"dry_run": args.dry_run, "created": created, "already_imported": skipped, "drift": drifted}
+    summary = {"dry_run": args.dry_run, "created": created, "already_imported": skipped, "drift": drifted,
+               "failed": failed}
     if args.json:
         print(json.dumps(summary, indent=2))
-        return 0
+        return 1 if failed else 0
     verb = "would create" if args.dry_run else "created"
     for r in created:
         at = f" as {r['id']}" if "id" in r else ""
@@ -155,7 +179,11 @@ def main(argv=None) -> int:
         print("\nDrift (not changed; settle it by hand):")
         for d in drifted:
             print(f"  {d}")
-    return 0
+    if failed:
+        print("\nFailed:", file=sys.stderr)
+        for f in failed:
+            print(f"  #{f['issue']}: {f['error']}", file=sys.stderr)
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

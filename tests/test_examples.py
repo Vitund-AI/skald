@@ -82,3 +82,28 @@ class TestGitHubSyncExample(SkaldTestCase):
         self.assertIn(f"issue #1 is titled 'Crash on save (Windows)'; story {ids[1]} says 'Crash on save'", drift)
         self.assertIn(f"story {ids[3]} is done, but issue #3 is still open", drift)
         self.assertEqual(self.store().get(ids[1]).title, "Crash on save")
+
+    def test_bots_closed_issues_and_failures(self):
+        # Shapes the first run on real data turned up: bot logins, closed issues, an issue that cannot import.
+        issues = [
+            issue(1, "Merged change", state="CLOSED", comments=[("github-actions[bot]", "Backlog changes: none.")]),
+            issue(2, "   "),
+            issue(3, "Still open"),
+        ]
+        fixture = self.tmp / "issues.json"
+        fixture.write_text(json.dumps(issues))
+        env = dict(os.environ, PYTHONPATH=os.pathsep.join(p for p in (str(ROOT / "src"), os.environ.get("PYTHONPATH", "")) if p))
+        proc = subprocess.run([sys.executable, str(SYNC), "--from-json", str(fixture), "--state", "all", "--json"],
+                              capture_output=True, text=True, cwd=self.repo, env=env)
+        self.assertEqual(proc.returncode, 1, proc.stderr)  # one issue failed, the rest imported
+        out = json.loads(proc.stdout)
+        self.assertEqual([r["issue"] for r in out["created"]], [1, 3])
+        self.assertEqual([f["issue"] for f in out["failed"]], [2])
+        stories = {t: s for s in self.store().load_all()[0] for t in s.tags if t.startswith("gh:")}
+        self.assertEqual(stories["gh:1"].status, "done")      # closed issue: finished work
+        self.assertEqual(stories["gh:3"].status, "backlog")
+        self.assertEqual([n["author"] for n in stories["gh:1"].notes()], ["github-actions (bot)"])
+        # Re-run: nothing duplicated, and a closed issue in done is not drift.
+        again = self.sync(issues[:1] + issues[2:], "--state", "all")
+        self.assertEqual((again["created"], again["drift"], again["already_imported"]), ([], [], 2))
+

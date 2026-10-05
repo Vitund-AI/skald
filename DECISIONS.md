@@ -618,6 +618,11 @@ vulnerable release on PyPI is yanked rather than deleted, because
 yanking hides it from resolvers while keeping existing pins and lockfiles
 intact, and deleting breaks them and burns the number.
 
+Addendum, at 1.0. The policy is unchanged; what changed is that upgrading
+within 1.x is now promised to be safe (D78), which is what makes "the fix is
+the latest release" a fair answer.
+
+
 ### D64. The board wears the Vitund tokens, dark first, and a theme file overrides them
 The board had grown its own palette a class at a time: Tailwind's amber
 here, violet there, a `dark:` variant on each. Adopting one design system

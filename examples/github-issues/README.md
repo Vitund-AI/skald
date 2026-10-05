@@ -24,12 +24,13 @@ repository other than the one `gh` sees from the current directory.
 | Issue number | A `gh:<number>` tag, which is how a re-run knows the issue is imported |
 | Labels | Tags: `Type: Bug` becomes `type:bug`, `good first issue` becomes `good-first-issue` (`--no-labels` to skip) |
 | Created date | The story's `created_at` |
-| Comments | Dated notes of kind `comment`, by the commenter's login |
+| Comments | Dated notes of kind `comment`, by the commenter's login (a bot's `name[bot]` becomes `name (bot)`) |
 
 Not carried: assignees, milestones, reactions, the issue's author, and
 anything that changes on GitHub after the story exists. New stories go to
 the project's default column (`--status` to choose another). Only open
-issues import by default; `--state all` includes closed ones.
+issues import by default; `--state all` includes closed ones, which land in
+the project's first done column, since they are finished work.
 
 ## Re-running, and drift
 
@@ -42,6 +43,9 @@ you settle it by hand:
 - an issue closed on GitHub whose story is still open;
 - a story done or archived whose issue is still open;
 - an issue retitled since it was imported.
+
+An issue that cannot be imported (a blank title, say) is reported at the
+end and the run carries on with the rest, exiting 1 so a script notices.
 
 ## Keep the `gh:` tag out of the facet views
 

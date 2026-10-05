@@ -81,8 +81,11 @@ python3 examples/model-routing/report.py            # this project
 python3 examples/model-routing/report.py --json     # for a spreadsheet
 ```
 
-It reads story files through the `skald` package and runs `skald activity`
-with the same interpreter, so run it with the Python that has Skald
+It reads the backlog only through the CLI's `--json` output (`ls`, `show`,
+`columns`, `status`, `activity`), run with the same interpreter, and parses
+note headings from the story body. Both are stable for 1.x (SPEC,
+Compatibility), so the report imports nothing from the `skald` package and
+keeps working across 1.x releases. Run it with the Python that has Skald
 installed. The output is one row per finished story: intended tier, the
 labels that worked it, days from claim to done, and whether it went back
 from review.

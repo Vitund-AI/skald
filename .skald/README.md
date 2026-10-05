@@ -1,7 +1,7 @@
-<!-- skald-render 6e62d4f559389a20 -->
+<!-- skald-render dfa6683b99371095 -->
 # skald backlog
 
-**7 open** · Idea 5 · Plan 1 · Ready 0 · In progress 0 · Review 1 · Done 2
+**7 open** · Idea 5 · Plan 0 · Ready 0 · In progress 1 · Review 1 · Done 2
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -39,8 +39,8 @@ flowchart LR
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
     class n_80c968,n_c9e05f done
     class n_b56d9e unknown
-    class n_04e801,n_b24938 backlog
-    class n_0a2011 active
+    class n_04e801,n_0a2011 active
+    class n_b24938 backlog
 ```
 
 ## Idea (5)
@@ -53,19 +53,19 @@ flowchart LR
 | [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
 | [a73397](stories/a73397-run-local-agent-sessions-from-the-board-launch-cla.md) | Run local agent sessions from the board: launch Claude Code (or any agent CLI) on a story in a terminal streamed to the browser | `area:board` `epic:integrations` `roadmap` |  |  |  |
 
-## Plan (1)
+## Plan (0)
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [04e801](stories/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` |  | 🔒 `0a2011`, `80c968`, `c9e05f` | 0/4 |
+_none_
 
 ## Ready (0)
 
 _none_
 
-## In progress (0)
+## In progress (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [04e801](stories/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` | claude | 🔒 `0a2011`, `80c968`, `c9e05f` | 3/4 |
 
 ## Review (1)
 
