@@ -5,8 +5,9 @@ rank: 30
 tags: ["area:release", "release:1.0.0", "roadmap"]
 blocked_by: []
 assignee: "claude"
+released: "1.0.0"
 created_at: "2026-09-20T00:58:52Z"
-updated_at: "2026-10-05T21:42:50Z"
+updated_at: "2026-10-05T21:57:56Z"
 ---
 ## Requirements
 

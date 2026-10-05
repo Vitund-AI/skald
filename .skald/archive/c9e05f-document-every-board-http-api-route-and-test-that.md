@@ -5,8 +5,9 @@ rank: 20
 tags: ["area:docs", "release:1.0.0"]
 blocked_by: []
 assignee: "claude"
+released: "1.0.0"
 created_at: "2026-10-04T02:42:04Z"
-updated_at: "2026-10-05T19:02:52Z"
+updated_at: "2026-10-05T21:57:56Z"
 ---
 ## Requirements
 

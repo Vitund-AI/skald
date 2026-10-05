@@ -5,8 +5,9 @@ rank: 40
 tags: ["area:release", "release:1.0.0"]
 blocked_by: ["0a2011", "80c968", "c9e05f"]
 assignee: "claude"
+released: "1.0.0"
 created_at: "2026-10-04T02:42:21Z"
-updated_at: "2026-10-05T21:42:50Z"
+updated_at: "2026-10-05T21:57:56Z"
 ---
 ## Requirements
 
