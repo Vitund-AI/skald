@@ -903,3 +903,55 @@ class TestGitLinkage(SkaldTestCase):
         self.assertNotIn("full", events[0])
         code, out, _ = self.run_cli("activity", "--since", "HEAD", "--until", "HEAD")
         self.assertIn("no backlog activity", out)
+
+
+class TestMigrate(SkaldTestCase):
+    def set_format(self, value):
+        path = self.skald_dir / "config.json"
+        data = json.loads(path.read_text())
+        if value is None:
+            data.pop("format", None)
+        else:
+            data["format"] = value
+        path.write_text(json.dumps(data))
+
+    def test_current_format_is_a_no_op(self):
+        self.new("a")
+        before = (self.skald_dir / "config.json").read_text()
+        code, out, _ = self.run_cli("migrate")
+        self.assertEqual(code, 0)
+        self.assertIn("already at the current format (1); 1 stories read, nothing to migrate", out)
+        code, out, _ = self.run_cli("migrate", "--check", "--json")
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(out), {"format": 1, "explicit": True, "current": 1, "needed": False,
+                                           "steps": [], "stories": 1})
+        self.assertEqual((self.skald_dir / "config.json").read_text(), before)
+        self.set_format(None)
+        code, out, _ = self.run_cli("migrate")
+        self.assertIn("(implicit: config.json has no format key)", out)
+
+    def test_newer_format_asks_for_an_upgrade(self):
+        self.set_format(2)
+        code, _, err = self.run_cli("migrate")
+        self.assertEqual(code, 2)
+        self.assertIn("upgrade skald-kanban", err)
+
+    def test_older_format_runs_each_step_once(self):
+        from skald import migrate
+
+        a = self.new("a")
+        self.set_format(0)
+        code, out, _ = self.run_cli("migrate")  # no step registered from format 0
+        self.assertEqual(code, 2)
+        calls = []
+        self.addCleanup(migrate.STEPS.clear)
+        migrate.STEPS[0] = lambda store: calls.append(store.get(a).id)
+        code, out, _ = self.run_cli("migrate", "--check")
+        self.assertEqual((code, calls), (1, []))
+        self.assertIn("migration needed: format 0 -> 1 (0 -> 1)", out)
+        code, out, _ = self.run_cli("migrate")
+        self.assertEqual((code, calls), (0, [a]))
+        self.assertEqual(json.loads((self.skald_dir / "config.json").read_text())["format"], 1)
+        code, out, _ = self.run_cli("migrate")  # idempotent: nothing left to do
+        self.assertEqual((code, calls), (0, [a]))
+        self.assertIn("nothing to migrate", out)

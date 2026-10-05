@@ -49,6 +49,7 @@ src/skald/
   errors.py          exception hierarchy with exit codes and HTTP statuses
   util.py            timestamps, slugs, atomic writes, checklist parsing
   lock.py            the per-checkout mutation lock (section 4.7)
+  migrate.py         format upgrades for `skald migrate` (section 10d)
   config.py          ProjectConfig: .skald/config.json, columns and roles
   store.py           story format and the per-project Store
   registry.py        config home, Registry (projects.json), UserConfig, Workspace
@@ -158,7 +159,9 @@ the pointer when neither exists.
 ```
 
 - `format` is the story-format version. A tool that sees a newer format than
-  it understands refuses with a clear message. Current value: 1.
+  it understands refuses with a clear message. Current value: 1. It is frozen
+  for 1.x; an older backlog is upgraded in place by `skald migrate` (section
+  10d).
 - `name` matches `^[a-z0-9][a-z0-9-]{0,63}$`.
 - `columns` is a non-empty ordered list. `key` matches `^[a-z][a-z0-9_]{0,31}$`
   and is unique. `role` is one of `backlog`, `ready`, `active`, `done`,
@@ -491,6 +494,7 @@ story or configuration. Commands that print stories take `--json`.
 | `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit] [--allow-incomplete]` | Section 4.5b. `--allow-incomplete` overrides the `block_release_on_incomplete` gate. |
 | `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
+| `migrate [--check] [--json]` | Upgrade the backlog to the story format this version writes, one format step at a time under the mutation lock, rewriting `format` after each (`migrate.STEPS`). At the current format it only reports `already at the current format (N); M stories read, nothing to migrate` and changes nothing. `--check` changes nothing and exits 1 when a migration is needed. A newer backlog refuses to load at all ("upgrade skald-kanban"), exit 2. Section 10d. |
 | `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
 | `commits <id> [--all-branches] [--no-children] [--json]` | `git log --grep` for the trailer or `[id]`, plus the same for each child, de-duplicated, newest first, each entry tagged with the story it names (`commits_for_family`). |
@@ -806,6 +810,57 @@ Any MCP client attaches by launching `skald mcp` over stdio (Claude Code via
 `claude mcp add skald -- skald mcp`, others via their `mcpServers` config); the
 default project is the one containing the server's working directory. See
 `docs/working-with-agents.md`.
+
+## 10d. Compatibility (1.x)
+
+From 1.0, Skald follows semantic versioning for what scripts, agents, and
+backlogs depend on. Everything below is stable for the whole 1.x line:
+things may be added, but nothing listed is removed, renamed, or changed in
+meaning before 2.0.
+
+**Stable**
+
+- **The data.** The story file format (Markdown body, JSON-literal
+  frontmatter, the `<id>-<slug>.md` filename rule, note headings) and
+  `config.json` at `format: 1`. Every 1.x release reads every 1.x backlog.
+- **The CLI.** Command names, flags, exit codes (0 success; 1 an error, or a
+  `--check` mode that found something to change; 2 a usage error, a problem
+  with the data or configuration, or `skald check` finding problems), and the
+  field sets of every `--json`
+  output and of `skald export`. A field may be added; none is removed or
+  renamed.
+- **MCP.** Tool names and their arguments. A new argument is optional; an
+  existing one never becomes required.
+- **The HTTP data plane** (section 7, docs/api.md): bearer auth and the Host
+  check, the error format, `/api/health`, `/api/projects`, `/api/ready`, a
+  project's `version` and `events`, and the story routes. Their story object
+  is the same record as `--json` and MCP.
+- **The agent contract.** The commands and rules in `AGENTS.md`.
+
+**Not covered:** human-readable (non-`--json`) output, the layout of the
+rendered `.skald/README.md`, the board's look, the HTTP board backend, fields
+docs/api.md marks *(internal)*, and the Python modules. An example that
+imports `skald.*` relies on internals.
+
+**Deprecation.** Nothing stable is removed in 1.x. A flag, field, argument,
+or route that is deprecated keeps working, warns (on stderr, or in
+`warnings`) for at least one minor release, and goes only in 2.0, listed in
+its changelog.
+
+**Format changes.** The 1.x format is frozen. A 2.x format change ships with
+a `skald migrate` step that upgrades a backlog in place, losslessly and
+idempotently, one format at a time, so no historical backlog is orphaned; an
+older Skald meeting a newer backlog still refuses with "upgrade
+skald-kanban". At format 1 `skald migrate` only confirms the backlog is
+current, and `skald migrate --check` exits 1 when a migration is needed, for
+CI.
+
+**Enforcement.** `tests/test_contract.py` records every promise above that a
+machine can check (each `--json` and `export` field path, every command and
+flag, every MCP tool and its arguments, each data-plane response field) in
+`tests/contract.json`, and fails when one disappears; a new field is added to
+the baseline on purpose with `SKALD_CONTRACT_UPDATE=1`.
+`tests/test_api_docs.py` pins the set of data-plane routes. See D78.
 
 ## 11. Future
 
