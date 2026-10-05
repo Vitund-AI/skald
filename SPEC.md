@@ -514,10 +514,15 @@ story or configuration. Commands that print stories take `--json`.
 
 ## 7. HTTP API
 
-The HTTP API is internal to the board: it is documented route by route in
-docs/api.md (kept complete by `tests/test_api_docs.py`), but it is not part
-of the 1.x compatibility promise and may change in any release. Scripts use
-`--json` or MCP.
+The HTTP API has two planes, documented route by route in docs/api.md and
+kept complete by `tests/test_api_docs.py`. The **data plane** (bearer auth
+and the Host check, the error format, `/api/health`, `/api/projects`,
+`/api/ready`, a project's `version` and `events`, and the story routes) is
+stable for 1.x, on the same terms as `--json` and MCP; its story object is
+the same record. The **board backend** (everything shaped for the board's
+screen, plus the `?ref=` and `?checkout=` parameters) is internal and may
+change in any release. A route may be promoted to the data plane in a minor
+release; none leaves it before 2.0 (D77).
 
 `ThreadingHTTPServer`, bound to `127.0.0.1` by default. Project names in
 URLs are resolved through the registry; the API never accepts a filesystem
