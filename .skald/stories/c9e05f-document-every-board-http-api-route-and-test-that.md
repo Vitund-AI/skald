@@ -22,16 +22,17 @@ truth and has grown since some rows were written.
 - A test that enumerates the server's routes and fails if one is missing
   from docs/api.md, so the doc cannot fall behind again (the same idea as
   `skald docs --check` for the CLI).
-- A note at the top of docs/api.md: the API is internal to the board, not
-  covered by the 1.x compatibility promise, and may change in any release;
-  scripts should use `--json` or MCP. (0a2011 Q1, decided 2026-10-04: keep
-  it internal, document it for our own reference, revisit after 1.0.)
+- docs/api.md split into two planes (0a2011 Q1, revised 2026-10-05): a
+  **data plane** stable for 1.x (auth, errors, health, projects, ready,
+  version, events, the story routes) and a **board backend** that is
+  internal and may change in any release. The test classifies every route
+  into exactly one plane and pins the data-plane set.
 
 ## Acceptance
 - [x] every route in server.py has a row in docs/api.md with method, path, params/body, and response
 - [x] auth and the Host check are described once, near the top
 - [x] a test fails when a server route is missing from docs/api.md
-- [x] the internal-API note is at the top of docs/api.md
+- [x] docs/api.md states the two planes at the top; the test pins the data plane
 - [x] python3 -m unittest green, ruff clean
 
 ## [claude] 2026-10-04 17:06 UTC · handoff

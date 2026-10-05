@@ -40,8 +40,8 @@ flowchart LR
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
     class n_0a2011 ready
     class n_b56d9e unknown
-    class n_04e801,n_b24938 backlog
     class n_80c968 done
+    class n_04e801,n_b24938 backlog
     class n_c9e05f active
 ```
 

@@ -865,3 +865,25 @@ ever see a whole file. The board's PATCH still sends whole values, so an
 edit made against a stale board can overwrite a newer change; that is a UI
 freshness problem, already narrowed by live updates, not a lost update
 between two writers that both saw current state.
+
+### D77. The HTTP API is a stable data plane plus an internal board backend
+Calling the whole board API internal for 1.0 would have withdrawn an
+invitation Skald had already made: the board's token dialog, docs/board.md,
+and `skald server token` all tell scripts to call it. The server also offers
+what the CLI and MCP cannot, a live change stream and one long-running
+endpoint across every project, which is what an editor extension or a
+dashboard needs. Promising all of it would freeze the board's own payloads
+(`/board` carries settings, identity, flags, and git state because the
+screen wants them in one request). So the API is split by who it serves.
+The data plane is the routes that operate on backlog data and mirror CLI
+operations (health, the project and ready lists, `version` and `events`,
+and the story routes) plus bearer auth, the Host check, and the error
+format; it is stable for 1.x on the same additive-only terms as `--json`
+and MCP, and since its story object is the same `story_dict` record, keeping
+it stable costs almost nothing new. The board backend (BFF) is everything
+shaped for the screen, the session cookie, and the `?ref=` and `?checkout=`
+parameters; it is documented but may change in any release. Promotion is
+one-way: a board route can join the data plane in a minor release once its
+shape has settled, but nothing leaves the data plane before 2.0.
+`tests/test_api_docs.py` places every route in exactly one plane and pins
+the data-plane set, so a demotion fails CI rather than shipping.
