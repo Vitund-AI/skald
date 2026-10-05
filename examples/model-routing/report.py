@@ -3,8 +3,10 @@
 
 One row per story in a done column or the archive: the effort tag it was
 planned with, the author labels on its notes and its assignee, days from
-first claim to done, and whether it went back from review. Reads the story
-files through the skald package; run where Skald is installed.
+first claim to done, and whether it went back from review. Reads the backlog
+only through the CLI's `--json` output and the story file format, both stable
+for 1.x (SPEC, Compatibility), so it imports nothing from the skald package
+and keeps working across 1.x releases.
 
     python3 examples/model-routing/report.py [--project NAME] [--json] [--tag-prefix effort:]
 """
@@ -12,51 +14,58 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
-from skald.registry import Workspace
-from skald.store import parse_notes
+# A note heading, as the story file format defines it: ## [author] YYYY-MM-DD HH:MM UTC · kind
+NOTE_HEADING = re.compile(r"^## \[(?P<author>[^\]\n]+)\] (?P<stamp>\d{4}-\d\d-\d\d \d\d:\d\d UTC)(?: · (?P<kind>[a-z][a-z0-9_-]*))?\s*$", re.M)
+
+
+def skald(project: str | None, *argv: str):
+    """Run the CLI with this interpreter (no `skald` on PATH needed) and parse its --json output."""
+    cmd = [sys.executable, "-m", "skald"] + (["-p", project] if project else []) + list(argv)
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    if proc.returncode != 0:
+        sys.exit(f"skald {' '.join(argv)} failed: {proc.stderr.strip()}")
+    return json.loads(proc.stdout) if proc.stdout.strip() else None
 
 
 def parse_stamp(stamp: str) -> datetime:
     return datetime.strptime(stamp, "%Y-%m-%d %H:%M UTC").replace(tzinfo=timezone.utc)
 
 
-def bounces(store) -> dict[str, int]:
+def bounces(project: str | None, repo: Path, roles: dict[str, str]) -> dict[str, int]:
     """Story id -> times it went back to a ready column, from `skald activity` over the whole history."""
     root = subprocess.run(["git", "rev-list", "--max-parents=0", "HEAD"], capture_output=True, text=True,
-                          cwd=store.dir.parent).stdout.split()
+                          cwd=repo).stdout.split()
     if not root:
         return {}
-    # The same interpreter that imported skald runs the CLI, so no `skald` on PATH is needed.
-    out = subprocess.run([sys.executable, "-m", "skald", "activity", "--json", "--since", root[-1]],
-                         capture_output=True, text=True, cwd=store.dir.parent).stdout
-    events = json.loads(out) if out.strip() else []
-    ready = set(store.config.keys_with_role("ready"))
+    events = skald(project, "activity", "--json", "--since", root[-1]) or []
     counts: dict[str, int] = {}
     for e in events:
         bits = e["event"].split()
-        if len(bits) == 4 and bits[0] == "status" and bits[2] == "->" and bits[3] in ready and bits[1] not in ready:
-            if bits[1] not in store.config.keys_with_role("backlog"):
-                counts[e["id"]] = counts.get(e["id"], 0) + 1
+        if len(bits) == 4 and bits[0] == "status" and bits[2] == "->" and roles.get(bits[3]) == "ready" \
+                and roles.get(bits[1]) not in ("ready", "backlog"):
+            counts[e["id"]] = counts.get(e["id"], 0) + 1
     return counts
 
 
-def row(story, prefix: str, sent_back: int) -> dict:
-    notes = parse_notes(story.body)
-    intended = next((t[len(prefix):] for t in story.tags if t.startswith(prefix)), "")
+def row(story: dict, prefix: str, sent_back: int) -> dict:
+    notes = [m.groupdict() for m in NOTE_HEADING.finditer(story.get("body", ""))]
+    intended = next((t[len(prefix):] for t in story["tags"] if t.startswith(prefix)), "")
     workers = []
     for n in notes:
         if n["author"] not in workers and n["author"] not in ("import", "skald"):
             workers.append(n["author"])
-    if story.assignee and story.assignee not in workers:
-        workers.append(story.assignee)
+    if story.get("assignee") and story["assignee"] not in workers:
+        workers.append(story["assignee"])
     stamps = [parse_stamp(n["stamp"]) for n in notes]
     days = round((max(stamps) - min(stamps)).total_seconds() / 86400, 1) if len(stamps) > 1 else 0.0
-    return {"id": story.id, "title": story.title, "intended": intended, "worked_by": workers,
-            "notes": len(notes), "days": days, "sent_back": sent_back, "released": story.released}
+    return {"id": story["id"], "title": story["title"], "intended": intended, "worked_by": workers,
+            "notes": len(notes), "days": days, "sent_back": sent_back, "released": story.get("released", "")}
 
 
 def main() -> int:
@@ -65,11 +74,13 @@ def main() -> int:
     ap.add_argument("--tag-prefix", default="effort:", help="the intent facet (default: effort:)")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
-    store = Workspace().current(args.project)
-    stories, _ = store.load_all(include_archived=True)
-    done = [s for s in stories if store.config.is_terminal(s.status) and not store.config.is_closed(s.status)]
-    back = bounces(store)
-    rows = [row(s, args.tag_prefix, back.get(s.id, 0)) for s in done]
+    status = skald(args.project, "status", "--json")
+    repo = Path(status["path"]).parent
+    roles = {c["key"]: c["role"] for c in skald(args.project, "columns", "--json")}
+    # Finished means a done-role column, live or archived; a closed (won't-do) story is not work done.
+    finished = [s for s in skald(args.project, "ls", "--all", "--archived", "--json") if s["role"] == "done"]
+    back = bounces(args.project, repo, roles)
+    rows = [row(skald(args.project, "show", s["id"], "--json"), args.tag_prefix, back.get(s["id"], 0)) for s in finished]
     if args.json:
         json.dump(rows, sys.stdout, indent=2)
         print()

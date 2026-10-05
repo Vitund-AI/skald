@@ -39,10 +39,11 @@ keep you informed as we go.
 | The latest release on PyPI | Yes |
 | Earlier releases | No, unless a maintainer decides to patch a line; see below |
 
-Skald is pre-1.0 and every fix ships as a new release; upgrading is
-`pip install --upgrade skald-kanban`. A critical issue in an earlier line
-may get a patch release cut from that line's tag, at the maintainers'
-discretion; the flow is in
+Fixes ship in the latest 1.x release; upgrading within 1.x is always safe,
+because 1.x keeps everything scripts, agents, and backlogs rely on
+(SPEC.md, Compatibility), so `pip install --upgrade skald-kanban` is the
+fix. A critical issue in an earlier line may get a patch release cut from
+that line's tag, at the maintainers' discretion; the flow is in
 [docs/git-and-ci.md](docs/git-and-ci.md#patching-an-earlier-release).
 
 ## Scope

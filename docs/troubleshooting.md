@@ -65,6 +65,19 @@ Archived stories are read-only. `skald unarchive <id>` brings one back.
 `archive <id>` and the board's Archive action only accept stories in a
 terminal column.
 
+**`another skald command has been changing this project for 30s`**
+Commands that change stories take turns on a short lock so two agents
+cannot overwrite each other. This error means one held it for the whole
+timeout, which a normal command never does: look for a stuck `skald`
+process (or a board server request) and stop it. A dead process releases
+the lock by itself. Raise the wait with `SKALD_LOCK_TIMEOUT=60` if a very
+large archive or release really needs longer.
+
+**`format N is newer than this version of Skald understands`**
+The backlog was written by a newer Skald. Upgrade with `pip install
+--upgrade skald-kanban` (or pipx/uv). Going the other way, `skald migrate`
+upgrades an older backlog in place; at the current format it just says so.
+
 **Conflict markers after a merge**
 `skald check` reports them. Resolve the file like any other Markdown
 conflict; the frontmatter must end up with one value per line.

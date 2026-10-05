@@ -1,15 +1,23 @@
-<!-- skald-render 7ebda5ba3792d680 -->
+<!-- skald-render 4104a49e1c8513c9 -->
 # skald backlog
 
-**6 open** · Idea 6 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**5 open** · Idea 5 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
+
+## Open questions
+
+Waiting on a human.
+
+| Story | Question | Asked |
+| --- | --- | --- |
+| [a73397](stories/a73397-run-local-agent-sessions-from-the-board-launch-cla.md) Run local agent sessions from the board: launch Claude Code (or any agent CLI) on a story in a terminal streamed to the browser | Q1: Q1: Product direction: should Skald run agents, or only coordinate them? Running them is the bigger change and needs its own decision. If yes, the next questions are Windows (POSIX-only, or an optional pywinpty extra) and lifecycle (Skald owns the processes, or sessions run in tmux so they survive restarts and can be attached from a terminal). | claude, 2026-10-04 |
 
 ## Epics
 
 | Epic | Progress | Done | Open |
 | --- | --- | ---: | ---: |
-| `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 2 |
+| `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 3 |
 
 ## Dependencies
 
@@ -24,16 +32,15 @@ flowchart LR
     class n_b56d9e unknown
 ```
 
-## Idea (6)
+## Idea (5)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` |  |  | 0/6 |
 | [05e3b1](stories/05e3b1-optional-enforced-guarded-column-transitions-workf.md) | Optional enforced/guarded column transitions (workflow rules) | `roadmap` |  |  |  |
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
-| [0a2011](stories/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | Declare the v1 schema-freeze guarantee and a format-migration contract (skald migrate) | `area:docs` `roadmap` |  |  |  |
-| [80c968](stories/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `roadmap` |  |  |  |
 | [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
+| [a73397](stories/a73397-run-local-agent-sessions-from-the-board-launch-cla.md) | Run local agent sessions from the board: launch Claude Code (or any agent CLI) on a story in a terminal streamed to the browser | `area:board` `epic:integrations` `roadmap` |  |  |  |
 
 ## Plan (0)
 
@@ -58,6 +65,17 @@ _none_
 </details>
 
 ## Releases
+
+<details><summary><strong>1.0.0 (4)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [0a2011](archive/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | 1.0 compatibility promise: declare the stable surface, pin the --json fields, add skald migrate | `area:release` `release:1.0.0` `roadmap` | claude |  | 7/7 |
+| [c9e05f](archive/c9e05f-document-every-board-http-api-route-and-test-that.md) | Document every board HTTP API route, and test that docs/api.md stays complete | `area:docs` `release:1.0.0` | claude |  | 5/5 |
+| [04e801](archive/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` | claude | 🔒 `0a2011`, `80c968`, `c9e05f` | 4/4 |
+| [80c968](archive/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `release:1.0.0` `roadmap` | claude |  | 6/6 |
+
+</details>
 
 <details><summary><strong>0.9.0 (8)</strong></summary>
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.0 (2026-10-05)
+
+- Skald is 1.0. The package is now marked Production/Stable, and upgrading within 1.x is safe by promise: what scripts, agents, and backlogs rely on stays put until 2.0 (see the Compatibility section of SPEC.md). (04e801)
+- The GitHub issues example handles what real repositories contain: a bot's comments (`github-actions[bot]`) are imported as `github-actions (bot)` instead of stopping the run; a closed issue imported with `--state all` lands in the first done column, so it is not reported as drift; and an issue that cannot be imported is reported while the rest still import, with exit code 1. (04e801)
+- The model-routing report reads the backlog only through the CLI's `--json` output, so it keeps working across 1.x releases. (04e801)
+- Skald now says what 1.x keeps stable, in a new Compatibility section of SPEC.md: the story and config format, CLI commands, flags, and the fields of every `--json` output and `export`, MCP tools and their arguments, the HTTP data plane, and the agent contract. Nothing listed is removed or renamed before 2.0; a deprecated item keeps working and warns for at least one minor release. A contract test records all of it and fails CI if a promise is broken. (0a2011)
+- A new `skald migrate` command is the upgrade path for any future story-format change: it upgrades an older backlog in place, and `--check` exits 1 when a migration is needed, for CI. At the current format it confirms the backlog is current and changes nothing. (0a2011)
+- `docs/api.md` now documents every route the board server handles, with response shapes checked against the code, and splits them into two planes. The **data plane** — authentication, errors, health, the project and ready lists, the change stream, and the story routes — is stable for 1.x like `--json` and MCP, and returns the same story record. The **board backend**, the routes shaped for the board's own screen, is internal and may change in any release. A test fails if a route is missing from the page, listed without existing, or leaves the data plane. (c9e05f)
+- Concurrent `skald` commands in one checkout no longer overwrite each other. Every command that changes stories now holds a short lock across its read and its write, so two agents claiming the same story at the same moment take turns (the second sees it taken), tags and notes added at once are all kept, and new stories get distinct ranks. The lock lives in the machine-local config directory, never in the repository, is released automatically if a process dies, and times out after 30 seconds (`SKALD_LOCK_TIMEOUT`) with a clear error. (80c968)
+
+### Stories
+
+- Concurrent `skald` commands in one checkout no longer overwrite each other: two agents claiming, moving, or creating stories at the same moment now take turns, so a story cannot be claimed twice and no change is lost. (80c968)
+- Document every board HTTP API route, and test that docs/api.md stays complete (c9e05f)
+- Skald now states what 1.x keeps stable: the story and config format, CLI commands and flags, the fields of `--json` output, MCP tools, and the agent contract. CI pins them, so a breaking change cannot ship by accident. A new `skald migrate` command is the upgrade path for any future format change; today it confirms the backlog is current. (0a2011)
+- Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals (04e801)
+
 ## 0.9.0 (2026-09-29)
 
 - A new example, [`examples/github-issues`](examples/github-issues/), pulls a repository's GitHub issues into the backlog as stories tagged `gh:<number>`, with labels as tags and comments as dated notes. It is safe to re-run: issues already imported are skipped (archived stories included), and it reports issues and stories that have drifted apart instead of overwriting either side. It only reads from GitHub. (b56d9e)

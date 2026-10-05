@@ -618,6 +618,11 @@ vulnerable release on PyPI is yanked rather than deleted, because
 yanking hides it from resolvers while keeping existing pins and lockfiles
 intact, and deleting breaks them and burns the number.
 
+Addendum, at 1.0. The policy is unchanged; what changed is that upgrading
+within 1.x is now promised to be safe (D78), which is what makes "the fix is
+the latest release" a fair answer.
+
+
 ### D64. The board wears the Vitund tokens, dark first, and a theme file overrides them
 The board had grown its own palette a class at a time: Tailwind's amber
 here, violet there, a `dark:` variant on each. Adopting one design system
@@ -838,3 +843,77 @@ is an object, not a bare list, so an `include` allowlist can be added later
 without a second top-level key; it is not added now because an allowlist
 silently turns off every new convention key (`effort:`, say) until someone
 remembers to list it, and nobody has needed one.
+
+### D76. Mutations take a per-checkout OS file lock, held across read and write, kept outside the repository
+`atomic_write` already meant a reader never sees half a story file, but not
+that two writers see each other: `claim`, `move`, `tag`, and `new` each read
+the backlog, decide, and write, so two running at once lose one update (a
+story claimed by both, a tag dropped, two stories on one rank). Agents
+sharing a checkout, such as subagents of one session or the board server's
+threads, hit exactly this. Every mutating `Store` method now runs under an
+exclusive lock that covers its read as well as its write; `skald tag` and
+`skald block`, which used to read in the CLI and write in the store, moved
+into `Store.edit_tags` and `Store.edit_blockers` so the whole cycle sits
+inside the lock. The lock is an OS lock (`fcntl.flock`, `msvcrt.locking`;
+standard library on both) rather than a lock file whose existence is the
+lock, because the OS releases it when a process dies, so a crashed agent
+cannot wedge the backlog and there is no stale-lock cleanup to get wrong.
+The file lives under the machine-local config home, keyed by a hash of the
+`.skald/` path, never in the repository, because `.skald/` is committed and
+agents are told to `git add .skald`. It is per checkout, matching what can
+actually collide (worktrees have their own files), re-entrant per thread so
+a locked method may call another, serialises threads in one process before
+touching the file, and is never held across a git call, so the critical
+section is milliseconds. Waiting is bounded (`SKALD_LOCK_TIMEOUT`, 30s) and
+ends in an error rather than a hang. Readers stay lock-free: they can only
+ever see a whole file. The board's PATCH still sends whole values, so an
+edit made against a stale board can overwrite a newer change; that is a UI
+freshness problem, already narrowed by live updates, not a lost update
+between two writers that both saw current state.
+
+### D77. The HTTP API is a stable data plane plus an internal board backend
+Calling the whole board API internal for 1.0 would have withdrawn an
+invitation Skald had already made: the board's token dialog, docs/board.md,
+and `skald server token` all tell scripts to call it. The server also offers
+what the CLI and MCP cannot, a live change stream and one long-running
+endpoint across every project, which is what an editor extension or a
+dashboard needs. Promising all of it would freeze the board's own payloads
+(`/board` carries settings, identity, flags, and git state because the
+screen wants them in one request). So the API is split by who it serves.
+The data plane is the routes that operate on backlog data and mirror CLI
+operations (health, the project and ready lists, `version` and `events`,
+and the story routes) plus bearer auth, the Host check, and the error
+format; it is stable for 1.x on the same additive-only terms as `--json`
+and MCP, and since its story object is the same `story_dict` record, keeping
+it stable costs almost nothing new. The board backend (BFF) is everything
+shaped for the screen, the session cookie, and the `?ref=` and `?checkout=`
+parameters; it is documented but may change in any release. Promotion is
+one-way: a board route can join the data plane in a minor release once its
+shape has settled, but nothing leaves the data plane before 2.0.
+`tests/test_api_docs.py` places every route in exactly one plane and pins
+the data-plane set, so a demotion fails CI rather than shipping.
+
+### D78. 1.0 promises what tools build on, and a recorded baseline holds it
+1.0 is a semver promise, and Skald had made it loosely: docs called `--json`
+"stable" without saying which fields, and nothing would have stopped a
+refactor dropping one. The promise is now written down (SPEC section 10d)
+and covers what scripts, agents, and backlogs depend on: the data format,
+CLI commands and flags, `--json` and `export` field sets, MCP tools and
+arguments, the HTTP data plane (D77), and the agent contract. It leaves out
+what people read rather than parse (text output, the rendered snapshot, the
+board) and the Python modules, so those stay free to improve. The rule is
+additive-only with a deprecation window, because removing a field breaks a
+consumer silently while adding one breaks nobody. The checkable part is
+recorded, not hand-listed: `tests/test_contract.py` runs every `--json`
+command, `export`, and the data-plane routes against a fixture rich enough
+to show every optional field, reduces each output to field paths (with
+data-keyed maps such as facets collapsed so values never become contract),
+and compares them, along with every command's flags and every MCP tool's
+arguments, to `tests/contract.json`. Anything missing fails; additions pass
+and are recorded on purpose. A new required MCP argument also fails, since
+it breaks every existing caller. The command and tool checks need no
+fixture, so a crash elsewhere cannot hide a lost flag. `skald migrate`
+ships at format 1 as a no-op so the upgrade path is a real command, callable
+and testable, before any format change needs it; steps are registered per
+format, run under the mutation lock, and rewrite `format` after each, so a
+run is resumable and a second run finds nothing to do.

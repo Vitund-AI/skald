@@ -150,12 +150,14 @@ speaks MCP — Cursor, Windsurf, Zed, or Claude Code itself — attaches to
 | [Multiple projects](docs/multi-project.md) | You have more than one repository, or more than one checkout of one. |
 | [Importing](docs/importing.md) | You have an existing folder of Markdown records to bring in. |
 | [CLI reference](docs/cli.md) | You need the exact flags. Generated from the parser. |
-| [HTTP API](docs/api.md) | You are scripting against the board server. |
+| [HTTP API](docs/api.md) | You are scripting against the board server: the data plane (stories, projects, the change stream) is stable; the board's own routes are internal. |
 | [Troubleshooting](docs/troubleshooting.md) | Something printed an error or looks wrong. |
 | [Examples](examples/) | Worked setups on top of the core: routing stories to model-pinned agents by tag, with a report on what each model finished; pulling GitHub issues into the backlog. |
 
 The design is in [SPEC.md](SPEC.md) and the reasoning behind non-obvious
-choices in [DECISIONS.md](DECISIONS.md).
+choices in [DECISIONS.md](DECISIONS.md). What 1.x keeps stable (the story
+format, CLI flags and `--json` fields, MCP tools, and the HTTP data plane) is
+in its [Compatibility](SPEC.md#10d-compatibility-1x) section.
 
 ## Development
 

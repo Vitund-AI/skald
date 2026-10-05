@@ -48,6 +48,8 @@ src/skald/
   __main__.py        python -m skald
   errors.py          exception hierarchy with exit codes and HTTP statuses
   util.py            timestamps, slugs, atomic writes, checklist parsing
+  lock.py            the per-checkout mutation lock (section 4.7)
+  migrate.py         format upgrades for `skald migrate` (section 10d)
   config.py          ProjectConfig: .skald/config.json, columns and roles
   store.py           story format and the per-project Store
   registry.py        config home, Registry (projects.json), UserConfig, Workspace
@@ -84,6 +86,8 @@ else `$XDG_CONFIG_HOME/skald` defaulting to `~/.config/skald`. It holds:
   `port 8321`, `host "127.0.0.1"`, `stale_days 3`. It also carries the
   feature flags (below), which is why nothing in this file is committed.
 - `server.json` and `server.log`: the background server's pid, host, port.
+- `locks/`: one empty lock file per checkout that has been written to
+  (section 4.7). Safe to delete when no `skald` command is running.
 
 Feature flags are machine-local boolean toggles for board and CLI behaviour,
 declared once in a catalog (`FEATURE_DEFAULTS`: name, label, help, built-in
@@ -155,7 +159,9 @@ the pointer when neither exists.
 ```
 
 - `format` is the story-format version. A tool that sees a newer format than
-  it understands refuses with a clear message. Current value: 1.
+  it understands refuses with a clear message. Current value: 1. It is frozen
+  for 1.x; an older backlog is upgraded in place by `skald migrate` (section
+  10d).
 - `name` matches `^[a-z0-9][a-z0-9-]{0,63}$`.
 - `columns` is a non-empty ordered list. `key` matches `^[a-z][a-z0-9_]{0,31}$`
   and is unique. `role` is one of `backlog`, `ready`, `active`, `done`,
@@ -421,9 +427,26 @@ then not scanned from objects, so nothing is counted twice. The CLI passes
 
 ### 4.7 Concurrency and git
 
-Writes go to a temp file then `os.replace`. Board body edits carry the SHA-256
-of the body they loaded and get 409 on mismatch. Random ids mean branches
-never collide on creation. `check` reports conflict markers.
+Writes go to a temp file then `os.replace`, so a reader never sees half a
+file. Every mutating `Store` method (`create`, `update`, `claim`, `reorder`,
+`answer`, `append_note`, `write_body`, `delete`, `mark_released`, `archive`,
+and the `edit_tags` / `edit_blockers` behind `skald tag` and `skald block`)
+runs its read and its write under an exclusive per-checkout lock
+(`lock.py`), so concurrent commands in one checkout take turns instead of
+losing each other's updates: a story cannot be claimed twice at once, tags
+added at the same moment are all kept, and new stories get distinct ranks.
+The lock is an OS file lock (`fcntl.flock`, or `msvcrt.locking` on Windows)
+on `<config home>/locks/<hash of the .skald path>.lock`, outside the
+repository; the OS drops it if a process dies. It is re-entrant within a
+thread, serialises the board server's threads too, is never held across a
+git call, and gives up after `$SKALD_LOCK_TIMEOUT` seconds (default 30)
+with an error (HTTP 503 from the board). Readers never lock. Separate
+checkouts (worktrees) have separate files and separate locks. Board body
+edits carry the SHA-256 of the body they loaded and get 409 on mismatch;
+other board edits send whole values (a tag list, say) and so are
+last-writer-wins against a change made after the board last refreshed.
+Random ids mean branches never collide on creation. `check` reports
+conflict markers.
 
 ---
 
@@ -471,6 +494,7 @@ story or configuration. Commands that print stories take `--json`.
 | `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit] [--allow-incomplete]` | Section 4.5b. `--allow-incomplete` overrides the `block_release_on_incomplete` gate. |
 | `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
+| `migrate [--check] [--json]` | Upgrade the backlog to the story format this version writes, one format step at a time under the mutation lock, rewriting `format` after each (`migrate.STEPS`). At the current format it only reports `already at the current format (N); M stories read, nothing to migrate` and changes nothing. `--check` changes nothing and exits 1 when a migration is needed. A newer backlog refuses to load at all ("upgrade skald-kanban"), exit 2. Section 10d. |
 | `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
 | `commits <id> [--all-branches] [--no-children] [--json]` | `git log --grep` for the trailer or `[id]`, plus the same for each child, de-duplicated, newest first, each entry tagged with the story it names (`commits_for_family`). |
@@ -493,6 +517,16 @@ story or configuration. Commands that print stories take `--json`.
 ---
 
 ## 7. HTTP API
+
+The HTTP API has two planes, documented route by route in docs/api.md and
+kept complete by `tests/test_api_docs.py`. The **data plane** (bearer auth
+and the Host check, the error format, `/api/health`, `/api/projects`,
+`/api/ready`, a project's `version` and `events`, and the story routes) is
+stable for 1.x, on the same terms as `--json` and MCP; its story object is
+the same record. The **board backend** (everything shaped for the board's
+screen, plus the `?ref=` and `?checkout=` parameters) is internal and may
+change in any release. A route may be promoted to the data plane in a minor
+release; none leaves it before 2.0 (D77).
 
 `ThreadingHTTPServer`, bound to `127.0.0.1` by default. Project names in
 URLs are resolved through the registry; the API never accepts a filesystem
@@ -776,6 +810,57 @@ Any MCP client attaches by launching `skald mcp` over stdio (Claude Code via
 `claude mcp add skald -- skald mcp`, others via their `mcpServers` config); the
 default project is the one containing the server's working directory. See
 `docs/working-with-agents.md`.
+
+## 10d. Compatibility (1.x)
+
+From 1.0, Skald follows semantic versioning for what scripts, agents, and
+backlogs depend on. Everything below is stable for the whole 1.x line:
+things may be added, but nothing listed is removed, renamed, or changed in
+meaning before 2.0.
+
+**Stable**
+
+- **The data.** The story file format (Markdown body, JSON-literal
+  frontmatter, the `<id>-<slug>.md` filename rule, note headings) and
+  `config.json` at `format: 1`. Every 1.x release reads every 1.x backlog.
+- **The CLI.** Command names, flags, exit codes (0 success; 1 an error, or a
+  `--check` mode that found something to change; 2 a usage error, a problem
+  with the data or configuration, or `skald check` finding problems), and the
+  field sets of every `--json`
+  output and of `skald export`. A field may be added; none is removed or
+  renamed.
+- **MCP.** Tool names and their arguments. A new argument is optional; an
+  existing one never becomes required.
+- **The HTTP data plane** (section 7, docs/api.md): bearer auth and the Host
+  check, the error format, `/api/health`, `/api/projects`, `/api/ready`, a
+  project's `version` and `events`, and the story routes. Their story object
+  is the same record as `--json` and MCP.
+- **The agent contract.** The commands and rules in `AGENTS.md`.
+
+**Not covered:** human-readable (non-`--json`) output, the layout of the
+rendered `.skald/README.md`, the board's look, the HTTP board backend, fields
+docs/api.md marks *(internal)*, and the Python modules. An example that
+imports `skald.*` relies on internals.
+
+**Deprecation.** Nothing stable is removed in 1.x. A flag, field, argument,
+or route that is deprecated keeps working, warns (on stderr, or in
+`warnings`) for at least one minor release, and goes only in 2.0, listed in
+its changelog.
+
+**Format changes.** The 1.x format is frozen. A 2.x format change ships with
+a `skald migrate` step that upgrades a backlog in place, losslessly and
+idempotently, one format at a time, so no historical backlog is orphaned; an
+older Skald meeting a newer backlog still refuses with "upgrade
+skald-kanban". At format 1 `skald migrate` only confirms the backlog is
+current, and `skald migrate --check` exits 1 when a migration is needed, for
+CI.
+
+**Enforcement.** `tests/test_contract.py` records every promise above that a
+machine can check (each `--json` and `export` field path, every command and
+flag, every MCP tool and its arguments, each data-plane response field) in
+`tests/contract.json`, and fails when one disappears; a new field is added to
+the baseline on purpose with `SKALD_CONTRACT_UPDATE=1`.
+`tests/test_api_docs.py` pins the set of data-plane routes. See D78.
 
 ## 11. Future
 
