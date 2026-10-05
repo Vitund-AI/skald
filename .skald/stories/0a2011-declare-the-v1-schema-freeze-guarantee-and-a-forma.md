@@ -1,12 +1,12 @@
 ---
 title: "1.0 compatibility promise: declare the stable surface, pin the --json fields, add skald migrate"
-status: "review"
-rank: 10
+status: "done"
+rank: 30
 tags: ["area:release", "release:1.0.0", "roadmap"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-09-20T00:58:52Z"
-updated_at: "2026-10-05T19:12:47Z"
+updated_at: "2026-10-05T21:42:50Z"
 ---
 ## Requirements
 
