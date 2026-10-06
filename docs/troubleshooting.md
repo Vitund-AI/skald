@@ -95,6 +95,14 @@ repository; it opens the board with the key and the page keeps a session
 cookie from then on. If you rotated the token with `skald server token
 --rotate`, every open tab needs a fresh `skald open`.
 
+**The board on another device asks for its key, or `skald open` shows `0.0.0.0`**
+A board bound to all interfaces (`host 0.0.0.0`) is opened on another
+device from the link `skald open` prints there, which carries the key and
+names the machine's network address. Skald 1.0.0 and earlier printed
+`http://0.0.0.0:…` without the key; upgrade, `skald server restart`, and run
+`skald open` again. Until then, build the link by hand:
+`http://<the machine's IP>:8321/#key=` followed by `skald server token`.
+
 **A script gets 401**
 Send the token: `-H "Authorization: Bearer $(skald server token)"`. Only
 `/api/health` is open.

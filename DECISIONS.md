@@ -917,3 +917,22 @@ ships at format 1 as a no-op so the upgrade path is a real command, callable
 and testable, before any format change needs it; steps are registered per
 format, run under the mutation lock, and rewrite `format` after each, so a
 run is resumable and a second run finds nothing to do.
+
+### D79. A board bound to every interface prints its network addresses, and `skald open` prints the key there
+`0.0.0.0` is a bind address, not a place: no other device can open it, and
+nothing can connect to it on Windows. So the CLI never prints it. It prints
+the machine's network addresses instead, found with the standard library
+alone: the source address of a UDP socket "connected" to a TEST-NET address,
+which sends nothing and picks the default route, plus whatever the hostname
+resolves to, loopback dropped. This machine's own connections (the browser,
+the health probe) go to `127.0.0.1`, which the Host check accepts on a
+wildcard bind anyway. `skald open` keeps the key out of what it prints on a
+loopback bind, where the browser it opens carries it. A wildcard bind exists
+for other devices, though, and the only way to get the key to them is the
+terminal, so there it prints the keyed link for each address. The same goes
+for a loopback bind where no browser could be opened. D48's reasons for the
+fragment (the server, its log, and Referer never see the key) are unchanged
+by printing it: a person's own terminal already shows `skald server token`.
+The rest stays as it was. There is no TLS, so on an untrusted network the
+docs point to an SSH tunnel or a TLS proxy rather than Skald growing
+certificates.
