@@ -1,12 +1,12 @@
 ---
 title: "Board on the LAN: show a reachable address and hand over the key when bound to 0.0.0.0"
-status: "review"
+status: "done"
 rank: 10
 tags: ["area:board", "area:server", "bug"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-06T06:10:11Z"
-updated_at: "2026-10-06T06:13:05Z"
+updated_at: "2026-10-06T06:19:07Z"
 ---
 ## Requirements
 
