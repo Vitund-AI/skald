@@ -485,7 +485,8 @@ def build_parser() -> argparse.ArgumentParser:
     tk = srvs.add_parser("token", help="print the board's access token (scripts send it as Authorization: Bearer)")
     tk.add_argument("--rotate", action="store_true", help="replace it; existing browser sessions stop working")
 
-    sub.add_parser("open", help="start the server if needed and open the board for this project")
+    sub.add_parser("open", help="start the server if needed and open the board for this project; on a server bound to "
+                                "all interfaces, print a link with the key for each network address")
     rl = sub.add_parser("release", help="record a version: a changelog section from the done column, then archive those stories")
     rl.add_argument("version", help="the version being shipped, e.g. 1.2.0")
     rl.add_argument("--changelog", default=None, metavar="PATH", help="default: CHANGELOG.md at the repository root")

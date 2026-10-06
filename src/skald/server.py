@@ -6,6 +6,7 @@ import hmac
 import json
 import os
 import signal
+import socket
 import socketserver
 import subprocess
 import sys
@@ -133,7 +134,7 @@ class Handler(BaseHTTPRequestHandler):
     def _host_ok(self) -> bool:
         """Refuse requests whose Host is not this machine: a hostile DNS name pointing at 127.0.0.1 fails here."""
         bound = self.server.server_address[0]
-        if bound in ("", "0.0.0.0", "::"):
+        if bound in WILDCARD:
             return True  # bound to every interface on purpose; the token is the only gate
         host = (self.headers.get("Host") or "").strip().lower()
         if host.startswith("["):
@@ -703,7 +704,7 @@ def read_state(home: Path) -> Optional[dict]:
 
 def health(host: str, port: int, timeout: float = 1.0) -> Optional[dict]:
     try:
-        with urlopen(f"http://{host}:{port}/api/health", timeout=timeout) as res:
+        with urlopen(f"http://{local_host(host)}:{port}/api/health", timeout=timeout) as res:
             return json.loads(res.read().decode("utf-8"))
     except (URLError, OSError, ValueError):
         return None
@@ -753,6 +754,39 @@ def pid_alive(pid: int) -> bool:
     return True
 
 
+WILDCARD = ("", "0.0.0.0", "::")  # bind addresses meaning "every interface"
+
+
+def local_host(bound: str) -> str:
+    """The address this machine reaches its own server on. Nothing can connect to 0.0.0.0 on Windows."""
+    return "127.0.0.1" if bound in WILDCARD else bound
+
+
+def lan_addresses() -> list[str]:
+    """This machine's IPv4 addresses on the network, the one on the default route first; may be empty."""
+    found: list[str] = []
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("192.0.2.1", 9))  # TEST-NET-1: a UDP connect sends nothing, it only picks the route
+            found.append(s.getsockname()[0])
+    except OSError:
+        pass
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            if info[4][0] not in found:
+                found.append(info[4][0])
+    except OSError:
+        pass
+    return [ip for ip in found if not ip.startswith("127.") and ip != "0.0.0.0"]
+
+
+def shown_hosts(bound: str) -> list[str]:
+    """The addresses to print for a server bound to `bound`: its network addresses when it listens on all of them."""
+    if bound in WILDCARD:
+        return lan_addresses() or ["127.0.0.1"]
+    return [bound]
+
+
 def board_url(host: str, port: int, token: Optional[str], project: Optional[str] = None) -> str:
     """The URL `skald open` opens: the key rides in the fragment, which never reaches the server or its log."""
     url = f"http://{host}:{port}/"
@@ -768,11 +802,10 @@ def serve(home: Path, host: str, port: int, open_browser: bool = False, quiet: b
     token = ensure_token(home)
     httpd = SkaldServer((host, port), home=home, quiet=quiet)
     actual_port = httpd.server_address[1]
-    url = f"http://{host}:{actual_port}/"
     state_path(home).write_text(json.dumps({
         "pid": os.getpid(), "host": host, "port": actual_port, "started_at": time.time(), "version": __version__,
     }), encoding="utf-8")
-    print(f"Skald board at {url}  (Ctrl+C to stop)", flush=True)
+    print(f"Skald board at {_urls(host, actual_port)}  (Ctrl+C to stop)", flush=True)
 
     def _stop(signum, frame):  # pragma: no cover - signal driven
         threading.Thread(target=httpd.shutdown, daemon=True).start()
@@ -783,7 +816,7 @@ def serve(home: Path, host: str, port: int, open_browser: bool = False, quiet: b
         except (ValueError, OSError):  # pragma: no cover - not main thread / platform
             pass
     if open_browser:
-        webbrowser.open(board_url(host, actual_port, token))
+        webbrowser.open(board_url(local_host(host), actual_port, token))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:  # pragma: no cover
@@ -884,6 +917,11 @@ def stop_server(home: Path) -> bool:
 # --------------------------------------------------------------------------
 
 
+def _urls(host: str, port: int) -> str:
+    """The server's address(es) for a person to read: `http://192.168.1.20:8321/`, never `http://0.0.0.0:8321/`."""
+    return ", ".join(f"http://{h}:{port}/" for h in shown_hosts(host))
+
+
 def _host_port(ws: Workspace, args) -> tuple[str, int]:
     """The bind address: flags win over settings. Port 0 means "any free port", so only None falls back."""
     host = getattr(args, "host", None)
@@ -905,7 +943,7 @@ def cmd_server(ws: Workspace, args) -> int:
     if args.server_cmd == "start":
         host, port = _host_port(ws, args)
         state = start_server(home, host, port)
-        print(f"server running at http://{state['host']}:{state['port']}/ (pid {state['pid']})")
+        print(f"server running at {_urls(state['host'], state['port'])} (pid {state['pid']})")
         return 0
     if args.server_cmd == "stop":
         if stop_server(home):
@@ -927,7 +965,7 @@ def cmd_server(ws: Workspace, args) -> int:
             port = int(ws.user.get("port"))
         stop_server(home)
         state = start_server(home, host, int(port))
-        print(f"server restarted at http://{state['host']}:{state['port']}/ (pid {state['pid']})")
+        print(f"server restarted at {_urls(state['host'], state['port'])} (pid {state['pid']})")
         return 0
     if args.server_cmd == "token":
         from .registry import rotate_token
@@ -942,7 +980,7 @@ def cmd_server(ws: Workspace, args) -> int:
         state = server_status(home)
         if state:
             info = health(state["host"], state["port"]) or {}
-            print(f"running at http://{state['host']}:{state['port']}/ (pid {state['pid']}, version {state.get('version', '?')})")
+            print(f"running at {_urls(state['host'], state['port'])} (pid {state['pid']}, version {state.get('version', '?')})")
             if info.get("stale"):
                 print(f"a newer package is installed ({info.get('installed')}); run `skald server restart` to pick it up")
             return 0
@@ -957,8 +995,21 @@ def cmd_open(ws: Workspace, store: Store) -> int:
     state = server_status(home)
     if not state:
         state = start_server(home, ws.user.get("host"), int(ws.user.get("port")))
-        print(f"started server at http://{state['host']}:{state['port']}/ (pid {state['pid']})")
-    url = board_url(state["host"], state["port"], ensure_token(home), store.name)
-    print(url.split("#", 1)[0])
-    webbrowser.open(url)
+        print(f"started server at {_urls(state['host'], state['port'])} (pid {state['pid']})")
+    host, port, token = state["host"], state["port"], ensure_token(home)
+    url = board_url(local_host(host), port, token, store.name)
+    try:
+        opened = webbrowser.open(url)
+    except Exception:  # pragma: no cover - a broken browser setting must not stop the links printing
+        opened = False
+    if host in WILDCARD:
+        # Bound for other devices: they need the key, and this terminal is the one place that has it.
+        print("open the board on another device with the key (keep it to yourself):")
+        for h in shown_hosts(host):
+            print(f"  {board_url(h, port, token, store.name)}")
+    elif opened:
+        print(url.split("#", 1)[0])
+    else:
+        # No browser here (a headless machine, an SSH session): print the link that carries the key.
+        print(url)
     return 0
