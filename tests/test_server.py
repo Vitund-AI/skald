@@ -3,6 +3,7 @@ import json
 import os
 import threading
 import time
+from unittest import mock
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -471,6 +472,46 @@ class TestHostPort(SkaldTestCase):
         self.assertEqual(srv._host_port(ws, argparse.Namespace(host=None, port=0)), ("127.0.0.1", 0))
         self.assertEqual(srv._host_port(ws, argparse.Namespace(host="0.0.0.0", port=8000)), ("0.0.0.0", 8000))
         self.assertEqual(srv._host_port(ws, argparse.Namespace()), ("127.0.0.1", 9123))
+
+
+class TestOpenLinks(SkaldTestCase):
+    """What `skald open` prints, without a browser or a server: both are stubbed."""
+
+    def open(self, host, browser_opens=True, lan=("192.168.1.20",)):
+        opened = []
+        state = {"host": host, "port": 8321, "pid": 1}
+        with mock.patch.object(srv, "server_status", return_value=state), \
+                mock.patch.object(srv, "lan_addresses", return_value=list(lan)), \
+                mock.patch.object(srv.webbrowser, "open", side_effect=lambda url: opened.append(url) or browser_opens):
+            code, out, err = self.run_cli("open")
+        self.assertEqual(code, 0, err)
+        return out.splitlines(), opened, ensure_token(self.home)
+
+    def test_loopback_prints_the_address_without_the_key(self):
+        out, opened, token = self.open("127.0.0.1")
+        self.assertEqual(out, ["http://127.0.0.1:8321/?project=alpha"])
+        self.assertEqual(opened, [f"http://127.0.0.1:8321/?project=alpha#key={token}"])
+
+    def test_no_browser_prints_the_keyed_link(self):
+        # A headless machine or an SSH session: the printed link is the only way in.
+        out, _, token = self.open("127.0.0.1", browser_opens=False)
+        self.assertEqual(out, [f"http://127.0.0.1:8321/?project=alpha#key={token}"])
+
+    def test_all_interfaces_prints_network_links_with_the_key(self):
+        out, opened, token = self.open("0.0.0.0", lan=("192.168.1.20", "10.0.0.5"))
+        self.assertNotIn("0.0.0.0", "\n".join(out))
+        self.assertIn(f"  http://192.168.1.20:8321/?project=alpha#key={token}", out)
+        self.assertIn(f"  http://10.0.0.5:8321/?project=alpha#key={token}", out)
+        # This machine's browser goes to loopback, which the Host check accepts and Windows can connect to.
+        self.assertEqual(opened, [f"http://127.0.0.1:8321/?project=alpha#key={token}"])
+
+    def test_shown_and_local_hosts(self):
+        with mock.patch.object(srv, "lan_addresses", return_value=[]):
+            self.assertEqual(srv.shown_hosts("0.0.0.0"), ["127.0.0.1"])  # no network: loopback still works
+        self.assertEqual(srv.shown_hosts("192.168.1.20"), ["192.168.1.20"])
+        self.assertEqual((srv.local_host("0.0.0.0"), srv.local_host(""), srv.local_host("127.0.0.1")),
+                         ("127.0.0.1", "127.0.0.1", "127.0.0.1"))
+        self.assertFalse(any(ip.startswith("127.") or ip == "0.0.0.0" for ip in srv.lan_addresses()))
 
 
 class TestAuth(ServerTestCase):

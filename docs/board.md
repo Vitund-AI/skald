@@ -48,8 +48,33 @@ curl -H "Authorization: Bearer $(skald server token)" http://127.0.0.1:8321/api/
 skald server token --rotate      # new token; browser sessions and scripts must reconnect
 ```
 
-`/api/health` is the only open endpoint. Exposing the server on another
-interface still means plaintext HTTP, so do that deliberately.
+`/api/health` is the only open endpoint.
+
+### From another device
+
+To use the board from a phone, a laptop, or anything else on your network,
+bind the server to every interface and restart it:
+
+```sh
+skald config host 0.0.0.0
+skald server restart --host 0.0.0.0
+skald open
+```
+
+With that bind, `skald open` prints a link for each of the machine's network
+addresses, key included, and opens this machine's own browser on
+`127.0.0.1`. A headless machine such as a Raspberry Pi has no browser to
+open, so those links are the way in: open one on the other device, and its
+browser keeps a session cookie from then on. On a loopback bind, `skald open`
+prints the key-free address as before, unless no browser could be opened (an
+SSH session, say), when it prints the link with the key.
+
+Anyone with that link can use the board, so keep it to yourself, and rotate
+the token (`skald server token --rotate`) if it leaks. The server speaks
+plain HTTP, so the key and the session cookie cross the network unencrypted:
+fine on a home network you trust, not on a shared one. For that, keep the
+loopback bind and reach it through an SSH tunnel
+(`ssh -L 8321:127.0.0.1:8321 pi`) or put a TLS proxy in front.
 
 ## Header
 

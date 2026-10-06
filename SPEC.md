@@ -545,7 +545,13 @@ interfaces, where the token is the only gate. `POST /api/session {token}`
 sets the cookie (`HttpOnly`, `SameSite=Strict`, `Path=/`) and `DELETE`
 clears it. `skald open` and `serve --open` put the key in the URL fragment
 (`/#key=…`), which browsers never send to the server; the page posts it to
-`/api/session` and rewrites the URL. The CLI and MCP server read files
+`/api/session` and rewrites the URL. Bound to all interfaces, the server is
+reached from this machine on `127.0.0.1` (the browser, the health probe),
+and every address the CLI prints names the machine's network addresses
+instead of `0.0.0.0`; `skald open` then prints the keyed link for each,
+since other devices need the key and the terminal is where it lives. On any
+other bind it prints the key-free URL, or the keyed one when no browser
+could be opened. The CLI and MCP server read files
 directly and are unaffected. A fresh `Workspace` is built per request so
 registry and config edits are picked up immediately. See the README for the
 endpoint table; it is the reference.
