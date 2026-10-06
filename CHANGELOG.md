@@ -1,9 +1,13 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 (2026-10-06)
 
 - A board bound to every interface (`host` set to `0.0.0.0`, for other devices on the network) is now usable from them. `skald open` printed `http://0.0.0.0:8321/` without the key, an address no other device can open; it now prints a link for each of the machine's network addresses, key included, so a headless machine such as a Raspberry Pi can hand the board to a phone or laptop. `serve` and `server start`, `restart`, and `status` show the network addresses too, and on a loopback bind `skald open` prints the keyed link when no browser could be opened, such as over SSH. This machine's browser and the health probe now reach a wildcard-bound server on `127.0.0.1`, so `server status` and `skald open` also work on Windows with that bind. (acc02a)
 - `scripts/release.sh` no longer stops at the pull request to `main` when GitHub has not yet registered its checks. It used to read the "no checks reported" that `gh pr checks` prints in the first seconds after the PR opens as a failed check, stopping before the merge, the tag, and the publish; it now waits up to five minutes for the checks to appear, then watches them as before.
+
+### Stories
+
+- Board on the LAN: show a reachable address and hand over the key when bound to 0.0.0.0 (acc02a)
 
 ## 1.0.0 (2026-10-05)
 
