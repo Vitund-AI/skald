@@ -1,12 +1,12 @@
 ---
 title: "skald open outside a repository opens the board on the browser's last project"
-status: "review"
+status: "done"
 rank: 10
 tags: ["area:board", "area:cli"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-08T04:59:27Z"
-updated_at: "2026-10-08T05:01:14Z"
+updated_at: "2026-10-08T05:23:32Z"
 ---
 ## Requirements
 

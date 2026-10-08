@@ -1,12 +1,12 @@
 ---
 title: "TLS for the board server: bring your own certificate via config"
-status: "review"
+status: "done"
 rank: 20
 tags: ["area:server", "roadmap", "security"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-08T05:01:07Z"
-updated_at: "2026-10-08T05:12:20Z"
+updated_at: "2026-10-08T05:23:32Z"
 ---
 ## Requirements
 
