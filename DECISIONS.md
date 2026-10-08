@@ -948,3 +948,25 @@ would move the laptop's default. Per-browser memory is what a person
 expects, and it needs no new state. `-p NAME` still names a project, and an
 unknown one still errors. With nothing registered, the error stays,
 because `skald init` is the only useful advice.
+
+### D81. HTTPS with a certificate you bring; Skald never makes one
+A board open to the network over plain HTTP sends its key, the session
+cookie, and every story in the clear. So the server serves HTTPS when given
+a PEM certificate and key, through settings (`tls_cert`, `tls_key`) or
+flags on `serve`, `server start`, and `server restart`. It uses the standard
+library's `ssl`. Skald does not generate the certificate, for two reasons.
+The standard library cannot make one, so generating it would mean shelling
+out to `openssl` (absent on Windows by default) or depending on
+`cryptography`, both against the standard-library-only rule. And a
+self-signed certificate swaps plain HTTP for a full-page browser warning,
+which teaches people to click through warnings and which iOS refuses
+outright without a profile. mkcert and `tailscale cert` each give a
+certificate the devices trust in one command, and the docs walk through
+both. Half a configuration is an error rather than a fall back to HTTP, so
+a typo can never quietly downgrade. The handshake runs in the request
+thread, not in `accept()`, so one slow client cannot stall the server. When
+the board is reachable from the network without TLS, the commands that
+start or open it print a warning to stderr, which keeps piped output to the
+URLs, and `doctor` reports it. The warning names the risk and the fix. It
+does not refuse, because a trusted home network is a fair place for plain
+HTTP.

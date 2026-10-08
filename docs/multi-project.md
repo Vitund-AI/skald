@@ -101,6 +101,8 @@ skald config push true            # the board's commit button also pushes
 skald config port 9000            # board server port (default 8321)
 skald config host 127.0.0.1
 skald config stale_days 5         # days before an active story is marked stale (default 3)
+skald config tls_cert board.pem    # with tls_key, the board serves HTTPS (see board.md#https)
+skald config tls_key board-key.pem
 skald config author --unset
 ```
 

@@ -8,6 +8,7 @@ import os
 import signal
 import socket
 import socketserver
+import ssl
 import subprocess
 import sys
 import threading
@@ -40,10 +41,11 @@ class SkaldServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, addr, home: Optional[Path] = None, quiet: bool = True):
+    def __init__(self, addr, home: Optional[Path] = None, quiet: bool = True, tls: Optional[ssl.SSLContext] = None):
         super().__init__(addr, Handler)
         self.home = home
         self.quiet = quiet
+        self.tls = tls
         self._html: Optional[str] = None
         self._snapshots: dict = {}
         self._snap_lock = threading.Lock()
@@ -96,6 +98,18 @@ class SkaldServer(ThreadingHTTPServer):
         registry = Registry(self.home)
         return Workspace(registry, UserConfig(registry.home))
 
+    def get_request(self):
+        sock, addr = super().get_request()
+        if self.tls is not None:
+            # The handshake runs in the request's own thread (Handler.setup), so a slow client cannot stall accept().
+            sock = self.tls.wrap_socket(sock, server_side=True, do_handshake_on_connect=False)
+        return sock, addr
+
+    def handle_error(self, request, client_address):
+        if isinstance(sys.exc_info()[1], (ssl.SSLError, ConnectionError, TimeoutError)):
+            return  # a client that hung up, or spoke plain HTTP to the HTTPS port: nothing worth a traceback
+        super().handle_error(request, client_address)
+
     def html(self) -> str:
         if self._html is None:
             self._html = index_html()
@@ -105,6 +119,13 @@ class SkaldServer(ThreadingHTTPServer):
 class Handler(BaseHTTPRequestHandler):
     server_version = f"Skald/{__version__}"
     protocol_version = "HTTP/1.1"
+
+    def setup(self):
+        if isinstance(self.request, ssl.SSLSocket):
+            self.request.settimeout(10)
+            self.request.do_handshake()
+            self.request.settimeout(None)
+        super().setup()
 
     def log_message(self, fmt, *args):
         if not getattr(self.server, "quiet", True):
@@ -165,10 +186,14 @@ class Handler(BaseHTTPRequestHandler):
             return False
         return hmac.compare_digest(expected.encode(), given.encode())
 
+    def _cookie_flags(self) -> str:
+        """Over HTTPS the cookie is Secure too, so a browser never sends it over plain HTTP."""
+        return "HttpOnly; SameSite=Strict" + ("; Secure" if self.server.tls is not None else "")
+
     def _session(self, method: str) -> None:
         """POST {token} mints the session cookie for the board; DELETE clears it."""
         if method == "DELETE":
-            self._json(200, {"ok": True}, [("Set-Cookie", f"{self.COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict")])
+            self._json(200, {"ok": True}, [("Set-Cookie", f"{self.COOKIE}=; Path=/; Max-Age=0; {self._cookie_flags()}")])
             return
         if method != "POST":
             self._json(405, {"error": "method not allowed"})
@@ -179,7 +204,7 @@ class Handler(BaseHTTPRequestHandler):
         if not isinstance(token, str) or not expected or not hmac.compare_digest(expected.encode(), token.encode()):
             self._json(401, {"error": "wrong token; open the board with `skald open`"})
             return
-        self._json(200, {"ok": True}, [("Set-Cookie", f"{self.COOKIE}={expected}; Path=/; HttpOnly; SameSite=Strict")])
+        self._json(200, {"ok": True}, [("Set-Cookie", f"{self.COOKIE}={expected}; Path=/; {self._cookie_flags()}")])
 
     def _read_json(self) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
@@ -702,9 +727,19 @@ def read_state(home: Path) -> Optional[dict]:
         return None
 
 
-def health(host: str, port: int, timeout: float = 1.0) -> Optional[dict]:
+def health(host: str, port: int, timeout: float = 1.0, scheme: str = "http") -> Optional[dict]:
+    """The server's /api/health, or None. Over HTTPS the certificate is not checked: it names the machine, not
+    127.0.0.1, and this probe only ever goes to this machine and reads the version."""
+    where = f"{local_host(host)}:{port}"
     try:
-        with urlopen(f"http://{local_host(host)}:{port}/api/health", timeout=timeout) as res:
+        if scheme == "https":
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            res = urlopen(f"https://{where}/api/health", timeout=timeout, context=context)
+        else:
+            res = urlopen(f"http://{where}/api/health", timeout=timeout)
+        with res:
             return json.loads(res.read().decode("utf-8"))
     except (URLError, OSError, ValueError):
         return None
@@ -787,9 +822,39 @@ def shown_hosts(bound: str) -> list[str]:
     return [bound]
 
 
-def board_url(host: str, port: int, token: Optional[str], project: Optional[str] = None) -> str:
+def is_loopback(host: str) -> bool:
+    return host in ("localhost", "::1") or host.startswith("127.")
+
+
+INSECURE = ("warning: the board is not secure. It is open to the network over plain HTTP, so its key, the session "
+            "cookie, and your stories cross the network unencrypted. To serve HTTPS, see "
+            "https://github.com/Vitund-AI/skald/blob/main/docs/board.md#https")
+
+
+def warn_if_insecure(state: dict) -> None:
+    """On stderr, so piped output stays the URLs: a board reachable from the network without TLS."""
+    if state.get("scheme", "http") != "https" and not is_loopback(state["host"]):
+        print(INSECURE, file=sys.stderr)
+
+
+def tls_context(cert: str, key: str) -> Optional[ssl.SSLContext]:
+    """An HTTPS context from PEM files, or None when neither is set. One without the other is a mistake, never plain HTTP."""
+    if not cert and not key:
+        return None
+    if not (cert and key):
+        raise SkaldError("TLS needs both a certificate and its key: set tls_cert and tls_key, or pass --tls-cert and --tls-key")
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    try:
+        ctx.load_cert_chain(os.path.expanduser(cert), os.path.expanduser(key))
+    except (OSError, ssl.SSLError) as e:
+        raise SkaldError(f"cannot load the TLS certificate {cert} with key {key}: {e}") from None
+    return ctx
+
+
+def board_url(host: str, port: int, token: Optional[str], project: Optional[str] = None, scheme: str = "http") -> str:
     """The URL `skald open` opens: the key rides in the fragment, which never reaches the server or its log."""
-    url = f"http://{host}:{port}/"
+    url = f"{scheme}://{host}:{port}/"
     if project:
         url += f"?project={project}"
     if token:
@@ -797,15 +862,21 @@ def board_url(host: str, port: int, token: Optional[str], project: Optional[str]
     return url
 
 
-def serve(home: Path, host: str, port: int, open_browser: bool = False, quiet: bool = True) -> int:
+def serve(home: Path, host: str, port: int, open_browser: bool = False, quiet: bool = True,
+          tls_cert: str = "", tls_key: str = "") -> int:
     home.mkdir(parents=True, exist_ok=True)
     token = ensure_token(home)
-    httpd = SkaldServer((host, port), home=home, quiet=quiet)
+    tls = tls_context(tls_cert, tls_key)
+    scheme = "https" if tls else "http"
+    httpd = SkaldServer((host, port), home=home, quiet=quiet, tls=tls)
     actual_port = httpd.server_address[1]
-    state_path(home).write_text(json.dumps({
-        "pid": os.getpid(), "host": host, "port": actual_port, "started_at": time.time(), "version": __version__,
-    }), encoding="utf-8")
-    print(f"Skald board at {_urls(host, actual_port)}  (Ctrl+C to stop)", flush=True)
+    state = {"pid": os.getpid(), "host": host, "port": actual_port, "started_at": time.time(), "version": __version__,
+             "scheme": scheme}
+    if tls:
+        state.update(tls_cert=tls_cert, tls_key=tls_key)  # so `server restart` keeps serving HTTPS
+    state_path(home).write_text(json.dumps(state), encoding="utf-8")
+    print(f"Skald board at {_urls(host, actual_port, scheme)}  (Ctrl+C to stop)", flush=True)
+    warn_if_insecure(state)
 
     def _stop(signum, frame):  # pragma: no cover - signal driven
         threading.Thread(target=httpd.shutdown, daemon=True).start()
@@ -816,7 +887,7 @@ def serve(home: Path, host: str, port: int, open_browser: bool = False, quiet: b
         except (ValueError, OSError):  # pragma: no cover - not main thread / platform
             pass
     if open_browser:
-        webbrowser.open(board_url(local_host(host), actual_port, token))
+        webbrowser.open(board_url(local_host(host), actual_port, token, scheme=scheme))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:  # pragma: no cover
@@ -839,7 +910,7 @@ def server_status(home: Path) -> Optional[dict]:
         return None
     if not pid_alive(int(state.get("pid", 0))):
         return None
-    if health(state["host"], state["port"]) is None:
+    if health(state["host"], state["port"], scheme=state.get("scheme", "http")) is None:
         return None
     return state
 
@@ -847,10 +918,12 @@ def server_status(home: Path) -> Optional[dict]:
 START_TIMEOUT = 20.0  # seconds to wait for the background server; macOS runners are slow to spawn
 
 
-def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = None) -> dict:
+def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = None,
+                 tls_cert: str = "", tls_key: str = "") -> dict:
     running = server_status(home)
     if running:
         return running
+    tls_context(tls_cert, tls_key)  # a bad certificate fails here, with its own message, not as "exited immediately"
     home.mkdir(parents=True, exist_ok=True)
     log_path = log_path or home / "server.log"
     log = open(log_path, "ab")
@@ -864,8 +937,11 @@ def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = No
     # Make sure the child can import this very package, even from a source checkout.
     pkg_parent = str(Path(__file__).resolve().parent.parent)
     env["PYTHONPATH"] = pkg_parent + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    argv = [sys.executable, "-m", "skald", "serve", "--host", host, "--port", str(port)]
+    if tls_cert or tls_key:
+        argv += ["--tls-cert", tls_cert, "--tls-key", tls_key]
     proc = subprocess.Popen(
-        [sys.executable, "-m", "skald", "serve", "--host", host, "--port", str(port)],
+        argv,
         stdin=subprocess.DEVNULL, stdout=log, stderr=log, env=env, close_fds=True, **kwargs,
     )
     log.close()
@@ -877,7 +953,8 @@ def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = No
         state = read_state(home)
         # Match on freshness and health rather than pid: some launchers (macOS framework
         # Python, pyenv shims) run the server in a child of the process we spawned.
-        if state and float(state.get("started_at") or 0) >= spawned_at and health(host, state["port"]):
+        if state and float(state.get("started_at") or 0) >= spawned_at \
+                and health(host, state["port"], scheme=state.get("scheme", "http")):
             return state
         time.sleep(0.1)
     raise SkaldError(f"server did not come up within {int(START_TIMEOUT)}s; {_log_tail(log_path)}")
@@ -917,9 +994,13 @@ def stop_server(home: Path) -> bool:
 # --------------------------------------------------------------------------
 
 
-def _urls(host: str, port: int) -> str:
+def _urls(host: str, port: int, scheme: str = "http") -> str:
     """The server's address(es) for a person to read: `http://192.168.1.20:8321/`, never `http://0.0.0.0:8321/`."""
-    return ", ".join(f"http://{h}:{port}/" for h in shown_hosts(host))
+    return ", ".join(f"{scheme}://{h}:{port}/" for h in shown_hosts(host))
+
+
+def _state_urls(state: dict) -> str:
+    return _urls(state["host"], state["port"], state.get("scheme", "http"))
 
 
 def _host_port(ws: Workspace, args) -> tuple[str, int]:
@@ -933,17 +1014,30 @@ def _host_port(ws: Workspace, args) -> tuple[str, int]:
     return host, port
 
 
+def _tls_files(ws: Workspace, args, prev: Optional[dict] = None) -> tuple[str, str]:
+    """Certificate and key paths: the flags, else (for a restart) the running server's, else the settings."""
+    cert, key = getattr(args, "tls_cert", None), getattr(args, "tls_key", None)
+    if cert is not None or key is not None:
+        return cert or "", key or ""
+    if prev is not None:
+        return prev.get("tls_cert", ""), prev.get("tls_key", "")
+    return ws.user.get("tls_cert"), ws.user.get("tls_key")
+
+
 def cmd_serve(ws: Workspace, args) -> int:
     host, port = _host_port(ws, args)
-    return serve(ws.registry.home, host, port, open_browser=args.open)
+    cert, key = _tls_files(ws, args)
+    return serve(ws.registry.home, host, port, open_browser=args.open, tls_cert=cert, tls_key=key)
 
 
 def cmd_server(ws: Workspace, args) -> int:
     home = ws.registry.home
     if args.server_cmd == "start":
         host, port = _host_port(ws, args)
-        state = start_server(home, host, port)
-        print(f"server running at {_urls(state['host'], state['port'])} (pid {state['pid']})")
+        cert, key = _tls_files(ws, args)
+        state = start_server(home, host, port, tls_cert=cert, tls_key=key)
+        print(f"server running at {_state_urls(state)} (pid {state['pid']})")
+        warn_if_insecure(state)
         return 0
     if args.server_cmd == "stop":
         if stop_server(home):
@@ -963,9 +1057,12 @@ def cmd_server(ws: Workspace, args) -> int:
             host = ws.user.get("host")
         if port is None:
             port = int(ws.user.get("port"))
+        cert, key = _tls_files(ws, args, prev)
+        tls_context(cert, key)  # check the certificate before stopping a server that works
         stop_server(home)
-        state = start_server(home, host, int(port))
-        print(f"server restarted at {_urls(state['host'], state['port'])} (pid {state['pid']})")
+        state = start_server(home, host, int(port), tls_cert=cert, tls_key=key)
+        print(f"server restarted at {_state_urls(state)} (pid {state['pid']})")
+        warn_if_insecure(state)
         return 0
     if args.server_cmd == "token":
         from .registry import rotate_token
@@ -979,8 +1076,8 @@ def cmd_server(ws: Workspace, args) -> int:
     if args.server_cmd == "status":
         state = server_status(home)
         if state:
-            info = health(state["host"], state["port"]) or {}
-            print(f"running at {_urls(state['host'], state['port'])} (pid {state['pid']}, version {state.get('version', '?')})")
+            info = health(state["host"], state["port"], scheme=state.get("scheme", "http")) or {}
+            print(f"running at {_state_urls(state)} (pid {state['pid']}, version {state.get('version', '?')})")
             if info.get("stale"):
                 print(f"a newer package is installed ({info.get('installed')}); run `skald server restart` to pick it up")
             return 0
@@ -999,10 +1096,11 @@ def cmd_open(ws: Workspace, store: Optional[Store]) -> int:
               file=sys.stderr)
     state = server_status(home)
     if not state:
-        state = start_server(home, ws.user.get("host"), int(ws.user.get("port")))
-        print(f"started server at {_urls(state['host'], state['port'])} (pid {state['pid']})")
-    host, port, token = state["host"], state["port"], ensure_token(home)
-    url = board_url(local_host(host), port, token, project)
+        state = start_server(home, ws.user.get("host"), int(ws.user.get("port")),
+                             tls_cert=ws.user.get("tls_cert"), tls_key=ws.user.get("tls_key"))
+        print(f"started server at {_state_urls(state)} (pid {state['pid']})")
+    host, port, token, scheme = state["host"], state["port"], ensure_token(home), state.get("scheme", "http")
+    url = board_url(local_host(host), port, token, project, scheme)
     try:
         opened = webbrowser.open(url)
     except Exception:  # pragma: no cover - a broken browser setting must not stop the links printing
@@ -1011,10 +1109,11 @@ def cmd_open(ws: Workspace, store: Optional[Store]) -> int:
         # Bound for other devices: they need the key, and this terminal is the one place that has it.
         print("open the board on another device with the key (keep it to yourself):")
         for h in shown_hosts(host):
-            print(f"  {board_url(h, port, token, project)}")
+            print(f"  {board_url(h, port, token, project, scheme)}")
     elif opened:
         print(url.split("#", 1)[0])
     else:
         # No browser here (a headless machine, an SSH session): print the link that carries the key.
         print(url)
+    warn_if_insecure(state)
     return 0

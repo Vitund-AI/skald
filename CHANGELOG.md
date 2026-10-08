@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The board can serve HTTPS. Point the `tls_cert` and `tls_key` settings (or `--tls-cert` and `--tls-key` on `serve`, `server start`, and `server restart`) at a PEM certificate and key, and the server speaks HTTPS on its port: every printed link is `https://` and the session cookie is `Secure`. Bring the certificate from mkcert, `tailscale cert`, or your own domain; [docs/board.md](docs/board.md#https) shows how. Setting only one of the two is an error, never a quiet fall back to plain HTTP, and `skald doctor` checks that both files load and that the key is private. A board open to the network over plain HTTP now says so: `skald open`, `serve`, and `server start` and `restart` print a warning to stderr that links to the HTTPS setup, and `doctor` reports it. (9e83e7)
 - `skald open` works outside a repository. With projects registered on the machine, it opens the board instead of stopping with "no .skald directory found", and the board shows the project that browser had open last, or the first registered one. Inside a repository, or with `-p NAME`, it opens that project as before, and with no projects registered it still says to run `skald init`. (d11f77)
 
 ## 1.0.1 (2026-10-06)

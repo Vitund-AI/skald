@@ -1,11 +1,12 @@
 ---
 title: "TLS for the board server: bring your own certificate via config"
-status: "idea"
-rank: 100
+status: "review"
+rank: 20
 tags: ["area:server", "roadmap", "security"]
 blocked_by: []
+assignee: "claude"
 created_at: "2026-10-08T05:01:07Z"
-updated_at: "2026-10-08T05:01:07Z"
+updated_at: "2026-10-08T05:12:20Z"
 ---
 ## Requirements
 
@@ -26,3 +27,18 @@ A board bound to the network (`host 0.0.0.0`) speaks plain HTTP, so the key in t
 ## Open
 - Whether `serve --tls-cert/--tls-key` flags are worth adding alongside the settings.
 - Whether to warn when bound to all interfaces without TLS (a line from `skald open`, a `doctor` WARN).
+
+## [claude] 2026-10-08 05:12 UTC · handoff
+Done, as the proposal says, with flags on serve and on server start and restart, and the plain-HTTP warning on stderr.
+- `server.py`:
+  - `tls_context()` takes TLS 1.2 or later; half a configuration is a SkaldError.
+  - `SkaldServer(tls=)` wraps each socket in `get_request` and handshakes in `Handler.setup`.
+  - `handle_error` drops SSL and connection errors.
+  - The cookie gets `Secure` over TLS.
+  - `health(scheme=)` skips verification on loopback.
+  - server.json records scheme and cert paths, so restart keeps them.
+  - `warn_if_insecure()` runs for open, serve, start and restart.
+- Settings `tls_cert` and `tls_key`. doctor has a `tls` check (load, key 0600, plain HTTP on the network).
+- Docs updated: board.md#https (mkcert, tailscale cert), troubleshooting, SPEC, multi-project settings. D81, CHANGELOG, contract baseline (new flags).
+
+Verified with 9 new tests (they skip without openssl), the full suite (235), ruff and docs --check. I also ran a real server over HTTPS on 0.0.0.0. It returned 401 without the key, the cookie carried Secure, plain HTTP to the port was dropped while the server carried on, and restart kept HTTPS.

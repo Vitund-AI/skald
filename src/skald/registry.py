@@ -28,6 +28,8 @@ USER_DEFAULTS = {
     "port": 8321,        # board port
     "host": "127.0.0.1",  # board bind address
     "stale_days": 3,     # mark active stories untouched for this many days
+    "tls_cert": "",      # PEM certificate: with tls_key, the board serves HTTPS
+    "tls_key": "",       # PEM private key for tls_cert
 }
 
 # Machine-local feature flags: opt-in/opt-out toggles for board and CLI

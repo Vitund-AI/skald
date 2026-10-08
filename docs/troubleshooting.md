@@ -103,6 +103,15 @@ names the machine's network address. Skald 1.0.0 and earlier printed
 `skald open` again. Until then, build the link by hand:
 `http://<the machine's IP>:8321/#key=` followed by `skald server token`.
 
+**The board says "not secure", or `skald open` warns that it is**
+The server is bound to the network without a certificate, so it speaks
+plain HTTP. Serve HTTPS ([The board: HTTPS](board.md#https)), or bind to
+`127.0.0.1` if no other device needs it.
+
+**After turning on HTTPS, the browser shows an empty or reset page**
+The port now speaks only HTTPS. Use the `https://` link `skald open` prints;
+an old `http://` bookmark gets nothing.
+
 **A script gets 401**
 Send the token: `-H "Authorization: Bearer $(skald server token)"`. Only
 `/api/health` is open.

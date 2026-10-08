@@ -1,8 +1,13 @@
 """HTTP API against a live server on a random port, plus daemon management."""
+import io
 import json
 import os
+import shutil
+import ssl
+import subprocess
 import threading
 import time
+from contextlib import redirect_stderr
 from unittest import mock
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -498,6 +503,26 @@ class TestOpenLinks(SkaldTestCase):
         out, _, token = self.open("127.0.0.1", browser_opens=False)
         self.assertEqual(out, [f"http://127.0.0.1:8321/?project=alpha#key={token}"])
 
+    def test_insecure_warning_only_for_plain_http_on_the_network(self):
+        self.open("127.0.0.1")
+        self.assertNotIn("not secure", self.err)
+        out, _, token = self.open("0.0.0.0")
+        self.assertIn("warning: the board is not secure", self.err)
+        self.assertIn("docs/board.md#https", self.err)
+        self.assertNotIn("not secure", "\n".join(out))  # stderr only, so piped output stays the links
+
+    def test_https_server_links_are_https_and_quiet(self):
+        opened = []
+        state = {"host": "0.0.0.0", "port": 8321, "pid": 1, "scheme": "https"}
+        with mock.patch.object(srv, "server_status", return_value=state), \
+                mock.patch.object(srv, "lan_addresses", return_value=["192.168.1.20"]), \
+                mock.patch.object(srv.webbrowser, "open", side_effect=lambda url: opened.append(url) or True):
+            code, out, err = self.run_cli("open")
+        token = ensure_token(self.home)
+        self.assertIn(f"  https://192.168.1.20:8321/?project=alpha#key={token}", out.splitlines())
+        self.assertEqual(opened, [f"https://127.0.0.1:8321/?project=alpha#key={token}"])
+        self.assertNotIn("not secure", err)
+
     def test_all_interfaces_prints_network_links_with_the_key(self):
         out, opened, token = self.open("0.0.0.0", lan=("192.168.1.20", "10.0.0.5"))
         self.assertNotIn("0.0.0.0", "\n".join(out))
@@ -588,6 +613,109 @@ class TestAuth(ServerTestCase):
         url = srv.board_url("127.0.0.1", 8321, "abc", "alpha")
         self.assertEqual(url, "http://127.0.0.1:8321/?project=alpha#key=abc")
         self.assertEqual(srv.board_url("127.0.0.1", 8321, None), "http://127.0.0.1:8321/")
+
+
+def make_cert(where):
+    """A throwaway self-signed certificate and key, or None where openssl is missing (the standard library cannot make one)."""
+    openssl = shutil.which("openssl")
+    if not openssl:
+        return None
+    cert, key = where / "cert.pem", where / "key.pem"
+    proc = subprocess.run([openssl, "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2", "-subj", "/CN=localhost",
+                           "-keyout", str(key), "-out", str(cert)], capture_output=True, text=True)
+    return (str(cert), str(key)) if proc.returncode == 0 else None
+
+
+class TestTLS(SkaldTestCase):
+    def setUp(self):
+        super().setUp()
+        pair = make_cert(self.tmp)
+        if pair is None:
+            self.skipTest("openssl is needed to make a test certificate")
+        self.cert, self.key = pair
+        ensure_token(self.home)
+
+    def https(self, port, path, body=None, method="GET"):
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        data = json.dumps(body).encode() if body is not None else None
+        req = Request(f"https://127.0.0.1:{port}{path}", data=data, method=method, headers={"Content-Type": "application/json"})
+        return urlopen(req, context=ctx)
+
+    def test_context_needs_both_files_and_says_what_is_wrong(self):
+        self.assertIsNone(srv.tls_context("", ""))
+        with self.assertRaisesRegex(srv.SkaldError, "both a certificate and its key"):
+            srv.tls_context(self.cert, "")
+        with self.assertRaisesRegex(srv.SkaldError, "cannot load the TLS certificate"):
+            srv.tls_context(self.cert, str(self.tmp / "missing.pem"))
+        self.assertIsInstance(srv.tls_context(self.cert, self.key), ssl.SSLContext)
+
+    def test_serves_https_with_a_secure_cookie_and_shrugs_off_plain_http(self):
+        httpd = srv.SkaldServer(("127.0.0.1", 0), home=self.home, tls=srv.tls_context(self.cert, self.key))
+        port = httpd.server_address[1]
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        self.addCleanup(httpd.server_close)
+        self.addCleanup(httpd.shutdown)
+        self.assertEqual(srv.health("127.0.0.1", port, scheme="https")["ok"], True)
+        self.assertIsNone(srv.health("127.0.0.1", port))  # plain HTTP to the HTTPS port gets nothing...
+        with self.https(port, "/api/session", {"token": read_token(self.home)}, "POST") as res:
+            cookie = res.headers.get("Set-Cookie")
+        self.assertIn("Secure", cookie)
+        self.assertIn("HttpOnly", cookie)
+        self.assertEqual(srv.health("127.0.0.1", port, scheme="https")["ok"], True)  # ...and breaks nothing
+
+    def test_plain_http_cookie_is_not_secure(self):
+        httpd = srv.SkaldServer(("127.0.0.1", 0), home=self.home)
+        port = httpd.server_address[1]
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        self.addCleanup(httpd.server_close)
+        self.addCleanup(httpd.shutdown)
+        req = Request(f"http://127.0.0.1:{port}/api/session", data=json.dumps({"token": read_token(self.home)}).encode(),
+                      method="POST", headers={"Content-Type": "application/json"})
+        with urlopen(req) as res:
+            self.assertNotIn("Secure", res.headers.get("Set-Cookie"))
+
+    def test_background_server_over_https_and_restart_keeps_it(self):
+        state = srv.start_server(self.home, "127.0.0.1", 0, tls_cert=self.cert, tls_key=self.key)
+        self.addCleanup(srv.stop_server, self.home)
+        self.assertEqual(state["scheme"], "https")
+        self.assertEqual(srv.server_status(self.home)["pid"], state["pid"])
+        code, out, err = self.run_cli("server", "status")
+        self.assertIn(f"running at https://127.0.0.1:{state['port']}/", out)
+        code, out, err = self.run_cli("server", "restart")
+        self.assertEqual(code, 0, err)
+        self.assertIn("server restarted at https://", out)
+        self.assertEqual(srv.read_state(self.home)["scheme"], "https")
+
+    def test_start_refuses_half_a_configuration(self):
+        UserConfig(self.home).set("tls_cert", self.cert)
+        code, _, err = self.run_cli("server", "start", "--port", "0")
+        self.assertEqual(code, 1)
+        self.assertIn("both a certificate and its key", err)
+        self.assertIsNone(srv.server_status(self.home))
+        code, _, err = self.run_cli("server", "start", "--port", "0", "--tls-key", self.key)  # one flag: still half
+        self.assertIn("both a certificate and its key", err)
+
+    def test_doctor_checks_the_files(self):
+        from skald import doctor
+
+        user = UserConfig(self.home)
+        user.set("tls_cert", self.cert)
+        tls = [r for r in doctor.run(self.repo) if r["name"] == "tls"]
+        self.assertEqual([r["level"] for r in tls], ["fail"])
+        user.set("tls_key", self.key)
+        os.chmod(self.key, 0o600)
+        tls = [r for r in doctor.run(self.repo) if r["name"] == "tls"]
+        self.assertEqual([r["level"] for r in tls], ["ok"])
+
+    def test_warning_text(self):
+        for state, warned in (({"host": "0.0.0.0"}, True), ({"host": "192.168.1.20"}, True),
+                              ({"host": "127.0.0.1"}, False), ({"host": "0.0.0.0", "scheme": "https"}, False)):
+            err = io.StringIO()
+            with redirect_stderr(err):
+                srv.warn_if_insecure(state)
+            self.assertEqual("not secure" in err.getvalue(), warned, state)
 
 
 class TestUpdateEndpoint(ServerTestCase):

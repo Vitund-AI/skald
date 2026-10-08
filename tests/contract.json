@@ -248,7 +248,9 @@
    "--help",
    "--host",
    "--open",
-   "--port"
+   "--port",
+   "--tls-cert",
+   "--tls-key"
   ],
   "server": [
    "--help"
@@ -256,12 +258,16 @@
   "server restart": [
    "--help",
    "--host",
-   "--port"
+   "--port",
+   "--tls-cert",
+   "--tls-key"
   ],
   "server start": [
    "--help",
    "--host",
-   "--port"
+   "--port",
+   "--tls-cert",
+   "--tls-key"
   ],
   "server status": [
    "--help"
