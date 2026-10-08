@@ -5,6 +5,7 @@ needs no account: `skald open` carries the key.
 
 ```sh
 skald open              # ensure the background server is running, open this project
+                        #   (outside a repository: the project this browser used last)
 skald server start      # or manage it explicitly
 skald server status
 skald server restart     # stop and start in place, e.g. after upgrading the package

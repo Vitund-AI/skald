@@ -510,7 +510,7 @@ story or configuration. Commands that print stories take `--json`.
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Section 10b. |
 | `serve [--host H] [--port P] [--open]` | Foreground server. |
 | `server start\|stop\|restart\|status` | Background server via `server.json`. `restart` stops and starts in place, reusing the running server's host and port, to pick up an upgraded package; `status` reports when a newer package is installed than the running server. |
-| `open` | Start if needed, open the browser on the current project. |
+| `open` | Start if needed, open the browser on the current project. Outside any project (and without `-p`), open the board with no project named, so the page shows the one this browser used last, else the first registered; an error only when none is registered. |
 | `docs [--out PATH] [--stdout] [--check]` | Writes `docs/cli.md` from `docs_markdown()`, which walks `command_reference()`; a repository test fails when the committed file is stale, and `--check` does the same for CI. |
 | `completion bash\|zsh\|fish` | Prints a shim that calls the hidden `_complete -- CWORD WORD...` for candidates (`value<TAB>description` lines). `completion.py` derives commands and flags from `command_reference()` and reads the store for ids, columns, tags, authors, templates, branches, and projects; it never raises into the shell. `_complete` is intercepted before argparse and absent from `--help` and the reference. |
 

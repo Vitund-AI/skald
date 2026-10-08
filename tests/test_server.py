@@ -477,14 +477,15 @@ class TestHostPort(SkaldTestCase):
 class TestOpenLinks(SkaldTestCase):
     """What `skald open` prints, without a browser or a server: both are stubbed."""
 
-    def open(self, host, browser_opens=True, lan=("192.168.1.20",)):
+    def open(self, host, browser_opens=True, lan=("192.168.1.20",), argv=(), cwd=None, code=0):
         opened = []
         state = {"host": host, "port": 8321, "pid": 1}
         with mock.patch.object(srv, "server_status", return_value=state), \
                 mock.patch.object(srv, "lan_addresses", return_value=list(lan)), \
                 mock.patch.object(srv.webbrowser, "open", side_effect=lambda url: opened.append(url) or browser_opens):
-            code, out, err = self.run_cli("open")
-        self.assertEqual(code, 0, err)
+            got, out, err = self.run_cli(*argv, "open", cwd=cwd)
+        self.assertEqual(got, code, err)
+        self.err = err
         return out.splitlines(), opened, ensure_token(self.home)
 
     def test_loopback_prints_the_address_without_the_key(self):
@@ -504,6 +505,27 @@ class TestOpenLinks(SkaldTestCase):
         self.assertIn(f"  http://10.0.0.5:8321/?project=alpha#key={token}", out)
         # This machine's browser goes to loopback, which the Host check accepts and Windows can connect to.
         self.assertEqual(opened, [f"http://127.0.0.1:8321/?project=alpha#key={token}"])
+
+    def test_outside_a_repository_opens_the_browsers_last_project(self):
+        outside = self.tmp / "elsewhere"
+        outside.mkdir()
+        # No ?project=: the page picks the one this browser used last, else the first registered.
+        out, opened, token = self.open("127.0.0.1", cwd=outside)
+        self.assertEqual(out, ["http://127.0.0.1:8321/"])
+        self.assertEqual(opened, [f"http://127.0.0.1:8321/#key={token}"])
+        self.assertIn("not inside a project", self.err)
+        # Naming a project still opens it, and naming an unknown one is still an error.
+        self.assertEqual(self.open("127.0.0.1", argv=("-p", "alpha"), cwd=outside)[0], ["http://127.0.0.1:8321/?project=alpha"])
+        self.open("127.0.0.1", argv=("-p", "nope"), cwd=outside, code=1)
+        self.assertIn("not registered", self.err)
+
+    def test_outside_a_repository_with_no_projects_still_says_init(self):
+        outside = self.tmp / "elsewhere"
+        outside.mkdir()
+        os.environ["SKALD_HOME"] = str(self.tmp / "empty-home")  # restored by the helper's cleanup
+        out, opened, _ = self.open("127.0.0.1", cwd=outside, code=1)
+        self.assertEqual((out, opened), ([], []))
+        self.assertIn("skald init", self.err)
 
     def test_shown_and_local_hosts(self):
         with mock.patch.object(srv, "lan_addresses", return_value=[]):

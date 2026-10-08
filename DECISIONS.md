@@ -936,3 +936,15 @@ by printing it: a person's own terminal already shows `skald server token`.
 The rest stays as it was. There is no TLS, so on an untrusted network the
 docs point to an SSH tunnel or a TLS proxy rather than Skald growing
 certificates.
+
+### D80. `skald open` outside a project leaves the choice to the browser
+Outside a repository, `skald open` used to stop because it had no project to
+name. The board already remembers the last project picked in its switcher,
+per browser, and falls back to the first registered one, so the CLI now
+opens it without `?project=` and lets the page decide. The last project is
+deliberately not stored in the machine-local config. A server-side "last
+project" would be one value shared by every browser and device, so a phone
+would move the laptop's default. Per-browser memory is what a person
+expects, and it needs no new state. `-p NAME` still names a project, and an
+unknown one still errors. With nothing registered, the error stays,
+because `skald init` is the only useful advice.

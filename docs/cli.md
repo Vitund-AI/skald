@@ -53,7 +53,7 @@ error or not found, 2 corrupt story or configuration.
 - [`render`](#render) write a Markdown or HTML snapshot of the board to commit
 - [`serve`](#serve) run the board in the foreground
 - [`server`](#server) manage the background board server
-- [`open`](#open) start the server if needed and open the board for this project; on a server bound to all interfaces, print a link with the key for each network address
+- [`open`](#open) start the server if needed and open the board for this project (outside one, the project this browser used last); on a server bound to all interfaces, print a link with the key for each network address
 - [`release`](#release) record a version: a changelog section from the done column, then archive those stories
 - [`docs`](#docs) write the CLI reference (docs/cli.md) from the parser
 - [`completion`](#completion) print a shell completion script: eval "$(skald completion zsh)"
@@ -740,7 +740,7 @@ Print the board's access token (scripts send it as Authorization: Bearer).
 skald open
 ```
 
-Start the server if needed and open the board for this project; on a server bound to all interfaces, print a link with the key for each network address.
+Start the server if needed and open the board for this project (outside one, the project this browser used last); on a server bound to all interfaces, print a link with the key for each network address.
 
 ## release
 

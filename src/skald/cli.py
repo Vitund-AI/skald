@@ -485,8 +485,9 @@ def build_parser() -> argparse.ArgumentParser:
     tk = srvs.add_parser("token", help="print the board's access token (scripts send it as Authorization: Bearer)")
     tk.add_argument("--rotate", action="store_true", help="replace it; existing browser sessions stop working")
 
-    sub.add_parser("open", help="start the server if needed and open the board for this project; on a server bound to "
-                                "all interfaces, print a link with the key for each network address")
+    sub.add_parser("open", help="start the server if needed and open the board for this project (outside one, the project "
+                                "this browser used last); on a server bound to all interfaces, print a link with the key "
+                                "for each network address")
     rl = sub.add_parser("release", help="record a version: a changelog section from the done column, then archive those stories")
     rl.add_argument("version", help="the version being shipped, e.g. 1.2.0")
     rl.add_argument("--changelog", default=None, metavar="PATH", help="default: CHANGELOG.md at the repository root")
@@ -2279,7 +2280,13 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         if args.command == "serve":
             return srv.cmd_serve(ws, args)
         if args.command == "open":
-            store = ws.current(args.project)
+            try:
+                store = ws.current(args.project)
+            except NotFoundError:
+                # Outside any repository, the board still opens: the page picks the project this browser used last.
+                if args.project or not any(e["exists"] for e in ws.registry.entries()):
+                    raise
+                store = None
             _notice(ws.notices)
             return srv.cmd_open(ws, store)
         return srv.cmd_server(ws, args)

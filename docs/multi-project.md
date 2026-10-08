@@ -87,7 +87,10 @@ The board server shows every registered project. Switch with the dropdown,
 or choose "All projects: ready work" for a single list of ready, unblocked
 stories across all of them; clicking one opens it in its project. The
 server is started once with `skald open` or `skald server start` and serves
-whichever project, and whichever of its checkouts, you ask for.
+whichever project, and whichever of its checkouts, you ask for. Run
+`skald open` outside any repository and the board opens on the project that
+browser showed last, or the first registered one; each browser remembers its
+own.
 
 ## Your settings
 

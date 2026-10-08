@@ -990,14 +990,19 @@ def cmd_server(ws: Workspace, args) -> int:
     return 1
 
 
-def cmd_open(ws: Workspace, store: Store) -> int:
+def cmd_open(ws: Workspace, store: Optional[Store]) -> int:
+    """Open the board on `store`'s project, or with none named, where the page shows the one this browser used last."""
     home = ws.registry.home
+    project = store.name if store else None
+    if store is None:
+        print("not inside a project; the board opens on the project this browser used last, or the first one",
+              file=sys.stderr)
     state = server_status(home)
     if not state:
         state = start_server(home, ws.user.get("host"), int(ws.user.get("port")))
         print(f"started server at {_urls(state['host'], state['port'])} (pid {state['pid']})")
     host, port, token = state["host"], state["port"], ensure_token(home)
-    url = board_url(local_host(host), port, token, store.name)
+    url = board_url(local_host(host), port, token, project)
     try:
         opened = webbrowser.open(url)
     except Exception:  # pragma: no cover - a broken browser setting must not stop the links printing
@@ -1006,7 +1011,7 @@ def cmd_open(ws: Workspace, store: Store) -> int:
         # Bound for other devices: they need the key, and this terminal is the one place that has it.
         print("open the board on another device with the key (keep it to yourself):")
         for h in shown_hosts(host):
-            print(f"  {board_url(h, port, token, store.name)}")
+            print(f"  {board_url(h, port, token, project)}")
     elif opened:
         print(url.split("#", 1)[0])
     else:
