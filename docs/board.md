@@ -5,6 +5,7 @@ needs no account: `skald open` carries the key.
 
 ```sh
 skald open              # ensure the background server is running, open this project
+                        #   (outside a repository: the project this browser used last)
 skald server start      # or manage it explicitly
 skald server status
 skald server restart     # stop and start in place, e.g. after upgrading the package
@@ -70,11 +71,62 @@ prints the key-free address as before, unless no browser could be opened (an
 SSH session, say), when it prints the link with the key.
 
 Anyone with that link can use the board, so keep it to yourself, and rotate
-the token (`skald server token --rotate`) if it leaks. The server speaks
-plain HTTP, so the key and the session cookie cross the network unencrypted:
-fine on a home network you trust, not on a shared one. For that, keep the
-loopback bind and reach it through an SSH tunnel
-(`ssh -L 8321:127.0.0.1:8321 pi`) or put a TLS proxy in front.
+the token (`skald server token --rotate`) if it leaks. Without a certificate
+the server speaks plain HTTP, so the key, the session cookie, and your
+stories cross the network unencrypted, and `skald open`, `serve`, and
+`server start` say so on stderr. That is fine on a home network you trust.
+For anywhere else, serve HTTPS (below), or keep the loopback bind and reach
+it through an SSH tunnel (`ssh -L 8321:127.0.0.1:8321 pi`).
+
+### HTTPS
+
+Give the server a certificate and its private key, as PEM files, and it
+serves HTTPS on the same port:
+
+```sh
+skald config tls_cert ~/.config/skald/board.pem
+skald config tls_key ~/.config/skald/board-key.pem
+skald server stop && skald open        # the next start reads the settings
+```
+
+Or per run, which `server restart` then keeps:
+
+```sh
+skald serve --tls-cert board.pem --tls-key board-key.pem
+skald server restart --tls-cert board.pem --tls-key board-key.pem
+```
+
+Every link Skald prints becomes `https://`, and the session cookie is marked
+`Secure`, so a browser never sends it over plain HTTP. Setting only one of
+the two is an error, never a quiet fall back to HTTP, and `skald doctor`
+checks both files load and that the key is private (`chmod 600`). The port
+speaks only HTTPS: an `http://` address to it gets no page.
+
+Skald does not make the certificate. The standard library cannot, and a
+self-signed certificate only swaps plain HTTP for a full-page browser
+warning that people learn to click through. Two tools make one your devices
+trust:
+
+- **[mkcert](https://github.com/FiloSottile/mkcert)** makes a small
+  certificate authority on this machine and certificates signed by it. Name
+  every address you will type, then install the authority's root
+  (`rootCA.pem`, in `mkcert -CAROOT`) on each device that opens the board.
+  On iOS that is a profile, plus trusting it under Settings, General, About,
+  Certificate Trust Settings.
+
+  ```sh
+  mkcert -install
+  mkcert -cert-file ~/.config/skald/board.pem -key-file ~/.config/skald/board-key.pem \
+      node-0.local 192.168.1.20 localhost 127.0.0.1
+  ```
+
+- **[Tailscale](https://tailscale.com/kb/1153/enabling-https)**: on a
+  tailnet with HTTPS enabled, `tailscale cert node-0.example.ts.net` writes a
+  publicly trusted certificate and key; nothing to install on the devices.
+  Open the board by that name: take the link `skald open` prints and swap its
+  address for the name, keeping the `#key=` part.
+
+A certificate from your own domain (Let's Encrypt, say) works the same way.
 
 ## Header
 

@@ -53,7 +53,7 @@ error or not found, 2 corrupt story or configuration.
 - [`render`](#render) write a Markdown or HTML snapshot of the board to commit
 - [`serve`](#serve) run the board in the foreground
 - [`server`](#server) manage the background board server
-- [`open`](#open) start the server if needed and open the board for this project; on a server bound to all interfaces, print a link with the key for each network address
+- [`open`](#open) start the server if needed and open the board for this project (outside one, the project this browser used last); on a server bound to all interfaces, print a link with the key for each network address
 - [`release`](#release) record a version: a changelog section from the done column, then archive those stories
 - [`docs`](#docs) write the CLI reference (docs/cli.md) from the parser
 - [`completion`](#completion) print a shell completion script: eval "$(skald completion zsh)"
@@ -622,7 +622,7 @@ Get or set a user setting.
 
 | Argument | Description |
 | --- | --- |
-| `[key]` | author, push, port, host, stale_days, or features.<name> |
+| `[key]` | author, push, port, host, stale_days, tls_cert, tls_key, or features.<name> |
 | `[value]` | new value; omit to show the current one |
 | `--unset` | return the key to its default (with -p NAME, just for that project) |
 
@@ -661,7 +661,7 @@ Write a Markdown or HTML snapshot of the board to commit.
 ## serve
 
 ```
-skald serve [--host HOST] [--port PORT] [--open]
+skald serve [--host HOST] [--port PORT] [--open] [--tls-cert PEM] [--tls-key PEM]
 ```
 
 Run the board in the foreground.
@@ -671,6 +671,8 @@ Run the board in the foreground.
 | `--host HOST` | interface to bind (default: from skald config host) |
 | `--port PORT` | port (default: from skald config port) |
 | `--open` | open the browser once the server is up |
+| `--tls-cert PEM` | serve HTTPS with this certificate (default: from skald config tls_cert) |
+| `--tls-key PEM` | the certificate's private key (default: from skald config tls_key) |
 
 ## server
 
@@ -683,7 +685,7 @@ Manage the background board server.
 ### server start
 
 ```
-skald server start [--host HOST] [--port PORT]
+skald server start [--host HOST] [--port PORT] [--tls-cert PEM] [--tls-key PEM]
 ```
 
 Start the board server in the background.
@@ -692,6 +694,8 @@ Start the board server in the background.
 | --- | --- |
 | `--host HOST` | interface to bind (default: from skald config host) |
 | `--port PORT` | port (default: from skald config port) |
+| `--tls-cert PEM` | serve HTTPS with this certificate (default: from skald config tls_cert) |
+| `--tls-key PEM` | the certificate's private key (default: from skald config tls_key) |
 
 ### server stop
 
@@ -704,7 +708,7 @@ Stop the background server.
 ### server restart
 
 ```
-skald server restart [--host HOST] [--port PORT]
+skald server restart [--host HOST] [--port PORT] [--tls-cert PEM] [--tls-key PEM]
 ```
 
 Restart the background server, e.g. to pick up an upgraded package.
@@ -713,6 +717,8 @@ Restart the background server, e.g. to pick up an upgraded package.
 | --- | --- |
 | `--host HOST` | interface to bind (default: the running server's, else skald config host) |
 | `--port PORT` | port (default: the running server's, else skald config port) |
+| `--tls-cert PEM` | serve HTTPS with this certificate (default: the running server's, else skald config tls_cert) |
+| `--tls-key PEM` | the certificate's private key (default: the running server's, else skald config tls_key) |
 
 ### server status
 
@@ -740,7 +746,7 @@ Print the board's access token (scripts send it as Authorization: Bearer).
 skald open
 ```
 
-Start the server if needed and open the board for this project; on a server bound to all interfaces, print a link with the key for each network address.
+Start the server if needed and open the board for this project (outside one, the project this browser used last); on a server bound to all interfaces, print a link with the key for each network address.
 
 ## release
 

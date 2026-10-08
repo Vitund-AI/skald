@@ -83,9 +83,11 @@ else `$XDG_CONFIG_HOME/skald` defaulting to `~/.config/skald`. It holds:
   `path` is the primary; `checkouts` (optional) are other working trees of
   the same project recorded when a command ran there.
 - `config.json`: user settings with defaults `author ""`, `push false`,
-  `port 8321`, `host "127.0.0.1"`, `stale_days 3`. It also carries the
+  `port 8321`, `host "127.0.0.1"`, `stale_days 3`, `tls_cert ""`,
+  `tls_key ""`. It also carries the
   feature flags (below), which is why nothing in this file is committed.
-- `server.json` and `server.log`: the background server's pid, host, port.
+- `server.json` and `server.log`: the background server's pid, host, port,
+  scheme, and, when serving HTTPS, its certificate and key paths.
 - `locks/`: one empty lock file per checkout that has been written to
   (section 4.7). Safe to delete when no `skald` command is running.
 
@@ -508,9 +510,9 @@ story or configuration. Commands that print stories take `--json`.
 | `hooks git [--install]`, `hooks github [--install]` | Section 10b. `hooks claude --install` also writes `.claude/skills/skald/SKILL.md` from the contract template. |
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Section 10b. |
-| `serve [--host H] [--port P] [--open]` | Foreground server. |
-| `server start\|stop\|restart\|status` | Background server via `server.json`. `restart` stops and starts in place, reusing the running server's host and port, to pick up an upgraded package; `status` reports when a newer package is installed than the running server. |
-| `open` | Start if needed, open the browser on the current project. |
+| `serve [--host H] [--port P] [--open] [--tls-cert PEM --tls-key PEM]` | Foreground server. With a certificate and key (flags, else the `tls_cert`/`tls_key` settings), HTTPS. |
+| `server start\|stop\|restart\|status` | Background server via `server.json`. `start` and `restart` take `--host`, `--port`, `--tls-cert`, and `--tls-key`. `restart` stops and starts in place, reusing the running server's host, port, and certificate, to pick up an upgraded package; `status` reports when a newer package is installed than the running server. |
+| `open` | Start if needed, open the browser on the current project. Outside any project (and without `-p`), open the board with no project named, so the page shows the one this browser used last, else the first registered; an error only when none is registered. |
 | `docs [--out PATH] [--stdout] [--check]` | Writes `docs/cli.md` from `docs_markdown()`, which walks `command_reference()`; a repository test fails when the committed file is stale, and `--check` does the same for CI. |
 | `completion bash\|zsh\|fish` | Prints a shim that calls the hidden `_complete -- CWORD WORD...` for candidates (`value<TAB>description` lines). `completion.py` derives commands and flags from `command_reference()` and reads the store for ids, columns, tags, authors, templates, branches, and projects; it never raises into the shell. `_complete` is intercepted before argparse and absent from `--help` and the reference. |
 
@@ -551,7 +553,24 @@ and every address the CLI prints names the machine's network addresses
 instead of `0.0.0.0`; `skald open` then prints the keyed link for each,
 since other devices need the key and the terminal is where it lives. On any
 other bind it prints the key-free URL, or the keyed one when no browser
-could be opened. The CLI and MCP server read files
+could be opened.
+
+TLS: with `tls_cert` and `tls_key` set (or `--tls-cert` and `--tls-key`),
+the server loads them into an `ssl.SSLContext` (TLS 1.2 or later) and serves
+HTTPS only, on the same port. Each connection's handshake runs in its
+request thread, so a slow or plain-HTTP client cannot stall `accept()`, and
+such failures are dropped without a traceback. One file without the other
+is an error, never plain HTTP, and `start` and `restart` check the pair
+before spawning or stopping anything. Over HTTPS the session cookie also
+carries `Secure`, and every printed URL is `https://`. The health probe
+connects to this machine without verifying the certificate, which names the
+machine rather than `127.0.0.1`; it reads only the version. Skald never
+generates a certificate (DECISIONS D81). When the server listens on a
+non-loopback address over plain HTTP, `skald open`, `serve`, and
+`server start|restart` print a warning to stderr pointing to the HTTPS
+docs, and `doctor` reports it.
+
+The CLI and MCP server read files
 directly and are unaffected. A fresh `Workspace` is built per request so
 registry and config edits are picked up immediately. See the README for the
 endpoint table; it is the reference.
