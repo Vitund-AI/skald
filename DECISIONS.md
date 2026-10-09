@@ -602,6 +602,30 @@ a version ships, CI adds it. Nothing in the package depends on a feature
 above 3.10, so the floor is a statement of what is tested, not a
 constraint the code needs.
 
+Addendum, at 3.15. Upstream end of life was the wrong trigger: it measures
+CPython's support, not whether anyone runs the version or what it costs
+Skald. 3.10 is still the default Python on Ubuntu 22.04, in standard
+support until April 2027, and keeping it costs nothing today. The rule is
+now as follows.
+- `requires-python` is always exactly what CI tests, so pip never installs
+  Skald on an interpreter nobody ran the suite on.
+- A version past upstream support is tested, not promised. It stays while it
+  costs nothing, and the docs say it may go in any minor release.
+- A newer standard-library feature is used behind a version check with a
+  small fallback before it costs an old version its place. Syntax cannot be
+  gated, because the whole file fails to load, and a fallback as big as the
+  feature is no saving.
+- A version is dropped at the first of these:
+  - a feature Skald wants needs more than a small gate;
+  - the long-term-support distributions that ship it leave standard
+    support;
+  - a security defect in that interpreter affects Skald and upstream will
+    not fix it. That one goes in the next release, a patch if need be.
+- New versions join CI when they ship, as before.
+
+Dropping a version strands nobody: pip on it resolves to the last release
+that supports it, and D63 governs that line.
+
 ### D63. Fixes go to the latest release; an earlier line is patched from a branch cut at its tag, on demand
 Skald is pre-1.0, has no dependencies, is one `pip install --upgrade`
 away for every user, and has one maintainer. A fix costs the same

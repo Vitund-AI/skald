@@ -46,6 +46,16 @@ fix. A critical issue in an earlier line may get a patch release cut from
 that line's tag, at the maintainers' discretion; the flow is in
 [docs/git-and-ci.md](docs/git-and-ci.md#patching-an-earlier-release).
 
+## Python versions
+
+Skald supports the Python versions its CI tests, from 3.10 to 3.15. A version
+past upstream support (3.10 from the end of October 2026) is tested, not
+promised: it stays while it costs nothing and may be dropped in any minor
+release. If a security defect in such an interpreter affects Skald and
+upstream will not fix it, the next release drops that version, as a patch
+release if need be. pip on a dropped version keeps installing the last
+release that supports it. See DECISIONS.md D62.
+
 ## Scope
 
 In scope, because Skald is responsible for it:
