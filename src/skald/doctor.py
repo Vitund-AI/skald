@@ -16,8 +16,8 @@ from typing import Optional
 
 from . import __version__, gitutil
 from .config import FORMAT, ProjectConfig
-from .errors import ConfigError
-from .registry import Registry, config_home, find_skald_dir, token_path
+from .errors import ConfigError, SkaldError
+from .registry import Registry, UserConfig, config_home, find_skald_dir, token_path
 
 MIN_PYTHON = (3, 10)
 
@@ -114,7 +114,7 @@ def _server(results: list[dict], home: Path) -> None:
             results.append(_r("server", WARN, f"server.json names pid {pid}, which is not running",
                               "skald server stop"))
         else:
-            info = srv.health(host, int(port or 0))
+            info = srv.health(host, int(port or 0), scheme=state.get("scheme", "http"))
             if info is None:
                 results.append(_r("server", WARN, f"process {pid} is alive but not answering on {host}:{port}",
                                   "skald server stop, then skald open"))
@@ -132,6 +132,33 @@ def _server(results: list[dict], home: Path) -> None:
                               f"chmod 600 {tp}  (or skald server token --rotate)"))
         else:
             results.append(_r("token", OK, "board token is private"))
+
+
+def _tls(results: list[dict], home: Path) -> None:
+    from . import server as srv
+
+    try:
+        user = UserConfig(home)
+    except ConfigError:
+        return  # reported by the config check
+    cert, key = user.get("tls_cert"), user.get("tls_key")
+    state = srv.read_state(home)
+    if state and srv.pid_alive(int(state.get("pid", 0) or 0)) and state.get("scheme", "http") != "https" \
+            and not srv.is_loopback(state.get("host", "127.0.0.1")):
+        results.append(_r("tls", WARN, f"the board is open to the network on {state.get('host')} over plain HTTP",
+                          "serve HTTPS: docs/board.md#https, or bind to 127.0.0.1"))
+    if not cert and not key:
+        return
+    try:
+        srv.tls_context(cert, key)
+    except SkaldError as e:
+        results.append(_r("tls", FAIL, str(e), "fix tls_cert and tls_key: skald config tls_cert PATH, skald config tls_key PATH"))
+        return
+    kp = Path(key).expanduser()
+    if not sys.platform.startswith("win") and kp.stat().st_mode & 0o077:
+        results.append(_r("tls", WARN, f"{kp} is readable by others (mode {oct(kp.stat().st_mode & 0o777)})", f"chmod 600 {kp}"))
+    else:
+        results.append(_r("tls", OK, f"HTTPS certificate {cert} loads"))
 
 
 def _agent_wiring(results: list[dict], repo: Optional[Path], skald_dir: Optional[Path]) -> None:
@@ -209,5 +236,6 @@ def run(cwd: Optional[Path] = None) -> list[dict]:
     _project(results, skald_dir, reg)
     _registry(results, skald_dir, reg)
     _server(results, home)
+    _tls(results, home)
     _agent_wiring(results, repo, skald_dir)
     return results

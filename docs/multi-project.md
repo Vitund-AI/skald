@@ -87,7 +87,10 @@ The board server shows every registered project. Switch with the dropdown,
 or choose "All projects: ready work" for a single list of ready, unblocked
 stories across all of them; clicking one opens it in its project. The
 server is started once with `skald open` or `skald server start` and serves
-whichever project, and whichever of its checkouts, you ask for.
+whichever project, and whichever of its checkouts, you ask for. Run
+`skald open` outside any repository and the board opens on the project that
+browser showed last, or the first registered one; each browser remembers its
+own.
 
 ## Your settings
 
@@ -98,6 +101,8 @@ skald config push true            # the board's commit button also pushes
 skald config port 9000            # board server port (default 8321)
 skald config host 127.0.0.1
 skald config stale_days 5         # days before an active story is marked stale (default 3)
+skald config tls_cert board.pem    # with tls_key, the board serves HTTPS (see board.md#https)
+skald config tls_key board-key.pem
 skald config author --unset
 ```
 

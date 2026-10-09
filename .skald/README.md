@@ -66,6 +66,15 @@ _none_
 
 ## Releases
 
+<details><summary><strong>1.1.0 (2)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [d11f77](archive/d11f77-skald-open-outside-a-repository-opens-the-board-on.md) | skald open outside a repository opens the board on the browser's last project | `area:board` `area:cli` | claude |  |  |
+| [9e83e7](archive/9e83e7-tls-for-the-board-server-bring-your-own-certificat.md) | TLS for the board server: bring your own certificate via config | `area:server` `roadmap` `security` | claude |  |  |
+
+</details>
+
 <details><summary><strong>1.0.1 (1)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
