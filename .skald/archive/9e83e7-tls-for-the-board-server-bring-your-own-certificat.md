@@ -5,8 +5,9 @@ rank: 20
 tags: ["area:server", "roadmap", "security"]
 blocked_by: []
 assignee: "claude"
+released: "1.1.0"
 created_at: "2026-10-08T05:01:07Z"
-updated_at: "2026-10-08T05:23:32Z"
+updated_at: "2026-10-09T03:43:29Z"
 ---
 ## Requirements
 
