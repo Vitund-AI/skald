@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Python 3.15 is supported: CI runs the suite on it, and the package lists it. (0b5041)
+- The Python support policy is spelled out (SECURITY.md, and the Compatibility section of SPEC.md). The supported range is exactly what CI tests. A version past upstream support, such as 3.10 from the end of this month, stays while it costs nothing and may be dropped in any minor release. It is dropped promptly if an unfixed defect in that interpreter affects Skald's security. pip on a dropped version keeps installing the last release that supports it.
+
 ## 1.1.0 (2026-10-08)
 
 - The board can serve HTTPS. Point the `tls_cert` and `tls_key` settings (or `--tls-cert` and `--tls-key` on `serve`, `server start`, and `server restart`) at a PEM certificate and key, and the server speaks HTTPS on its port: every printed link is `https://` and the session cookie is `Secure`. Bring the certificate from mkcert, `tailscale cert`, or your own domain; [docs/board.md](docs/board.md#https) shows how. Setting only one of the two is an error, never a quiet fall back to plain HTTP, and `skald doctor` checks that both files load and that the key is private. A board open to the network over plain HTTP now says so: `skald open`, `serve`, and `server start` and `restart` print a warning to stderr that links to the HTTPS setup, and `doctor` reports it. (9e83e7)

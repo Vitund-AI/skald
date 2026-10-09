@@ -21,7 +21,8 @@ This is the specification as of 0.2.
    and generated workflows do the same. Repositories carry data only, never
    the tool.
 2. **Standard library only.** No third-party Python packages. Minimum Python
-   3.10, the oldest interpreter still receiving fixes when it was set. The board loads Tailwind and marked from CDNs; that is the one
+   3.10. The minimum is exactly what CI tests, and a version past upstream
+   support stays while it costs nothing (DECISIONS D62). The board loads Tailwind and marked from CDNs; that is the one
    external dependency and it degrades to unstyled, un-previewed but working.
 3. **Git is the database.** All shared state lives in `.skald/` and is
    committed alongside the code it describes. Machine-local state (which
@@ -771,9 +772,9 @@ corruption cases, config validation, store behaviour including ranks,
 dependencies, cross-project states, roles, limits, archive, templates,
 registry and user config, every CLI command, every API endpoint, the
 background server lifecycle, and this repository's own backlog passing
-`check`. CI runs the suite on Python 3.10 through 3.14 on Linux, plus 3.12 on
+`check`. CI runs the suite on Python 3.10 through 3.15 on Linux, plus 3.12 on
 macOS and Windows, and builds the wheel. Tags matching `v*` publish to PyPI
-via trusted publishing once the project exists there; no tag has been cut yet.
+via trusted publishing.
 
 ---
 
@@ -866,6 +867,12 @@ meaning before 2.0.
 rendered `.skald/README.md`, the board's look, the HTTP board backend, fields
 docs/api.md marks *(internal)*, and the Python modules. An example that
 imports `skald.*` relies on internals.
+
+**Python versions.** The supported range is not frozen for 1.x. A version
+past upstream support may be dropped in a minor release, or in a patch
+release when an unfixed defect in that interpreter affects Skald's
+security. pip on a dropped version keeps installing the last release that
+supports it. `requires-python` always matches what CI tests.
 
 **Deprecation.** Nothing stable is removed in 1.x. A flag, field, argument,
 or route that is deprecated keeps working, warns (on stderr, or in
