@@ -54,7 +54,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
         include:
           - os: macos-latest
             python: "3.12"
@@ -65,6 +65,9 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+          # A newly released Python reaches setup-python's manifest a day or so after python.org;
+          # until then this takes the newest candidate, and never a prerelease once a final exists.
+          allow-prereleases: true
       - name: Configure git identity for tests
         run: |
           git config --global user.email "ci@example.com"

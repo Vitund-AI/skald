@@ -771,9 +771,9 @@ corruption cases, config validation, store behaviour including ranks,
 dependencies, cross-project states, roles, limits, archive, templates,
 registry and user config, every CLI command, every API endpoint, the
 background server lifecycle, and this repository's own backlog passing
-`check`. CI runs the suite on Python 3.10 through 3.14 on Linux, plus 3.12 on
+`check`. CI runs the suite on Python 3.10 through 3.15 on Linux, plus 3.12 on
 macOS and Windows, and builds the wheel. Tags matching `v*` publish to PyPI
-via trusted publishing once the project exists there; no tag has been cut yet.
+via trusted publishing.
 
 ---
 
