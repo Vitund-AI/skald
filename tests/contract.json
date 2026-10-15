@@ -297,8 +297,18 @@
   "templates": [
    "--help"
   ],
+  "tick": [
+   "--help",
+   "--json",
+   "--section"
+  ],
   "unarchive": [
    "--help"
+  ],
+  "untick": [
+   "--help",
+   "--json",
+   "--section"
   ]
  },
  "json": {
@@ -954,6 +964,7 @@
    "[].registered_at"
   ],
   "resume": [
+   "acceptance_items",
    "archived",
    "assignee",
    "audit",
@@ -980,6 +991,55 @@
    "parent_story.requirements",
    "parent_story.status",
    "parent_story.title",
+   "project",
+   "questions",
+   "questions.open",
+   "requirements",
+   "sections",
+   "sections[].heading",
+   "sections[].lines",
+   "stale",
+   "status",
+   "tags",
+   "title",
+   "unmet",
+   "updated_at"
+  ],
+  "resume (acceptance)": [
+   "acceptance",
+   "acceptance.done",
+   "acceptance.total",
+   "acceptance_items",
+   "acceptance_items[].done",
+   "acceptance_items[].number",
+   "acceptance_items[].text",
+   "archived",
+   "assignee",
+   "audit",
+   "blocked",
+   "blocked_by",
+   "blockers",
+   "checklist",
+   "checklist.done",
+   "checklist.total",
+   "children",
+   "children.done",
+   "children.total",
+   "closed_questions",
+   "decisions",
+   "decisions[].author",
+   "decisions[].kind",
+   "decisions[].stamp",
+   "decisions[].text",
+   "deps",
+   "id",
+   "latest",
+   "latest.author",
+   "latest.kind",
+   "latest.stamp",
+   "latest.text",
+   "note_count",
+   "open_questions",
    "project",
    "questions",
    "questions.open",
@@ -1035,6 +1095,24 @@
    "uncommitted",
    "unknown_status",
    "warnings"
+  ],
+  "tick": [
+   "changed",
+   "id",
+   "items",
+   "items[].done",
+   "items[].number",
+   "items[].text",
+   "section"
+  ],
+  "untick": [
+   "changed",
+   "id",
+   "items",
+   "items[].done",
+   "items[].number",
+   "items[].text",
+   "section"
   ]
  },
  "mcp": {
@@ -1217,6 +1295,30 @@
    ],
    "required": [
     "id"
+   ]
+  },
+  "skald_tick": {
+   "arguments": [
+    "id",
+    "items",
+    "project",
+    "section"
+   ],
+   "required": [
+    "id",
+    "items"
+   ]
+  },
+  "skald_untick": {
+   "arguments": [
+    "id",
+    "items",
+    "project",
+    "section"
+   ],
+   "required": [
+    "id",
+    "items"
    ]
   }
  }

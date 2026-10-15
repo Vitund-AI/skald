@@ -222,22 +222,65 @@ def requirements_of(body: str) -> str:
     return section if section is not None else prelude_of(body)
 
 
-def acceptance_progress(body: str) -> tuple[int, int]:
-    """Checklist progress inside a ``## Acceptance`` section only (0, 0 when absent)."""
-    lines = body.splitlines()
-    start = None
+TASK_RE = re.compile(r"^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\]\s?)(.*)$")
+HEADING_RE = re.compile(r"^(#{1,6})\s+(?!\[)(.+?)\s*#*\s*$")
+FENCE_RE = re.compile(r"^\s*(```|~~~)")
+
+
+def _headings(lines: list[str]) -> list[tuple[int, int, str]]:
+    """``(line index, level, text)`` of each Markdown heading outside fenced code."""
+    out, fenced = [], False
     for i, line in enumerate(lines):
-        if re.match(r"^##\s+acceptance(\s+criteria)?\s*$", line.strip(), re.I):
-            start = i + 1
-            break
-    if start is None:
+        if FENCE_RE.match(line):
+            fenced = not fenced
+        elif not fenced and (m := HEADING_RE.match(line)):
+            out.append((i, len(m.group(1)), m.group(2)))
+    return out
+
+
+def task_items(body: str, section: str = "Acceptance") -> list[dict]:
+    """The task-list items under a heading of the prelude, numbered from 1: ``[{number, done, text, line}]``.
+
+    The heading matches ``section`` case-insensitively at any level, exactly if one does,
+    else by prefix (so "Acceptance" finds "Acceptance criteria"). The section runs to the
+    next heading at the same or a higher level, so nested headings count as part of it,
+    and fenced code is skipped. ``line`` indexes ``body.splitlines()``. A missing or
+    ambiguous heading raises, naming what there is instead.
+    """
+    lines = prelude_of(body).splitlines()
+    heads = _headings(lines)
+    want = " ".join(section.split()).lower()
+    exact = [h for h in heads if h[2].lower() == want]
+    found = exact or [h for h in heads if h[2].lower().startswith(want)]
+    if len(found) > 1:
+        raise SkaldError(f"{len(found)} headings match {section!r}: " + ", ".join(repr(h[2]) for h in found)
+                         + "; give the whole heading with --section")
+    if not found:
+        with_items = [h[2] for h in heads if _section_items(lines, heads, h)]
+        hint = f"; sections with items: {', '.join(with_items)}" if with_items else "; this story has no checklist items"
+        raise NotFoundError(f"no {section!r} section{hint}")
+    return _section_items(lines, heads, found[0])
+
+
+def _section_items(lines: list[str], heads: list[tuple[int, int, str]], head: tuple[int, int, str]) -> list[dict]:
+    start, level, _ = head
+    end = next((i for i, lv, _ in heads if i > start and lv <= level), len(lines))
+    items, fenced = [], False
+    for i in range(start + 1, end):
+        if FENCE_RE.match(lines[i]):
+            fenced = not fenced
+        elif not fenced and (m := TASK_RE.match(lines[i])):
+            items.append({"number": len(items) + 1, "done": m.group(2) in "xX", "text": m.group(4).strip(), "line": i})
+    return items
+
+
+def acceptance_progress(body: str) -> tuple[int, int]:
+    """Checklist progress inside the ``## Acceptance`` section only (0, 0 when absent); the items ``tick`` numbers."""
+    try:
+        items = task_items(body, "Acceptance")
+    except SkaldError:
         return 0, 0
-    section = []
-    for line in lines[start:]:
-        if re.match(r"^#{1,2}\s", line):
-            break
-        section.append(line)
-    return checklist_progress("\n".join(section))
+    return sum(1 for it in items if it["done"]), len(items)
 
 
 # --------------------------------------------------------------------------
@@ -1092,6 +1135,38 @@ class Store:
         lines = [answer_line(q, withdraw) for q in targets]
         story = self.append_note(ref, "\n".join(lines) + "\n" + text, author, "decision")
         return story, targets
+
+    @_mutates
+    def tick(self, ref: str, numbers: list[int], done: bool = True, section: str = "Acceptance") -> tuple[Story, list[dict], list[int]]:
+        """Tick (or with ``done=False`` untick) task items under a heading by number; only the box changes.
+
+        Returns the story, the section's items afterwards, and the numbers that changed (an item
+        already in the asked state is not an error, just not a change).
+        """
+        story = self.get(ref)
+        if story.archived:
+            raise ConflictError(f"{story.id} is archived; unarchive it first")
+        items = task_items(story.body, section)
+        if not numbers:
+            raise SkaldError("say which items, by number: skald tick <id> N")
+        bad = [n for n in numbers if not 1 <= n <= len(items)]
+        if bad:
+            raise SkaldError(f"no item {bad[0]}; {section} has {len(items)} item{'s' if len(items) != 1 else ''}"
+                             f" (skald tick {story.id} lists them)")
+        lines = story.body.splitlines(keepends=True)
+        changed = []
+        for n in sorted(set(numbers)):
+            it = items[n - 1]
+            if it["done"] != done:
+                raw = lines[it["line"]]
+                text = raw.rstrip("\r\n")
+                m = TASK_RE.match(text)
+                lines[it["line"]] = text[:m.start(2)] + ("x" if done else " ") + text[m.end(2):] + raw[len(text):]
+                changed.append(n)
+        if changed:
+            story.body = "".join(lines)
+            self._write(story)
+        return story, task_items(story.body, section), changed
 
     @_mutates
     def append_note(self, ref: str, text: str, author: str = "agent", kind: Optional[str] = None,

@@ -55,8 +55,9 @@ tools from `skald mcp` (see the README).
    or `model:` facet naming a kind of agent) is not yours to claim; `skald
    next --tag` hands each kind its own. Task-list items (`- [ ]` / `- [x]`) in
    the body show up as progress on the board. Put acceptance criteria under a
-   `## Acceptance` heading as a checklist and tick them as you verify each;
-   moving to review or done with unchecked items prints a warning.
+   `## Acceptance` heading as a checklist and tick each one as you verify it
+   with `skald tick <id> N` (`skald tick <id>` lists them numbered); moving
+   to review or done with unchecked items prints a warning.
 6. **Discovered work.** When you find work outside the current story, create
    a story for it with `skald new "title" --body "..."` and link it with
    `--blocked-by <id>` or `skald block <id> +<other>` where a real dependency
@@ -112,6 +113,7 @@ skald tag <id> +tag -tag
 skald block <id> +id -id            (use project:id for another repository)
 skald note <id> "<text>" | -  --as NAME [--kind handoff|decision|blocker|question]
 skald answer <id> "<text>" --as NAME [--question N | --all] [--withdraw]   closes a question; nothing else does
+skald tick <id> N [N ...] [--section HEADING]    tick checklist items (untick: skald untick); no N lists them
 skald log <id>                      git history of the story file
 skald commits <id>                  code commits that reference the story
 skald graph                         dependency graph as Mermaid

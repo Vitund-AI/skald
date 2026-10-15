@@ -26,6 +26,8 @@ error or not found, 2 corrupt story or configuration.
 - [`block`](#block) block <id> +id -id ... (project:id for other projects)
 - [`note`](#note) append a note to a story
 - [`answer`](#answer) close a story's open question with a decision note that names it; nothing else closes one
+- [`tick`](#tick) tick checklist items under ## Acceptance (or --section) by number; with no N, list them numbered
+- [`untick`](#untick) untick checklist items under ## Acceptance (or --section) by number; with no N, list them numbered
 - [`import`](#import) bring a folder of Markdown records into the backlog, driven by a mapping file
 - [`export`](#export) write the whole backlog as one flat file for analytics or migration
 - [`rm`](#rm) delete a story
@@ -293,6 +295,36 @@ Close a story's open question with a decision note that names it; nothing else c
 | `--question N` | the question to close, by its stable number (3 or Q3, as resume and the board label them); default: the one open question; several open refuse |
 | `--all` | close every open question with this one decision |
 | `--withdraw` | record that the question is dropped rather than answered |
+
+## tick
+
+```
+skald tick [--section HEADING] [--json] id [N ...]
+```
+
+Tick checklist items under ## Acceptance (or --section) by number; with no N, list them numbered.
+
+| Argument | Description |
+| --- | --- |
+| `id` | story id or unique prefix |
+| `[N...]` | item numbers, as the list shows them |
+| `--section HEADING` | the heading the items sit under: any level, case-insensitive, exact else prefix (default: Acceptance) |
+| `--json` | print the section's items, and which changed, as JSON |
+
+## untick
+
+```
+skald untick [--section HEADING] [--json] id [N ...]
+```
+
+Untick checklist items under ## Acceptance (or --section) by number; with no N, list them numbered.
+
+| Argument | Description |
+| --- | --- |
+| `id` | story id or unique prefix |
+| `[N...]` | item numbers, as the list shows them |
+| `--section HEADING` | the heading the items sit under: any level, case-insensitive, exact else prefix (default: Acceptance) |
+| `--json` | print the section's items, and which changed, as JSON |
 
 ## import
 
