@@ -1010,3 +1010,17 @@ Skald has no console window, git is started with `CREATE_NO_WINDOW`. A
 process with a visible console is left alone, because git shares that
 console and can still ask for credentials there, which `CREATE_NO_WINDOW`
 would take away from a terminal user.
+
+### D83. Acceptance items are ticked by number, with `tick` and `untick`
+The contract told agents to tick acceptance criteria as they verify them but
+gave no command for it, so they edited story files by hand, without the lock
+and without `updated_at` (agent feedback). `skald check` already validates
+the backlog, so the verbs are `tick` and `untick`, two commands rather than
+`tick --undo`, because the pair reads as what it does. Items are addressed by
+their number within the section, the same way questions are, and `skald tick
+<id>` and `resume` print the numbers, so an agent never has to guess or match
+text. `--section` reaches a checklist under any heading. Exact match beats
+prefix, two matches refuse, and the error names what exists. The numbering
+and the Acceptance progress count come from one parser, so the number `tick`
+takes is the item the board and the review warning count. The parser skips
+fenced code, which used to be counted, and includes a section's subheadings.

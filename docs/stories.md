@@ -63,9 +63,12 @@ Frontmatter fields:
   the heading sits.
 - **Checklist items** (`- [ ]` and `- [x]`) anywhere in the body become the
   progress bar on the card.
-- **`## Acceptance`** holds the definition of done. Moving a story into a
-  done or closed column, or forward past the first active column, with
-  unchecked items prints a warning.
+- **`## Acceptance`** holds the definition of done. Tick an item as you
+  verify it with `skald tick <id> N` (`skald untick` reverses it, and
+  `skald tick <id>` lists the items numbered; `--section HEADING` reaches
+  a checklist under another heading). Moving a story into a done or closed
+  column, or forward past the first active column, with unchecked items
+  prints a warning.
 - **`## Changelog`** is one or two sentences written for users. `skald
   release` uses it as the story's line in the project changelog; the title
   is the fallback.
