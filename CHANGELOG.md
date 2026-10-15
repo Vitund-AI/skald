@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 (2026-10-15)
 
 - The board shows the "Swimlanes by…" control before any story is tagged, greyed out with a hint to add `key:value` tags or parent stories, so swimlanes can be found instead of staying hidden until the first facet exists. (0d8904)
 - Fixed: reading a story's sections (`skald resume`, `--section`) no longer slows down quadratically on a heading line holding a very long run of spaces. A story file crafted that way could stall the command or the board. Headings are now parsed in linear time. (100d8e)
@@ -8,6 +8,13 @@
 - Fixed on Windows: the background board server no longer flashes a console window every time it runs git, which it does every few seconds to keep the board live. It now runs with a hidden console instead of none, so git shares that console. Any Skald process without a console, such as an MCP server started by a desktop app, also starts git without a window. (064905)
 - Python 3.15 is supported: CI runs the suite on it, and the package lists it. (0b5041)
 - The Python support policy is spelled out (SECURITY.md, and the Compatibility section of SPEC.md). The supported range is exactly what CI tests. A version past upstream support, such as 3.10 from the end of this month, stays while it costs nothing and may be dropped in any minor release. It is dropped promptly if an unfixed defect in that interpreter affects Skald's security. pip on a dropped version keeps installing the last release that supports it.
+
+### Stories
+
+- Windows: the background board server flashes a console window for every git command (064905)
+- skald tick / untick: tick acceptance checklist items without editing the file (100d8e)
+- The board now shows the "Swimlanes by…" control even before any story is tagged, grayed out with a hint to add `key:value` tags, so the swimlanes feature is discoverable instead of hidden until the first facet exists. (0d8904)
+- Support Python 3.15: add it to CI and the package classifiers (0b5041)
 
 ## 1.1.0 (2026-10-08)
 

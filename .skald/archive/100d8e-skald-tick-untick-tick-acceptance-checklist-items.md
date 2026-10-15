@@ -5,8 +5,9 @@ rank: 20
 tags: ["agents", "area:cli", "area:mcp"]
 blocked_by: []
 assignee: "claude"
+released: "1.2.0"
 created_at: "2026-10-15T20:04:37Z"
-updated_at: "2026-10-15T20:55:11Z"
+updated_at: "2026-10-15T23:32:05Z"
 ---
 ## Requirements
 

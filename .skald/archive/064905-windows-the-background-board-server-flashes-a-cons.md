@@ -5,8 +5,9 @@ rank: 10
 tags: ["area:server", "bug", "platform:windows"]
 blocked_by: []
 assignee: "claude"
+released: "1.2.0"
 created_at: "2026-10-15T19:29:53Z"
-updated_at: "2026-10-15T19:39:12Z"
+updated_at: "2026-10-15T23:32:05Z"
 ---
 ## Requirements
 
