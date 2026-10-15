@@ -1,8 +1,9 @@
 """skald tick / untick: ticking checklist items by number instead of editing the file."""
 import json
+import time
 
 from skald.mcp import McpServer
-from skald.store import acceptance_progress, task_items
+from skald.store import acceptance_progress, heading_of, section_of, sections_of, task_items
 
 from .helpers import SkaldTestCase
 
@@ -49,6 +50,18 @@ class TestTaskItems(SkaldTestCase):
         with self.assertRaisesRegex(Exception, "2 headings match 'Notes'"):
             task_items("## Notes one\n- [ ] a\n## Notes two\n- [ ] b\n", "Notes")
         self.assertEqual(acceptance_progress("no headings at all"), (0, 0))
+
+    def test_heading_parsing_is_linear_on_hostile_input(self):
+        # Story bodies come from anyone with write access; the old heading patterns backtracked
+        # quadratically on a long run of spaces (minutes at this size), CodeQL's ReDoS finding.
+        body = "## a" + " " * 200_000 + "b\n\n## Acceptance\n\n- [ ] x\n"
+        start = time.perf_counter()
+        self.assertEqual(len(task_items(body)), 1)
+        sections_of(body)
+        section_of(body, "acc")
+        self.assertLess(time.perf_counter() - start, 2.0)
+        self.assertEqual([heading_of(h) for h in ("## Title ##", "## C#", "##   ", "## [claude] 2026", "#tag")],
+                         [(2, "Title"), (2, "C#"), None, None, None])
 
     def test_notes_are_not_addressable(self):
         body = "## Acceptance\n\n- [ ] real\n\n## [claude] 2026-10-15 10:00 UTC · handoff\n\n- [ ] inside a note\n"

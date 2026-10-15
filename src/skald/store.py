@@ -174,7 +174,30 @@ def prelude_of(body: str) -> str:
     return (body[:m.start()] if m else body).rstrip("\n")
 
 
-H2_RE = re.compile(r"^##\s+(?!\[)(.+?)\s*$")
+# Only the marker is a regex. A pattern that also matched the heading text and its trailing
+# spaces and closing #s backtracks quadratically on a long run of spaces, and story bodies
+# come from anyone with write access (CodeQL), so the text is trimmed in plain Python.
+HEADING_RE = re.compile(r"(#{1,6})[ \t]")
+
+
+def heading_of(line: str) -> Optional[tuple[int, str]]:
+    """``(level, text)`` when the line is a Markdown heading other than a note's, else None."""
+    m = HEADING_RE.match(line)
+    if not m:
+        return None
+    text = line[m.end():].strip()
+    bare = text.rstrip("#")
+    if bare != text and (not bare or bare[-1] in " \t"):  # a closing run of #s
+        text = bare.rstrip()
+    if not text or text.startswith("["):
+        return None
+    return len(m.group(1)), text
+
+
+def h2_of(line: str) -> Optional[str]:
+    """The text of an H2 heading other than a note's, else None."""
+    h = heading_of(line)
+    return h[1] if h and h[0] == 2 else None
 
 
 def sections_of(body: str) -> list[dict]:
@@ -182,9 +205,9 @@ def sections_of(body: str) -> list[dict]:
     lines = prelude_of(body).splitlines()
     out: list[dict] = []
     for i, line in enumerate(lines):
-        m = H2_RE.match(line)
-        if m:
-            out.append({"heading": m.group(1), "start": i, "lines": 0})
+        heading = h2_of(line)
+        if heading:
+            out.append({"heading": heading, "start": i, "lines": 0})
     for j, sec in enumerate(out):
         end = out[j + 1]["start"] if j + 1 < len(out) else len(lines)
         block = [ln for ln in lines[sec["start"] + 1:end]]
@@ -204,10 +227,10 @@ def section_of(body: str, name: str) -> Optional[str]:
     want = name.strip().lower()
     start = None
     for i, line in enumerate(lines):
-        m = H2_RE.match(line)
-        if m and start is None and m.group(1).lower().startswith(want):
+        heading = h2_of(line)
+        if heading and start is None and heading.lower().startswith(want):
             start = i
-        elif m and start is not None:
+        elif heading and start is not None:
             return "\n".join(lines[start:i]).rstrip("\n")
     return "\n".join(lines[start:]).rstrip("\n") if start is not None else None
 
@@ -223,7 +246,6 @@ def requirements_of(body: str) -> str:
 
 
 TASK_RE = re.compile(r"^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\]\s?)(.*)$")
-HEADING_RE = re.compile(r"^(#{1,6})\s+(?!\[)(.+?)\s*#*\s*$")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
 
 
@@ -233,8 +255,8 @@ def _headings(lines: list[str]) -> list[tuple[int, int, str]]:
     for i, line in enumerate(lines):
         if FENCE_RE.match(line):
             fenced = not fenced
-        elif not fenced and (m := HEADING_RE.match(line)):
-            out.append((i, len(m.group(1)), m.group(2)))
+        elif not fenced and (h := heading_of(line)):
+            out.append((i, h[0], h[1]))
     return out
 
 
