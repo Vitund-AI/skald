@@ -994,3 +994,19 @@ start or open it print a warning to stderr, which keeps piped output to the
 URLs, and `doctor` reports it. The warning names the risk and the fix. It
 does not refuse, because a trusted home network is a fair place for plain
 HTTP.
+
+### D82. On Windows the background server gets a hidden console, and git gets none of its own
+The background server was spawned with `DETACHED_PROCESS`, so it had no
+console at all. Windows then gives every console program it starts a new
+console window. The server runs git every few seconds to keep the board
+live, so each run flashed a window on screen (the first user bug report). The server
+now starts with `CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP`. It gets a
+console of its own that has no window, so everything it runs shares that
+console invisibly. It still outlives the terminal that started it and
+ignores that terminal's Ctrl+C, which is all the detachment was for.
+gitutil adds a second guard for any other process that has no console,
+such as an MCP server a desktop app started with `pythonw` or detached. When
+Skald has no console window, git is started with `CREATE_NO_WINDOW`. A
+process with a visible console is left alone, because git shares that
+console and can still ask for credentials there, which `CREATE_NO_WINDOW`
+would take away from a terminal user.

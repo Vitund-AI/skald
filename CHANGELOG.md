@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed on Windows: the background board server no longer flashes a console window every time it runs git, which it does every few seconds to keep the board live. It now runs with a hidden console instead of none, so git shares that console. Any Skald process without a console, such as an MCP server started by a desktop app, also starts git without a window. (064905)
 - Python 3.15 is supported: CI runs the suite on it, and the package lists it. (0b5041)
 - The Python support policy is spelled out (SECURITY.md, and the Compatibility section of SPEC.md). The supported range is exactly what CI tests. A version past upstream support, such as 3.10 from the end of this month, stays while it costs nothing and may be dropped in any minor release. It is dropped promptly if an unfixed defect in that interpreter affects Skald's security. pip on a dropped version keeps installing the last release that supports it.
 
