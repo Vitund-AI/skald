@@ -1,7 +1,7 @@
-<!-- skald-render 4104a49e1c8513c9 -->
+<!-- skald-render 5e97f48dd30eb87c -->
 # skald backlog
 
-**5 open** · Idea 5 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**4 open** · Idea 4 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 4
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -32,11 +32,10 @@ flowchart LR
     class n_b24938 backlog
 ```
 
-## Idea (5)
+## Idea (4)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
-| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` |  |  | 0/6 |
 | [05e3b1](stories/05e3b1-optional-enforced-guarded-column-transitions-workf.md) | Optional enforced/guarded column transitions (workflow rules) | `roadmap` |  |  |  |
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
 | [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
@@ -58,9 +57,14 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (0)</strong></summary>
+<details><summary><strong>Done (4)</strong></summary>
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [064905](stories/064905-windows-the-background-board-server-flashes-a-cons.md) | Windows: the background board server flashes a console window for every git command | `area:server` `bug` `platform:windows` | claude |  |  |
+| [100d8e](stories/100d8e-skald-tick-untick-tick-acceptance-checklist-items.md) | skald tick / untick: tick acceptance checklist items without editing the file | `agents` `area:cli` `area:mcp` | claude |  | 7/7 |
+| [0d8904](stories/0d8904-advertise-swimlanes-show-the-control-disabled-with.md) | Advertise swimlanes: show the control disabled with a hint when no facets exist | `area:board` | claude |  | 6/6 |
+| [0b5041](stories/0b5041-support-python-3-15-add-it-to-ci-and-the-package-c.md) | Support Python 3.15: add it to CI and the package classifiers | `area:ci` | claude |  |  |
 
 </details>
 

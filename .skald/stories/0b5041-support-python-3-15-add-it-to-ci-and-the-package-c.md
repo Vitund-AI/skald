@@ -1,12 +1,12 @@
 ---
 title: "Support Python 3.15: add it to CI and the package classifiers"
-status: "review"
-rank: 10
+status: "done"
+rank: 30
 tags: ["area:ci"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-09T20:15:22Z"
-updated_at: "2026-10-09T20:25:39Z"
+updated_at: "2026-10-15T22:07:14Z"
 ---
 ## Requirements
 
