@@ -918,6 +918,18 @@ def server_status(home: Path) -> Optional[dict]:
 START_TIMEOUT = 20.0  # seconds to wait for the background server; macOS runners are slow to spawn
 
 
+def _background_kwargs() -> dict:
+    """How the background server is spawned so it outlives the terminal and ignores its Ctrl+C.
+
+    On Windows it gets a hidden console of its own (CREATE_NO_WINDOW), not none at all
+    (DETACHED_PROCESS): every git it runs then shares that invisible console, where a
+    server with no console would flash a new window for each one.
+    """
+    if sys.platform.startswith("win"):
+        return {"creationflags": gitutil.CREATE_NO_WINDOW | 0x00000200}  # | CREATE_NEW_PROCESS_GROUP
+    return {"start_new_session": True}
+
+
 def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = None,
                  tls_cert: str = "", tls_key: str = "") -> dict:
     running = server_status(home)
@@ -927,11 +939,7 @@ def start_server(home: Path, host: str, port: int, log_path: Optional[Path] = No
     home.mkdir(parents=True, exist_ok=True)
     log_path = log_path or home / "server.log"
     log = open(log_path, "ab")
-    kwargs: dict = {}
-    if sys.platform.startswith("win"):  # pragma: no cover
-        kwargs["creationflags"] = 0x00000008 | 0x00000200  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
-    else:
-        kwargs["start_new_session"] = True
+    kwargs = _background_kwargs()
     env = dict(os.environ)
     env["SKALD_HOME"] = str(home)
     # Make sure the child can import this very package, even from a source checkout.

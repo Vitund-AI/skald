@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -18,10 +19,37 @@ _GITHUB_ORIGIN = re.compile(
 )
 
 
+CREATE_NO_WINDOW = 0x08000000  # subprocess.CREATE_NO_WINDOW, which exists only on Windows
+
+
+def _has_console() -> bool:  # pragma: no cover - Windows only
+    import ctypes
+
+    return bool(ctypes.windll.kernel32.GetConsoleWindow())  # type: ignore[attr-defined]
+
+
+def no_window() -> dict:
+    """Keyword arguments that stop git opening a console window of its own.
+
+    On Windows a console program started by a process with no console (the background
+    board server, an MCP server launched by a desktop app) gets a fresh window, which
+    flashes up for every git call. A process with a visible console is left alone: git
+    shares it, and can still prompt there for credentials.
+    """
+    if not sys.platform.startswith("win"):
+        return {}
+    try:
+        if _has_console():
+            return {}
+    except (AttributeError, OSError):
+        pass
+    return {"creationflags": CREATE_NO_WINDOW}
+
+
 def _run(args: list[str], cwd: Path, check: bool = False) -> subprocess.CompletedProcess:
     try:
         proc = subprocess.run(
-            ["git", *args], cwd=str(cwd), capture_output=True, text=True, check=False,
+            ["git", *args], cwd=str(cwd), capture_output=True, text=True, check=False, **no_window(),
         )
     except (OSError, ValueError) as e:
         raise GitError(f"git is not available: {e}") from None
@@ -33,7 +61,7 @@ def _run(args: list[str], cwd: Path, check: bool = False) -> subprocess.Complete
 
 def available() -> bool:
     try:
-        subprocess.run(["git", "--version"], capture_output=True, check=False)
+        subprocess.run(["git", "--version"], capture_output=True, check=False, **no_window())
         return True
     except OSError:
         return False
@@ -250,7 +278,7 @@ def cat_file_batch(repo: Path, ref: str, rel_paths: list[str]) -> dict[str, Opti
     try:
         proc = subprocess.run(
             ["git", "cat-file", "--batch"], cwd=str(repo), input="\n".join(specs).encode() + b"\n",
-            capture_output=True, check=False,
+            capture_output=True, check=False, **no_window(),
         )
     except OSError as e:
         raise GitError(f"git is not available: {e}") from None

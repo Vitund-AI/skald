@@ -337,6 +337,13 @@ class TestDaemon(SkaldTestCase):
         code, out, _ = self.run_cli("server", "status")
         self.assertEqual((code, out.strip()), (1, "not running"))
 
+    def test_background_server_gets_a_hidden_console_on_windows(self):
+        # Not DETACHED_PROCESS (0x8): with no console at all, every git the server runs flashes a window.
+        with mock.patch.object(srv.sys, "platform", "win32"):
+            self.assertEqual(srv._background_kwargs(), {"creationflags": 0x08000000 | 0x00000200})
+        with mock.patch.object(srv.sys, "platform", "linux"):
+            self.assertEqual(srv._background_kwargs(), {"start_new_session": True})
+
     def test_restart_replaces_process_on_same_port(self):
         state = srv.start_server(self.home, "127.0.0.1", 0)
         port = state["port"]
