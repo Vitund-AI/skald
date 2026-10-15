@@ -21,7 +21,8 @@ This is the specification as of 0.2.
    and generated workflows do the same. Repositories carry data only, never
    the tool.
 2. **Standard library only.** No third-party Python packages. Minimum Python
-   3.10, the oldest interpreter still receiving fixes when it was set. The board loads Tailwind and marked from CDNs; that is the one
+   3.10. The minimum is exactly what CI tests, and a version past upstream
+   support stays while it costs nothing (DECISIONS D62). The board loads Tailwind and marked from CDNs; that is the one
    external dependency and it degrades to unstyled, un-previewed but working.
 3. **Git is the database.** All shared state lives in `.skald/` and is
    committed alongside the code it describes. Machine-local state (which
@@ -313,7 +314,10 @@ premises and records that as an ordinary note.
 `## Acceptance` (or `## Acceptance criteria`) introduces a section whose
 task-list items are the acceptance criteria; `acceptance_progress` counts
 them and `update` warns when a story moves into a terminal column, or forward
-into an active column other than the first, with any unchecked.
+into an active column other than the first, with any unchecked. `task_items`
+is the one parser for them, so `tick` numbers exactly what is counted: items
+under the heading in reading order, nested items and subsections included,
+fenced code skipped, notes never.
 
 
 Created as `## Requirements\n\n<body>`, or from a template in
@@ -486,6 +490,7 @@ story or configuration. Commands that print stories take `--json`.
 | `tag <id> +t -t`, `block <id> +ref -ref` | Set edits. Adding an unknown local id or a missing story in a registered project is an error; a self-reference is an error; a cycle warns. |
 | `note <id> "text"\|- [--as N] [--kind K] [--at WHEN]` | Append a note; `K` matches `^[a-z][a-z0-9_-]{0,31}$`. `--at` backdates the heading (`YYYY-MM-DD HH:MM` UTC, an ISO instant, or a date); `new --created-at WHEN` likewise sets both stamps and skips the touch. Migration primitives; the default stays now. |
 | `new` accepts `--parent ID [--no-inherit]`; `set` accepts `parent=ID` and `parent=-`; `ls --parent ID` lists children; `ls` marks parents `(children done/total)` and children `(child of ID)`. |
+| `tick\|untick <id> [N ...] [--section HEADING] [--json]` | Sets or clears the box of task-list items under `## Acceptance`, or the heading `--section` names (any level, case-insensitive, an exact match else a prefix; two matches refuse, naming both), by their number in that section. Only the box character changes; the write holds the lock and bumps `updated_at`. Every number is checked before anything is written, and an item already in the asked state is reported, not an error. With no N it lists the items numbered. `resume` carries the same numbering as `acceptance_items`. |
 | `answer <id> "text"\|- [--as N] [--question N] [--all] [--withdraw]` | Writes a decision whose leading lines name the questions it closes (`Answers Q3 [author] stamp · first line`); prints which it closed and how many remain. `--question` takes the stable number (3 or Q3); with one question open it is the default, several open refuse, none open refuse (`note --kind decision` records a choice). `--all` names every open question; `--withdraw` writes `Withdraws` for a question dropped rather than answered. |
 | `import PATH... [--map FILE] [--status C] [--tag T] [--rewrite-links ROOT] [--rm] [--dry-run] [--as N]` | Mapping-driven import of Markdown records (`importer.py`): the mapping is validated first (regexes, `$N` against group counts, subjects, columns, rule shapes); title from the H1, body kept byte for byte apart from stripped lines and extracted note blocks, notes backdated with their original stamps, status and tags from rules (`on` is `filename`, `relpath`, `path`, or `body`; `--tag` adds fixed tags), `created_at` from a regex else the commit that added the file else now; links rewritten across `ROOT` and inside the new stories, resolved against the referencing file's ancestors up to `ROOT` and the project root; sources removed with `--rm`; any problem aborts before anything is written. No MCP tool. See `docs/importing.md`. |
 | `export [--format json\|jsonl\|csv] [--archived] [--out PATH]` | The whole project's backlog as one flat file, for analytics or migration; read-only. One stable record per story in `load_all` order: `id`, `project`, `title`, `status`, `role`, `rank`, `assignee`, `parent`, `tags`, `facets` (key → values), `blocked_by`, `blocked`, `stale`, `open_questions`, `checklist_done`/`_total`, `created_at`, `updated_at`, `released`, `archived`. `json` is an array, `jsonl` one object per line; `csv` flattens — lists joined by `\|`, one `facet.<key>` column per facet key present (sorted). `--archived` includes archived stories. `--out` writes a file (default stdout; the "wrote" note goes to stderr). No MCP tool. |
@@ -511,7 +516,7 @@ story or configuration. Commands that print stories take `--json`.
 | `graph [--format mermaid\|dot\|json] [--all] [--archived]` | Section 10c. |
 | `render [--format md\|html] [--out PATH] [--archived] [--stage] [--stdout] [--enable]` | Section 10b. |
 | `serve [--host H] [--port P] [--open] [--tls-cert PEM --tls-key PEM]` | Foreground server. With a certificate and key (flags, else the `tls_cert`/`tls_key` settings), HTTPS. |
-| `server start\|stop\|restart\|status` | Background server via `server.json`. `start` and `restart` take `--host`, `--port`, `--tls-cert`, and `--tls-key`. `restart` stops and starts in place, reusing the running server's host, port, and certificate, to pick up an upgraded package; `status` reports when a newer package is installed than the running server. |
+| `server start\|stop\|restart\|status` | Background server via `server.json`. `start` and `restart` take `--host`, `--port`, `--tls-cert`, and `--tls-key`. `restart` stops and starts in place, reusing the running server's host, port, and certificate, to pick up an upgraded package; `status` reports when a newer package is installed than the running server. On Windows the background server runs with a hidden console of its own, and git gets `CREATE_NO_WINDOW` whenever Skald has no console, so the git calls that keep the board live never open windows (D82). |
 | `open` | Start if needed, open the browser on the current project. Outside any project (and without `-p`), open the board with no project named, so the page shows the one this browser used last, else the first registered; an error only when none is registered. |
 | `docs [--out PATH] [--stdout] [--check]` | Writes `docs/cli.md` from `docs_markdown()`, which walks `command_reference()`; a repository test fails when the committed file is stale, and `--check` does the same for CI. |
 | `completion bash\|zsh\|fish` | Prints a shim that calls the hidden `_complete -- CWORD WORD...` for candidates (`value<TAB>description` lines). `completion.py` derives commands and flags from `command_reference()` and reads the store for ids, columns, tags, authors, templates, branches, and projects; it never raises into the shell. `_complete` is intercepted before argparse and absent from `--help` and the reference. |
@@ -626,7 +631,11 @@ changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
 A Releases view (a header toggle) lists what shipped grouped by version, newest first, from `GET /api/projects/<p>/releases` (`store.releases()`); a story opens read-only, since it is archived. One filter dropdown per facet key and a swimlane control that splits the
-board by a facet's values with a progress bar per lane. A card appears in
+board by a facet's values with a progress bar per lane. With no facet and no
+parent yet, the swimlane control stays visible but inert (`aria-disabled`,
+greyed, one placeholder option) with a title hint on how to start, so the
+feature can be found; it is not `disabled`, because some browsers show no
+tooltip on a disabled select. It is hidden in the All-projects view. A card appears in
 every lane whose `key:value` it carries (so a story with two values for the
 grouping key shows in both, marked with a stacked-lanes icon), plus a "no
 `<key>`" lane for stories with none. Dragging a card to another lane
@@ -771,9 +780,9 @@ corruption cases, config validation, store behaviour including ranks,
 dependencies, cross-project states, roles, limits, archive, templates,
 registry and user config, every CLI command, every API endpoint, the
 background server lifecycle, and this repository's own backlog passing
-`check`. CI runs the suite on Python 3.10 through 3.14 on Linux, plus 3.12 on
+`check`. CI runs the suite on Python 3.10 through 3.15 on Linux, plus 3.12 on
 macOS and Windows, and builds the wheel. Tags matching `v*` publish to PyPI
-via trusted publishing once the project exists there; no tag has been cut yet.
+via trusted publishing.
 
 ---
 
@@ -866,6 +875,12 @@ meaning before 2.0.
 rendered `.skald/README.md`, the board's look, the HTTP board backend, fields
 docs/api.md marks *(internal)*, and the Python modules. An example that
 imports `skald.*` relies on internals.
+
+**Python versions.** The supported range is not frozen for 1.x. A version
+past upstream support may be dropped in a minor release, or in a patch
+release when an unfixed defect in that interpreter affects Skald's
+security. pip on a dropped version keeps installing the last release that
+supports it. `requires-python` always matches what CI tests.
 
 **Deprecation.** Nothing stable is removed in 1.x. A flag, field, argument,
 or route that is deprecated keeps working, warns (on stderr, or in

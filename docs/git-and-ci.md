@@ -138,7 +138,7 @@ uncommitted.
 ## Checks
 
 Every pull request and every push to `main` runs the test suite on Linux
-for Python 3.10 to 3.14 and on macOS and Windows, builds the wheel, and
+for Python 3.10 to 3.15 and on macOS and Windows, builds the wheel, and
 lints with [ruff](https://docs.astral.sh/ruff/): pyflakes, pycodestyle,
 bugbear, and the bandit-derived `S` rules, configured in `pyproject.toml`.
 A change that touches only documentation the tests never read (the

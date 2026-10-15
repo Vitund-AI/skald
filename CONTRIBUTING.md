@@ -27,7 +27,7 @@ pip install ruff && ruff check src tests examples scripts
 ```
 
 Python 3.10 or newer, and git. The suite runs in CI on Linux for Python
-3.10 to 3.14 and on macOS and Windows, so a change that passes locally on one
+3.10 to 3.15 and on macOS and Windows, so a change that passes locally on one
 platform can still fail there; the run on your pull request is the check.
 If a test depends on the platform (line endings, path separators, an older
 `datetime`), say so in a comment.

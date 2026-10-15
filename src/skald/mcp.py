@@ -61,6 +61,12 @@ TOOLS: list[dict] = [
                              "question": {"type": ["integer", "string"], "description": "the question's stable number, 3 or 'Q3', as resume labels them"},
                              "all": {"type": "boolean", "description": "close every open question with this decision"},
                              "withdraw": {"type": "boolean", "description": "record the question as dropped rather than answered"}}, ["id", "text"])},
+    {"name": "skald_tick", "description": "Tick checklist items under a story's ## Acceptance heading (or another section) by number, as skald_resume's acceptance_items numbers them. Tick each as you verify it.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "items": {"type": "array", "items": {"type": "integer"}, "description": "item numbers, from 1"},
+                             "section": {"type": "string", "description": "the heading the items sit under, any level, case-insensitive (default Acceptance)"}}, ["id", "items"])},
+    {"name": "skald_untick", "description": "Untick checklist items under a story's ## Acceptance heading (or another section) by number.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "items": {"type": "array", "items": {"type": "integer"}, "description": "item numbers, from 1"},
+                             "section": {"type": "string", "description": "the heading the items sit under (default Acceptance)"}}, ["id", "items"])},
     {"name": "skald_context", "description": "Orientation for the caller: assigned stories with last notes, the next unblocked story, blocked ready stories, stories waiting on a human (open questions), claims on other branches, uncommitted story files.",
      "inputSchema": _schema({**PROJECT_PROP, **AS_PROP})},
     {"name": "skald_resume", "description": "A story's requirements (the ## Requirements section when there is one), the other sections' headings and sizes, checklist and acceptance state, dependencies, decisions, and its latest handoff note. Pass section to read one section, or full for the whole body.",
@@ -237,6 +243,22 @@ class McpServer:
         d = store.story_dict(story)
         d["closed_questions"] = [f"Q{q['number']}" for q in closed]
         return d
+
+    def _tick(self, args: dict, done: bool) -> Any:
+        store = self._store(args)
+        section = args.get("section") or "Acceptance"
+        items = args.get("items")
+        if not isinstance(items, list) or not all(isinstance(n, int) and not isinstance(n, bool) for n in items):
+            raise SkaldError("items must be a list of item numbers")
+        story, after, changed = store.tick(args["id"], items, done, section)
+        return {"id": story.id, "section": section, "changed": changed,
+                "items": [{k: it[k] for k in ("number", "done", "text")} for it in after]}
+
+    def tool_skald_tick(self, args: dict) -> Any:
+        return self._tick(args, True)
+
+    def tool_skald_untick(self, args: dict) -> Any:
+        return self._tick(args, False)
 
     def tool_skald_set(self, args: dict) -> Any:
         store = self._store(args)

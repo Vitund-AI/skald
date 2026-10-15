@@ -349,6 +349,14 @@ def build_parser() -> argparse.ArgumentParser:
     ans.add_argument("--all", dest="all_open", action="store_true", help="close every open question with this one decision")
     ans.add_argument("--withdraw", action="store_true", help="record that the question is dropped rather than answered")
 
+    for verb in ("tick", "untick"):
+        tk = sub.add_parser(verb, help=f"{verb} checklist items under ## Acceptance (or --section) by number; with no N, list them numbered")
+        tk.add_argument("id", help="story id or unique prefix")
+        tk.add_argument("items", nargs="*", type=int, metavar="N", help="item numbers, as the list shows them")
+        tk.add_argument("--section", default="Acceptance", metavar="HEADING",
+                        help="the heading the items sit under: any level, case-insensitive, exact else prefix (default: Acceptance)")
+        tk.add_argument("--json", action="store_true", help="print the section's items, and which changed, as JSON")
+
     imp = sub.add_parser("import", help="bring a folder of Markdown records into the backlog, driven by a mapping file")
     imp.add_argument("paths", nargs="+", metavar="PATH", help="Markdown files, or directories searched recursively")
     imp.add_argument("--map", metavar="FILE", help="JSON mapping: created_at, status, tags, notes, strip, exclude rules (see docs/importing.md)")
@@ -932,9 +940,13 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
 
 def _resume_extras(story: Story, args) -> dict:
     """Body views for ``resume``: requirements by default, one section, or everything before the notes."""
-    from .store import prelude_of, requirements_of, section_of, sections_of
+    from .store import prelude_of, requirements_of, section_of, sections_of, task_items
 
     out: dict = {"requirements": requirements_of(story.body), "sections": sections_of(story.body)}
+    try:  # numbered, because that is how `skald tick` names them
+        out["acceptance_items"] = [{k: it[k] for k in ("number", "done", "text")} for it in task_items(story.body, "Acceptance")]
+    except SkaldError:
+        out["acceptance_items"] = []
     section = getattr(args, "section", None)
     if section:
         text = section_of(story.body, section)
@@ -945,6 +957,36 @@ def _resume_extras(story: Story, args) -> dict:
     if getattr(args, "full", False):
         out["body"] = prelude_of(story.body)
     return out
+
+
+def cmd_tick(store: Store, args) -> int:
+    from .store import task_items
+
+    ticking = args.command == "tick"
+    if args.items:
+        story, items, changed = store.tick(args.id, args.items, ticking, args.section)
+    else:
+        story = store.get(args.id)
+        items, changed = task_items(story.body, args.section), []
+    if args.json:
+        print(json.dumps({"id": story.id, "section": args.section, "changed": changed,
+                          "items": [{k: it[k] for k in ("number", "done", "text")} for it in items]}, indent=2))
+        return 0
+    progress = f"{args.section} {sum(it['done'] for it in items)}/{len(items)}"
+    if not args.items:
+        print(f"{story.id}  {progress}")
+        for it in items:
+            print(f"  {it['number']:>2} [{'x' if it['done'] else ' '}] {it['text']}")
+        if not items:
+            print("  (no checklist items)")
+        return 0
+    state = "ticked" if ticking else "unticked"
+    already = sorted(set(args.items) - set(changed))
+    msg = f"{state} {', '.join(map(str, changed))} on {story.id}" if changed else f"nothing changed on {story.id}"
+    if already:
+        msg += f" ({', '.join(map(str, already))} already {state})"
+    print(f"{msg}; {progress}")
+    return 0
 
 
 def cmd_resume(ws: Workspace, store: Store, args) -> int:
@@ -1003,6 +1045,11 @@ def cmd_resume(ws: Workspace, store: Store, args) -> int:
                 print("Also in this story: " + " · ".join(f"## {s['heading']} ({s['lines']} lines)" for s in others))
             first = others[0]["heading"].split()[0].lower()
             print(f"  skald resume {story.id} --section {first}   |   skald resume {story.id} --full\n")
+        if d["acceptance_items"] and "acceptance" not in d["requirements"].lower():
+            print(f"Acceptance (tick with skald tick {story.id} N):")
+            for it in d["acceptance_items"]:
+                print(f"  {it['number']:>2} [{'x' if it['done'] else ' '}] {it['text']}")
+            print()
     if d["decisions"]:
         print("Decisions:")
         for n in d["decisions"]:
@@ -2234,7 +2281,7 @@ def claude_skill() -> str:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer",
+    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer", "tick", "untick",
     "commits", "diff", "activity", "digest", "graph", "release", "audit", "import", "export",
     "migrate",
 }
@@ -2357,6 +2404,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         left = len(story.open_questions())
         print(f"{verb} {labels} on {story.id} (decision; {left} still open)" if left else f"{verb} {labels} on {story.id} (decision; none open)")
         return 0
+    if args.command in ("tick", "untick"):
+        return cmd_tick(store, args)
     if args.command == "rm":
         cleared: list[str] = []
         story = store.delete(args.id, force=args.force, notes=cleared)

@@ -1,11 +1,13 @@
 ---
 title: "Advertise swimlanes: show the control disabled with a hint when no facets exist"
-status: "idea"
-rank: 10
+status: "done"
+rank: 30
 tags: ["area:board"]
 blocked_by: []
+assignee: "claude"
+released: "1.2.0"
 created_at: "2026-09-16T05:25:26Z"
-updated_at: "2026-09-29T01:17:37Z"
+updated_at: "2026-10-15T23:32:05Z"
 ---
 ## Requirements
 
@@ -45,12 +47,12 @@ browser (maintainers machine) or treat the image as a manual follow-up;
 the code change above does not depend on it.
 
 ## Acceptance
-- [ ] with no facets/parents on a project board, the swimlanes control is visible, disabled/grayed, and shows a teaching tooltip
-- [ ] with facets or parents, it enables with the real swimlane options (unchanged behaviour)
-- [ ] hidden in the All-projects view
-- [ ] the tooltip is reliably visible on hover in the disabled state (gotcha handled)
-- [ ] docs/board.md mentions that swimlanes advertise themselves; add the swimlanes screenshot (or leave a TODO if captured out of band)
-- [ ] python3 -m unittest green, ruff clean
+- [x] with no facets/parents on a project board, the swimlanes control is visible, disabled/grayed, and shows a teaching tooltip
+- [x] with facets or parents, it enables with the real swimlane options (unchanged behaviour)
+- [x] hidden in the All-projects view
+- [x] the tooltip is reliably visible on hover in the disabled state (gotcha handled)
+- [x] docs/board.md mentions that swimlanes advertise themselves; add the swimlanes screenshot (or leave a TODO if captured out of band)
+- [x] python3 -m unittest green, ruff clean
 
 ## Changelog
 
@@ -63,3 +65,17 @@ Parked (moved back to idea) by decision. The maintainer's UX concern: dynamicall
 
 ## [claude] 2026-09-29 01:17 UTC · decision
 Taken off release:0.9.0 with the maintainer (2026-09-29): stays parked until the stable-header-slots principle is adopted; not release work.
+
+## [claude] 2026-10-15 22:11 UTC · handoff
+Done.
+- With no facets and no parents, `renderFacetControls` now shows `#group-by` with one "Swimlanes by…" option, `aria-disabled="true"` and a title hint.
+- A CSS rule in the page's own style block greys it (opacity .5, cursor help), so it works even if the Tailwind CDN fails.
+- Tooltip gotcha: option (b). The select stays enabled, since some browsers show no title tooltip on a disabled select.
+- `applyProject` hides `#group-by` and clears `#facet-filters` up front. The All-projects view never redraws them, so the previous project's controls lingered there.
+- Docs: board.md, a SPEC sentence, CHANGELOG. The swimlanes screenshot already existed at `docs/images/swimlanes.png`.
+
+Verified in headless Chromium against a real server:
+- no facets: visible, aria-disabled, opacity 0.5, cursor help, hint title, one placeholder option;
+- after `skald tag +area:web`: the board updated live, the control enabled with "no swimlanes" and "swimlanes by area";
+- All projects: hidden, facet filters cleared; back to the project: restored.
+The full suite and ruff pass.

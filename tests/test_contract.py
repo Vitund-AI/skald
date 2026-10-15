@@ -133,6 +133,9 @@ class ContractFixture(SkaldTestCase):
             "doctor": self.cli_json("doctor", "--json"),
             "export": self.cli_json("export", "--format", "json"),
             "audit": self.cli_json("audit", a, "--json"),
+            "resume (acceptance)": self.cli_json("resume", a, "--json"),
+            "tick": self.cli_json("tick", a, "1", "--json"),
+            "untick": self.cli_json("untick", a, "1", "--json"),
             "new": self.cli_json("new", "Late idea", "--json"),
         }
         return out

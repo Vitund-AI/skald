@@ -602,6 +602,30 @@ a version ships, CI adds it. Nothing in the package depends on a feature
 above 3.10, so the floor is a statement of what is tested, not a
 constraint the code needs.
 
+Addendum, at 3.15. Upstream end of life was the wrong trigger: it measures
+CPython's support, not whether anyone runs the version or what it costs
+Skald. 3.10 is still the default Python on Ubuntu 22.04, in standard
+support until April 2027, and keeping it costs nothing today. The rule is
+now as follows.
+- `requires-python` is always exactly what CI tests, so pip never installs
+  Skald on an interpreter nobody ran the suite on.
+- A version past upstream support is tested, not promised. It stays while it
+  costs nothing, and the docs say it may go in any minor release.
+- A newer standard-library feature is used behind a version check with a
+  small fallback before it costs an old version its place. Syntax cannot be
+  gated, because the whole file fails to load, and a fallback as big as the
+  feature is no saving.
+- A version is dropped at the first of these:
+  - a feature Skald wants needs more than a small gate;
+  - the long-term-support distributions that ship it leave standard
+    support;
+  - a security defect in that interpreter affects Skald and upstream will
+    not fix it. That one goes in the next release, a patch if need be.
+- New versions join CI when they ship, as before.
+
+Dropping a version strands nobody: pip on it resolves to the last release
+that supports it, and D63 governs that line.
+
 ### D63. Fixes go to the latest release; an earlier line is patched from a branch cut at its tag, on demand
 Skald is pre-1.0, has no dependencies, is one `pip install --upgrade`
 away for every user, and has one maintainer. A fix costs the same
@@ -970,3 +994,33 @@ start or open it print a warning to stderr, which keeps piped output to the
 URLs, and `doctor` reports it. The warning names the risk and the fix. It
 does not refuse, because a trusted home network is a fair place for plain
 HTTP.
+
+### D82. On Windows the background server gets a hidden console, and git gets none of its own
+The background server was spawned with `DETACHED_PROCESS`, so it had no
+console at all. Windows then gives every console program it starts a new
+console window. The server runs git every few seconds to keep the board
+live, so each run flashed a window on screen (the first user bug report). The server
+now starts with `CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP`. It gets a
+console of its own that has no window, so everything it runs shares that
+console invisibly. It still outlives the terminal that started it and
+ignores that terminal's Ctrl+C, which is all the detachment was for.
+gitutil adds a second guard for any other process that has no console,
+such as an MCP server a desktop app started with `pythonw` or detached. When
+Skald has no console window, git is started with `CREATE_NO_WINDOW`. A
+process with a visible console is left alone, because git shares that
+console and can still ask for credentials there, which `CREATE_NO_WINDOW`
+would take away from a terminal user.
+
+### D83. Acceptance items are ticked by number, with `tick` and `untick`
+The contract told agents to tick acceptance criteria as they verify them but
+gave no command for it, so they edited story files by hand, without the lock
+and without `updated_at` (agent feedback). `skald check` already validates
+the backlog, so the verbs are `tick` and `untick`, two commands rather than
+`tick --undo`, because the pair reads as what it does. Items are addressed by
+their number within the section, the same way questions are, and `skald tick
+<id>` and `resume` print the numbers, so an agent never has to guess or match
+text. `--section` reaches a checklist under any heading. Exact match beats
+prefix, two matches refuse, and the error names what exists. The numbering
+and the Acceptance progress count come from one parser, so the number `tick`
+takes is the item the board and the review warning count. The parser skips
+fenced code, which used to be counted, and includes a section's subheadings.
