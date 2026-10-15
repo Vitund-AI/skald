@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The board shows the "Swimlanes by…" control before any story is tagged, greyed out with a hint to add `key:value` tags or parent stories, so swimlanes can be found instead of staying hidden until the first facet exists. (0d8904)
 - Fixed: reading a story's sections (`skald resume`, `--section`) no longer slows down quadratically on a heading line holding a very long run of spaces. A story file crafted that way could stall the command or the board. Headings are now parsed in linear time. (100d8e)
 - `skald tick <id> N` and `skald untick <id> N` tick and untick acceptance criteria by number, so agents no longer edit the story file by hand to record a verified item. `skald tick <id>` lists the items numbered, and `skald resume` shows the same numbers. `--section HEADING` reaches a checklist under any other heading. Only the box changes, the write is locked like every other command, and a wrong number changes nothing. MCP gains `skald_tick` and `skald_untick`. (100d8e)
 - Fixed on Windows: the background board server no longer flashes a console window every time it runs git, which it does every few seconds to keep the board live. It now runs with a hidden console instead of none, so git shares that console. Any Skald process without a console, such as an MCP server started by a desktop app, also starts git without a window. (064905)

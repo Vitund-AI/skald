@@ -147,7 +147,10 @@ A certificate from your own domain (Let's Encrypt, say) works the same way.
   [Working trees and branches](#working-trees-and-branches).
 - **Filter** matches title, id, tag, or assignee. `/` focuses it.
 - **Facet filters and swimlanes** appear when stories carry `key:value`
-  tags. One dropdown per key filters; "swimlanes by" splits the board into
+  tags. Before any story does, the "Swimlanes by…" control is still there,
+  greyed, with a hover hint saying how to start (tag a few stories
+  `epic:auth`, `area:web`, or give some a parent), so the feature can be
+  found. One dropdown per key filters; "swimlanes by" splits the board into
   one lane per value with a progress bar per lane. A card shows in every lane
   whose value it carries — a story tagged both `area:api` and `area:cli`
   appears in both, marked with a stacked-lanes icon — plus a "no `<key>`"
