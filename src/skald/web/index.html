@@ -95,6 +95,8 @@
   .md input[type=checkbox] { margin-right: .4em; }
   .tab.active { border-bottom: 2px solid var(--accent); color: var(--ink); }
   .toggle[aria-pressed="true"] { background: var(--accent-tint); color: var(--accent-text); border-color: var(--accent); }
+  /* The swimlane control before any facet exists: shown, so the feature can be found, but inert. */
+  #group-by[aria-disabled="true"] { opacity: .5; cursor: help; }
   .card:focus-visible, .ready-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .card.selectable { cursor: pointer; }
   .card.selected { outline: 2px solid var(--accent); outline-offset: -2px; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
@@ -517,6 +519,9 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     board.classList.toggle('hidden', state.allView);
     readyView.classList.toggle('hidden', !state.allView);
     $('new-btn').classList.toggle('hidden', state.allView);
+    // A project board redraws these on refresh; the All-projects view never does, so clear them here.
+    $('group-by').classList.add('hidden');
+    $('facet-filters').innerHTML = '';
     $('git-btn').classList.add('hidden');
     $('branch').classList.add('hidden');
     $('elsewhere').classList.add('hidden');
@@ -666,7 +671,18 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     }));
     const gb = $('group-by');
     const hasParents = state.stories.some(s => s.parent);
-    if (!keys.length && !hasParents) { gb.classList.add('hidden'); state.groupBy = ''; return; }
+    if (!keys.length && !hasParents) {
+      // Advertise swimlanes instead of hiding them until the first facet. Greyed and inert, but not
+      // `disabled`: some browsers show no title tooltip on a disabled select, and the hint is the point.
+      gb.innerHTML = '<option value="">Swimlanes by…</option>';
+      gb.setAttribute('aria-disabled', 'true');
+      gb.title = 'Add key:value tags (epic:auth, area:web) or parent stories to group the board into swimlanes.';
+      state.groupBy = '';
+      gb.classList.remove('hidden');
+      return;
+    }
+    gb.removeAttribute('aria-disabled');
+    gb.title = 'Group the board into swimlanes by a facet';
     gb.innerHTML = `<option value="">no swimlanes</option>` + keys.map(k => `<option value="${esc(k)}" ${state.groupBy === k ? 'selected' : ''}>swimlanes by ${esc(k)}</option>`).join('')
       + (hasParents ? `<option value="__parent__" ${state.groupBy === '__parent__' ? 'selected' : ''}>swimlanes by parent</option>` : '');
     if (!keys.includes(state.groupBy) && !(state.groupBy === '__parent__' && hasParents)) state.groupBy = '';

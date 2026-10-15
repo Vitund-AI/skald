@@ -631,7 +631,11 @@ changes, new-story button. Board: columns from config with counts and
 limits, an "Unknown status" column when needed. Cards: title, tags, lock with
 dependency tooltip, stale marker, checklist progress, assignee, id, age.
 A Releases view (a header toggle) lists what shipped grouped by version, newest first, from `GET /api/projects/<p>/releases` (`store.releases()`); a story opens read-only, since it is archived. One filter dropdown per facet key and a swimlane control that splits the
-board by a facet's values with a progress bar per lane. A card appears in
+board by a facet's values with a progress bar per lane. With no facet and no
+parent yet, the swimlane control stays visible but inert (`aria-disabled`,
+greyed, one placeholder option) with a title hint on how to start, so the
+feature can be found; it is not `disabled`, because some browsers show no
+tooltip on a disabled select. It is hidden in the All-projects view. A card appears in
 every lane whose `key:value` it carries (so a story with two values for the
 grouping key shows in both, marked with a stacked-lanes icon), plus a "no
 `<key>`" lane for stories with none. Dragging a card to another lane
