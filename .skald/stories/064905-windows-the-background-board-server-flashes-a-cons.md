@@ -1,12 +1,12 @@
 ---
 title: "Windows: the background board server flashes a console window for every git command"
-status: "review"
-rank: 20
+status: "done"
+rank: 10
 tags: ["area:server", "bug", "platform:windows"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-15T19:29:53Z"
-updated_at: "2026-10-15T19:31:49Z"
+updated_at: "2026-10-15T19:39:12Z"
 ---
 ## Requirements
 
