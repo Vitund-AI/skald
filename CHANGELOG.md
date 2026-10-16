@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `skald context` says when the board server is running an older version than the installed package, for example after `pip install -U`, with one line naming `skald server restart`. It's the command agents run at the start of every session, so they now see it when it matters. The check reads files only, with no network call. `skald context --json` and the MCP `skald_context` tool carry it as `server`. (1320cf)
+
 ## 1.2.0 (2026-10-15)
 
 - The board shows the "Swimlanes by…" control before any story is tagged, greyed out with a hint to add `key:value` tags or parent stories, so swimlanes can be found instead of staying hidden until the first facet exists. (0d8904)

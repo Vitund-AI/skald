@@ -430,6 +430,7 @@
    "ready_blocked[].id",
    "ready_blocked[].title",
    "ready_blocked[].unmet",
+   "server",
    "stale_claims",
    "uncommitted",
    "waiting",

@@ -833,6 +833,8 @@ WAITING_CAP = 5
 
 
 def build_context(ws: Workspace, store: Store, author: str) -> dict:
+    from .server import version_lag
+
     stories, load_warnings = store.load_all()
     idx = {s.id: s for s in stories}
     repo, uncommitted = _uncommitted(store)
@@ -882,6 +884,7 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
                          for s in stale_claims],
         "claimed_elsewhere": elsewhere,
         "uncommitted": [c["path"] for c in uncommitted],
+        "server": version_lag(ws.registry.home),
         "warnings": load_warnings + next_notes,
     }
 
@@ -893,6 +896,8 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
         print(json.dumps(ctx, indent=2))
         return 0
     print(f"project {ctx['project']}" + (f" · branch {ctx['branch']}" if ctx["branch"] else "") + f" · acting as {author}")
+    if ctx["server"] and ctx["server"]["stale"]:
+        print(f"board server runs {ctx['server']['version']} but {ctx['server']['installed']} is installed: skald server restart")
     if ctx["mine"]:
         print(f"\nAssigned to {author}:")
         for d in ctx["mine"]:

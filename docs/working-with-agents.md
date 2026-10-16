@@ -13,8 +13,10 @@ for:
 1. **Orient** with `skald context --as <name>`. One bounded block: the
    stories assigned to that name with the last note on each, the next
    unblocked story, blocked work, claims by other agents on other branches,
-   and uncommitted story files. It is designed for the top of a session and
-   for SessionStart hooks, where a full listing would waste context.
+   and uncommitted story files. If the board server is still running an
+   older version after an upgrade, one line says so and names `skald server
+   restart`. It is designed for the top of a session and for SessionStart
+   hooks, where a full listing would waste context.
 2. **Pick work** with `skald next`. It returns the first ready, unblocked
    story that nobody else holds, skipping stories claimed on other local
    branches and offering stale assignments back. `--json --compact` trims the
