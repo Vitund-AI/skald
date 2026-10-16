@@ -1,12 +1,12 @@
 ---
 title: "skald context says when the board server is older than the installed package"
-status: "review"
+status: "done"
 rank: 10
 tags: ["agents", "area:cli", "area:server"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-16T00:56:30Z"
-updated_at: "2026-10-16T00:58:48Z"
+updated_at: "2026-10-16T01:06:28Z"
 ---
 ## Requirements
 
