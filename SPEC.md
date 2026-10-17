@@ -458,6 +458,35 @@ last-writer-wins against a change made after the board last refreshed.
 Random ids mean branches never collide on creation. `check` reports
 conflict markers.
 
+### 4.8 Merging story files
+
+`skald merge-file BASE OURS THEIRS [PATH]` is git's merge driver for story
+files (`merge.py`, DECISIONS D84). `skald hooks git --install` adds
+`<.skald>/stories/*.md merge=skald` and the rendered board's path to
+`.gitattributes` and sets `merge.skald.driver` to `skald merge-file %O %A
+%B %P` in the clone's config; `doctor` reports a clone whose
+`.gitattributes` routes stories to a driver it lacks. The driver parses all
+three versions and merges by part, writing the result over OURS. It exits 0
+when clean and 1 when conflict markers remain.
+
+| Part | One side changed | Both changed, differently |
+| --- | --- | --- |
+| `status` | that side | the later of the two in the project's column order |
+| `tags`, `blocked_by` | | set merge against the base: both sides' additions and removals, ours' order then theirs' additions |
+| `updated_at` | that side | the later |
+| `created_at` | | the base's |
+| any other field (`title`, `rank`, `assignee`, `parent`, `released`, unknown) | that side (a removal included) | the side with the later `updated_at`; ours on a tie |
+| notes | | the union of both sides' note blocks minus any a side removed, ordered by timestamp (stable: ours first) |
+| the prelude | that side | `git merge-file`; markers stay in the body |
+
+Column order comes from the `config.json` beside the story's `stories/`
+directory; without it, `status` follows the `updated_at` rule. A version
+that does not parse as a story makes the whole file a `git merge-file` line
+merge, as git would have done. A path outside `stories/`, the rendered
+board, keeps OURS and exits 0, since it is derived: `check` reports it
+stale and the next commit renders it. Modify/delete conflicts never reach
+a driver and stay git's.
+
 ---
 
 ## 5. Identity

@@ -166,6 +166,9 @@
   "mcp": [
    "--help"
   ],
+  "merge-file": [
+   "--help"
+  ],
   "migrate": [
    "--check",
    "--help",

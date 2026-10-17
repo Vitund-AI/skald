@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Story files merge cleanly between parallel branches and worktrees. `skald hooks git --install` now also sets up a git merge driver that merges a story by part instead of by line, for merges, cherry-picks and rebases. Fields merge against the common ancestor: when both sides changed one, status takes the later column, tags and dependencies keep both sides' changes, and the most recent edit wins the rest. Notes from both sides are kept in time order. Only an overlapping edit to the story's text still conflicts, and then only inside the body. The rendered board no longer conflicts at all. `skald doctor` says whether the driver is active. See [Conflicts](docs/git-and-ci.md#conflicts) for the full rules. (60df5d)
 - `skald check` prints its `PROBLEM:` lines to stderr, as it already did its warnings. A Claude Code Stop hook that blocks on `skald check` shows the agent only stderr, so it used to block without saying why. (4eecb0)
 - Claims on branches already merged into the current branch no longer count. `skald claim` and `skald move` used to warn that a story was "already active as claude on branch worktree-agent-…" after that branch had been merged. A worktree on a merged branch still counts while its `.skald/` has uncommitted changes, so an agent that has just claimed there is seen. (53439c)
 - `skald check` no longer warns that open questions are "open again" just because a decision about something else followed them. That warning now covers only decisions written before 0.4.1, when a plain decision could close a question. (8c7c02)

@@ -461,7 +461,14 @@ def build_parser() -> argparse.ArgumentParser:
     cf.add_argument("value", nargs="?", help="new value; omit to show the current one")
     cf.add_argument("--unset", action="store_true", help="return the key to its default (with -p NAME, just for that project)")
 
-    hk = sub.add_parser("hooks", help="print or install hooks: claude (agent), git (pre-commit), github (workflow)")
+    mf = sub.add_parser("merge-file", help="git's merge driver for story files, run by git during a merge (set up by "
+                                          "skald hooks git --install); merges BASE, OURS and THEIRS into OURS")
+    mf.add_argument("base", help="the common ancestor (git's %%O)")
+    mf.add_argument("ours", help="this side, rewritten with the result (git's %%A)")
+    mf.add_argument("theirs", help="the other side (git's %%B)")
+    mf.add_argument("path", nargs="?", help="the story's path in the repository (git's %%P), to find config.json")
+
+    hk = sub.add_parser("hooks", help="print or install hooks: claude (agent), git (pre-commit, story merge driver), github (workflow)")
     hk.add_argument("target", choices=["claude", "git", "github"], help="which hook to print or install")
     hk.add_argument("--install", action="store_true", help="write the hook instead of printing it")
     hk.add_argument("--strict", action="store_true", help="claude: stop hook also fails on uncommitted story changes")
@@ -2176,17 +2183,44 @@ jobs:
 """
 
 
+MERGE_DRIVER = "skald merge-file %O %A %B %P"
+MERGE_DRIVER_NAME = "Skald story files"
+
+
+def _install_merge_driver(repo: Path, attributes: list[str]) -> None:
+    """Route story files, and the rendered board, through `skald merge-file` (D84).
+
+    The attributes are committed, so every clone routes the same files; the driver itself is
+    per clone (git config), which `skald doctor` checks.
+    """
+    path = repo / ".gitattributes"
+    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+    missing = [a for a in attributes if a not in existing.splitlines()]
+    if missing:
+        sep = "" if not existing or existing.endswith("\n") else "\n"
+        path.write_text(existing + sep + "".join(a + "\n" for a in missing), encoding="utf-8")
+        print(f"added {', '.join(f'`{a}`' for a in missing)} to .gitattributes; commit it so every clone merges the same way")
+    gitutil.set_config(repo, "merge.skald.name", MERGE_DRIVER_NAME)
+    gitutil.set_config(repo, "merge.skald.driver", MERGE_DRIVER)
+    print("registered the story merge driver in this clone's git config (merge.skald.driver)")
+
+
 def cmd_hooks_git(store: Store, args) -> int:
     from . import render as rnd
 
     repo = _repo_of(store)
     if repo is None:
         raise GitError(f"{store.dir} is not inside a git repository")
+    rel = Path(os.path.relpath(store.dir, repo)).as_posix()
+    hooks = gitutil.hooks_dir(repo)
     if not args.install:
         print(PRE_COMMIT_HOOK, end="")
-        print(f"\nWrite this to {gitutil.hooks_dir(repo) / 'pre-commit'} and make it executable, or rerun with --install.", file=sys.stderr)
+        print(f"\nWrite this to {hooks / 'pre-commit'} and make it executable, or rerun with --install.", file=sys.stderr)
+        print(f"--install also sets up the story merge driver: adds `{rel}/stories/*.md merge=skald` (and the rendered "
+              f"board) to .gitattributes and runs\n  git config merge.skald.name \"{MERGE_DRIVER_NAME}\"\n"
+              f"  git config merge.skald.driver \"{MERGE_DRIVER}\"", file=sys.stderr)
         return 0
-    hook = gitutil.hooks_dir(repo) / "pre-commit"
+    hook = hooks / "pre-commit"
     if hook.exists() and "skald" not in hook.read_text(encoding="utf-8", errors="replace"):
         print(f"{hook} already exists and is not Skald's; add these lines to it yourself:", file=sys.stderr)
         print("  skald check || exit 1\n  skald render --stage", file=sys.stderr)
@@ -2199,6 +2233,9 @@ def cmd_hooks_git(store: Store, args) -> int:
         store.config.extra["render"] = {"path": rnd.DEFAULT_PATH, "format": "md"}
         store.config.save(store.dir / "config.json")
         print(f"enabled automatic rendering of {rnd.DEFAULT_PATH} in config.json; commit config.json")
+    # The rendered board is derived from the stories, so a merge keeps our copy rather than
+    # conflict; `skald check` calls it stale and the next commit re-renders it (D84).
+    _install_merge_driver(repo, [f"{rel}/stories/*.md merge=skald", f"{rnd.render_settings(store)['path']} merge=skald"])
     return 0
 
 
@@ -2294,6 +2331,12 @@ PROJECT_COMMANDS = {
 
 
 def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
+    if argv and argv[0] == "merge-file":
+        # git runs this mid-merge as the story-file merge driver: no project, registry, or lock.
+        from .merge import run_driver
+
+        args = build_parser().parse_args(argv)
+        return run_driver(args.base, args.ours, args.theirs, args.path)
     ws = ws or Workspace()
 
     # `tag` and `block` take +x/-y arguments that argparse would treat as options.
