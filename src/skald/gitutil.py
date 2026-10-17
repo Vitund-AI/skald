@@ -244,6 +244,35 @@ def rev_parse(repo: Path, ref: str) -> Optional[str]:
     return proc.stdout.strip() if proc.returncode == 0 else None
 
 
+def is_merged(repo: Path, ref: str, into: str = "HEAD") -> bool:
+    """True when ``ref``'s commits are all in ``into`` (its tip is an ancestor); False on any doubt."""
+    try:
+        return _run(["merge-base", "--is-ancestor", ref, into], cwd=repo).returncode == 0
+    except GitError:
+        return False
+
+
+def get_config(repo: Path, key: str) -> Optional[str]:
+    proc = _run(["config", "--get", key], cwd=repo)
+    return proc.stdout.strip() if proc.returncode == 0 else None
+
+
+def set_config(repo: Path, key: str, value: str) -> None:
+    _run(["config", key, value], cwd=repo, check=True)
+
+
+def merge_file(ours: Path, base: Path, theirs: Path) -> tuple[str, bool]:
+    """``git merge-file -p``: the three-way line merge of three files, and whether it left conflict markers."""
+    try:
+        proc = subprocess.run(["git", "merge-file", "-p", "-L", "ours", "-L", "base", "-L", "theirs",
+                               str(ours), str(base), str(theirs)], capture_output=True, check=False, **no_window())
+    except OSError as e:
+        raise GitError(f"git is not available: {e}") from None
+    if proc.returncode < 0 or proc.returncode > 127:
+        raise GitError((proc.stderr or b"").decode(errors="replace").strip() or "git merge-file failed")
+    return proc.stdout.decode("utf-8"), proc.returncode > 0
+
+
 def head_sha(repo: Path) -> Optional[str]:
     proc = _run(["rev-parse", "HEAD"], cwd=repo)
     return proc.stdout.strip() if proc.returncode == 0 else None

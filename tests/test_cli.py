@@ -135,9 +135,10 @@ class TestStoryCommands(SkaldTestCase):
         self.assertIn("## [agent] ", out)
         self.assertTrue(out.endswith("Claimed it\n"))
 
-        code, out, _ = self.run_cli("check")
+        code, out, err = self.run_cli("check")
         self.assertEqual(code, 2)
-        self.assertIn("PROBLEM: dependency cycle", out)
+        self.assertIn("PROBLEM: dependency cycle", err)  # stderr: a blocking Stop hook shows the agent only stderr
+        self.assertEqual(out, "")
 
         code, out, err = self.run_cli("rm", c)
         self.assertEqual(code, 1)
@@ -400,9 +401,9 @@ class TestGitCommands(SkaldTestCase):
         self.assertIn("branch:   ", out)
         self.assertIn("uncommitted story changes: 1 file(s)", out)  # config.json; the empty stories dir is invisible to git
         a = self.new("a", "--status", "ready")
-        code, out, _ = self.run_cli("check", "--hook")
+        code, out, err = self.run_cli("check", "--hook")
         self.assertEqual(code, 2)
-        self.assertIn("uncommitted story file(s)", out)
+        self.assertIn("uncommitted story file(s)", err)
         code, out, _ = self.run_cli("check")
         self.assertEqual((code, out.strip()), (0, "ok"))
 
@@ -565,6 +566,34 @@ class TestFacetCommands(SkaldTestCase):
 
 
 class TestAgentOrientation(SkaldTestCase):
+    def test_context_says_when_the_board_server_is_behind(self):
+        from unittest import mock
+
+        from skald import server as srv
+
+        self.home.mkdir(parents=True, exist_ok=True)
+
+        def context(running, installed, pid=None):
+            srv.state_path(self.home).write_text(json.dumps({"pid": pid or os.getpid(), "host": "127.0.0.1", "port": 1,
+                                                             "version": running}), encoding="utf-8")
+            with mock.patch.object(srv, "__version__", installed):
+                out = self.run_cli("context", "--as", "claude")[1]
+                data = json.loads(self.run_cli("context", "--as", "claude", "--json")[1])
+            return out, data["server"]
+
+        out, server = context("1.1.0", "1.2.0")
+        self.assertIn("board server runs 1.1.0 but 1.2.0 is installed: skald server restart", out.splitlines()[1])
+        self.assertEqual(server, {"version": "1.1.0", "installed": "1.2.0", "stale": True})
+        out, server = context("1.2.0", "1.2.0")  # current: say nothing
+        self.assertNotIn("board server", out)
+        self.assertEqual(server["stale"], False)
+        with mock.patch.object(srv, "pid_alive", return_value=False):  # a dead server's file is not a server
+            out, server = context("1.1.0", "1.2.0")
+        self.assertNotIn("board server", out)
+        self.assertIsNone(server)
+        srv.state_path(self.home).unlink()
+        self.assertIsNone(json.loads(self.run_cli("context", "--json")[1])["server"])
+
     def test_context_resume_and_note_kinds(self):
         a = self.new("Ship login", "--status", "ready", "--body", "Build it.\n\n## Acceptance\n\n- [ ] renders\n- [x] styled")
         b = self.new("Blocked one", "--status", "ready", "--blocked-by", a)

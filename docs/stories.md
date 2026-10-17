@@ -63,6 +63,12 @@ Frontmatter fields:
   the heading sits.
 - **Checklist items** (`- [ ]` and `- [x]`) anywhere in the body become the
   progress bar on the card.
+- **Any section** can be read or rewritten without editing the file:
+  `skald section <id> Requirements` prints it, and
+  `cat new.md | skald section <id> Requirements -` replaces its content,
+  keeping the heading, the other sections and the notes as they are.
+  `--create` adds a section that is not there yet; `--dry-run` shows the
+  change first.
 - **`## Acceptance`** holds the definition of done. Tick an item as you
   verify it with `skald tick <id> N` (`skald untick` reverses it, and
   `skald tick <id>` lists the items numbered; `--section HEADING` reaches

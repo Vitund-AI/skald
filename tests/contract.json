@@ -166,6 +166,9 @@
   "mcp": [
    "--help"
   ],
+  "merge-file": [
+   "--help"
+  ],
   "migrate": [
    "--check",
    "--help",
@@ -243,6 +246,12 @@
   "rm": [
    "--force",
    "--help"
+  ],
+  "section": [
+   "--create",
+   "--dry-run",
+   "--help",
+   "--json"
   ],
   "serve": [
    "--help",
@@ -430,6 +439,7 @@
    "ready_blocked[].id",
    "ready_blocked[].title",
    "ready_blocked[].unmet",
+   "server",
    "stale_claims",
    "uncommitted",
    "waiting",
@@ -1054,6 +1064,20 @@
    "unmet",
    "updated_at"
   ],
+  "section": [
+   "heading",
+   "id",
+   "level",
+   "text"
+  ],
+  "section (write)": [
+   "changed",
+   "created",
+   "dry_run",
+   "heading",
+   "id",
+   "text"
+  ],
   "show": [
    "acceptance",
    "acceptance.done",
@@ -1254,6 +1278,20 @@
    ],
    "required": [
     "id"
+   ]
+  },
+  "skald_section": {
+   "arguments": [
+    "create",
+    "dry_run",
+    "id",
+    "project",
+    "section",
+    "text"
+   ],
+   "required": [
+    "id",
+    "section"
    ]
   },
   "skald_set": {

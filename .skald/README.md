@@ -65,6 +65,20 @@ _none_
 
 ## Releases
 
+<details><summary><strong>1.3.0 (7)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [a7d85b](archive/a7d85b-agent-docs-claim-moves-the-story-into-the-active-c.md) | Agent docs: claim moves the story into the active column; new --body - reads stdin | `agents` `docs` | claude |  | 1/1 |
+| [53439c](archive/53439c-ignore-claims-on-branches-already-merged-into-the.md) | Ignore claims on branches already merged into the current branch | `agents` `area:git` `bug` | claude |  | 3/3 |
+| [60df5d](archive/60df5d-merge-driver-for-story-files-no-more-skald-conflic.md) | Merge driver for story files: no more .skald conflicts between parallel agents | `agents` `area:git` | claude |  | 5/5 |
+| [4eecb0](archive/4eecb0-skald-check-print-problems-to-stderr-so-a-blocking.md) | skald check: print problems to stderr so a blocking Stop hook shows why | `agents` `area:cli` `bug` | claude |  | 1/1 |
+| [1320cf](archive/1320cf-skald-context-says-when-the-board-server-is-older.md) | skald context says when the board server is older than the installed package | `agents` `area:cli` `area:server` | claude |  | 5/5 |
+| [82c244](archive/82c244-skald-section-id-name-read-a-section-or-replace-it.md) | skald section <id> NAME: read a section, or replace it from a pipe | `agents` `area:cli` `area:mcp` | claude |  | 2/2 |
+| [8c7c02](archive/8c7c02-stop-flagging-open-questions-after-an-unrelated-de.md) | Stop flagging open questions after an unrelated decision | `agents` `area:cli` `bug` | claude |  | 2/2 |
+
+</details>
+
 <details><summary><strong>1.2.0 (4)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |

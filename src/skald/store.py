@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Optional
 
 from .config import ProjectConfig
-from .errors import ConflictError, CorruptStoryError, NotFoundError, SkaldError
+from .errors import ConflictError, CorruptStoryError, GitError, NotFoundError, SkaldError
 from .lock import project_lock
 from .util import atomic_write, checklist_progress, note_stamp, now_iso, parse_iso, parse_when, read_text, sha256_text, slugify
 
@@ -140,8 +140,17 @@ def open_questions(notes: list[dict]) -> list[dict]:
     return [q for q in questions_of(notes) if q["closed_by"] is None]
 
 
+# 0.4.1 stopped plain decisions closing questions. Only a plain decision written before then
+# could have been meant to close one, so only those are worth a migration warning.
+QUESTION_RULE_SINCE = "2026-09-10"
+
+
 def reopened_questions(notes: list[dict]) -> list[dict]:
-    """Open questions followed by a plain decision: closed under the rule before 0.4.1, open now."""
+    """Open questions followed by a plain decision from before 0.4.1: closed then, open now.
+
+    A plain decision written since is an ordinary decision, and the questions before it are
+    simply still open, so it is not reported (a story can rightly have both).
+    """
     open_stamps = {(q["author"], q["stamp"], _first_line(q)) for q in open_questions(notes)}
     seen: list[dict] = []
     out: list[dict] = []
@@ -151,7 +160,7 @@ def reopened_questions(notes: list[dict]) -> list[dict]:
             number += 1
             if (n["author"], n["stamp"], _first_line(n)) in open_stamps:
                 seen.append(dict(n, number=number))
-        elif n["kind"] == "decision" and not _naming_lines(n):
+        elif n["kind"] == "decision" and not _naming_lines(n) and n["stamp"] < QUESTION_RULE_SINCE:
             out.extend(q for q in seen if q not in out)
     return out
 
@@ -271,17 +280,49 @@ def task_items(body: str, section: str = "Acceptance") -> list[dict]:
     """
     lines = prelude_of(body).splitlines()
     heads = _headings(lines)
-    want = " ".join(section.split()).lower()
-    exact = [h for h in heads if h[2].lower() == want]
-    found = exact or [h for h in heads if h[2].lower().startswith(want)]
-    if len(found) > 1:
-        raise SkaldError(f"{len(found)} headings match {section!r}: " + ", ".join(repr(h[2]) for h in found)
-                         + "; give the whole heading with --section")
+    found = _match_heading(heads, section)
     if not found:
         with_items = [h[2] for h in heads if _section_items(lines, heads, h)]
         hint = f"; sections with items: {', '.join(with_items)}" if with_items else "; this story has no checklist items"
         raise NotFoundError(f"no {section!r} section{hint}")
     return _section_items(lines, heads, found[0])
+
+
+def _match_heading(heads: list[tuple[int, int, str]], name: str) -> list[tuple[int, int, str]]:
+    """The heading ``name`` names: exact (case-insensitive, any level) if one is, else by prefix. Two refuse."""
+    want = " ".join(name.lstrip("#").split()).lower()
+    exact = [h for h in heads if h[2].lower() == want]
+    found = exact or [h for h in heads if h[2].lower().startswith(want)]
+    if len(found) > 1:
+        if len({h[2].lower() for h in found}) == 1:
+            raise SkaldError(f"{len(found)} sections are called {found[0][2]!r}; rename one in the story file "
+                             "so they can be told apart")
+        raise SkaldError(f"{len(found)} headings match {name!r}: " + ", ".join(repr(h[2]) for h in found)
+                         + "; give the whole heading")
+    return found
+
+
+def find_section(body: str, name: str) -> Optional[dict]:
+    """A heading of the prelude and its extent: ``{heading, level, start, end}``, line indexes into
+    ``body.splitlines()``, the content running from ``start + 1`` to ``end``, nested headings
+    included. None when no heading matches; ambiguous names raise. Notes are never sections."""
+    lines = prelude_of(body).splitlines()
+    heads = _headings(lines)
+    found = _match_heading(heads, name)
+    if not found:
+        return None
+    start, level, heading = found[0]
+    end = next((i for i, lv, _ in heads if i > start and lv <= level), len(lines))
+    return {"heading": heading, "level": level, "start": start, "end": end}
+
+
+def section_text(body: str, sec: dict) -> str:
+    """A section's content without its heading or surrounding blank lines."""
+    return "\n".join(body.splitlines()[sec["start"] + 1:sec["end"]]).strip("\n")
+
+
+def headings_of(body: str) -> list[str]:
+    return [h[2] for h in _headings(prelude_of(body).splitlines())]
 
 
 def _section_items(lines: list[str], heads: list[tuple[int, int, str]], head: tuple[int, int, str]) -> list[dict]:
@@ -1191,6 +1232,69 @@ class Store:
         return story, task_items(story.body, section), changed
 
     @_mutates
+    def replace_section(self, ref: str, name: str, text: str, create: bool = False,
+                        dry_run: bool = False) -> tuple[Story, dict]:
+        """Replace the content under a heading of the authored body, keeping the heading.
+
+        ``create`` appends a ``##`` section when none matches (otherwise that is an error, so a
+        typo cannot add a near-duplicate). The text is refused when it would break the story's
+        shape: empty, starting with the section's own heading, holding a heading at the
+        section's level or above (it would end the section early), a note heading (notes
+        belong to ``skald note``), or conflict markers. Returns the story (unwritten with
+        ``dry_run``) and ``{heading, before, after, created}``.
+        """
+        story = self.get(ref)
+        if story.archived:
+            raise ConflictError(f"{story.id} is archived; unarchive it first")
+        text = (text or "").replace("\r\n", "\n").strip("\n")
+        if not text.strip():
+            raise SkaldError("nothing to write: pipe the section's new content in, e.g. cat new.md | skald section <id> NAME -")
+        body = story.body
+        sec = find_section(body, name)
+        created = sec is None
+        if created and not create:
+            names = ", ".join(headings_of(body)) or "none"
+            raise NotFoundError(f"no {name!r} section (sections: {names}); --create adds it")
+        heading = sec["heading"] if sec else " ".join(name.lstrip("#").split())
+        level = sec["level"] if sec else 2
+        content = text.split("\n")
+        for i, h_level, h_text in _headings(content):
+            if i == 0 and h_text.lower() == heading.lower():
+                raise SkaldError(f"the text starts with the section's own heading '{heading}'; pipe only its content")
+            if h_level <= level:
+                raise SkaldError(f"the text holds a level-{h_level} heading ('{h_text}'), which would end the "
+                                 f"'{heading}' section early; use deeper headings inside it")
+        if NOTE_HEADING_RE.search(text):
+            raise SkaldError("the text holds a note heading; notes belong to skald note")
+        if CONFLICT_RE.search(text):
+            raise SkaldError("the text holds conflict markers")
+        lines = body.splitlines(keepends=True)
+        nl = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
+        block = [nl] + [ln + nl for ln in content]
+        if created:
+            prelude_len = len(prelude_of(body).splitlines())
+            head, rest = lines[:prelude_len], lines[prelude_len:]
+            if head and not head[-1].endswith(("\n", "\r")):
+                head[-1] += nl
+            while head and not head[-1].strip():
+                head = head[:-1]
+            head = head + ([nl] if head else []) + [f"{'#' * level} {heading}{nl}"]
+            before = ""
+        else:
+            head, rest = lines[:sec["start"] + 1], lines[sec["end"]:]
+            before = section_text(body, sec)
+        if head and not head[-1].endswith(("\n", "\r")):
+            head[-1] += nl  # a heading on the file's last line, with no newline after it
+        while rest and not rest[0].strip():
+            rest = rest[1:]
+        new_body = "".join(head + block + ([nl] + rest if rest else []))
+        parse_story_text(serialise_story(story.fields, new_body), story.path.name)  # never write what fails to load
+        story.body = new_body
+        if not dry_run and new_body != body:
+            self._write(story)
+        return story, {"heading": heading, "before": before, "after": "\n".join(content), "created": created}
+
+    @_mutates
     def append_note(self, ref: str, text: str, author: str = "agent", kind: Optional[str] = None,
                     at: Optional[str] = None) -> Story:
         """Append a dated note. ``at`` backdates the heading (a migration primitive); the default is now."""
@@ -1579,15 +1683,25 @@ def _claims_elsewhere(store: "Store", include_remote: bool = False, checkouts=No
     claims are read from disk, so an agent that claimed in a worktree is seen
     before it commits; such entries carry ``checkout`` (the path). A working
     tree stands in for its branch, so the branch is not scanned a second time.
+
+    A branch already merged into the current one has nothing to claim: its claims
+    arrived with the merge, and naming it would warn about work that is finished.
+    A worktree on such a branch is skipped too, unless its ``.skald/`` has
+    uncommitted changes, which is a claim made since (an agent that has just
+    started in a fresh worktree).
     """
     from . import gitutil
 
     out: dict[str, list[dict]] = {}
     covered: set = set()
+    repo = gitutil.root(store.dir)
     for co in checkouts or []:
         co_repo = gitutil.root(co.dir)
         label = (gitutil.branch(co_repo) if co_repo else None) or "working tree"
         covered.add(label)
+        if repo and co_repo and gitutil.is_merged(repo, gitutil.head_sha(co_repo) or "HEAD") \
+                and not _dirty(co_repo, co.dir):
+            continue
         try:
             stories = co.load_all()[0]
         except SkaldError:
@@ -1596,12 +1710,13 @@ def _claims_elsewhere(store: "Store", include_remote: bool = False, checkouts=No
             if st.assignee and co.config.role(st.status) == "active":
                 out.setdefault(st.id, []).append(
                     {"branch": label, "assignee": st.assignee, "status": st.status, "checkout": str(co.dir)})
-    repo = gitutil.root(store.dir)
     if repo is None:
         return out
     current = gitutil.branch(repo)
     for b in gitutil.branches(repo):
         if b["name"] == current or b["name"] in covered or (b["remote"] and not include_remote):
+            continue
+        if gitutil.is_merged(repo, b["name"]):
             continue
         try:
             snap = store.snapshot(b["name"])
@@ -1611,6 +1726,16 @@ def _claims_elsewhere(store: "Store", include_remote: bool = False, checkouts=No
             if st.assignee and snap.config.role(st.status) == "active":
                 out.setdefault(st.id, []).append({"branch": b["name"], "assignee": st.assignee, "status": st.status})
     return out
+
+
+def _dirty(repo: Path, skald_dir: Path) -> bool:
+    """True when the checkout has uncommitted changes under its ``.skald/``; True on any doubt."""
+    from . import gitutil
+
+    try:
+        return bool(gitutil.changes(repo, os.path.relpath(skald_dir, repo)))
+    except (GitError, ValueError):
+        return True
 
 
 def _is_stale(story: Story, stale_days: Optional[int]) -> bool:

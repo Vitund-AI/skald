@@ -13,8 +13,10 @@ for:
 1. **Orient** with `skald context --as <name>`. One bounded block: the
    stories assigned to that name with the last note on each, the next
    unblocked story, blocked work, claims by other agents on other branches,
-   and uncommitted story files. It is designed for the top of a session and
-   for SessionStart hooks, where a full listing would waste context.
+   and uncommitted story files. If the board server is still running an
+   older version after an upgrade, one line says so and names `skald server
+   restart`. It is designed for the top of a session and for SessionStart
+   hooks, where a full listing would waste context.
 2. **Pick work** with `skald next`. It returns the first ready, unblocked
    story that nobody else holds, skipping stories claimed on other local
    branches and offering stale assignments back. `--json --compact` trims the
@@ -107,7 +109,7 @@ workflow as a skill whenever backlog work comes up.
 JSON-RPC 2.0, protocol `2024-11-05`) and offers the operations as tools:
 `skald_status`, `skald_columns`, `skald_list`, `skald_next`, `skald_show`,
 `skald_new`, `skald_move`, `skald_claim`, `skald_note`, `skald_audit`,
-`skald_answer`, `skald_tick`, `skald_untick`, `skald_context`, `skald_resume`, `skald_set`, `skald_tag`,
+`skald_answer`, `skald_section`, `skald_tick`, `skald_untick`, `skald_context`, `skald_resume`, `skald_set`, `skald_tag`,
 `skald_block`, and `skald_check`. Every tool takes an optional `project`
 argument; without it the project is the one containing the server's working
 directory. It runs locally over stdio and needs no token — unlike the board,
@@ -195,7 +197,14 @@ board can show each worktree's working tree, so you can watch every agent's
 column mid-task; see [The board](board.md#working-trees-and-branches). An assignment that
 has not been touched for `stale_days` (three by default, see
 [Multiple projects](multi-project.md) for settings) is offered to `next`
-again with a warning.
+again with a warning. Once a worktree's branch is merged, its claims stop
+counting.
+
+When their branches come back together, run `skald hooks git --install`
+once in the repository first: it sets up a merge driver that merges story
+files by field and note instead of by line, so one agent's claim and
+another's note on the same story merge without a conflict. See
+[Conflicts](git-and-ci.md#conflicts) for the rules.
 
 Agents sharing one checkout (subagents of one session, say) are safe too:
 commands that change stories take turns on a short per-checkout lock, so

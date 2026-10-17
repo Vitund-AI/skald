@@ -161,6 +161,23 @@ def _tls(results: list[dict], home: Path) -> None:
         results.append(_r("tls", OK, f"HTTPS certificate {cert} loads"))
 
 
+def _merge_driver(results: list[dict], repo: Optional[Path], skald_dir: Optional[Path]) -> None:
+    """Whether story files merge through `skald merge-file` (D84)."""
+    if repo is None or skald_dir is None:
+        return
+    attrs = repo / ".gitattributes"
+    routed = attrs.exists() and "merge=skald" in attrs.read_text(encoding="utf-8", errors="replace")
+    driver = gitutil.get_config(repo, "merge.skald.driver")
+    if routed and not driver:
+        results.append(_r("merge", WARN, ".gitattributes sends story files to the skald merge driver, but this clone "
+                          "has none registered, so git falls back to a line merge", "skald hooks git --install"))
+    elif routed:
+        results.append(_r("merge", OK, "story files merge field by field (skald merge-file)"))
+    else:
+        results.append(_r("merge", INFO, "story files merge line by line; parallel branches conflict less with the "
+                          "story merge driver", "skald hooks git --install"))
+
+
 def _agent_wiring(results: list[dict], repo: Optional[Path], skald_dir: Optional[Path]) -> None:
     base = repo or (skald_dir.parent if skald_dir else None)
     if base is None:
@@ -237,5 +254,6 @@ def run(cwd: Optional[Path] = None) -> list[dict]:
     _registry(results, skald_dir, reg)
     _server(results, home)
     _tls(results, home)
+    _merge_driver(results, repo, skald_dir)
     _agent_wiring(results, repo, skald_dir)
     return results

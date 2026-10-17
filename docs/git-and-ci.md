@@ -118,7 +118,7 @@ redirected file stays clean.
 ## Hooks
 
 ```sh
-skald hooks git --install        # pre-commit: skald check, then skald render --stage
+skald hooks git --install        # pre-commit (skald check, skald render --stage) and the story merge driver
 skald hooks github --install     # .github/workflows/skald.yml
 skald hooks claude --install     # Claude Code SessionStart and Stop hooks, plus the skill
 ```
@@ -276,8 +276,34 @@ to run on any repository.
 
 ## Conflicts
 
-Two people or agents editing the same story on different branches produce
-an ordinary git conflict in one Markdown file. Resolve it like any other;
-`skald check` reports leftover conflict markers. The board refuses to save
-a body that changed on disk while you were editing it, so concurrent edits
-on one machine surface immediately instead of overwriting each other.
+Parallel agents on separate branches or worktrees touch the same story files
+all the time: one claims a story while another adds a note. `skald hooks git
+--install` sets up a merge driver for story files, so git merges them field
+by field instead of line by line, for merges, cherry-picks and rebases
+alike. It adds a line to `.gitattributes` (commit it) and registers the
+driver in the clone's git config (once per clone; worktrees share it).
+`skald doctor` says whether it is active.
+
+With the driver, a story file conflicts only when two branches rewrote the
+same lines of its text. Everything else merges by these rules:
+
+| Part of the story | Changed on one side | Changed on both sides, differently |
+| --- | --- | --- |
+| `status` | that side's | the side further along the workflow (the later column) |
+| `title`, `rank`, `assignee`, `parent`, `released` | that side's | the most recent edit (the later `updated_at`) |
+| `tags`, `blocked_by` | that side's | both sides' additions and removals |
+| `updated_at` | | the later of the two |
+| Notes | | all of them, once each, in time order |
+| The text before the notes | that side's | merged line by line; conflict markers if both rewrote the same lines |
+
+A real text conflict leaves the markers in the body only, so the front
+matter stays valid and every command keeps working; resolve it like any
+other conflict, and `skald check` reports markers left behind. The rendered
+board (`.skald/README.md`) never conflicts: a merge keeps one copy,
+`skald check` says it is stale, and the next commit re-renders it.
+A story deleted on one branch and changed on the other is left to git.
+
+Without the driver, the same edits produce ordinary git conflicts in one
+Markdown file each. The board refuses to save a body that changed on disk
+while you were editing it, so concurrent edits on one machine surface
+immediately instead of overwriting each other.

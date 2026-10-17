@@ -349,6 +349,15 @@ def build_parser() -> argparse.ArgumentParser:
     ans.add_argument("--all", dest="all_open", action="store_true", help="close every open question with this one decision")
     ans.add_argument("--withdraw", action="store_true", help="record that the question is dropped rather than answered")
 
+    sc = sub.add_parser("section", help="print the content under a heading of a story's body, or replace it: "
+                                        "skald section <id> HEADING [TEXT | -]")
+    sc.add_argument("id", help="story id or unique prefix")
+    sc.add_argument("heading", metavar="HEADING", help="the heading's text, without its #s; any level, case-insensitive, exact else prefix")
+    sc.add_argument("text", nargs="?", help="new content for the section, or - to read stdin; omit to print the section")
+    sc.add_argument("--create", action="store_true", help="add the section (as ##, after the authored body) when no heading matches")
+    sc.add_argument("--dry-run", action="store_true", help="show the change as a diff; write nothing")
+    sc.add_argument("--json", action="store_true", help="print the section, or the change, as JSON")
+
     for verb in ("tick", "untick"):
         tk = sub.add_parser(verb, help=f"{verb} checklist items under ## Acceptance (or --section) by number; with no N, list them numbered")
         tk.add_argument("id", help="story id or unique prefix")
@@ -461,7 +470,14 @@ def build_parser() -> argparse.ArgumentParser:
     cf.add_argument("value", nargs="?", help="new value; omit to show the current one")
     cf.add_argument("--unset", action="store_true", help="return the key to its default (with -p NAME, just for that project)")
 
-    hk = sub.add_parser("hooks", help="print or install hooks: claude (agent), git (pre-commit), github (workflow)")
+    mf = sub.add_parser("merge-file", help="git's merge driver for story files, run by git during a merge (set up by "
+                                          "skald hooks git --install); merges BASE, OURS and THEIRS into OURS")
+    mf.add_argument("base", help="the common ancestor (git's %%O)")
+    mf.add_argument("ours", help="this side, rewritten with the result (git's %%A)")
+    mf.add_argument("theirs", help="the other side (git's %%B)")
+    mf.add_argument("path", nargs="?", help="the story's path in the repository (git's %%P), to find config.json")
+
+    hk = sub.add_parser("hooks", help="print or install hooks: claude (agent), git (pre-commit, story merge driver), github (workflow)")
     hk.add_argument("target", choices=["claude", "git", "github"], help="which hook to print or install")
     hk.add_argument("--install", action="store_true", help="write the hook instead of printing it")
     hk.add_argument("--strict", action="store_true", help="claude: stop hook also fails on uncommitted story changes")
@@ -833,6 +849,8 @@ WAITING_CAP = 5
 
 
 def build_context(ws: Workspace, store: Store, author: str) -> dict:
+    from .server import version_lag
+
     stories, load_warnings = store.load_all()
     idx = {s.id: s for s in stories}
     repo, uncommitted = _uncommitted(store)
@@ -882,6 +900,7 @@ def build_context(ws: Workspace, store: Store, author: str) -> dict:
                          for s in stale_claims],
         "claimed_elsewhere": elsewhere,
         "uncommitted": [c["path"] for c in uncommitted],
+        "server": version_lag(ws.registry.home),
         "warnings": load_warnings + next_notes,
     }
 
@@ -893,6 +912,8 @@ def cmd_context(ws: Workspace, store: Store, args) -> int:
         print(json.dumps(ctx, indent=2))
         return 0
     print(f"project {ctx['project']}" + (f" · branch {ctx['branch']}" if ctx["branch"] else "") + f" · acting as {author}")
+    if ctx["server"] and ctx["server"]["stale"]:
+        print(f"board server runs {ctx['server']['version']} but {ctx['server']['installed']} is installed: skald server restart")
     if ctx["mine"]:
         print(f"\nAssigned to {author}:")
         for d in ctx["mine"]:
@@ -957,6 +978,41 @@ def _resume_extras(story: Story, args) -> dict:
     if getattr(args, "full", False):
         out["body"] = prelude_of(story.body)
     return out
+
+
+def cmd_section(store: Store, args) -> int:
+    from .store import find_section, headings_of, section_text
+
+    if args.text is None:
+        if args.create or args.dry_run:
+            raise SkaldError("--create and --dry-run go with new content: skald section <id> HEADING -")
+        story = store.get(args.id)
+        sec = find_section(story.body, args.heading)
+        if sec is None:
+            raise NotFoundError(f"no {args.heading!r} section in {story.id} (sections: {', '.join(headings_of(story.body)) or 'none'})")
+        text = section_text(story.body, sec)
+        if args.json:
+            print(json.dumps({"id": story.id, "heading": sec["heading"], "level": sec["level"], "text": text}, indent=2))
+        else:
+            print(text)
+        return 0
+    story, change = store.replace_section(args.id, args.heading, _read_text_arg(args.text), args.create, args.dry_run)
+    changed = change["before"] != change["after"] or change["created"]
+    if args.json:
+        print(json.dumps({"id": story.id, "heading": change["heading"], "created": change["created"],
+                          "changed": changed, "dry_run": args.dry_run, "text": change["after"]}, indent=2))
+        return 0
+    if args.dry_run:
+        import difflib
+
+        diff = difflib.unified_diff(change["before"].splitlines(), change["after"].splitlines(),
+                                    f"{story.id} {change['heading']} (now)", f"{story.id} {change['heading']} (new)", lineterm="")
+        print("\n".join(diff) or f"no change to {change['heading']} on {story.id}")
+        return 0
+    verb = "created" if change["created"] else "replaced" if changed else "no change to"
+    n = len(change["after"].splitlines())
+    print(f"{verb} {change['heading']} on {story.id} ({n} line{'' if n == 1 else 's'})")
+    return 0
 
 
 def cmd_tick(store: Store, args) -> int:
@@ -1345,13 +1401,14 @@ def cmd_check(store: Store, args) -> int:
     else:
         for w in warnings:
             print(f"WARNING: {w}", file=sys.stderr)
+        # stderr, like the warnings: a Stop hook that blocks on exit 2 shows the agent only stderr.
         for pr in problems:
-            print(f"PROBLEM: {pr}")
+            print(f"PROBLEM: {pr}", file=sys.stderr)
         if uncommitted:
             print(f"PROBLEM: {len(uncommitted)} uncommitted story file(s) under .skald/: "
                   + ", ".join(c["path"] for c in uncommitted[:5])
                   + (" ..." if len(uncommitted) > 5 else "")
-                  + ". Commit them together with the code they describe.")
+                  + ". Commit them together with the code they describe.", file=sys.stderr)
         if not problems and not uncommitted:
             print("ok")
     return 2 if (problems or uncommitted) else 0
@@ -2170,17 +2227,44 @@ jobs:
 """
 
 
+MERGE_DRIVER = "skald merge-file %O %A %B %P"
+MERGE_DRIVER_NAME = "Skald story files"
+
+
+def _install_merge_driver(repo: Path, attributes: list[str]) -> None:
+    """Route story files, and the rendered board, through `skald merge-file` (D84).
+
+    The attributes are committed, so every clone routes the same files; the driver itself is
+    per clone (git config), which `skald doctor` checks.
+    """
+    path = repo / ".gitattributes"
+    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+    missing = [a for a in attributes if a not in existing.splitlines()]
+    if missing:
+        sep = "" if not existing or existing.endswith("\n") else "\n"
+        path.write_text(existing + sep + "".join(a + "\n" for a in missing), encoding="utf-8")
+        print(f"added {', '.join(f'`{a}`' for a in missing)} to .gitattributes; commit it so every clone merges the same way")
+    gitutil.set_config(repo, "merge.skald.name", MERGE_DRIVER_NAME)
+    gitutil.set_config(repo, "merge.skald.driver", MERGE_DRIVER)
+    print("registered the story merge driver in this clone's git config (merge.skald.driver)")
+
+
 def cmd_hooks_git(store: Store, args) -> int:
     from . import render as rnd
 
     repo = _repo_of(store)
     if repo is None:
         raise GitError(f"{store.dir} is not inside a git repository")
+    rel = Path(os.path.relpath(store.dir, repo)).as_posix()
+    hooks = gitutil.hooks_dir(repo)
     if not args.install:
         print(PRE_COMMIT_HOOK, end="")
-        print(f"\nWrite this to {gitutil.hooks_dir(repo) / 'pre-commit'} and make it executable, or rerun with --install.", file=sys.stderr)
+        print(f"\nWrite this to {hooks / 'pre-commit'} and make it executable, or rerun with --install.", file=sys.stderr)
+        print(f"--install also sets up the story merge driver: adds `{rel}/stories/*.md merge=skald` (and the rendered "
+              f"board) to .gitattributes and runs\n  git config merge.skald.name \"{MERGE_DRIVER_NAME}\"\n"
+              f"  git config merge.skald.driver \"{MERGE_DRIVER}\"", file=sys.stderr)
         return 0
-    hook = gitutil.hooks_dir(repo) / "pre-commit"
+    hook = hooks / "pre-commit"
     if hook.exists() and "skald" not in hook.read_text(encoding="utf-8", errors="replace"):
         print(f"{hook} already exists and is not Skald's; add these lines to it yourself:", file=sys.stderr)
         print("  skald check || exit 1\n  skald render --stage", file=sys.stderr)
@@ -2193,6 +2277,9 @@ def cmd_hooks_git(store: Store, args) -> int:
         store.config.extra["render"] = {"path": rnd.DEFAULT_PATH, "format": "md"}
         store.config.save(store.dir / "config.json")
         print(f"enabled automatic rendering of {rnd.DEFAULT_PATH} in config.json; commit config.json")
+    # The rendered board is derived from the stories, so a merge keeps our copy rather than
+    # conflict; `skald check` calls it stale and the next commit re-renders it (D84).
+    _install_merge_driver(repo, [f"{rel}/stories/*.md merge=skald", f"{rnd.render_settings(store)['path']} merge=skald"])
     return 0
 
 
@@ -2281,13 +2368,19 @@ def claude_skill() -> str:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer", "tick", "untick",
+    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer", "tick", "untick", "section",
     "commits", "diff", "activity", "digest", "graph", "release", "audit", "import", "export",
     "migrate",
 }
 
 
 def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
+    if argv and argv[0] == "merge-file":
+        # git runs this mid-merge as the story-file merge driver: no project, registry, or lock.
+        from .merge import run_driver
+
+        args = build_parser().parse_args(argv)
+        return run_driver(args.base, args.ours, args.theirs, args.path)
     ws = ws or Workspace()
 
     # `tag` and `block` take +x/-y arguments that argparse would treat as options.
@@ -2406,6 +2499,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return 0
     if args.command in ("tick", "untick"):
         return cmd_tick(store, args)
+    if args.command == "section":
+        return cmd_section(store, args)
     if args.command == "rm":
         cleared: list[str] = []
         story = store.delete(args.id, force=args.force, notes=cleared)

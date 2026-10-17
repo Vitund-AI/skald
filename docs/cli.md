@@ -26,6 +26,7 @@ error or not found, 2 corrupt story or configuration.
 - [`block`](#block) block <id> +id -id ... (project:id for other projects)
 - [`note`](#note) append a note to a story
 - [`answer`](#answer) close a story's open question with a decision note that names it; nothing else closes one
+- [`section`](#section) print the content under a heading of a story's body, or replace it: skald section <id> HEADING [TEXT | -]
 - [`tick`](#tick) tick checklist items under ## Acceptance (or --section) by number; with no N, list them numbered
 - [`untick`](#untick) untick checklist items under ## Acceptance (or --section) by number; with no N, list them numbered
 - [`import`](#import) bring a folder of Markdown records into the backlog, driven by a mapping file
@@ -51,7 +52,8 @@ error or not found, 2 corrupt story or configuration.
 - [`templates`](#templates) list story templates in .skald/templates/
 - [`projects`](#projects) list projects registered on this machine
 - [`config`](#config) get or set a user setting
-- [`hooks`](#hooks) print or install hooks: claude (agent), git (pre-commit), github (workflow)
+- [`merge-file`](#merge-file) git's merge driver for story files, run by git during a merge (set up by skald hooks git --install); merges BASE, OURS and THEIRS into OURS
+- [`hooks`](#hooks) print or install hooks: claude (agent), git (pre-commit, story merge driver), github (workflow)
 - [`render`](#render) write a Markdown or HTML snapshot of the board to commit
 - [`serve`](#serve) run the board in the foreground
 - [`server`](#server) manage the background board server
@@ -295,6 +297,23 @@ Close a story's open question with a decision note that names it; nothing else c
 | `--question N` | the question to close, by its stable number (3 or Q3, as resume and the board label them); default: the one open question; several open refuse |
 | `--all` | close every open question with this one decision |
 | `--withdraw` | record that the question is dropped rather than answered |
+
+## section
+
+```
+skald section [--create] [--dry-run] [--json] id HEADING [text]
+```
+
+Print the content under a heading of a story's body, or replace it: skald section <id> HEADING [TEXT | -].
+
+| Argument | Description |
+| --- | --- |
+| `id` | story id or unique prefix |
+| `HEADING` | the heading's text, without its #s; any level, case-insensitive, exact else prefix |
+| `[text]` | new content for the section, or - to read stdin; omit to print the section |
+| `--create` | add the section (as ##, after the authored body) when no heading matches |
+| `--dry-run` | show the change as a diff; write nothing |
+| `--json` | print the section, or the change, as JSON |
 
 ## tick
 
@@ -658,13 +677,28 @@ Get or set a user setting.
 | `[value]` | new value; omit to show the current one |
 | `--unset` | return the key to its default (with -p NAME, just for that project) |
 
+## merge-file
+
+```
+skald merge-file base ours theirs [path]
+```
+
+Git's merge driver for story files, run by git during a merge (set up by skald hooks git --install); merges BASE, OURS and THEIRS into OURS.
+
+| Argument | Description |
+| --- | --- |
+| `base` | the common ancestor (git's %%O) |
+| `ours` | this side, rewritten with the result (git's %%A) |
+| `theirs` | the other side (git's %%B) |
+| `[path]` | the story's path in the repository (git's %%P), to find config.json |
+
 ## hooks
 
 ```
 skald hooks [--install] [--strict] [--as NAME] {claude,git,github}
 ```
 
-Print or install hooks: claude (agent), git (pre-commit), github (workflow).
+Print or install hooks: claude (agent), git (pre-commit, story merge driver), github (workflow).
 
 | Argument | Description |
 | --- | --- |

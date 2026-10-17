@@ -903,6 +903,24 @@ def serve(home: Path, host: str, port: int, open_browser: bool = False, quiet: b
     return 0
 
 
+def version_lag(home: Path) -> Optional[dict]:
+    """``{version, installed, stale}`` for a running background server, else None. No network, no probe.
+
+    The server records the version it started with in ``server.json``. The caller is a fresh
+    process that has just loaded the installed package, so its own ``__version__`` is what is
+    installed (the server, long-running, has to read the metadata instead, which an editable
+    install leaves behind). ``stale`` means an upgrade happened and ``skald server restart`` is
+    due. Cheap enough for ``skald context``, which every agent session runs.
+    """
+    from . import update as upd
+
+    state = read_state(home)
+    if not state or not pid_alive(int(state.get("pid", 0) or 0)):
+        return None
+    running = str(state.get("version") or "")
+    return {"version": running, "installed": __version__, "stale": bool(running) and upd.is_newer(__version__, running)}
+
+
 def server_status(home: Path) -> Optional[dict]:
     """Return the running server's state, or None."""
     state = read_state(home)

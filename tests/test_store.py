@@ -465,6 +465,12 @@ class TestRegistry(SkaldTestCase):
         claims = st.claims_elsewhere(checkouts=ws.other_checkouts(st))
         self.assertEqual(len(claims[sid]), 1)
         self.assertEqual(len(st.claims_elsewhere()[sid]), 1)
+        # Merged into the main tree, the worktree's claim is history: neither the branch nor the clean tree counts.
+        git(self.repo, "merge", "-q", "--no-edit", "feature")
+        self.assertEqual(st.claims_elsewhere(checkouts=ws.other_checkouts(st)), {})
+        # A claim made in that worktree since, still uncommitted, counts again.
+        wt_store.update(sid, status="review")
+        self.assertEqual(st.claims_elsewhere(checkouts=ws.other_checkouts(st))[sid][0]["status"], "review")
 
     def test_user_config_types(self):
         u = UserConfig(self.home)
@@ -851,12 +857,21 @@ class TestNotesAndAcceptance(SkaldTestCase):
         self.assertEqual([q["number"] for q in d["questions"]["items"]], [1, 2])
         self.assertNotIn("closed", d["questions"])
         self.assertEqual(s.story_dict(s.get(a.id), compact=True)["questions"], {"open": 2})
-        # A plain decision closes nothing, whatever it says; check reports the questions it would once have closed.
-        s.append_note(a.id, "SQLite, port 5000", "jon", kind="decision")
+        # A plain decision closes nothing, whatever it says, and today it is just a decision: the
+        # questions stay open with their numbers and check says nothing (agent feedback, 8c7c02).
+        s.append_note(a.id, "Schedule it for next sprint", "jon", kind="decision")
         self.assertEqual(len(s.get(a.id).open_questions()), 2)
-        self.assertEqual([q["number"] for q in reopened_questions(s.get(a.id).notes())], [1, 2])
+        self.assertEqual(reopened_questions(s.get(a.id).notes()), [])
         _, warnings = s.check()
-        self.assertTrue(any("Q1, Q2 open again" in w for w in warnings), warnings)
+        self.assertFalse(any("open again" in w for w in warnings), warnings)
+        # Only a plain decision from before 0.4.1, when it would have closed them, earns the migration warning.
+        old, _ = s.create("old")
+        s.append_note(old.id, "Postgres or SQLite?", "claude", kind="question", at="2026-09-01 10:00")
+        s.append_note(old.id, "SQLite", "jon", kind="decision", at="2026-09-02 10:00")
+        self.assertEqual([q["number"] for q in reopened_questions(s.get(old.id).notes())], [1])
+        _, warnings = s.check()
+        self.assertTrue(any(f"{old.id}" in w and "Q1 open again" in w for w in warnings), warnings)
+        s.delete(old.id, force=True)
         # Several open and no target: refuse. A target by number or label closes that one; its number is stable.
         with self.assertRaises(SkaldError) as cm:
             s.answer(a.id, "SQLite", "jon")
@@ -951,6 +966,12 @@ class TestClaimAwareness(SkaldTestCase):
         self.assertEqual(self.store().next_story(for_author="codex", elsewhere=elsewhere).id, a.id)
         story, warnings = self.store().claim(a.id, "claude", elsewhere=elsewhere)
         self.assertTrue(any("already active as codex on branch agent/two" in w for w in warnings))
+        # Once the branch is merged its claims came with it: nothing left to warn about.
+        git(self.repo, "checkout", "-q", "--", ".")
+        git(self.repo, "merge", "-q", "--no-edit", "agent/two")
+        self.assertEqual(self.store().claims_elsewhere(), {})
+        story, warnings = self.store().update(a.id, status="review", elsewhere=self.store().claims_elsewhere())
+        self.assertFalse(any("already active" in w for w in warnings), warnings)
 
 
 class TestDiffStates(SkaldTestCase):

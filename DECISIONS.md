@@ -464,6 +464,14 @@ naming line was already in the file as of 0.4.0, so the cost is that
 questions a plain decision used to close are open again, which is the
 honest state for the ones never answered, and `check` lists the rest.
 
+Addendum, after agent feedback (8c7c02). That `check` warning was a migration
+aid, but it fired on any open question followed by a plain decision, so a
+story asking six questions and then recording an unrelated scheduling
+decision was told its questions were "open again". They were simply open.
+The only way to silence it was to withdraw them and re-ask them as one,
+losing their numbers. The warning now counts only plain decisions written
+before 0.4.1, the ones that could have been meant to close a question.
+
 ### D55. The lifecycle is two backlog columns, and waiting is not one of them
 A full lifecycle from idea through plan and discussion to execution needs
 no new role: two columns with the `backlog` role before `ready` are the
@@ -1024,3 +1032,61 @@ prefix, two matches refuse, and the error names what exists. The numbering
 and the Acceptance progress count come from one parser, so the number `tick`
 takes is the item the board and the review warning count. The parser skips
 fenced code, which used to be counted, and includes a section's subheadings.
+
+### D84. Story files merge by part, through a git merge driver
+Parallel agents on worktree branches touch the same story files constantly:
+one claims a story while another adds a note to it. Git merges those files
+line by line, so cherry-picks and merges conflicted in `.skald/` almost
+every time (agent feedback), and a scripted resolution once left a story
+with its front matter twice. A story is structured: one front-matter field
+per line, notes that only ever get appended, and a free-text prelude. So
+`skald merge-file` merges each part by its own rule.
+
+Fields merge three ways against the base, so one side's change always wins
+over the other side's silence. When both sides changed a field, the
+recorded rules apply:
+- **Status:** the later column wins. A story one agent took to review and
+  another still had in progress is in review, and the board never goes
+  backwards in a merge.
+- **Tags and dependencies:** these are sets, so both sides' additions and
+  removals hold.
+- **Every other scalar** (title, rank, assignee and the rest): the most
+  recent edit wins, by `updated_at`. In a merge neither side is "the board",
+  and whoever re-prioritised or retitled the story last decides. The agent
+  that asked for "the board's rank" meant priority, and this keeps the
+  latest view of it.
+
+Notes are a union in time order, so they never conflict. Only the prelude
+can conflict, and then the markers stay in the body, where the front
+matter, and so every command, still works.
+
+The rendered board is routed to the driver too, because it is derived and
+would otherwise conflict on every merge. It keeps one copy, `check` calls
+it stale, and the next commit renders it. A `pre-merge-commit` hook to
+render it during the merge was tried and dropped: git does not reread the
+index after that hook, so the fresh board was left staged on top of the
+merge.
+
+The driver is opt-in, through `skald hooks git --install`, because git
+config is per clone and cannot be committed. `doctor` flags a clone where
+`.gitattributes` names the driver but none is registered, since git then
+silently falls back to a line merge.
+
+### D85. `skald section` writes on an explicit `-`, not whenever stdin is a pipe
+The request was "replace when stdin is piped, print when it is a terminal".
+For agents that test is the wrong way round: their shells usually run with a
+stdin that is not a terminal and holds nothing, so a plain read would have
+emptied the section. Some harnesses also keep stdin open without writing to
+it, so a plain read would hang. So reading and writing are told apart by the
+arguments: no TEXT prints, and TEXT or `-` writes. That is the convention
+`skald note <id> -` and `new --body -` already use, so there is one rule to
+learn. Empty text is refused rather than taken as a request to clear a section.
+
+The write keeps the story loadable. It refuses text that would change the
+story's shape in a way the author did not ask for:
+- a heading at the section's level or above, which would end the section and
+  start a new one;
+- a note heading, because notes are the story's history and belong to
+  `skald note`;
+- conflict markers.
+It also re-parses the result before writing anything.

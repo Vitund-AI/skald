@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.3.0 (2026-10-17)
+
+- `skald section <id> HEADING` prints the content under a heading of a story, and `cat new.md | skald section <id> HEADING -` replaces it, keeping the heading, the other sections and the notes. Agents no longer have to read stories with `sed` or edit them by hand. The heading matches without its `#`s and ignores case. Text that would break the story is refused: its own heading again, a heading that would end the section early, a note heading, or conflict markers. `--create` adds a missing section, `--dry-run` shows the change as a diff, and MCP gains `skald_section`. (82c244)
+- Story files merge cleanly between parallel branches and worktrees. `skald hooks git --install` now also sets up a git merge driver that merges a story by part instead of by line, for merges, cherry-picks and rebases. Fields merge against the common ancestor: when both sides changed one, status takes the later column, tags and dependencies keep both sides' changes, and the most recent edit wins the rest. Notes from both sides are kept in time order. Only an overlapping edit to the story's text still conflicts, and then only inside the body. The rendered board no longer conflicts at all. `skald doctor` says whether the driver is active. See [Conflicts](docs/git-and-ci.md#conflicts) for the full rules. (60df5d)
+- `skald check` prints its `PROBLEM:` lines to stderr, as it already did its warnings. A Claude Code Stop hook that blocks on `skald check` shows the agent only stderr, so it used to block without saying why. (4eecb0)
+- Claims on branches already merged into the current branch no longer count. `skald claim` and `skald move` used to warn that a story was "already active as claude on branch worktree-agent-…" after that branch had been merged. A worktree on a merged branch still counts while its `.skald/` has uncommitted changes, so an agent that has just claimed there is seen. (53439c)
+- `skald check` no longer warns that open questions are "open again" just because a decision about something else followed them. That warning now covers only decisions written before 0.4.1, when a plain decision could close a question. (8c7c02)
+- The agent contract says what `skald claim` changes (assignee, column, and so rank) and shows piping a long body into `skald new --body -`. (a7d85b)
+- `skald context` says when the board server is running an older version than the installed package, for example after `pip install -U`, with one line naming `skald server restart`. It's the command agents run at the start of every session, so they now see it when it matters. The check reads files only, with no network call. `skald context --json` and the MCP `skald_context` tool carry it as `server`. (1320cf)
+
+### Stories
+
+- skald context says when the board server is older than the installed package (1320cf)
+- skald check: print problems to stderr so a blocking Stop hook shows why (4eecb0)
+- Ignore claims on branches already merged into the current branch (53439c)
+- Stop flagging open questions after an unrelated decision (8c7c02)
+- Agent docs: claim moves the story into the active column; new --body - reads stdin (a7d85b)
+- Merge driver for story files: no more .skald conflicts between parallel agents (60df5d)
+- skald section <id> NAME: read a section, or replace it from a pipe (82c244)
+
 ## 1.2.0 (2026-10-15)
 
 - The board shows the "Swimlanes by…" control before any story is tagged, greyed out with a hint to add `key:value` tags or parent stories, so swimlanes can be found instead of staying hidden until the first facet exists. (0d8904)
