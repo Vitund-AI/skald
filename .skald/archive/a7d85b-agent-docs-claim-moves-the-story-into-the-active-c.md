@@ -5,8 +5,9 @@ rank: 50
 tags: ["agents", "docs"]
 blocked_by: []
 assignee: "claude"
+released: "1.3.0"
 created_at: "2026-10-17T05:10:35Z"
-updated_at: "2026-10-17T05:49:27Z"
+updated_at: "2026-10-17T07:42:11Z"
 ---
 ## Requirements
 

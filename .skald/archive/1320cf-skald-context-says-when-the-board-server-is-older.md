@@ -5,8 +5,9 @@ rank: 10
 tags: ["agents", "area:cli", "area:server"]
 blocked_by: []
 assignee: "claude"
+released: "1.3.0"
 created_at: "2026-10-16T00:56:30Z"
-updated_at: "2026-10-16T01:06:28Z"
+updated_at: "2026-10-17T07:42:11Z"
 ---
 ## Requirements
 
