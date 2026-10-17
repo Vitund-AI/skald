@@ -1,12 +1,12 @@
 ---
 title: "skald section <id> NAME: read a section, or replace it from a pipe"
-status: "review"
-rank: 10
+status: "done"
+rank: 70
 tags: ["agents", "area:cli", "area:mcp"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-17T05:10:34Z"
-updated_at: "2026-10-17T05:57:14Z"
+updated_at: "2026-10-17T07:39:42Z"
 ---
 ## Background
 
