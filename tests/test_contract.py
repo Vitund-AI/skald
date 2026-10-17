@@ -136,6 +136,9 @@ class ContractFixture(SkaldTestCase):
             "resume (acceptance)": self.cli_json("resume", a, "--json"),
             "tick": self.cli_json("tick", a, "1", "--json"),
             "untick": self.cli_json("untick", a, "1", "--json"),
+            "section": self.cli_json("section", a, "Acceptance", "--json"),
+            # Rewritten with what it already holds, so the fixture is unchanged for what follows.
+            "section (write)": self.cli_json("section", a, "Acceptance", "- [ ] renders\n- [x] styled", "--json"),
             "new": self.cli_json("new", "Late idea", "--json"),
         }
         return out

@@ -8,7 +8,7 @@ assignee: "claude"
 created_at: "2026-10-17T05:10:34Z"
 updated_at: "2026-10-17T05:49:27Z"
 ---
-## Requirements
+## Background
 
 From agent feedback (parallel worktree agents, 2026-10-17). With parallel worktree agents, almost every cherry-pick or merge conflicts in `.skald/stories/`. Agents resolve those by hand or by script, and one such resolution left story 761f8f with its front matter twice.
 

@@ -118,6 +118,7 @@ skald block <id> +id -id            (use project:id for another repository)
 skald note <id> "<text>" | -  --as NAME [--kind handoff|decision|blocker|question]
 skald answer <id> "<text>" --as NAME [--question N | --all] [--withdraw]   closes a question; nothing else does
 skald tick <id> N [N ...] [--section HEADING]    tick checklist items (untick: skald untick); no N lists them
+skald section <id> HEADING [TEXT | -]          print a section, or replace its content (keeps the heading)
 skald log <id>                      git history of the story file
 skald commits <id>                  code commits that reference the story
 skald graph                         dependency graph as Mermaid

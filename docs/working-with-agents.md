@@ -109,7 +109,7 @@ workflow as a skill whenever backlog work comes up.
 JSON-RPC 2.0, protocol `2024-11-05`) and offers the operations as tools:
 `skald_status`, `skald_columns`, `skald_list`, `skald_next`, `skald_show`,
 `skald_new`, `skald_move`, `skald_claim`, `skald_note`, `skald_audit`,
-`skald_answer`, `skald_tick`, `skald_untick`, `skald_context`, `skald_resume`, `skald_set`, `skald_tag`,
+`skald_answer`, `skald_section`, `skald_tick`, `skald_untick`, `skald_context`, `skald_resume`, `skald_set`, `skald_tag`,
 `skald_block`, and `skald_check`. Every tool takes an optional `project`
 argument; without it the project is the one containing the server's working
 directory. It runs locally over stdio and needs no token — unlike the board,

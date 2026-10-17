@@ -349,6 +349,15 @@ def build_parser() -> argparse.ArgumentParser:
     ans.add_argument("--all", dest="all_open", action="store_true", help="close every open question with this one decision")
     ans.add_argument("--withdraw", action="store_true", help="record that the question is dropped rather than answered")
 
+    sc = sub.add_parser("section", help="print the content under a heading of a story's body, or replace it: "
+                                        "skald section <id> HEADING [TEXT | -]")
+    sc.add_argument("id", help="story id or unique prefix")
+    sc.add_argument("heading", metavar="HEADING", help="the heading's text, without its #s; any level, case-insensitive, exact else prefix")
+    sc.add_argument("text", nargs="?", help="new content for the section, or - to read stdin; omit to print the section")
+    sc.add_argument("--create", action="store_true", help="add the section (as ##, after the authored body) when no heading matches")
+    sc.add_argument("--dry-run", action="store_true", help="show the change as a diff; write nothing")
+    sc.add_argument("--json", action="store_true", help="print the section, or the change, as JSON")
+
     for verb in ("tick", "untick"):
         tk = sub.add_parser(verb, help=f"{verb} checklist items under ## Acceptance (or --section) by number; with no N, list them numbered")
         tk.add_argument("id", help="story id or unique prefix")
@@ -969,6 +978,41 @@ def _resume_extras(story: Story, args) -> dict:
     if getattr(args, "full", False):
         out["body"] = prelude_of(story.body)
     return out
+
+
+def cmd_section(store: Store, args) -> int:
+    from .store import find_section, headings_of, section_text
+
+    if args.text is None:
+        if args.create or args.dry_run:
+            raise SkaldError("--create and --dry-run go with new content: skald section <id> HEADING -")
+        story = store.get(args.id)
+        sec = find_section(story.body, args.heading)
+        if sec is None:
+            raise NotFoundError(f"no {args.heading!r} section in {story.id} (sections: {', '.join(headings_of(story.body)) or 'none'})")
+        text = section_text(story.body, sec)
+        if args.json:
+            print(json.dumps({"id": story.id, "heading": sec["heading"], "level": sec["level"], "text": text}, indent=2))
+        else:
+            print(text)
+        return 0
+    story, change = store.replace_section(args.id, args.heading, _read_text_arg(args.text), args.create, args.dry_run)
+    changed = change["before"] != change["after"] or change["created"]
+    if args.json:
+        print(json.dumps({"id": story.id, "heading": change["heading"], "created": change["created"],
+                          "changed": changed, "dry_run": args.dry_run, "text": change["after"]}, indent=2))
+        return 0
+    if args.dry_run:
+        import difflib
+
+        diff = difflib.unified_diff(change["before"].splitlines(), change["after"].splitlines(),
+                                    f"{story.id} {change['heading']} (now)", f"{story.id} {change['heading']} (new)", lineterm="")
+        print("\n".join(diff) or f"no change to {change['heading']} on {story.id}")
+        return 0
+    verb = "created" if change["created"] else "replaced" if changed else "no change to"
+    n = len(change["after"].splitlines())
+    print(f"{verb} {change['heading']} on {story.id} ({n} line{'' if n == 1 else 's'})")
+    return 0
 
 
 def cmd_tick(store: Store, args) -> int:
@@ -2324,7 +2368,7 @@ def claude_skill() -> str:
 PROJECT_COMMANDS = {
     "ls", "next", "show", "new", "move", "mv", "claim", "set", "tag", "block", "note", "rm", "log",
     "archive", "unarchive", "check", "status", "commit", "changelog", "columns", "templates",
-    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer", "tick", "untick",
+    "hooks", "open", "branches", "facets", "epics", "render", "context", "resume", "answer", "tick", "untick", "section",
     "commits", "diff", "activity", "digest", "graph", "release", "audit", "import", "export",
     "migrate",
 }
@@ -2455,6 +2499,8 @@ def run(argv: list[str], ws: Optional[Workspace] = None) -> int:
         return 0
     if args.command in ("tick", "untick"):
         return cmd_tick(store, args)
+    if args.command == "section":
+        return cmd_section(store, args)
     if args.command == "rm":
         cleared: list[str] = []
         story = store.delete(args.id, force=args.force, notes=cleared)
