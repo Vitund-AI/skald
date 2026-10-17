@@ -244,6 +244,14 @@ def rev_parse(repo: Path, ref: str) -> Optional[str]:
     return proc.stdout.strip() if proc.returncode == 0 else None
 
 
+def is_merged(repo: Path, ref: str, into: str = "HEAD") -> bool:
+    """True when ``ref``'s commits are all in ``into`` (its tip is an ancestor); False on any doubt."""
+    try:
+        return _run(["merge-base", "--is-ancestor", ref, into], cwd=repo).returncode == 0
+    except GitError:
+        return False
+
+
 def head_sha(repo: Path) -> Optional[str]:
     proc = _run(["rev-parse", "HEAD"], cwd=repo)
     return proc.stdout.strip() if proc.returncode == 0 else None

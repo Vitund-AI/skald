@@ -28,7 +28,9 @@ tools from `skald mcp` (see the README).
    the same `lane:` value. If nothing is ready, run `skald ls --json --compact` and
    either pick an unblocked ready story or ask the human.
 3. **Claim it.** Run `skald claim <id> --as <your-name>`. That assigns the
-   story to you and moves it into the first active column. Then run
+   story to you and moves it into the first active column, which is how the
+   board and other agents' `skald next` see it as taken; its rank becomes
+   its place in that column. Do not move it back by hand. Then run
    `skald resume <id>`: it prints the requirements, the checklist and
    acceptance state, dependencies, decisions, and the latest handoff note,
    which is everything a previous session left for you. On a long story it
@@ -59,7 +61,9 @@ tools from `skald mcp` (see the README).
    with `skald tick <id> N` (`skald tick <id>` lists them numbered); moving
    to review or done with unchecked items prints a warning.
 6. **Discovered work.** When you find work outside the current story, create
-   a story for it with `skald new "title" --body "..."` and link it with
+   a story for it with `skald new "title" --body "..."` (or pipe a long body
+   in, which avoids shell quoting: `cat body.md | skald new "title" --body -`)
+   and link it with
    `--blocked-by <id>` or `skald block <id> +<other>` where a real dependency
    exists. A dependency on a story in another repository is written as
    `project:id`. Work that belongs to the story you are on but is a piece

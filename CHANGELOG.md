@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `skald check` prints its `PROBLEM:` lines to stderr, as it already did its warnings. A Claude Code Stop hook that blocks on `skald check` shows the agent only stderr, so it used to block without saying why. (4eecb0)
+- Claims on branches already merged into the current branch no longer count. `skald claim` and `skald move` used to warn that a story was "already active as claude on branch worktree-agent-…" after that branch had been merged. A worktree on a merged branch still counts while its `.skald/` has uncommitted changes, so an agent that has just claimed there is seen. (53439c)
+- `skald check` no longer warns that open questions are "open again" just because a decision about something else followed them. That warning now covers only decisions written before 0.4.1, when a plain decision could close a question. (8c7c02)
+- The agent contract says what `skald claim` changes (assignee, column, and so rank) and shows piping a long body into `skald new --body -`. (a7d85b)
 - `skald context` says when the board server is running an older version than the installed package, for example after `pip install -U`, with one line naming `skald server restart`. It's the command agents run at the start of every session, so they now see it when it matters. The check reads files only, with no network call. `skald context --json` and the MCP `skald_context` tool carry it as `server`. (1320cf)
 
 ## 1.2.0 (2026-10-15)

@@ -1350,13 +1350,14 @@ def cmd_check(store: Store, args) -> int:
     else:
         for w in warnings:
             print(f"WARNING: {w}", file=sys.stderr)
+        # stderr, like the warnings: a Stop hook that blocks on exit 2 shows the agent only stderr.
         for pr in problems:
-            print(f"PROBLEM: {pr}")
+            print(f"PROBLEM: {pr}", file=sys.stderr)
         if uncommitted:
             print(f"PROBLEM: {len(uncommitted)} uncommitted story file(s) under .skald/: "
                   + ", ".join(c["path"] for c in uncommitted[:5])
                   + (" ..." if len(uncommitted) > 5 else "")
-                  + ". Commit them together with the code they describe.")
+                  + ". Commit them together with the code they describe.", file=sys.stderr)
         if not problems and not uncommitted:
             print("ok")
     return 2 if (problems or uncommitted) else 0

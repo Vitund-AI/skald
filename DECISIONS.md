@@ -464,6 +464,14 @@ naming line was already in the file as of 0.4.0, so the cost is that
 questions a plain decision used to close are open again, which is the
 honest state for the ones never answered, and `check` lists the rest.
 
+Addendum, after agent feedback (8c7c02). That `check` warning was a migration
+aid, but it fired on any open question followed by a plain decision, so a
+story asking six questions and then recording an unrelated scheduling
+decision was told its questions were "open again". They were simply open.
+The only way to silence it was to withdraw them and re-ask them as one,
+losing their numbers. The warning now counts only plain decisions written
+before 0.4.1, the ones that could have been meant to close a question.
+
 ### D55. The lifecycle is two backlog columns, and waiting is not one of them
 A full lifecycle from idea through plan and discussion to execution needs
 no new role: two columns with the `backlog` role before `ready` are the

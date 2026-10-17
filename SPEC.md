@@ -428,8 +428,12 @@ there, only here, and those whose status, title, or archived flag differ.
 `claims_elsewhere(checkouts=...)` also reads the other working trees of the
 project, so a claim made in a worktree counts before it is committed; such
 entries carry `checkout`. A working tree stands in for its branch, which is
-then not scanned from objects, so nothing is counted twice. The CLI passes
-`Workspace.other_checkouts(store)` from `next`, `claim`, and `context`.
+then not scanned from objects, so nothing is counted twice. A branch whose
+tip is already in the current branch (`git merge-base --is-ancestor`) claims
+nothing, since its claims arrived with the merge, and neither does a
+worktree on such a branch unless its `.skald/` has uncommitted changes. The
+CLI passes `Workspace.other_checkouts(store)` from `next`, `claim`, and
+`context`.
 
 ### 4.7 Concurrency and git
 
@@ -500,7 +504,7 @@ story or configuration. Commands that print stories take `--json`.
 | `archive [id ...] [--dry-run]`, `unarchive <id>` | Section 4.5; ids restrict it and must all be terminal. |
 | `release VERSION [--changelog PATH] [--date D] [--dry-run] [--no-commit] [--allow-incomplete]` | Section 4.5b. `--allow-incomplete` overrides the `block_release_on_incomplete` gate. |
 | `ls --release VERSION` | Archived stories with that `released` value. |
-| `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. |
+| `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories, and open questions followed by a plain decision written before 0.4.1 (`QUESTION_RULE_SINCE`), when such a decision would have closed them. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. `PROBLEM:` and `WARNING:` lines go to stderr and only `ok` to stdout, because a Stop hook that blocks on exit 2 shows the agent stderr alone. |
 | `migrate [--check] [--json]` | Upgrade the backlog to the story format this version writes, one format step at a time under the mutation lock, rewriting `format` after each (`migrate.STEPS`). At the current format it only reports `already at the current format (N); M stories read, nothing to migrate` and changes nothing. `--check` changes nothing and exits 1 when a migration is needed. A newer backlog refuses to load at all ("upgrade skald-kanban"), exit 2. Section 10d. |
 | `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |

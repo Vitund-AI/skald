@@ -135,9 +135,10 @@ class TestStoryCommands(SkaldTestCase):
         self.assertIn("## [agent] ", out)
         self.assertTrue(out.endswith("Claimed it\n"))
 
-        code, out, _ = self.run_cli("check")
+        code, out, err = self.run_cli("check")
         self.assertEqual(code, 2)
-        self.assertIn("PROBLEM: dependency cycle", out)
+        self.assertIn("PROBLEM: dependency cycle", err)  # stderr: a blocking Stop hook shows the agent only stderr
+        self.assertEqual(out, "")
 
         code, out, err = self.run_cli("rm", c)
         self.assertEqual(code, 1)
@@ -400,9 +401,9 @@ class TestGitCommands(SkaldTestCase):
         self.assertIn("branch:   ", out)
         self.assertIn("uncommitted story changes: 1 file(s)", out)  # config.json; the empty stories dir is invisible to git
         a = self.new("a", "--status", "ready")
-        code, out, _ = self.run_cli("check", "--hook")
+        code, out, err = self.run_cli("check", "--hook")
         self.assertEqual(code, 2)
-        self.assertIn("uncommitted story file(s)", out)
+        self.assertIn("uncommitted story file(s)", err)
         code, out, _ = self.run_cli("check")
         self.assertEqual((code, out.strip()), (0, "ok"))
 

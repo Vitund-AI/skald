@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Optional
 
 from .config import ProjectConfig
-from .errors import ConflictError, CorruptStoryError, NotFoundError, SkaldError
+from .errors import ConflictError, CorruptStoryError, GitError, NotFoundError, SkaldError
 from .lock import project_lock
 from .util import atomic_write, checklist_progress, note_stamp, now_iso, parse_iso, parse_when, read_text, sha256_text, slugify
 
@@ -140,8 +140,17 @@ def open_questions(notes: list[dict]) -> list[dict]:
     return [q for q in questions_of(notes) if q["closed_by"] is None]
 
 
+# 0.4.1 stopped plain decisions closing questions. Only a plain decision written before then
+# could have been meant to close one, so only those are worth a migration warning.
+QUESTION_RULE_SINCE = "2026-09-10"
+
+
 def reopened_questions(notes: list[dict]) -> list[dict]:
-    """Open questions followed by a plain decision: closed under the rule before 0.4.1, open now."""
+    """Open questions followed by a plain decision from before 0.4.1: closed then, open now.
+
+    A plain decision written since is an ordinary decision, and the questions before it are
+    simply still open, so it is not reported (a story can rightly have both).
+    """
     open_stamps = {(q["author"], q["stamp"], _first_line(q)) for q in open_questions(notes)}
     seen: list[dict] = []
     out: list[dict] = []
@@ -151,7 +160,7 @@ def reopened_questions(notes: list[dict]) -> list[dict]:
             number += 1
             if (n["author"], n["stamp"], _first_line(n)) in open_stamps:
                 seen.append(dict(n, number=number))
-        elif n["kind"] == "decision" and not _naming_lines(n):
+        elif n["kind"] == "decision" and not _naming_lines(n) and n["stamp"] < QUESTION_RULE_SINCE:
             out.extend(q for q in seen if q not in out)
     return out
 
@@ -1579,15 +1588,25 @@ def _claims_elsewhere(store: "Store", include_remote: bool = False, checkouts=No
     claims are read from disk, so an agent that claimed in a worktree is seen
     before it commits; such entries carry ``checkout`` (the path). A working
     tree stands in for its branch, so the branch is not scanned a second time.
+
+    A branch already merged into the current one has nothing to claim: its claims
+    arrived with the merge, and naming it would warn about work that is finished.
+    A worktree on such a branch is skipped too, unless its ``.skald/`` has
+    uncommitted changes, which is a claim made since (an agent that has just
+    started in a fresh worktree).
     """
     from . import gitutil
 
     out: dict[str, list[dict]] = {}
     covered: set = set()
+    repo = gitutil.root(store.dir)
     for co in checkouts or []:
         co_repo = gitutil.root(co.dir)
         label = (gitutil.branch(co_repo) if co_repo else None) or "working tree"
         covered.add(label)
+        if repo and co_repo and gitutil.is_merged(repo, gitutil.head_sha(co_repo) or "HEAD") \
+                and not _dirty(co_repo, co.dir):
+            continue
         try:
             stories = co.load_all()[0]
         except SkaldError:
@@ -1596,12 +1615,13 @@ def _claims_elsewhere(store: "Store", include_remote: bool = False, checkouts=No
             if st.assignee and co.config.role(st.status) == "active":
                 out.setdefault(st.id, []).append(
                     {"branch": label, "assignee": st.assignee, "status": st.status, "checkout": str(co.dir)})
-    repo = gitutil.root(store.dir)
     if repo is None:
         return out
     current = gitutil.branch(repo)
     for b in gitutil.branches(repo):
         if b["name"] == current or b["name"] in covered or (b["remote"] and not include_remote):
+            continue
+        if gitutil.is_merged(repo, b["name"]):
             continue
         try:
             snap = store.snapshot(b["name"])
@@ -1611,6 +1631,16 @@ def _claims_elsewhere(store: "Store", include_remote: bool = False, checkouts=No
             if st.assignee and snap.config.role(st.status) == "active":
                 out.setdefault(st.id, []).append({"branch": b["name"], "assignee": st.assignee, "status": st.status})
     return out
+
+
+def _dirty(repo: Path, skald_dir: Path) -> bool:
+    """True when the checkout has uncommitted changes under its ``.skald/``; True on any doubt."""
+    from . import gitutil
+
+    try:
+        return bool(gitutil.changes(repo, os.path.relpath(skald_dir, repo)))
+    except (GitError, ValueError):
+        return True
 
 
 def _is_stale(story: Story, stale_days: Optional[int]) -> bool:
