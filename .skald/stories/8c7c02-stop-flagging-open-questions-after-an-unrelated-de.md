@@ -1,12 +1,12 @@
 ---
 title: "Stop flagging open questions after an unrelated decision"
-status: "review"
-rank: 30
+status: "done"
+rank: 40
 tags: ["agents", "area:cli", "bug"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-17T05:10:34Z"
-updated_at: "2026-10-17T05:17:30Z"
+updated_at: "2026-10-17T05:49:27Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "Merge driver for story files: no more .skald conflicts between parallel agents"
-status: "review"
-rank: 50
+status: "done"
+rank: 60
 tags: ["agents", "area:git"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-17T05:10:34Z"
-updated_at: "2026-10-17T05:40:55Z"
+updated_at: "2026-10-17T05:49:27Z"
 ---
 ## Requirements
 

@@ -1,12 +1,12 @@
 ---
 title: "skald check: print problems to stderr so a blocking Stop hook shows why"
-status: "review"
-rank: 10
+status: "done"
+rank: 20
 tags: ["agents", "area:cli", "bug"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-17T05:10:34Z"
-updated_at: "2026-10-17T05:17:29Z"
+updated_at: "2026-10-17T05:49:27Z"
 ---
 ## Requirements
 

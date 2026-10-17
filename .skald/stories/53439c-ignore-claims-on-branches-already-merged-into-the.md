@@ -1,12 +1,12 @@
 ---
 title: "Ignore claims on branches already merged into the current branch"
-status: "review"
-rank: 20
+status: "done"
+rank: 30
 tags: ["agents", "area:git", "bug"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-17T05:10:34Z"
-updated_at: "2026-10-17T05:17:29Z"
+updated_at: "2026-10-17T05:49:27Z"
 ---
 ## Requirements
 
