@@ -49,7 +49,8 @@ class TestSection(SkaldTestCase):
 
     def test_replace_from_stdin_keeps_everything_else(self):
         path = self.store().get(self.sid).path
-        path.write_text(path.read_text().replace(self.store().get(self.sid).updated_at, "2026-01-01T10:00:00Z"))
+        # Bytes, not text: write_text would turn every \n into \r\n on Windows, and section keeps line endings.
+        path.write_bytes(path.read_bytes().replace(self.store().get(self.sid).updated_at.encode(), b"2026-01-01T10:00:00Z"))
         before = self.store().get(self.sid)
         out, _ = self.section("Requirements", "-", stdin="Build it with React.\n\n### Notes\n\nkeep it small\n")
         self.assertEqual(out.strip(), f"replaced Requirements on {self.sid} (5 lines)")
