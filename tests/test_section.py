@@ -90,6 +90,10 @@ class TestSection(SkaldTestCase):
         code, _, err = self.run_cli("section", sid, "Notes")
         self.assertEqual(code, 1)
         self.assertIn("2 headings match 'Notes'", err)
+        # Two headings with the same text cannot be told apart by any name: say so (as dogfooding found).
+        twin = self.new("Twin", "--body", "Feedback.\n\n## Requirements\n\nThe real ones.\n")
+        code, _, err = self.run_cli("section", twin, "Requirements")
+        self.assertIn("2 sections are called 'Requirements'; rename one", err)
 
     def test_crlf_files_keep_their_line_endings(self):
         story = self.store().get(self.sid)

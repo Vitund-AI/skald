@@ -6,15 +6,16 @@ tags: ["agents", "area:cli", "area:mcp"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-10-17T05:10:34Z"
-updated_at: "2026-10-17T05:56:53Z"
+updated_at: "2026-10-17T05:57:14Z"
 ---
-## Requirements
+## Background
 
 From agent feedback (parallel worktree agents, 2026-10-17). Agents read stories with sed and grep and rewrite sections by hand-editing files, which also causes many of the merge conflicts above.
 
 ## Requirements
-- `skald section <id> NAME` prints the section's content; with stdin piped, the piped text replaces the content and the heading stays.
-- NAME matches a heading's text without its `#`s, case-insensitively, exact else prefix; two matches refuse (the `tick` parser).
+
+- `skald section <id> NAME` prints the section's content; `skald section <id> NAME -` (or inline TEXT) replaces the content and the heading stays. Writing takes an explicit `-` rather than detecting a pipe: agent shells often have an empty, non-terminal stdin, which would blank the section, or an open one, which would hang (D85).
+- NAME matches a heading's text without its `#`s, case-insensitively, exact else prefix; two matches refuse (the `tick` parser), and two identically named sections say to rename one.
 - A missing section is an error; `--create` appends it. Piped text starting with the same heading is refused.
 - Notes are never addressable: sections are the authored body only.
 - The write holds the lock, bumps `updated_at`, and refuses a result `skald check` would reject. `--dry-run` shows the change.

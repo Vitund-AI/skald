@@ -294,6 +294,9 @@ def _match_heading(heads: list[tuple[int, int, str]], name: str) -> list[tuple[i
     exact = [h for h in heads if h[2].lower() == want]
     found = exact or [h for h in heads if h[2].lower().startswith(want)]
     if len(found) > 1:
+        if len({h[2].lower() for h in found}) == 1:
+            raise SkaldError(f"{len(found)} sections are called {found[0][2]!r}; rename one in the story file "
+                             "so they can be told apart")
         raise SkaldError(f"{len(found)} headings match {name!r}: " + ", ".join(repr(h[2]) for h in found)
                          + "; give the whole heading")
     return found
