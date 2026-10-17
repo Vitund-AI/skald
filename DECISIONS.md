@@ -1071,3 +1071,22 @@ The driver is opt-in, through `skald hooks git --install`, because git
 config is per clone and cannot be committed. `doctor` flags a clone where
 `.gitattributes` names the driver but none is registered, since git then
 silently falls back to a line merge.
+
+### D85. `skald section` writes on an explicit `-`, not whenever stdin is a pipe
+The request was "replace when stdin is piped, print when it is a terminal".
+For agents that test is the wrong way round: their shells usually run with a
+stdin that is not a terminal and holds nothing, so a plain read would have
+emptied the section. Some harnesses also keep stdin open without writing to
+it, so a plain read would hang. So reading and writing are told apart by the
+arguments: no TEXT prints, and TEXT or `-` writes. That is the convention
+`skald note <id> -` and `new --body -` already use, so there is one rule to
+learn. Empty text is refused rather than taken as a request to clear a section.
+
+The write keeps the story loadable. It refuses text that would change the
+story's shape in a way the author did not ask for:
+- a heading at the section's level or above, which would end the section and
+  start a new one;
+- a note heading, because notes are the story's history and belong to
+  `skald note`;
+- conflict markers.
+It also re-parses the result before writing anything.

@@ -61,6 +61,11 @@ TOOLS: list[dict] = [
                              "question": {"type": ["integer", "string"], "description": "the question's stable number, 3 or 'Q3', as resume labels them"},
                              "all": {"type": "boolean", "description": "close every open question with this decision"},
                              "withdraw": {"type": "boolean", "description": "record the question as dropped rather than answered"}}, ["id", "text"])},
+    {"name": "skald_section", "description": "Read the content under a heading of a story's body, or replace it (keeping the heading) when text is given. The heading matches without its #s, any level, case-insensitively. Notes are not sections; add them with skald_note.",
+     "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "section": {"type": "string", "description": "the heading's text, e.g. Requirements"},
+                             "text": {"type": "string", "description": "new content for the section; omit to read it"},
+                             "create": {"type": "boolean", "description": "add the section when no heading matches"},
+                             "dry_run": {"type": "boolean", "description": "report the change without writing it"}}, ["id", "section"])},
     {"name": "skald_tick", "description": "Tick checklist items under a story's ## Acceptance heading (or another section) by number, as skald_resume's acceptance_items numbers them. Tick each as you verify it.",
      "inputSchema": _schema({**PROJECT_PROP, **ID_PROP, "items": {"type": "array", "items": {"type": "integer"}, "description": "item numbers, from 1"},
                              "section": {"type": "string", "description": "the heading the items sit under, any level, case-insensitive (default Acceptance)"}}, ["id", "items"])},
@@ -243,6 +248,21 @@ class McpServer:
         d = store.story_dict(story)
         d["closed_questions"] = [f"Q{q['number']}" for q in closed]
         return d
+
+    def tool_skald_section(self, args: dict) -> Any:
+        from .store import find_section, headings_of, section_text
+
+        store = self._store(args)
+        if args.get("text") is None:
+            story = store.get(args["id"])
+            sec = find_section(story.body, args["section"])
+            if sec is None:
+                raise SkaldError(f"no {args['section']!r} section (sections: {', '.join(headings_of(story.body)) or 'none'})")
+            return {"id": story.id, "heading": sec["heading"], "level": sec["level"], "text": section_text(story.body, sec)}
+        story, change = store.replace_section(args["id"], args["section"], args["text"], bool(args.get("create")),
+                                              bool(args.get("dry_run")))
+        return {"id": story.id, "heading": change["heading"], "created": change["created"], "dry_run": bool(args.get("dry_run")),
+                "changed": change["before"] != change["after"] or change["created"], "text": change["after"]}
 
     def _tick(self, args: dict, done: bool) -> Any:
         store = self._store(args)

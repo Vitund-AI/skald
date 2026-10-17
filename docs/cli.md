@@ -26,6 +26,7 @@ error or not found, 2 corrupt story or configuration.
 - [`block`](#block) block <id> +id -id ... (project:id for other projects)
 - [`note`](#note) append a note to a story
 - [`answer`](#answer) close a story's open question with a decision note that names it; nothing else closes one
+- [`section`](#section) print the content under a heading of a story's body, or replace it: skald section <id> HEADING [TEXT | -]
 - [`tick`](#tick) tick checklist items under ## Acceptance (or --section) by number; with no N, list them numbered
 - [`untick`](#untick) untick checklist items under ## Acceptance (or --section) by number; with no N, list them numbered
 - [`import`](#import) bring a folder of Markdown records into the backlog, driven by a mapping file
@@ -296,6 +297,23 @@ Close a story's open question with a decision note that names it; nothing else c
 | `--question N` | the question to close, by its stable number (3 or Q3, as resume and the board label them); default: the one open question; several open refuse |
 | `--all` | close every open question with this one decision |
 | `--withdraw` | record that the question is dropped rather than answered |
+
+## section
+
+```
+skald section [--create] [--dry-run] [--json] id HEADING [text]
+```
+
+Print the content under a heading of a story's body, or replace it: skald section <id> HEADING [TEXT | -].
+
+| Argument | Description |
+| --- | --- |
+| `id` | story id or unique prefix |
+| `HEADING` | the heading's text, without its #s; any level, case-insensitive, exact else prefix |
+| `[text]` | new content for the section, or - to read stdin; omit to print the section |
+| `--create` | add the section (as ##, after the authored body) when no heading matches |
+| `--dry-run` | show the change as a diff; write nothing |
+| `--json` | print the section, or the change, as JSON |
 
 ## tick
 
