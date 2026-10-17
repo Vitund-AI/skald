@@ -51,7 +51,8 @@ error or not found, 2 corrupt story or configuration.
 - [`templates`](#templates) list story templates in .skald/templates/
 - [`projects`](#projects) list projects registered on this machine
 - [`config`](#config) get or set a user setting
-- [`hooks`](#hooks) print or install hooks: claude (agent), git (pre-commit), github (workflow)
+- [`merge-file`](#merge-file) git's merge driver for story files, run by git during a merge (set up by skald hooks git --install); merges BASE, OURS and THEIRS into OURS
+- [`hooks`](#hooks) print or install hooks: claude (agent), git (pre-commit, story merge driver), github (workflow)
 - [`render`](#render) write a Markdown or HTML snapshot of the board to commit
 - [`serve`](#serve) run the board in the foreground
 - [`server`](#server) manage the background board server
@@ -658,13 +659,28 @@ Get or set a user setting.
 | `[value]` | new value; omit to show the current one |
 | `--unset` | return the key to its default (with -p NAME, just for that project) |
 
+## merge-file
+
+```
+skald merge-file base ours theirs [path]
+```
+
+Git's merge driver for story files, run by git during a merge (set up by skald hooks git --install); merges BASE, OURS and THEIRS into OURS.
+
+| Argument | Description |
+| --- | --- |
+| `base` | the common ancestor (git's %%O) |
+| `ours` | this side, rewritten with the result (git's %%A) |
+| `theirs` | the other side (git's %%B) |
+| `[path]` | the story's path in the repository (git's %%P), to find config.json |
+
 ## hooks
 
 ```
 skald hooks [--install] [--strict] [--as NAME] {claude,git,github}
 ```
 
-Print or install hooks: claude (agent), git (pre-commit), github (workflow).
+Print or install hooks: claude (agent), git (pre-commit, story merge driver), github (workflow).
 
 | Argument | Description |
 | --- | --- |

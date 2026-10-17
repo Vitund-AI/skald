@@ -197,7 +197,14 @@ board can show each worktree's working tree, so you can watch every agent's
 column mid-task; see [The board](board.md#working-trees-and-branches). An assignment that
 has not been touched for `stale_days` (three by default, see
 [Multiple projects](multi-project.md) for settings) is offered to `next`
-again with a warning.
+again with a warning. Once a worktree's branch is merged, its claims stop
+counting.
+
+When their branches come back together, run `skald hooks git --install`
+once in the repository first: it sets up a merge driver that merges story
+files by field and note instead of by line, so one agent's claim and
+another's note on the same story merge without a conflict. See
+[Conflicts](git-and-ci.md#conflicts) for the rules.
 
 Agents sharing one checkout (subagents of one session, say) are safe too:
 commands that change stories take turns on a short per-checkout lock, so
