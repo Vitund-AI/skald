@@ -337,6 +337,68 @@ def _section_items(lines: list[str], heads: list[tuple[int, int, str]], head: tu
     return items
 
 
+def _increasing_run(values: list[int]) -> set[int]:
+    """Indices of one longest strictly increasing subsequence of ``values`` (patience sort, O(n log n))."""
+    import bisect
+
+    tails: list[int] = []      # the smallest last value of an increasing run of each length
+    tail_at: list[int] = []    # the index holding that value
+    back: list[Optional[int]] = [None] * len(values)
+    for i, v in enumerate(values):
+        k = bisect.bisect_left(tails, v)
+        back[i] = tail_at[k - 1] if k else None
+        if k == len(tails):
+            tails.append(v)
+            tail_at.append(i)
+        else:
+            tails[k], tail_at[k] = v, i
+    out: set[int] = set()
+    i = tail_at[-1] if tail_at else None
+    while i is not None:
+        out.add(i)
+        i = back[i]
+    return out
+
+
+def plan_ranks(ranks: list[int], step: int = RANK_STEP) -> list[int]:
+    """New ranks for stories listed in their wanted order, changing as few as possible (D86).
+
+    The longest run already in strictly increasing rank keeps its ranks; every other story is
+    placed between its kept neighbours (above the top one by ``step``s, which may go negative,
+    or below the bottom one). Where neighbours leave too little room, the nearest kept stories
+    on both sides join the move, so a crowded spot is respaced locally, never the column.
+    """
+    n = len(ranks)
+    keep = _increasing_run(ranks)
+    while True:
+        out, i, crowded = list(ranks), 0, False
+        while i < n:
+            if i in keep:
+                i += 1
+                continue
+            j = i
+            while j < n and j not in keep:
+                j += 1
+            m, lo, hi = j - i, (ranks[i - 1] if i else None), (ranks[j] if j < n else None)
+            if lo is None and hi is None:
+                out[i:j] = [step * (k + 1) for k in range(m)]
+            elif lo is None:
+                out[i:j] = [hi - step * (m - k) for k in range(m)]
+            elif hi is None:
+                out[i:j] = [lo + step * (k + 1) for k in range(m)]
+            else:
+                gap = (hi - lo) // (m + 1)
+                if gap < 1:
+                    keep.discard(i - 1)
+                    keep.discard(j)
+                    crowded = True
+                    break
+                out[i:j] = [lo + gap * (k + 1) for k in range(m)]
+            i = j
+        if not crowded:
+            return out
+
+
 def acceptance_progress(body: str) -> tuple[int, int]:
     """Checklist progress inside the ``## Acceptance`` section only (0, 0 when absent); the items ``tick`` numbers."""
     try:
@@ -1152,9 +1214,9 @@ class Store:
             seen.add(full)
             ordered.append(by_id[full])
         ordered.extend(s for s in column if s.id not in seen)
+        # Only stories out of place get new ranks, so a drag writes one file, not the column (D86).
         changed = []
-        for i, s in enumerate(ordered):
-            new_rank = (i + 1) * RANK_STEP
+        for s, new_rank in zip(ordered, plan_ranks([s.rank for s in ordered]), strict=True):
             if s.rank != new_rank:
                 s.fields["rank"] = new_rank
                 self._write(s)

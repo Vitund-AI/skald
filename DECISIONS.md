@@ -1090,3 +1090,33 @@ story's shape in a way the author did not ask for:
   `skald note`;
 - conflict markers.
 It also re-parses the result before writing anything.
+
+### D86. A reorder moves only what is out of place; ranks stay integers
+A reorder used to renumber its column 10, 20, 30, so one drag on a busy board
+rewrote every story below the drop point, and on a real board that was a
+208-file diff. The board added to it: with a filter on, it appended every
+hidden card to the order, and in swimlanes it sent only the target lane, so
+the column's other cards were pushed to the bottom.
+
+The suggestion was fractional or LexoRank keys. Those change `rank` from an
+integer, which the 1.x story format promises to keep. Any 1.x install before
+the change would then reject a story as corrupt, so a team on mixed versions
+would break on the first drag. That belongs to 2.0 with a migration, if
+ever.
+
+Sparse integers give the same property inside the format. Python integers
+are unbounded and may go negative. A reorder keeps the longest run of
+stories already in increasing rank, by a longest-increasing-subsequence
+pass, and gives every other story a rank between its kept neighbours. When
+two neighbours are adjacent integers, the nearest kept stories on both sides
+join the move. So a crowded spot costs a few writes, and the cost is
+repaid by the room it opens up.
+
+New stories still get `max + 10`. A wider step would buy more inserts
+before a respace, but it would change every new rank that people and tests
+read, for little: locally respacing a crowded spot is cheap.
+
+The board now sends the whole column with every card it did not move where
+it was. A filtered-out card stays attached to the card after it, and cards
+in other lanes stay put. The server already accepts any full order, so no
+client depends on the old renumbering.

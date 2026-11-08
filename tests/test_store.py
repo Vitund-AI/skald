@@ -53,17 +53,20 @@ class TestStoreBasics(SkaldTestCase):
         self.assertEqual(a2.rank, 20)
         a3, _ = s.update(a.id, title="renamed")
         self.assertEqual((a3.rank, a3.title), (20, "renamed"))
-        s.reorder("ready", [a.id, c.id])
-        idx = s.index()
-        self.assertEqual((idx[a.id].rank, idx[c.id].rank), (10, 20))
+        changed = s.reorder("ready", [a.id, c.id])  # c 10, a 20: one of them moves, not both
+        self.assertEqual(len(changed), 1)
+        self.assertEqual(self.ready_order(s), [a.id, c.id])
         d, _ = s.create("d", status="ready")
-        s.reorder("ready", [d.id])
-        idx = s.index()
-        self.assertEqual([idx[d.id].rank, idx[a.id].rank, idx[c.id].rank], [10, 20, 30])
+        changed = s.reorder("ready", [d.id])        # unlisted keep their order, after it
+        self.assertEqual([x.id for x in changed], [d.id])
+        self.assertEqual(self.ready_order(s), [d.id, a.id, c.id])
         with self.assertRaises(SkaldError):
             s.reorder("backlog", [a.id])
         with self.assertRaises(SkaldError):
             s.reorder("nope", [])
+
+    def ready_order(self, s):
+        return [x.id for x in s.load_all()[0] if x.status == "ready"]
 
     def test_move_and_order_in_one_update(self):
         s = self.store()
@@ -72,9 +75,43 @@ class TestStoreBasics(SkaldTestCase):
         c, _ = s.create("c")
         c2, warnings = s.update(c.id, status="ready", order=[a.id, c.id, b.id])
         self.assertEqual(warnings, [])
+        self.assertEqual(self.ready_order(s), [a.id, c.id, b.id])
         idx = s.index()
-        self.assertEqual([idx[a.id].rank, idx[c.id].rank, idx[b.id].rank], [10, 20, 30])
-        self.assertEqual((c2.status, c2.rank), ("ready", 20))
+        self.assertEqual((idx[a.id].rank, idx[b.id].rank), (10, 20))  # neither was touched
+        self.assertTrue(10 < idx[c.id].rank < 20)
+
+    def test_a_drag_in_a_long_column_writes_one_file(self):
+        from unittest import mock
+
+        s = self.store()
+        ids = [s.create(f"story {i}", status="ready")[0].id for i in range(200)]
+        order = ids[:]
+        order.insert(5, order.pop(150))                   # drag the 151st card up to sixth place
+        with mock.patch.object(type(s), "_write", autospec=True, side_effect=type(s)._write) as write:
+            changed = s.reorder("ready", order)
+        self.assertEqual(([x.id for x in changed], write.call_count), ([ids[150]], 1))
+        self.assertEqual(self.ready_order(s), order)
+        for target in (0, 199):                           # to the very top and the very bottom
+            order.insert(target, order.pop(100))
+            self.assertEqual(len(s.reorder("ready", order)), 1)
+            self.assertEqual(self.ready_order(s), order)
+
+    def test_plan_ranks_moves_few_and_respaces_locally(self):
+        from skald.store import plan_ranks
+
+        new = plan_ranks([10, 30, 20, 40])                                       # one moves, into the gap
+        self.assertEqual((sum(x != y for x, y in zip([10, 30, 20, 40], new, strict=True)), new, sorted(new)),
+                         (1, new, new))
+        self.assertEqual(plan_ranks([40, 10, 20, 30]), [0, 10, 20, 30])          # above the top: may go to 0 or below
+        self.assertEqual(plan_ranks([20, 30, 10]), [20, 30, 40])
+        # No room between neighbours 1 apart: those neighbours join the move, the rest of the column stays.
+        order = [10, 20, 15, 21, 30, 40, 50, 60]   # 15 dragged in between 20 and 21
+        new = plan_ranks(order)
+        self.assertTrue(all(x < y for x, y in zip(new, new[1:], strict=False)), new)
+        self.assertLessEqual(sum(x != y for x, y in zip(order, new, strict=True)), 3)
+        self.assertEqual(new[4:], [30, 40, 50, 60])
+        self.assertEqual(plan_ranks([0, 0, 0]), [-20, -10, 0])                   # equal ranks spread out once
+        self.assertEqual(plan_ranks([]), [])
 
     def test_update_validation(self):
         s = self.store()
