@@ -282,7 +282,12 @@ all the time: one claims a story while another adds a note. `skald hooks git
 by field instead of line by line, for merges, cherry-picks and rebases
 alike. It adds a line to `.gitattributes` (commit it) and registers the
 driver in the clone's git config (once per clone; worktrees share it).
-`skald doctor` says whether it is active.
+It does this even when the repository already has a pre-commit hook of its
+own, which it leaves alone and tells you what to add to. If `skald` is not
+on PATH (a `uvx` or inactive-virtualenv install), the hook and the driver
+call the Python that ran the installer instead, so git can always run them.
+`skald doctor` says whether the driver is active, and warns when its
+command cannot be found.
 
 With the driver, a story file conflicts only when two branches rewrote the
 same lines of its text. Everything else merges by these rules:
