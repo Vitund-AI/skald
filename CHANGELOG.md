@@ -1,9 +1,14 @@
 # Changelog
 
-## Unreleased
+## 1.3.1 (2026-11-09)
 
 - `skald hooks git --install` now sets up the story merge driver even in a repository that already has its own pre-commit hook. It used to stop at that hook, leaving no merge driver. When `skald` is not on PATH, as with a `uvx` or inactive-virtualenv install, the pre-commit hook and the merge driver now call the Python that ran the installer instead of a `skald` that git cannot find. Before, every commit failed with "skald: not found". `skald doctor` warns when the merge driver's command cannot be found. (6af629)
 - Dragging a card on a busy board now rewrites one story file instead of the whole column. Before, a reorder renumbered every story to 10, 20, 30, so one drag could produce a diff of hundreds of files. The board also used to push filtered-out cards, and the column's cards in other swimlanes, to the bottom on every drag. Now only the dragged card gets a new rank, between its neighbours, and a crowded spot is respaced locally. Ranks are still integers, so nothing needs migrating and older 1.x versions read the files as before. (ae1cf9)
+
+### Stories
+
+- A drag reranks one story, not the whole column (ae1cf9)
+- skald hooks git --install: register the merge driver even beside a foreign pre-commit hook, and write commands that run (6af629)
 
 ## 1.3.0 (2026-10-17)
 

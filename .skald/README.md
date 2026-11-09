@@ -1,7 +1,7 @@
-<!-- skald-render 8bc1ff08925c90dd -->
+<!-- skald-render 3d212b51ccad0454 -->
 # skald backlog
 
-**4 open** · Idea 4 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 2
+**4 open** · Idea 4 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -28,8 +28,8 @@ flowchart LR
     n_b56d9e --> n_b24938
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_b24938 backlog
     class n_b56d9e unknown
+    class n_b24938 backlog
 ```
 
 ## Idea (4)
@@ -57,16 +57,22 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (2)</strong></summary>
+<details><summary><strong>Done (0)</strong></summary>
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [ae1cf9](stories/ae1cf9-a-drag-reranks-one-story-not-the-whole-column.md) | A drag reranks one story, not the whole column | `agents` `area:board` `area:store` | claude |  | 5/5 |
-| [6af629](stories/6af629-skald-hooks-git-install-register-the-merge-driver.md) | skald hooks git --install: register the merge driver even beside a foreign pre-commit hook, and write commands that run | `area:git` `bug` | claude |  | 4/4 |
+_none_
 
 </details>
 
 ## Releases
+
+<details><summary><strong>1.3.1 (2)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [ae1cf9](archive/ae1cf9-a-drag-reranks-one-story-not-the-whole-column.md) | A drag reranks one story, not the whole column | `agents` `area:board` `area:store` | claude |  | 5/5 |
+| [6af629](archive/6af629-skald-hooks-git-install-register-the-merge-driver.md) | skald hooks git --install: register the merge driver even beside a foreign pre-commit hook, and write commands that run | `area:git` `bug` | claude |  | 4/4 |
+
+</details>
 
 <details><summary><strong>1.3.0 (7)</strong></summary>
 

@@ -5,8 +5,9 @@ rank: 10
 tags: ["agents", "area:board", "area:store"]
 blocked_by: []
 assignee: "claude"
+released: "1.3.1"
 created_at: "2026-11-08T09:11:37Z"
-updated_at: "2026-11-09T18:42:51Z"
+updated_at: "2026-11-09T18:48:58Z"
 ---
 ## Requirements
 
