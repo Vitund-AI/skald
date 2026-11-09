@@ -1,12 +1,12 @@
 ---
 title: "A drag reranks one story, not the whole column"
-status: "review"
+status: "done"
 rank: 10
 tags: ["agents", "area:board", "area:store"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-08T09:11:37Z"
-updated_at: "2026-11-08T09:18:59Z"
+updated_at: "2026-11-09T18:42:51Z"
 ---
 ## Requirements
 

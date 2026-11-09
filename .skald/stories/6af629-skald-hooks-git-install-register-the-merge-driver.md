@@ -1,12 +1,12 @@
 ---
 title: "skald hooks git --install: register the merge driver even beside a foreign pre-commit hook, and write commands that run"
-status: "review"
+status: "done"
 rank: 20
 tags: ["area:git", "bug"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-09T18:11:02Z"
-updated_at: "2026-11-09T18:14:24Z"
+updated_at: "2026-11-09T18:42:51Z"
 ---
 ## Requirements
 

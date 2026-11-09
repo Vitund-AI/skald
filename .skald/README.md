@@ -1,7 +1,7 @@
-<!-- skald-render 3d212b51ccad0454 -->
+<!-- skald-render 8bc1ff08925c90dd -->
 # skald backlog
 
-**4 open** · Idea 4 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**4 open** · Idea 4 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 2
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -57,9 +57,12 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (0)</strong></summary>
+<details><summary><strong>Done (2)</strong></summary>
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [ae1cf9](stories/ae1cf9-a-drag-reranks-one-story-not-the-whole-column.md) | A drag reranks one story, not the whole column | `agents` `area:board` `area:store` | claude |  | 5/5 |
+| [6af629](stories/6af629-skald-hooks-git-install-register-the-merge-driver.md) | skald hooks git --install: register the merge driver even beside a foreign pre-commit hook, and write commands that run | `area:git` `bug` | claude |  | 4/4 |
 
 </details>
 
