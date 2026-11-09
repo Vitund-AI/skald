@@ -161,6 +161,18 @@ def _tls(results: list[dict], home: Path) -> None:
         results.append(_r("tls", OK, f"HTTPS certificate {cert} loads"))
 
 
+def _runnable(command: str) -> bool:
+    """Whether a command line's program exists: a name on PATH, or a path to a file."""
+    import shlex
+    import shutil
+
+    try:
+        program = shlex.split(command)[0]
+    except (ValueError, IndexError):
+        return False
+    return bool(shutil.which(program)) or Path(program).is_file()
+
+
 def _merge_driver(results: list[dict], repo: Optional[Path], skald_dir: Optional[Path]) -> None:
     """Whether story files merge through `skald merge-file` (D84)."""
     if repo is None or skald_dir is None:
@@ -171,6 +183,9 @@ def _merge_driver(results: list[dict], repo: Optional[Path], skald_dir: Optional
     if routed and not driver:
         results.append(_r("merge", WARN, ".gitattributes sends story files to the skald merge driver, but this clone "
                           "has none registered, so git falls back to a line merge", "skald hooks git --install"))
+    elif routed and not _runnable(driver):
+        results.append(_r("merge", WARN, f"the story merge driver runs `{driver}`, which cannot be found from here, "
+                          "so git falls back to a line merge", "skald hooks git --install"))
     elif routed:
         results.append(_r("merge", OK, "story files merge field by field (skald merge-file)"))
     else:
