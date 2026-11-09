@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Dragging a card on a busy board now rewrites one story file instead of the whole column. Before, a reorder renumbered every story to 10, 20, 30, so one drag could produce a diff of hundreds of files. The board also used to push filtered-out cards, and the column's cards in other swimlanes, to the bottom on every drag. Now only the dragged card gets a new rank, between its neighbours, and a crowded spot is respaced locally. Ranks are still integers, so nothing needs migrating and older 1.x versions read the files as before. (ae1cf9)
+
 ## 1.3.0 (2026-10-17)
 
 - `skald section <id> HEADING` prints the content under a heading of a story, and `cat new.md | skald section <id> HEADING -` replaces it, keeping the heading, the other sections and the notes. Agents no longer have to read stories with `sed` or edit them by hand. The heading matches without its `#`s and ignores case. Text that would break the story is refused: its own heading again, a heading that would end the section early, a note heading, or conflict markers. `--create` adds a missing section, `--dry-run` shows the change as a diff, and MCP gains `skald_section`. (82c244)

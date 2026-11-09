@@ -147,9 +147,10 @@ class TestAPI(ServerTestCase):
         self.assertEqual(one["body"], "## Requirements\n\n- [ ] a\n")
 
         status, data = self.call("PATCH", f"{P}/stories/{a}", {"status": "ready", "order": [a, b]})
-        self.assertEqual(data["story"]["rank"], 10)
         status, board = self.call("GET", f"{P}/board")
-        self.assertEqual([(s["id"], s["rank"]) for s in board["stories"]], [(a, 10), (b, 20)])
+        self.assertEqual([s["id"] for s in board["stories"]], [a, b])          # a above b ...
+        self.assertEqual(next(s["rank"] for s in board["stories"] if s["id"] == b), 10)  # ... without touching b
+        self.assertLess(data["story"]["rank"], 10)
         self.assertNotEqual(board["version"], version)
 
         status, data = self.call("PATCH", f"{P}/stories/{b}", {"status": "in_progress", "tags": ["y", "epic:one"], "assignee": "me"})
