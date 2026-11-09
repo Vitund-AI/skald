@@ -93,14 +93,16 @@ class TestMergeDriverInGit(SkaldTestCase):
         env = os.environ.get("PYTHONPATH")
         os.environ["PYTHONPATH"] = os.pathsep.join(p for p in (str(ROOT / "src"), env) if p)
         self.addCleanup(lambda: os.environ.__setitem__("PYTHONPATH", env) if env is not None else os.environ.pop("PYTHONPATH", None))
-        code, out, err = self.run_cli("hooks", "git", "--install")
+        # Install as if `skald` were not on PATH, so the hook and the driver run this interpreter
+        # (with src/ on PYTHONPATH) whether or not some other skald is installed on the machine.
+        from unittest import mock
+
+        from skald import cli
+
+        with mock.patch.object(cli.shutil, "which", return_value=None):
+            code, out, err = self.run_cli("hooks", "git", "--install")
         self.assertEqual(code, 0, err)
         self.assertIn("merge=skald", (self.repo / ".gitattributes").read_text())
-        # Tests have no `skald` on PATH, so point the driver and the hooks at this interpreter.
-        exe = Path(sys.executable).as_posix()
-        git(self.repo, "config", "merge.skald.driver", f'"{exe}" -m skald merge-file %O %A %B %P')
-        hook = self.repo / ".git" / "hooks" / "pre-commit"
-        hook.write_text(hook.read_text().replace("skald ", f'"{exe}" -m skald '))
         self.sid = self.new("Login form", "--status", "ready", "--tags", "a,b")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "base")
