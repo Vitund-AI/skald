@@ -328,8 +328,15 @@ blank line. Task-list items are counted as `checklist: {done, total}`.
 ### 4.4 Derived state
 
 - Sort order is column index, then rank, then `created_at`, then id.
-- New stories get `max(rank in column) + 10`, or 10. A reorder rewrites the
-  column as 10, 20, 30... in the given order, with unlisted stories after.
+- New stories get `max(rank in column) + 10`, or 10. A reorder puts the
+  column in the given order, with unlisted stories after, by changing as few
+  ranks as it can (`plan_ranks`, D86). The longest run of stories already in
+  that relative order keeps its ranks, and every other story is placed
+  between its kept neighbours: above the top one in steps of 10, which can go
+  to 0 or below, or below the bottom one. Where two neighbours leave no room,
+  the nearest kept stories join the move, so a crowded spot is respaced
+  locally, never the column. One drag writes one file while there is room.
+  Ranks stay integers.
 - A dependency resolves to one of: a column key, `archived`, `missing` (no
   such story), or `unavailable` (project not registered here). It is
   satisfied when the target is archived or in a terminal column. A story is
@@ -464,8 +471,11 @@ conflict markers.
 files (`merge.py`, DECISIONS D84). `skald hooks git --install` adds
 `<.skald>/stories/*.md merge=skald` and the rendered board's path to
 `.gitattributes` and sets `merge.skald.driver` to `skald merge-file %O %A
-%B %P` in the clone's config; `doctor` reports a clone whose
-`.gitattributes` routes stories to a driver it lacks. The driver parses all
+%B %P` in the clone's config, whether or not it may write the pre-commit
+hook (a foreign hook is left alone, and the command exits 1). When `skald`
+is not on PATH, the hook and the driver run `"<sys.executable>" -m skald`
+instead. `doctor` reports a clone whose `.gitattributes` routes stories to a
+driver it lacks, or whose driver command cannot be found. The driver parses all
 three versions and merges by part, writing the result over OURS. It exits 0
 when clean and 1 when conflict markers remain.
 

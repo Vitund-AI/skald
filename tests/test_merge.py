@@ -93,14 +93,16 @@ class TestMergeDriverInGit(SkaldTestCase):
         env = os.environ.get("PYTHONPATH")
         os.environ["PYTHONPATH"] = os.pathsep.join(p for p in (str(ROOT / "src"), env) if p)
         self.addCleanup(lambda: os.environ.__setitem__("PYTHONPATH", env) if env is not None else os.environ.pop("PYTHONPATH", None))
-        code, out, err = self.run_cli("hooks", "git", "--install")
+        # Install as if `skald` were not on PATH, so the hook and the driver run this interpreter
+        # (with src/ on PYTHONPATH) whether or not some other skald is installed on the machine.
+        from unittest import mock
+
+        from skald import cli
+
+        with mock.patch.object(cli.shutil, "which", return_value=None):
+            code, out, err = self.run_cli("hooks", "git", "--install")
         self.assertEqual(code, 0, err)
         self.assertIn("merge=skald", (self.repo / ".gitattributes").read_text())
-        # Tests have no `skald` on PATH, so point the driver and the hooks at this interpreter.
-        exe = Path(sys.executable).as_posix()
-        git(self.repo, "config", "merge.skald.driver", f'"{exe}" -m skald merge-file %O %A %B %P')
-        hook = self.repo / ".git" / "hooks" / "pre-commit"
-        hook.write_text(hook.read_text().replace("skald ", f'"{exe}" -m skald '))
         self.sid = self.new("Login form", "--status", "ready", "--tags", "a,b")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "base")
@@ -152,3 +154,45 @@ class TestMergeDriverInGit(SkaldTestCase):
         git(self.repo, "config", "--unset", "merge.skald.driver")
         merge = [r for r in doctor.run(self.repo) if r["name"] == "merge"]
         self.assertEqual([r["level"] for r in merge], ["warn"])
+
+
+class TestInstallingTheDriver(SkaldTestCase):
+    """`skald hooks git --install` sets up the driver whatever else is in the repository, with a command that runs."""
+
+    def install(self, which):
+        from unittest import mock
+
+        from skald import cli
+
+        with mock.patch.object(cli.shutil, "which", return_value=which):
+            return self.run_cli("hooks", "git", "--install")
+
+    def test_a_foreign_pre_commit_hook_does_not_stop_the_driver(self):
+        hook = self.repo / ".git" / "hooks" / "pre-commit"
+        hook.parent.mkdir(parents=True, exist_ok=True)
+        hook.write_text("#!/bin/sh\necho mine\n")
+        code, out, err = self.install("/usr/local/bin/skald")
+        self.assertEqual(code, 1)                                      # the hook part was not done
+        self.assertEqual(hook.read_text(), "#!/bin/sh\necho mine\n")   # and someone else's hook is untouched
+        self.assertIn("left alone; add these lines to it yourself", err)
+        self.assertIn(".skald/stories/*.md merge=skald", (self.repo / ".gitattributes").read_text())
+        self.assertEqual(git(self.repo, "config", "merge.skald.driver").strip(), "skald merge-file %O %A %B %P")
+
+    def test_without_skald_on_path_the_hook_and_driver_use_this_python(self):
+        code, out, err = self.install(None)
+        self.assertEqual(code, 0, err)
+        exe = Path(sys.executable).as_posix()
+        self.assertEqual(git(self.repo, "config", "merge.skald.driver").strip(), f'"{exe}" -m skald merge-file %O %A %B %P')
+        self.assertIn(f'"{exe}" -m skald check || exit 1', (self.repo / ".git" / "hooks" / "pre-commit").read_text())
+        self.assertIn("is not on PATH here", err)
+
+    def test_doctor_warns_when_the_driver_cannot_run(self):
+        from skald import doctor
+
+        self.install(None)
+        merge = [r for r in doctor.run(self.repo) if r["name"] == "merge"]
+        self.assertEqual([r["level"] for r in merge], ["ok"])          # this interpreter exists
+        git(self.repo, "config", "merge.skald.driver", '"/nowhere/python" -m skald merge-file %O %A %B %P')
+        merge = [r for r in doctor.run(self.repo) if r["name"] == "merge"]
+        self.assertEqual([r["level"] for r in merge], ["warn"])
+        self.assertIn("cannot be found", merge[0]["detail"])

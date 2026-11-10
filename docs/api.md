@@ -84,7 +84,11 @@ sends this itself when `skald open` hands it the key in the URL fragment.
 
 `order` is the full ordered list of ids for the story's column. Sending
 `status` and `order` together moves and reorders in one request; the board
-uses this for drag and for batch moves.
+uses this for drag and for batch moves. Only the stories that are out of
+the requested order get a new rank, so a drag rewrites one story file, not
+the column. Send the whole column, with the cards you did not move where
+they were: the board keeps filtered-out cards and cards in other swimlanes
+in place this way.
 
 A story object is the same record `skald show --json` and the MCP tools
 return, pinned by the same contract. It carries the frontmatter fields plus `id`, `filename`,

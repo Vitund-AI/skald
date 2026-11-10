@@ -1135,6 +1135,22 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     if (toValue) tags.push(`${laneKey}:${toValue}`);
     return tags;
   }
+  // The column's whole order after a drop: the cards in the drop list in their new order, and every
+  // other card of the column (filtered out, or in another swimlane) where it was, so only the dragged
+  // cards change rank and a drag writes one story file, not the column (D86).
+  function columnOrder(status, shown, moving) {
+    const placed = new Set(shown);
+    const before = new Map();
+    let pending = [];
+    for (const s of state.stories) {
+      if (s.status !== status || moving.has(s.id)) continue;
+      if (placed.has(s.id)) { if (pending.length) { before.set(s.id, pending); pending = []; } }
+      else pending.push(s.id);
+    }
+    const out = [];
+    for (const id of shown) { if (before.has(id)) out.push(...before.get(id)); out.push(id); }
+    return out.concat(pending);
+  }
   async function onDrop(e) {
     e.preventDefault();
     const list = e.currentTarget;
@@ -1150,12 +1166,12 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       if (child === placeholder) order.push(...batch);
       else if (child.dataset.id && !inBatch.has(child.dataset.id)) order.push(child.dataset.id);
     }
-    const hidden = state.stories.filter(s => s.status === status && !matches(s) && !inBatch.has(s.id)).map(s => s.id);
+    const full = columnOrder(status, order, inBatch);
     removePlaceholder();
     state.dragging = null; state.dragBatch = []; state.dragFromLane = null;
-    if (batch.length > 1) { await bulkMove(status, order.concat(hidden), { key: laneKey, from: fromValue, to: toValue }); return; }
+    if (batch.length > 1) { await bulkMove(status, full, { key: laneKey, from: fromValue, to: toValue }); return; }
     try {
-      const body = { status, order: order.concat(hidden) };
+      const body = { status, order: full };
       const tags = laneKey ? retagForLane(state.stories.find(s => s.id === id), laneKey, fromValue, toValue) : null;
       if (tags) body.tags = tags;
       const res = await api('PATCH', `${P()}/stories/${id}`, body);

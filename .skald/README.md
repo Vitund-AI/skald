@@ -65,6 +65,15 @@ _none_
 
 ## Releases
 
+<details><summary><strong>1.3.1 (2)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [ae1cf9](archive/ae1cf9-a-drag-reranks-one-story-not-the-whole-column.md) | A drag reranks one story, not the whole column | `agents` `area:board` `area:store` | claude |  | 5/5 |
+| [6af629](archive/6af629-skald-hooks-git-install-register-the-merge-driver.md) | skald hooks git --install: register the merge driver even beside a foreign pre-commit hook, and write commands that run | `area:git` `bug` | claude |  | 4/4 |
+
+</details>
+
 <details><summary><strong>1.3.0 (7)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |

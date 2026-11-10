@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import re
 import sys
 import textwrap
@@ -2134,12 +2135,16 @@ def cmd_render(store: Store, args) -> int:
     return 0
 
 
-PRE_COMMIT_HOOK = """#!/bin/sh
+def pre_commit_hook(skald: str = "skald") -> str:
+    return f"""#!/bin/sh
 # Installed by `skald hooks git --install`. Validates the backlog and refreshes
 # the rendered board before every commit. Remove this file to uninstall.
-skald check || exit 1
-skald render --stage
+{skald} check || exit 1
+{skald} render --stage
 """
+
+
+PRE_COMMIT_HOOK = pre_commit_hook()
 
 
 # Generated workflows install the released package; pin a version here if a
@@ -2227,11 +2232,23 @@ jobs:
 """
 
 
-MERGE_DRIVER = "skald merge-file %O %A %B %P"
 MERGE_DRIVER_NAME = "Skald story files"
 
 
-def _install_merge_driver(repo: Path, attributes: list[str]) -> None:
+def skald_command() -> str:
+    """How a git hook or the merge driver should run Skald: `skald` when it is on PATH, else this
+    interpreter (`"<python>" -m skald`), for an install git cannot find by name (uvx, an inactive
+    virtualenv), where a bare `skald` would fail every commit and leave merges to git."""
+    if shutil.which("skald"):
+        return "skald"
+    return f'"{Path(sys.executable).as_posix()}" -m skald'
+
+
+def merge_driver(skald: str = "skald") -> str:
+    return f"{skald} merge-file %O %A %B %P"
+
+
+def _install_merge_driver(repo: Path, attributes: list[str], skald: str) -> None:
     """Route story files, and the rendered board, through `skald merge-file` (D84).
 
     The attributes are committed, so every clone routes the same files; the driver itself is
@@ -2245,7 +2262,7 @@ def _install_merge_driver(repo: Path, attributes: list[str]) -> None:
         path.write_text(existing + sep + "".join(a + "\n" for a in missing), encoding="utf-8")
         print(f"added {', '.join(f'`{a}`' for a in missing)} to .gitattributes; commit it so every clone merges the same way")
     gitutil.set_config(repo, "merge.skald.name", MERGE_DRIVER_NAME)
-    gitutil.set_config(repo, "merge.skald.driver", MERGE_DRIVER)
+    gitutil.set_config(repo, "merge.skald.driver", merge_driver(skald))
     print("registered the story merge driver in this clone's git config (merge.skald.driver)")
 
 
@@ -2257,29 +2274,37 @@ def cmd_hooks_git(store: Store, args) -> int:
         raise GitError(f"{store.dir} is not inside a git repository")
     rel = Path(os.path.relpath(store.dir, repo)).as_posix()
     hooks = gitutil.hooks_dir(repo)
+    skald = skald_command()
     if not args.install:
-        print(PRE_COMMIT_HOOK, end="")
+        print(pre_commit_hook(skald), end="")
         print(f"\nWrite this to {hooks / 'pre-commit'} and make it executable, or rerun with --install.", file=sys.stderr)
         print(f"--install also sets up the story merge driver: adds `{rel}/stories/*.md merge=skald` (and the rendered "
               f"board) to .gitattributes and runs\n  git config merge.skald.name \"{MERGE_DRIVER_NAME}\"\n"
-              f"  git config merge.skald.driver \"{MERGE_DRIVER}\"", file=sys.stderr)
+              f"  git config merge.skald.driver '{merge_driver(skald)}'", file=sys.stderr)
         return 0
     hook = hooks / "pre-commit"
-    if hook.exists() and "skald" not in hook.read_text(encoding="utf-8", errors="replace"):
-        print(f"{hook} already exists and is not Skald's; add these lines to it yourself:", file=sys.stderr)
-        print("  skald check || exit 1\n  skald render --stage", file=sys.stderr)
-        return 1
-    hook.parent.mkdir(parents=True, exist_ok=True)
-    hook.write_text(PRE_COMMIT_HOOK, encoding="utf-8")
-    hook.chmod(0o755)
-    print(f"installed {hook}")
-    if not rnd.render_settings(store):
-        store.config.extra["render"] = {"path": rnd.DEFAULT_PATH, "format": "md"}
-        store.config.save(store.dir / "config.json")
-        print(f"enabled automatic rendering of {rnd.DEFAULT_PATH} in config.json; commit config.json")
+    # Someone else's hook is left alone, but the merge driver does not depend on it: set that up regardless.
+    foreign = hook.exists() and "skald" not in hook.read_text(encoding="utf-8", errors="replace")
+    if not foreign:
+        hook.parent.mkdir(parents=True, exist_ok=True)
+        hook.write_text(pre_commit_hook(skald), encoding="utf-8")
+        hook.chmod(0o755)
+        print(f"installed {hook}")
+        if not rnd.render_settings(store):
+            store.config.extra["render"] = {"path": rnd.DEFAULT_PATH, "format": "md"}
+            store.config.save(store.dir / "config.json")
+            print(f"enabled automatic rendering of {rnd.DEFAULT_PATH} in config.json; commit config.json")
     # The rendered board is derived from the stories, so a merge keeps our copy rather than
     # conflict; `skald check` calls it stale and the next commit re-renders it (D84).
-    _install_merge_driver(repo, [f"{rel}/stories/*.md merge=skald", f"{rnd.render_settings(store)['path']} merge=skald"])
+    render = rnd.render_settings(store)
+    _install_merge_driver(repo, [f"{rel}/stories/*.md merge=skald"] + ([f"{render['path']} merge=skald"] if render else []), skald)
+    if skald != "skald":
+        print(f"`skald` is not on PATH here, so the hook and the merge driver run {skald}; "
+              "if that Python moves, rerun skald hooks git --install", file=sys.stderr)
+    if foreign:
+        print(f"{hook} already exists and is not Skald's, so it was left alone; add these lines to it yourself:", file=sys.stderr)
+        print(f"  {skald} check || exit 1\n  {skald} render --stage", file=sys.stderr)
+        return 1
     return 0
 
 
