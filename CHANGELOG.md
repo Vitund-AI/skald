@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- In a project that uses Prettier, `skald init` now adds `.skald/` to `.prettierignore`. Before, `prettier --check .` failed on Skald's own files, and `prettier --write .` reformatted every story and the rendered board, which `skald check` then called stale. `skald doctor` warns when Prettier is configured and `.skald/` is not ignored; rerun `skald init` to add it. Projects without Prettier get no new file. (1d874a)
+
 ## 1.3.1 (2026-11-09)
 
 - `skald hooks git --install` now sets up the story merge driver even in a repository that already has its own pre-commit hook. It used to stop at that hook, leaving no merge driver. When `skald` is not on PATH, as with a `uvx` or inactive-virtualenv install, the pre-commit hook and the merge driver now call the Python that ran the installer instead of a `skald` that git cannot find. Before, every commit failed with "skald: not found". `skald doctor` warns when the merge driver's command cannot be found. (6af629)

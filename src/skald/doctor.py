@@ -237,6 +237,24 @@ def _agent_wiring(results: list[dict], repo: Optional[Path], skald_dir: Optional
             results.append(_r("contract", OK, f"{label} matches the template"))
 
 
+def _formatters(results: list[dict], repo: Optional[Path], skald_dir: Optional[Path]) -> None:
+    """Whether Prettier, where the project uses it, leaves .skald/ alone (D87)."""
+    from .formatters import IGNORE_FILE, IGNORE_LINE, ignores_skald, prettier_evidence
+
+    base = repo or (skald_dir.parent if skald_dir else None)
+    if base is None or skald_dir is None:
+        return
+    evidence = prettier_evidence(base)
+    if evidence is None:
+        return
+    ignore = base / IGNORE_FILE
+    if ignore.is_file() and ignores_skald(ignore.read_text(encoding="utf-8", errors="replace")):
+        results.append(_r("prettier", OK, f"Prettier skips {IGNORE_LINE} ({IGNORE_FILE})"))
+    else:
+        results.append(_r("prettier", WARN, f"Prettier is configured here ({evidence}) and would reformat Skald's "
+                          f"files under {IGNORE_LINE}", f"add {IGNORE_LINE} to {IGNORE_FILE}, or rerun skald init"))
+
+
 def _context(results: list[dict], home: Path) -> None:
     where = []
     if os.environ.get("SKALD_HOME"):
@@ -271,4 +289,5 @@ def run(cwd: Optional[Path] = None) -> list[dict]:
     _tls(results, home)
     _merge_driver(results, repo, skald_dir)
     _agent_wiring(results, repo, skald_dir)
+    _formatters(results, repo, skald_dir)
     return results

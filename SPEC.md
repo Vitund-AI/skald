@@ -138,7 +138,11 @@ tree of a store's project.
 `init` creates the layout when absent and is otherwise non-destructive. It
 appends the one-line pointer to `.skald/AGENTS.md` to the root `CLAUDE.md`
 and `AGENTS.md` when they exist and lack it, and creates `AGENTS.md` with
-the pointer when neither exists.
+the pointer when neither exists. Where the project uses Prettier (a
+`.prettierignore`, a Prettier config file, or `prettier` in `package.json`
+as a key or a dependency), it adds `.skald/` to `.prettierignore`, creating
+the file if needed and appending once otherwise, in the file's own line
+endings (D87). A project without Prettier gets no new file.
 
 ---
 
@@ -546,7 +550,7 @@ story or configuration. Commands that print stories take `--json`.
 | `ls --release VERSION` | Archived stories with that `released` value. |
 | `check [--json] [--hook]` | Problems: corrupt files, bad filenames, duplicate ids, unknown status, invalid or dangling or self references, cycles, conflict markers. Warnings: references to unregistered projects, archived non-terminal stories, and open questions followed by a plain decision written before 0.4.1 (`QUESTION_RULE_SINCE`), when such a decision would have closed them. `--hook` adds uncommitted story files as a problem. Exit 2 on problems. `PROBLEM:` and `WARNING:` lines go to stderr and only `ok` to stdout, because a Stop hook that blocks on exit 2 shows the agent stderr alone. |
 | `migrate [--check] [--json]` | Upgrade the backlog to the story format this version writes, one format step at a time under the mutation lock, rewriting `format` after each (`migrate.STEPS`). At the current format it only reports `already at the current format (N); M stories read, nothing to migrate` and changes nothing. `--check` changes nothing and exits 1 when a migration is needed. A newer backlog refuses to load at all ("upgrade skald-kanban"), exit 2. Section 10d. |
-| `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |
+| `doctor [--json]` | The environment and the wiring, not the data: Python version; `git` and a repository with `user.name`/`user.email`; `config.json` parses and validates (which `check` cannot reach, since a broken config never opens the store); `.skald` and the stories dir writable; the registry's paths; the server (a stale `server.json`, a version behind the package, a world-readable token); the Claude Code hooks and their `--as`; the `AGENTS.md`/`SKILL.md` contract copies against the template; where the project uses Prettier, that `.prettierignore` skips `.skald/`. One line each with the fix, read-only, ending by running `check`. Exit 1 on any failure. |
 | `commit [-m MSG] [--push] [--no-trailers]` | `git add -A -- .skald && git commit -- .skald`, with a `Skald-Story: <id>` trailer per touched story. Pushes with `--push` or the `push` setting. |
 | `commits <id> [--all-branches] [--no-children] [--json]` | `git log --grep` for the trailer or `[id]`, plus the same for each child, de-duplicated, newest first, each entry tagged with the story it names (`commits_for_family`). |
 | `diff --since REF [--until REF] [--markdown] [--json]` | `diff_states` between two snapshots (or the working tree): added, removed, and changed stories with field deltas, notes added, body edits. Markdown output starts with `<!-- skald-diff -->` for comment upserts. |

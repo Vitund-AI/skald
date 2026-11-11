@@ -1,11 +1,12 @@
 ---
 title: "Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing"
-status: "idea"
-rank: 130
+status: "review"
+rank: 10
 tags: ["area:cli", "roadmap"]
 blocked_by: []
+assignee: "claude"
 created_at: "2026-11-11T02:01:06Z"
-updated_at: "2026-11-11T02:01:06Z"
+updated_at: "2026-11-11T02:07:23Z"
 ---
 ## Requirements
 
@@ -49,7 +50,10 @@ only when the tool it configures is in evident use. It does not create
 `.prettierignore` in every project.
 
 ## Acceptance
-- [ ] `skald init` appends `.skald/` to an existing `.prettierignore` (once, idempotent) and creates the file only when Prettier is evidently in use; it reports what it did.
-- [ ] `skald doctor` warns when Prettier is in use and `.skald/` is not ignored.
-- [ ] Tests for append, create, skip, already-present, and the doctor warning.
-- [ ] Docs, SPEC, CHANGELOG updated; DECISIONS entry.
+- [x] `skald init` appends `.skald/` to an existing `.prettierignore` (once, idempotent) and creates the file only when Prettier is evidently in use; it reports what it did.
+- [x] `skald doctor` warns when Prettier is in use and `.skald/` is not ignored.
+- [x] Tests for append, create, skip, already-present, and the doctor warning.
+- [x] Docs, SPEC, CHANGELOG updated; DECISIONS entry.
+
+## [claude] 2026-11-11 02:07 UTC · handoff
+Done. New src/skald/formatters.py: prettier_evidence (a .prettierignore, any Prettier config file name, or package.json with a prettier key or dependency), ignores_skald, ensure_prettierignore. cmd_init calls it at the repository root; doctor._formatters adds a "prettier" row only where Prettier is in use (ok, or warn with "rerun skald init"). Tests in tests/test_formatters.py: no Prettier means no file, create for each kind of evidence, append once keeping CRLF and a missing final newline, covering lines respected, bad package.json ignored, doctor warn then ok. Checked end to end with Prettier 3.6.2: after init, `prettier --check .` reports only the project's own files. D87, SPEC §2.4 and the doctor row, getting-started "Formatters", CHANGELOG Unreleased.
