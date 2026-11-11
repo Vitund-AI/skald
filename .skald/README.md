@@ -1,7 +1,7 @@
-<!-- skald-render 3c6cbec86f863272 -->
+<!-- skald-render 4b181efae2d78404 -->
 # skald backlog
 
-**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**8 open** · Idea 8 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -29,7 +29,7 @@ flowchart LR
     class n_b56d9e unknown
 ```
 
-## Idea (7)
+## Idea (8)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -37,9 +37,10 @@ flowchart LR
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
 | [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
 | [a73397](stories/a73397-run-local-agent-sessions-from-the-board-launch-cla.md) | Run local agent sessions from the board: launch Claude Code (or any agent CLI) on a story in a terminal streamed to the browser | `area:board` `epic:integrations` `roadmap` |  |  |  |
-| [2fa664](stories/2fa664-agent-presence-know-which-stories-have-a-live-agen.md) | Agent presence: know which stories have a live agent session, from the skald mcp process | `area:board` `epic:integrations` `roadmap` |  |  | 0/4 |
+| [2fa664](stories/2fa664-agent-presence-know-which-stories-have-a-live-agen.md) | Agent presence: know which stories have a live agent session (Claude Code hooks, skald mcp, CLI activity) | `area:board` `epic:integrations` `roadmap` |  |  | 0/5 |
 | [06d503](stories/06d503-deliver-human-answers-to-an-active-agent-a-notice.md) | Deliver human answers to an active agent: a notice on its next skald tool call | `epic:integrations` `roadmap` |  | 🔒 `2fa664` | 0/4 |
 | [f2c74c](stories/f2c74c-browser-notification-when-a-claude-code-session-is.md) | Browser notification when a Claude Code session is waiting for the user | `area:board` `epic:integrations` `roadmap` |  | 🔒 `2fa664` | 0/4 |
+| [1d874a](stories/1d874a-keep-prettier-off-skald-s-files-add-skald-to-prett.md) | Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing | `area:cli` `roadmap` |  |  | 0/4 |
 
 ## Plan (0)
 
