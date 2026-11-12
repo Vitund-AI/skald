@@ -1120,3 +1120,32 @@ The board now sends the whole column with every card it did not move where
 it was. A filtered-out card stays attached to the card after it, and cards
 in other lanes stay put. The server already accepts any full order, so no
 client depends on the old renumbering.
+
+### D87. Keep Prettier off `.skald/`, and touch `.prettierignore` only where Prettier is used
+Prettier run over a repository rewrites Skald's files. Tried on this
+repository with Prettier 3.6, `--check` flagged 151 files under `.skald/`.
+`--write` padded the rendered board's tables, so its render hash no longer
+matched and `check` called it stale. It also changed emphasis markers,
+re-indented list continuations, and spaced out note headings in every
+story. Nothing broke outright, but every story picks up a formatting diff
+that Skald's next write partly undoes, which turns into diff noise and
+merge conflicts. Skald owns the layout of these files, so formatters
+should skip them, as they skip `node_modules/`.
+
+`init` adds `.skald/` to `.prettierignore`. It does so only where Prettier
+is evidently in use: the ignore file exists, a Prettier config file
+exists, or `package.json` has a `prettier` key or dependency. Creating the
+file in every repository would protect a project that adopts Prettier
+later. It would also leave a file nothing reads in every Python or Go
+repository, and Skald avoids editing a project's files for tools the
+project does not use. `doctor` covers the later case: it warns when
+Prettier shows up without the line, and rerunning `init` adds it.
+
+The line is `.skald/`, with no leading slash. In gitignore syntax that
+matches a `.skald` directory at any depth, so a project whose `.skald` sits
+below the repository root is covered too. Any line that already covers it
+(`/.skald`, `.skald/**` and the like) is respected, and appending keeps the
+file's line endings. Other formatters (markdownlint, dprint) are
+documented, not handled. Each has its own ignore mechanism, and none has
+turned up in a Skald project yet.
+

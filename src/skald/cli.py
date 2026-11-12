@@ -588,6 +588,11 @@ def cmd_init(ws: Workspace, args) -> int:
     notice = ws.registry.register(config.name, skald_dir)
     lines.append(notice or f"project '{config.name}' already registered")
     lines.extend(write_instruction_pointer(repo or skald_dir.parent))
+    from .formatters import ensure_prettierignore
+
+    prettier = ensure_prettierignore(repo or skald_dir.parent)
+    if prettier:
+        lines.append(prettier)
     lines.append("")
     lines.append("Commit .skald/ and run `skald open` to see the board.")
     for line in lines:

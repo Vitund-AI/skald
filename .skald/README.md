@@ -1,38 +1,35 @@
-<!-- skald-render 3d212b51ccad0454 -->
+<!-- skald-render 43bcaa1c85962164 -->
 # skald backlog
 
-**4 open** · Idea 4 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**9 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
-
-## Open questions
-
-Waiting on a human.
-
-| Story | Question | Asked |
-| --- | --- | --- |
-| [a73397](stories/a73397-run-local-agent-sessions-from-the-board-launch-cla.md) Run local agent sessions from the board: launch Claude Code (or any agent CLI) on a story in a terminal streamed to the browser | Q1: Q1: Product direction: should Skald run agents, or only coordinate them? Running them is the bigger change and needs its own decision. If yes, the next questions are Windows (POSIX-only, or an optional pywinpty extra) and lifecycle (Skald owns the processes, or sessions run in tmux so they survive restarts and can be attached from a terminal). | claude, 2026-10-04 |
 
 ## Epics
 
 | Epic | Progress | Done | Open |
 | --- | --- | ---: | ---: |
-| `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 3 |
+| `epic:integrations` | ▱▱▱▱▱▱▱▱▱▱ 0% | 0 | 6 |
 
 ## Dependencies
 
 ```mermaid
 flowchart LR
+    n_06d503["06d503<br/>Deliver human answers to an active agen…"]
+    n_2fa664["2fa664<br/>Agent presence: know which stories have…"]
     n_b24938["b24938<br/>Close the linked GitHub issue when its …"]
     n_b56d9e["b56d9e<br/>(missing)"]
+    n_f2c74c["f2c74c<br/>Browser notification when a Claude Code…"]
     n_b56d9e --> n_b24938
+    n_2fa664 --> n_06d503
+    n_2fa664 --> n_f2c74c
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    class n_06d503,n_2fa664,n_b24938,n_f2c74c backlog
     class n_b56d9e unknown
-    class n_b24938 backlog
 ```
 
-## Idea (4)
+## Idea (7)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -40,6 +37,9 @@ flowchart LR
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
 | [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
 | [a73397](stories/a73397-run-local-agent-sessions-from-the-board-launch-cla.md) | Run local agent sessions from the board: launch Claude Code (or any agent CLI) on a story in a terminal streamed to the browser | `area:board` `epic:integrations` `roadmap` |  |  |  |
+| [2fa664](stories/2fa664-agent-presence-know-which-stories-have-a-live-agen.md) | Agent presence: know which stories have a live agent session (Claude Code hooks, skald mcp, CLI activity) | `area:board` `epic:integrations` `roadmap` |  |  | 0/5 |
+| [06d503](stories/06d503-deliver-human-answers-to-an-active-agent-a-notice.md) | Deliver human answers to an active agent: a notice on its next skald tool call | `epic:integrations` `roadmap` |  | 🔒 `2fa664` | 0/4 |
+| [f2c74c](stories/f2c74c-browser-notification-when-a-claude-code-session-is.md) | Browser notification when a Claude Code session is waiting for the user | `area:board` `epic:integrations` `roadmap` |  | 🔒 `2fa664` | 0/4 |
 
 ## Plan (0)
 
@@ -53,9 +53,12 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (2)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [1d874a](stories/1d874a-keep-prettier-off-skald-s-files-add-skald-to-prett.md) | Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing | `area:cli` `roadmap` | claude |  | 4/4 |
+| [a96b7c](stories/a96b7c-board-an-unsent-note-survives-a-tag-status-or-clai.md) | Board: an unsent note survives a tag, status or claim change in the story dialog | `area:board` | claude |  | 4/4 |
 
 <details><summary><strong>Done (0)</strong></summary>
 

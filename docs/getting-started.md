@@ -39,6 +39,13 @@ and it appends one line to the root `CLAUDE.md` or `AGENTS.md`:
 It is safe to run again and never touches existing stories. Commit `.skald/`;
 everything in it belongs in the repository.
 
+**Formatters:** Skald writes everything under `.skald/` in its own layout,
+so keep formatters off it. If the project uses Prettier, `init` adds
+`.skald/` to `.prettierignore`, and `skald doctor` warns if Prettier turns up
+later without it; rerun `skald init` to add the line. Do the same by hand
+for other formatters and linters that reach Markdown or JSON, such as
+markdownlint (`.markdownlintignore`) or dprint (`excludes`).
+
 **Joining a repository someone else set up:** clone it and run any `skald`
 command inside it. The backlog is already there, and the first command
 registers the project on your machine.

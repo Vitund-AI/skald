@@ -5,7 +5,7 @@ rank: 90
 tags: ["area:board", "epic:integrations", "roadmap"]
 blocked_by: []
 created_at: "2026-10-04T02:42:38Z"
-updated_at: "2026-10-04T02:42:47Z"
+updated_at: "2026-11-10T00:25:30Z"
 ---
 ## Requirements
 
@@ -68,3 +68,7 @@ land after the 1.0 compatibility and API-docs work (0a2011, c9e05f).
 
 ## [claude] 2026-10-04 02:42 UTC · question
 Q1: Product direction: should Skald run agents, or only coordinate them? Running them is the bigger change and needs its own decision. If yes, the next questions are Windows (POSIX-only, or an optional pywinpty extra) and lifecycle (Skald owns the processes, or sessions run in tmux so they survive restarts and can be attached from a terminal).
+
+## [jon] 2026-11-10 00:25 UTC · decision
+Answers Q1 [claude] 2026-10-04 02:42 UTC · Q1: Product direction: should Skald run agents, or only coordinate them? Running them is the bigger change and needs its own decision. If yes, the next questions are Windows (POSIX-only, or an optional pywinpty extra) and lifecycle (Skald owns the processes, or sessions run in tmux so they survive restarts and can be attached from a terminal).
+Coordinate, not run, for now. Running agents from the board would need a lightweight web terminal (xterm.js) and changes the server's security posture, so it waits. First Skald learns which agents are active (2fa664), delivers human answers to an active agent (06d503), and for Claude Code alerts the user with a browser notification when the agent is waiting on them (f2c74c). Revisit this story once those show how often an idle agent needs waking, and whether Claude's local session messaging can be called from outside Claude Code.
