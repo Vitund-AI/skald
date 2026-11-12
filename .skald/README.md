@@ -1,7 +1,7 @@
-<!-- skald-render 4b181efae2d78404 -->
+<!-- skald-render 43bcaa1c85962164 -->
 # skald backlog
 
-**8 open** · Idea 8 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**9 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 2 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -29,7 +29,7 @@ flowchart LR
     class n_b56d9e unknown
 ```
 
-## Idea (8)
+## Idea (7)
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
@@ -40,7 +40,6 @@ flowchart LR
 | [2fa664](stories/2fa664-agent-presence-know-which-stories-have-a-live-agen.md) | Agent presence: know which stories have a live agent session (Claude Code hooks, skald mcp, CLI activity) | `area:board` `epic:integrations` `roadmap` |  |  | 0/5 |
 | [06d503](stories/06d503-deliver-human-answers-to-an-active-agent-a-notice.md) | Deliver human answers to an active agent: a notice on its next skald tool call | `epic:integrations` `roadmap` |  | 🔒 `2fa664` | 0/4 |
 | [f2c74c](stories/f2c74c-browser-notification-when-a-claude-code-session-is.md) | Browser notification when a Claude Code session is waiting for the user | `area:board` `epic:integrations` `roadmap` |  | 🔒 `2fa664` | 0/4 |
-| [1d874a](stories/1d874a-keep-prettier-off-skald-s-files-add-skald-to-prett.md) | Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing | `area:cli` `roadmap` |  |  | 0/4 |
 
 ## Plan (0)
 
@@ -54,9 +53,12 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (2)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [1d874a](stories/1d874a-keep-prettier-off-skald-s-files-add-skald-to-prett.md) | Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing | `area:cli` `roadmap` | claude |  | 4/4 |
+| [a96b7c](stories/a96b7c-board-an-unsent-note-survives-a-tag-status-or-clai.md) | Board: an unsent note survives a tag, status or claim change in the story dialog | `area:board` | claude |  | 4/4 |
 
 <details><summary><strong>Done (0)</strong></summary>
 
