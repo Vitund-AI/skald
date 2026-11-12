@@ -1,12 +1,12 @@
 ---
 title: "Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing"
-status: "review"
+status: "done"
 rank: 10
 tags: ["area:cli", "roadmap"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-11T02:01:06Z"
-updated_at: "2026-11-11T02:07:23Z"
+updated_at: "2026-11-12T23:18:09Z"
 ---
 ## Requirements
 

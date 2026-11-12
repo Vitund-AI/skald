@@ -1,12 +1,12 @@
 ---
 title: "Board: an unsent note survives a tag, status or claim change in the story dialog"
-status: "review"
+status: "done"
 rank: 20
 tags: ["area:board"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-12T23:10:04Z"
-updated_at: "2026-11-12T23:10:05Z"
+updated_at: "2026-11-12T23:18:10Z"
 ---
 ## Requirements
 
