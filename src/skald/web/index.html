@@ -93,6 +93,20 @@
   .md .ref:hover { text-decoration: underline; }
   .md blockquote { border-left: 3px solid var(--line-strong); padding-left: .8em; color: var(--muted); }
   .md input[type=checkbox] { margin-right: .4em; }
+  /* Wide content scrolls in its own box, so a table never widens the notes below it. */
+  .md { overflow-wrap: break-word; }
+  .md table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: .6em 0; font-size: .95em; }
+  .md th, .md td { border: 1px solid var(--line); padding: .3em .6em; vertical-align: top; }
+  .md th { background: var(--chip); font-weight: 600; }
+  .md th:not([align]) { text-align: left; }
+  /* On a phone the table scrolls anyway: a minimum column width beats one word per line. */
+  @media (max-width: 640px) { .md th, .md td { min-width: 6rem; } }
+  /* The dialog's panes are single-column grids: minmax(0, 1fr) stops a wide child from widening them. */
+  #pane-story, #pane-edit { grid-template-columns: minmax(0, 1fr); }
+  #modal-card.wide { max-width: 100rem; }
+  #modal-head { transition: box-shadow .15s; }
+  #modal-card.scrolled #modal-head { box-shadow: 0 6px 12px -8px rgb(0 0 0 / .35); }
+  #modal-card.scrolled #m-heading { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .tab.active { border-bottom: 2px solid var(--accent); color: var(--ink); }
   .toggle[aria-pressed="true"] { background: var(--accent-tint); color: var(--accent-text); border-color: var(--accent); }
   /* The swimlane control before any facet exists: shown, so the feature can be found, but inert. */
@@ -183,21 +197,20 @@
 <div id="toasts" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
 
 <div id="modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-2 sm:p-4 z-40">
-  <div class="bg-surface rounded-lg border border-line shadow-xl w-full max-w-3xl max-h-full overflow-y-auto">
-    <div class="flex items-start gap-3 px-6 py-4 border-b border-line">
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-3 min-w-0">
-          <button id="m-id" class="font-mono text-base font-medium text-ink rounded-sm px-1.5 -mx-1.5 hover:bg-hover" title="Click to copy the id; shift-click copies project:id"></button>
-          <span id="m-meta" class="text-xs text-faint truncate"></span>
-        </div>
-        <h2 id="m-heading" class="mt-1 text-lg font-semibold leading-snug"></h2>
+  <div id="modal-card" class="bg-surface rounded-lg border border-line shadow-xl w-full max-w-3xl max-h-full overflow-y-auto">
+    <div id="modal-head" class="sticky top-0 z-10 bg-surface rounded-t-lg flex flex-wrap items-center gap-x-3 gap-y-1 px-6 py-3 sm:py-4 border-b border-line">
+      <div class="min-w-0 flex-1 flex items-center gap-3">
+        <button id="m-id" class="font-mono text-base font-medium text-ink rounded-sm px-1.5 -mx-1.5 hover:bg-hover" title="Click to copy the id; shift-click copies project:id"></button>
+        <span id="m-meta" class="text-xs text-faint truncate"></span>
       </div>
       <div class="flex items-center gap-2 shrink-0 text-sm">
         <button class="tab py-1 text-muted" data-tab="story">Story</button>
         <button id="tab-history" class="tab py-1 text-muted" data-tab="history">History</button>
         <button id="m-edit-btn" class="ml-2 rounded border border-strong px-3 py-1 hover:bg-hover" title="Edit the fields and the body (e)">Edit</button>
+        <button id="m-wide" type="button" class="hidden lg:inline-flex items-center justify-center ml-1 w-7 h-7 rounded text-faint hover:text-ink hover:bg-hover" aria-pressed="false" title="Widen the dialog (w)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M3 12h18"></path></svg></button>
         <button id="m-close" class="ml-1 text-faint hover:text-ink text-xl leading-none" title="Close (Esc)">&times;</button>
       </div>
+      <h2 id="m-heading" class="basis-full text-lg font-semibold leading-snug"></h2>
     </div>
 
     <div id="pane-story" class="px-6 py-4 grid gap-4 text-sm">
@@ -293,6 +306,7 @@
         <div><kbd>Enter</kbd> Open the focused card</div>
         <div><kbd>Esc</kbd> Close a dialog or popover; in the story dialog, leave edit mode first</div>
         <div><kbd>e</kbd> Edit the open story</div>
+        <div><kbd>w</kbd> Widen or narrow the story dialog (large screens)</div>
         <div>Click the id at the top of a story to copy it; shift-click copies <code>project:id</code></div>
         <div>Drag a card to move or reorder it</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Selecting several cards</div>
@@ -1231,7 +1245,21 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     showTab('story');
     if (on) $('m-title').focus();
   }
-  function showModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); showTab('story'); }
+  function showModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); showTab('story'); markScrolled(); }
+  // Wide mode: the reading width, or most of the window for tables and logs. Remembered per browser.
+  const modalCard = $('modal-card');
+  function setWide(on, remember = true) {
+    modalCard.classList.toggle('wide', on);
+    const b = $('m-wide');
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.title = on ? 'Narrow the dialog (w)' : 'Widen the dialog (w)';
+    b.classList.toggle('text-accent-text', on);
+    if (remember) { try { localStorage.setItem('skald.modalWide', on ? '1' : '0'); } catch (e) {} }
+  }
+  { let wide = false; try { wide = localStorage.getItem('skald.modalWide') === '1'; } catch (e) {} setWide(wide, false); }
+  // The header stays pinned; once the body scrolls under it, it gets a shadow and a two-line title.
+  function markScrolled() { modalCard.classList.toggle('scrolled', modalCard.scrollTop > 4); }
+  modalCard.addEventListener('scroll', markScrolled, { passive: true });
   function hideModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); state.modal = null; state.loaded = null; state.editing = false; setStoryHash(null); refresh(true); }
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
@@ -1303,7 +1331,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   }
   // The view: chips for the fields, the body and notes rendered.
   function renderView(s) {
-    $('m-heading').textContent = s.title;
+    $('m-heading').textContent = s.title; $('m-heading').title = s.title;
     $('m-status-quick').value = s.status;
     $('m-status-quick').disabled = state.readonly || s.archived;
     $('m-view-assignee').textContent = s.assignee ? `@${s.assignee}` : 'unassigned';
@@ -1887,6 +1915,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   });
   modal.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
   modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
+  $('m-wide').addEventListener('click', () => setWide(!modalCard.classList.contains('wide')));
   document.addEventListener('keydown', (e) => {
     const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
     if (e.key === 'Escape') {
@@ -1899,6 +1928,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       return;
     }
     if (state.modal && !typing && e.key === 'e' && !state.editing && state.modal !== 'new' && !state.readonly && !(state.loaded && state.loaded.archived) && modalTab === 'story') { e.preventDefault(); setEditing(true); return; }
+    if (state.modal && !typing && e.key === 'w' && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); setWide(!modalCard.classList.contains('wide')); return; }
     if (typing || state.modal) return;
     if (e.key === '?') { e.preventDefault(); if (state.help) hideHelp(); else showHelp(); return; }
     if (state.help) return;
