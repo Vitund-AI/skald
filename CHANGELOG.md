@@ -2,6 +2,7 @@
 
 ## 1.3.2 (2026-11-13)
 
+- The rendered board (`.skald/README.md`) is now the same every time it is rendered from the same stories. The dependency graph's `class` lines came out in a different order from one run to the next, so CI re-rendered and committed a board nobody had changed, and a release pull request could then conflict on it. (55b363)
 - In the board's story dialog, a note you are typing is no longer lost when you change a tag, the status or the claim before sending it. The dialog used to clear the note box on every refresh. Unsent notes are now kept per story until sent, including while you look at other stories, and an answer aimed at one question stays aimed at it. (a96b7c)
 - In a project that uses Prettier, `skald init` now adds `.skald/` to `.prettierignore`. Before, `prettier --check .` failed on Skald's own files, and `prettier --write .` reformatted every story and the rendered board, which `skald check` then called stale. `skald doctor` warns when Prettier is configured and `.skald/` is not ignored; rerun `skald init` to add it. Projects without Prettier get no new file. (1d874a)
 
@@ -9,6 +10,7 @@
 
 - Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing (1d874a)
 - Board: an unsent note survives a tag, status or claim change in the story dialog (a96b7c)
+- The rendered board is the same in every process: Mermaid class lines in a fixed order (55b363)
 
 ## 1.3.1 (2026-11-09)
 
