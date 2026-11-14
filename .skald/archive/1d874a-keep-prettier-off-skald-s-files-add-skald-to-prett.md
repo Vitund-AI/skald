@@ -5,8 +5,9 @@ rank: 10
 tags: ["area:cli", "roadmap"]
 blocked_by: []
 assignee: "claude"
+released: "1.3.2"
 created_at: "2026-11-11T02:01:06Z"
-updated_at: "2026-11-12T23:18:09Z"
+updated_at: "2026-11-14T00:30:30Z"
 ---
 ## Requirements
 

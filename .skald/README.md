@@ -1,7 +1,7 @@
-<!-- skald-render bf7dd5bb323784e7 -->
+<!-- skald-render 791dd9c400d65b03 -->
 # skald backlog
 
-**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 2
+**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -57,16 +57,22 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (2)</strong></summary>
+<details><summary><strong>Done (0)</strong></summary>
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [1d874a](stories/1d874a-keep-prettier-off-skald-s-files-add-skald-to-prett.md) | Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing | `area:cli` `roadmap` | claude |  | 4/4 |
-| [a96b7c](stories/a96b7c-board-an-unsent-note-survives-a-tag-status-or-clai.md) | Board: an unsent note survives a tag, status or claim change in the story dialog | `area:board` | claude |  | 4/4 |
+_none_
 
 </details>
 
 ## Releases
+
+<details><summary><strong>1.3.2 (2)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [a96b7c](archive/a96b7c-board-an-unsent-note-survives-a-tag-status-or-clai.md) | Board: an unsent note survives a tag, status or claim change in the story dialog | `area:board` | claude |  | 4/4 |
+| [1d874a](archive/1d874a-keep-prettier-off-skald-s-files-add-skald-to-prett.md) | Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing | `area:cli` `roadmap` | claude |  | 4/4 |
+
+</details>
 
 <details><summary><strong>1.3.1 (2)</strong></summary>
 
