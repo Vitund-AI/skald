@@ -97,7 +97,9 @@ def to_mermaid(graph: dict) -> str:
     for role, style in styles.items():
         if role in used:
             lines.append(f"    classDef {role} {style}")
-    for role in used:
+    # A fixed order, not the set's: set order follows string hashing, which changes from one
+    # process to the next, so the rendered board would differ run to run with nothing changed.
+    for role in [r for r in styles if r in used] + sorted(used - styles.keys()):
         members = ",".join(_mermaid_id(n["id"]) for n in graph["nodes"] if n["role"] == role)
         if members:
             lines.append(f"    class {members} {role}")

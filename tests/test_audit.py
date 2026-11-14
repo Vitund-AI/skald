@@ -63,10 +63,10 @@ class TestAuditCommand(SkaldTestCase):
         # --since has minute precision, so the seed commit from the same minute would count too.)
         path = self.skald_dir / "stories"
         f = next(path.glob(f"{sid}-*.md"))
-        text = f.read_text()
+        text = f.read_text(encoding="utf-8")  # not the locale's: cp1252 on Windows mangles the "·" the pattern needs
         import re
         text = re.sub(r"## \[claude\] \d{4}-\d\d-\d\d \d\d:\d\d UTC · audit", "## [claude] 2020-01-01 00:00 UTC · audit", text)
-        f.write_text(text)
+        f.write_bytes(text.encode("utf-8"))
         (self.repo / "src" / "keep.py").write_text("line1\nline2\nline3\nline4\n")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "grow keep.py")

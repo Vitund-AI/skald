@@ -387,7 +387,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   const $ = (id) => document.getElementById(id);
   const state = {
     projects: [], project: null, columns: [], stories: [], settings: {}, identity: '',
-    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false,
+    git: { changes: [] }, version: null, filter: '', dragging: null, modal: null, loaded: null, allView: false, es: null, live: false, ref: '', readonly: false, branches: null, checkout: '', checkouts: null, pendingCheckout: null, facets: {}, facetFilters: {}, groupBy: '', graph: false, waitingOnly: false, answering: null, editing: false, noteDrafts: {},
     lastWrite: 0, help: false, helpCli: null, features: null, settingsOpen: false, repo_slug: null,
     updateCheckedFor: undefined, updateLatest: null,
     sel: { column: null, ids: new Set() }, dragBatch: [], dragFromLane: null, editTags: [], defaultStatus: null, suppressClick: false, locked: false,
@@ -1479,7 +1479,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       const qs = (s.questions && s.questions.items) || [];
       $('m-questions').classList.toggle('hidden', !qs.length);
       $('m-answer-btn').classList.toggle('hidden', !qs.length || ro);
-      state.answering = null;
+      // A refresh of the same story (after a tag, status or claim change) keeps the question being answered.
+      if (s.id !== prevId || !qs.some(q => q.number === state.answering)) state.answering = null;
       renderQuestions(qs);
       $('m-title').value = s.title; $('m-status').value = s.status; $('m-assignee').value = s.assignee || '';
       state.editTags = s.tags.slice(); renderEditTags(); $('m-blockers').value = s.blocked_by.join(', ');
@@ -1488,7 +1489,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       renderDeps(s);
       renderFamily(s);
       if (!$('m-preview').classList.contains('hidden')) renderPreview();
-      $('m-note').value = '';
+      $('m-note').value = state.noteDrafts[draftKey(s.id)] || '';  // an unsent note survives the refresh
       $('m-preview').classList.add('hidden'); $('m-body').classList.remove('hidden'); $('m-preview-btn').textContent = 'Preview';
       ['m-delete', 'm-cancel', 'tab-history'].forEach(i => $(i).classList.remove('hidden'));
       ['m-title', 'm-status', 'm-assignee', 'm-blockers', 'm-parent', 'm-body'].forEach(i => { $(i).disabled = ro; });
@@ -1582,6 +1583,14 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       });
     }
   }
+  // Unsent note text, per story, in memory: a quick edit re-renders the story, and moving to
+  // another story and back should not lose what was typed either. Cleared when the note is sent.
+  function draftKey(id) { return `${state.project}:${id}`; }
+  function keepNoteDraft() {
+    if (!state.modal || state.modal === 'new') return;
+    const v = $('m-note').value;
+    if (v.trim()) state.noteDrafts[draftKey(state.modal)] = v; else delete state.noteDrafts[draftKey(state.modal)];
+  }
   async function addNote(kind) {
     const text = $('m-note').value.trim();
     if (!text || state.modal === 'new') return;
@@ -1592,7 +1601,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         if (state.answering) body.question = state.answering; else body.all = true;
       }
       await api('POST', `${P()}/stories/${state.modal}/notes`, body);
-      $('m-note').value = '';
+      $('m-note').value = ''; delete state.noteDrafts[draftKey(state.modal)];
       if (kind === 'decision') toast(state.answering ? `Answered Q${state.answering}` : 'Answered');
       state.answering = null;
       await openModal(state.modal);
@@ -1865,6 +1874,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     try { const res = await api('PATCH', `${P()}/stories/${state.loaded.id}`, { status: e.target.value }); showWarnings(res.warnings); await openModal(state.loaded.id); }
     catch (err) { toast(err.message, 'error'); e.target.value = state.loaded.status; }
   });
+  $('m-note').addEventListener('input', keepNoteDraft);
   $('m-note-btn').addEventListener('click', () => addNote());
   $('m-answer-btn').addEventListener('click', () => addNote('decision'));
   $('m-claim').addEventListener('click', claimStory);
