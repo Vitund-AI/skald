@@ -1149,3 +1149,34 @@ file's line endings. Other formatters (markdownlint, dprint) are
 documented, not handled. Each has its own ignore mechanism, and none has
 turned up in a Skald project yet.
 
+### D88. A release finishes on its own; the gates are checks, not a person
+The release script used to stop twice for a yes: once at the release
+preview, and once before merging into `main`, after waiting minutes for
+the pull request's checks. The publish job then waited for an approval on
+the `pypi` environment. The second yes and the approval come long after
+the person started the release. Once they had walked away, a release with
+every check green sat unmerged, or merged but unpublished.
+
+Each later stop guarded something the automated gates now check:
+
+- the pull request to `main` runs the full matrix;
+- the publish workflow refuses a tag whose commit is not on `main`, and
+  so not through that pull request;
+- it refuses a tag that does not match the version file;
+- it runs the tests again before building.
+
+A person pressing y after green checks adds no information. So the one
+question left is the release preview, asked at the start while the person
+is there to read the notes. `--ask` restores the stop before the merge for
+anyone who wants it. The approval on the `pypi` environment is turned off
+in the repository settings. The environment stays, because the PyPI
+trusted publisher is bound to it, and its deployments are restricted to
+`v*` tags.
+
+Unattended also has to mean recoverable. The script now refuses to start
+when `main` has commits `dev` lacks: two render commits never merged back
+made the 1.3.2 pull request conflict. `--resume` finishes a run that
+stopped, from the step it reached. It derives that step from the version
+file, `main`, and the tag, not from a state file, so it also works after a
+reboot or on another machine.
+
