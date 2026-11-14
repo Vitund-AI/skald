@@ -1,9 +1,15 @@
 """Dependency graph generation, the graph command, the Mermaid block in render, skill and pointer installers."""
 import json
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 from skald.graph import build_graph, to_dot, to_mermaid
 
 from .helpers import SkaldTestCase
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestGraph(SkaldTestCase):
@@ -48,6 +54,24 @@ class TestGraph(SkaldTestCase):
         self.assertTrue(dot.startswith('digraph "alpha"'))
         self.assertIn(f'"{a.id}" -> "{b.id}"', dot)
         self.assertIn("style=dashed", dot)
+
+    def test_mermaid_is_the_same_in_every_process(self):
+        # String hashing differs per process, so anything ordered by a set would change run to
+        # run; the rendered board must not, or CI re-renders and commits a board nobody changed.
+        graph = {"nodes": [{"id": i, "title": i, "external": False, "role": r}
+                           for i, r in (("a1", "unknown"), ("b2", "backlog"), ("c3", "done"), ("d4", "active"),
+                                        ("e5", "ready"), ("f6", "custom"), ("g7", "closed"))],
+                 "edges": []}
+        script = "import json, sys; from skald.graph import to_mermaid; print(to_mermaid(json.loads(sys.argv[1])))"
+        outs = set()
+        for seed in ("0", "1", "2", "3", "4", "5", "6", "7"):
+            env = dict(os.environ, PYTHONHASHSEED=seed, PYTHONPATH=str(ROOT / "src"))
+            proc = subprocess.run([sys.executable, "-c", script, json.dumps(graph)], env=env,
+                                  capture_output=True, text=True, check=True)
+            outs.add(proc.stdout)
+        self.assertEqual(len(outs), 1)
+        classes = [line.split()[-1] for line in outs.pop().splitlines() if line.startswith("    class ")]
+        self.assertEqual(classes, ["backlog", "ready", "active", "done", "closed", "unknown", "custom"])
 
     def test_graph_command_and_render_block(self):
         code, out, err = self.run_cli("graph")

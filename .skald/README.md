@@ -25,8 +25,8 @@ flowchart LR
     n_2fa664 --> n_f2c74c
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_b56d9e unknown
     class n_06d503,n_2fa664,n_b24938,n_f2c74c backlog
+    class n_b56d9e unknown
 ```
 
 ## Idea (7)
@@ -65,12 +65,13 @@ _none_
 
 ## Releases
 
-<details><summary><strong>1.3.2 (2)</strong></summary>
+<details><summary><strong>1.3.2 (3)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [a96b7c](archive/a96b7c-board-an-unsent-note-survives-a-tag-status-or-clai.md) | Board: an unsent note survives a tag, status or claim change in the story dialog | `area:board` | claude |  | 4/4 |
 | [1d874a](archive/1d874a-keep-prettier-off-skald-s-files-add-skald-to-prett.md) | Keep Prettier off Skald's files: add .skald/ to .prettierignore on init, and doctor warns when it is missing | `area:cli` `roadmap` | claude |  | 4/4 |
+| [55b363](archive/55b363-the-rendered-board-is-the-same-in-every-process-me.md) | The rendered board is the same in every process: Mermaid class lines in a fixed order | `area:render` | claude |  | 4/4 |
 
 </details>
 
