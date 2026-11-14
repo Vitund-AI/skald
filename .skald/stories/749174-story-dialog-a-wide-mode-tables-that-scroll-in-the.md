@@ -1,12 +1,12 @@
 ---
 title: "Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put"
-status: "review"
+status: "done"
 rank: 10
 tags: ["area:board"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-14T02:49:02Z"
-updated_at: "2026-11-14T02:53:09Z"
+updated_at: "2026-11-14T16:44:04Z"
 ---
 ## Requirements
 
