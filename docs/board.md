@@ -237,6 +237,15 @@ works from any project on the board. The dialog's address is kept in the
 URL as `#story=ID`, so the link in the address bar opens straight to the
 story for anyone with access to the board.
 
+The header (id, dates, title, the Story and History tabs, Edit and close)
+stays at the top while the story scrolls under it; once scrolled, a long
+title is cut to two lines, with the full title on hover. On a large screen
+the ↔ button (or `w`) widens the dialog to most of the window for
+stories with tables, logs or code, and the browser remembers the choice;
+the default is the narrower reading width. A table wider than the dialog
+scrolls sideways in its own box, so the notes below it still wrap at the
+dialog's width.
+
 A story opens in **view mode**: a status select for a quick move, the
 assignee, tag chips, a Claim button, dependency chips showing each
 blocker's state (a click opens it, switching project if it lives
@@ -359,6 +368,7 @@ branch. Columns keep their scroll position across updates.
 | `x` | Start or toggle selection on the focused card |
 | `Tab`, `Enter` | Move between cards, open the focused one |
 | `e` | Edit the open story |
+| `w` | Widen or narrow the story dialog (large screens) |
 | `Esc` | Leave edit mode, close a dialog, end a selection |
 
 ## Settings

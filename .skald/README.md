@@ -1,7 +1,7 @@
-<!-- skald-render 791dd9c400d65b03 -->
+<!-- skald-render ad7a4f08e4caad89 -->
 # skald backlog
 
-**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
+**8 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -53,9 +53,11 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [749174](stories/749174-story-dialog-a-wide-mode-tables-that-scroll-in-the.md) | Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put | `area:board` | claude |  | 5/5 |
 
 <details><summary><strong>Done (0)</strong></summary>
 

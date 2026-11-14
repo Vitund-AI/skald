@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The board's story dialog has a wide mode for large screens: the ↔ button in the header, or `w`, widens it to most of the window, and the browser remembers the choice. A Markdown table wider than the dialog now scrolls in its own box instead of widening the whole story, which used to leave every note below it running past the edge. Tables also get borders and padding, and long paths and URLs wrap. The dialog's header (id, title, tabs, Edit and close) now stays at the top while the story scrolls. (749174)
+
 ## 1.3.2 (2026-11-13)
 
 - The rendered board (`.skald/README.md`) is now the same every time it is rendered from the same stories. The dependency graph's `class` lines came out in a different order from one run to the next, so CI re-rendered and committed a board nobody had changed, and a release pull request could then conflict on it. (55b363)
