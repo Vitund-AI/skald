@@ -176,9 +176,17 @@ With a `dev` branch for day-to-day work and `main` as the release line:
    scripts/release.sh 1.2.0
    ```
 
+   It asks one question, at the release preview, while you are there to
+   read it. After that it runs to the end on its own: tests, pull request,
+   checks, merge, tag, publish. `--yes` skips the question too, and
+   `--ask` adds a stop for a yes before merging into `main`.
+
    The script stops at the first thing that is not as expected, before it
    has changed anything: it must be on `dev`, clean, and in step with
-   `origin/dev`; the version must be `1.2.0` (the `v` belongs to the tag),
+   `origin/dev`; `main` must hold no commit that `dev` lacks (a render
+   commit never merged back, a hotfix), or the pull request could
+   conflict, and the script names the commits and the merge that fixes
+   it; the version must be `1.2.0` (the `v` belongs to the tag),
    newer than the one in the version file, and not yet tagged locally or
    on origin; `skald` and a logged-in `gh` must be on the path. Then, in
    order, and each step visible:
@@ -194,25 +202,29 @@ With a `dev` branch for day-to-day work and `main` as the release line:
      the tests. The bump and the release land together because the version
      guard test fails while the version file is ahead of the changelog's
      newest release heading.
-   - Push `dev`, open the pull request from `dev` to `main`, wait for its
-     checks, merge it. The release commit gets the full matrix before it
+   - Push `dev`, open the pull request from `dev` to `main` (or reuse the
+     one already open), wait for its checks, merge it. The release commit gets the full matrix before it
      reaches `main`, and a pull request is the shape branch protection on
      `main` requires.
-   - Tag `v1.2.0` and push the tag. The tag goes on the merge commit, not
+   - Wait for the render job on `main` to finish, then tag `v1.2.0` and
+     push the tag. The tag goes on the merge commit, not
      on `main`'s HEAD: the render job commits a `[skip ci]` render onto
      `main` right after the merge, and a tag push whose head commit says
      `[skip ci]` is skipped by GitHub in full, publish included, so the
      script walks back to the newest non-skip commit (the merge, which
-     carries the bump) and tags that. The publish workflow checks the tag
-     against the version file, runs the tests, builds, and waits for
-     approval on the `pypi` environment before uploading; the script prints
-     where to approve.
-   - Merge `main` back into `dev` and push, so the render job's commits on
-     `main` do not conflict at the next release.
+     carries the bump) and tags that. The publish workflow checks that the
+     tagged commit is on `main` and matches the version file, runs the
+     tests, builds, and uploads, with no approval step (D88).
+   - Merge `main` back into `dev` and push, so the next release starts
+     level.
+   - Watch the publish run to the end and report the result.
 
-   Every step is an ordinary git or `skald` command, so a run that stops
-   halfway (a failed check on the pull request, say) is finished by hand
-   from that step; the script says which. A tag that does not match the
+   A run that stops partway (a failed check on the pull request, say, or
+   a lost connection) is finished with `scripts/release.sh 1.2.0
+   --resume`, after fixing the cause on `dev`. It works out which step the
+   release reached from the version file, `main` and the tag: bumped but
+   not merged, merged but not tagged, or tagged but not merged back. It
+   carries on from there. `--resume --dry-run` says where it would start. A tag that does not match the
    version file fails in the publish workflow before anything is uploaded;
    fix the file through `dev` and `main`, delete the tag locally and on
    the remote, and tag again.

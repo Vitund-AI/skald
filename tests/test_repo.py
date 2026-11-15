@@ -157,6 +157,112 @@ class TestReleaseScript(unittest.TestCase):
         r = self.release("1.1.0", "--dry-run")
         self.assertIn("already exists locally", r.stderr)
 
+    def test_refuses_while_main_has_commits_dev_lacks(self):
+        # The render job's commit on main, never merged back: the pull request to main could conflict.
+        self.git("checkout", "-q", "main")
+        (self.repo / "board.txt").write_text("rendered\n")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "skald: refresh rendered board [skip ci]")
+        self.git("push", "-q", "origin", "main")
+        self.git("checkout", "-q", "dev")
+        r = self.release("1.1.0", "--dry-run")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("main has commits that dev lacks", r.stderr)
+        self.assertIn("refresh rendered board", r.stderr)
+        self.assertIn("git merge origin/main", r.stderr)
+        self.git("merge", "-q", "origin/main", "-m", "merge main")
+        self.git("push", "-q", "origin", "dev")
+        r = self.release("1.1.0", "--dry-run")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("main: nothing that dev lacks", r.stdout)
+
+    def fake_github(self):
+        """A gh that plays GitHub against the local origin: the pull request merges dev into main,
+        every check passes, and the publish run succeeds. It logs each call."""
+        gh = self.tmp / "bin" / "gh"
+        gh.write_text(f"""#!/bin/sh
+echo "$*" >> {self.tmp / 'gh.log'}
+case "$1 $2" in
+  "auth status") exit 0 ;;
+  "pr list") echo "" ;;
+  "pr create") echo "https://github.test/o/r/pull/7" ;;
+  "pr view") git rev-parse origin/dev ;;
+  "pr checks") echo "unittest pass" ;;
+  "pr merge") git fetch -q origin && git push -q origin refs/remotes/origin/dev:refs/heads/main ;;
+  "run list") case "$*" in *skald.yml*) echo "1 0" ;; *publish.yml*) echo "123" ;; esac ;;
+  "run watch") exit 0 ;;
+  "repo view") echo "https://github.test/o/r" ;;
+esac
+""")
+        # The release runs the repository's tests; give the scratch repository one that passes.
+        (self.repo / "tests").mkdir()
+        (self.repo / "tests" / "__init__.py").write_text("")
+        (self.repo / ".gitignore").write_text("__pycache__/\n")
+        (self.repo / "tests" / "test_ok.py").write_text("import unittest\n\nclass T(unittest.TestCase):\n    def test_ok(self):\n        pass\n")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "a test")
+        self.git("push", "-q", "origin", "dev")
+
+    def test_a_release_runs_to_the_end_unattended(self):
+        import subprocess
+        self.fake_github()
+        r = self.release("1.1.0", "--yes")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("released 1.1.0", r.stdout)
+        out = lambda *a: subprocess.run(["git", *a], cwd=self.repo, capture_output=True, text=True).stdout.strip()  # noqa: E731
+        self.git("fetch", "-q", "origin", "--tags")
+        self.assertEqual(out("rev-parse", "v1.1.0^{commit}"), out("rev-parse", "origin/main"))  # tagged main
+        self.assertIn('__version__ = "1.1.0"', out("show", "v1.1.0:src/skald/__init__.py"))
+        # main merged back into dev, so the next release starts level
+        self.assertEqual(subprocess.run(["git", "merge-base", "--is-ancestor", "origin/main", "origin/dev"], cwd=self.repo).returncode, 0)
+        log = (self.tmp / "gh.log").read_text()
+        self.assertIn("pr merge", log)
+        self.assertIn("run watch 123 --exit-status", log)
+
+    def test_ask_stops_before_the_merge(self):
+        import subprocess
+        self.fake_github()
+        r = subprocess.run(["bash", str(self.script), "1.1.0", "--ask"], cwd=self.repo, env=self.env,
+                           capture_output=True, text=True, input="y\nn\n")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("stopped", r.stderr)
+        self.assertNotIn("pr merge", (self.tmp / "gh.log").read_text())
+        # Resuming picks up at the pull request (the fake lists none open, so it opens one) and finishes.
+        r = self.release("1.1.0", "--resume")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("resume from: step 4", r.stdout)
+        self.assertIn("released 1.1.0", r.stdout)
+
+    def bump(self, version, push=False):
+        f = self.repo / "src" / "skald" / "__init__.py"
+        f.write_text(f'__version__ = "{version}"\n')
+        self.git("commit", "-q", "-am", f"Bump to {version}")
+        if push:
+            self.git("push", "-q", "origin", "dev")
+
+    def test_resume_works_out_where_the_release_stopped(self):
+        r = self.release("1.1.0", "--resume", "--dry-run")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("nothing to resume", r.stderr)
+        # Bumped and committed, not pushed (the tests failed, say): resume at the pull request.
+        self.bump("1.1.0")
+        r = self.release("1.1.0", "--dry-run")
+        self.assertIn("add --resume", r.stderr)
+        r = self.release("1.1.0", "--resume", "--dry-run")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("resume from: step 4", r.stdout)
+        self.assertIn("next: scripts/release.sh 1.1.0 --resume", r.stdout)
+        # The pull request merged: main carries the version, so resume at the tag.
+        self.git("push", "-q", "origin", "dev")
+        self.git("push", "-q", "origin", "dev:main")
+        r = self.release("1.1.0", "--resume", "--dry-run")
+        self.assertIn("resume from: step 5", r.stdout)
+        # Tagged and pushed: what is left is the merge back into dev and the publish.
+        self.git("tag", "-a", "v1.1.0", "-m", "Release 1.1.0")
+        self.git("push", "-q", "origin", "v1.1.0")
+        r = self.release("1.1.0", "--resume", "--dry-run")
+        self.assertIn("resume from: step 6", r.stdout)
+
 
 class TestDocsOnlyClassifier(unittest.TestCase):
     """scripts/docs_only.py: what CI may skip the matrix for, and what it must not."""

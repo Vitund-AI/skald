@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `scripts/release.sh` now finishes a release on its own. It asks one question, at the release preview, then runs the tests, merges the pull request to `main` once its checks pass, tags, merges `main` back into `dev`, and watches the publish run to the end (`--ask` restores the stop before the merge). It refuses to start while `main` has commits that `dev` lacks, naming them, instead of opening a pull request that conflicts. `--resume` finishes a release that stopped partway, from the step it reached. The publish workflow no longer waits for a person: it publishes only a tag whose commit is on `main`, matches the version file, and passes the tests. (2ef4ed)
 - The board's story dialog has a wide mode for large screens: the ↔ button in the header, or `w`, widens it to most of the window, and the browser remembers the choice. A Markdown table wider than the dialog now scrolls in its own box instead of widening the whole story, which used to leave every note below it running past the edge. Tables also get borders and padding, and long paths and URLs wrap. The dialog's header (id, title, tabs, Edit and close) now stays at the top while the story scrolls. (749174)
 
 ## 1.3.2 (2026-11-13)

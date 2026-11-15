@@ -1,7 +1,7 @@
-<!-- skald-render de068c9a43c5573b -->
+<!-- skald-render 3ae3a64c0b8b444a -->
 # skald backlog
 
-**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 1
+**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 2
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -57,11 +57,12 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (1)</strong></summary>
+<details><summary><strong>Done (2)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [749174](stories/749174-story-dialog-a-wide-mode-tables-that-scroll-in-the.md) | Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put | `area:board` | claude |  | 5/5 |
+| [2ef4ed](stories/2ef4ed-release-script-finish-unattended-resume-a-stopped.md) | Release script: finish unattended, resume a stopped release, refuse when main is ahead of dev | `area:release` | claude |  | 6/6 |
 
 </details>
 
