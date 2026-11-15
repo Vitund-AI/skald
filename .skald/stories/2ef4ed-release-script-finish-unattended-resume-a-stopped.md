@@ -1,12 +1,12 @@
 ---
 title: "Release script: finish unattended, resume a stopped release, refuse when main is ahead of dev"
-status: "review"
-rank: 10
+status: "done"
+rank: 20
 tags: ["area:release"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-14T22:38:20Z"
-updated_at: "2026-11-14T22:42:52Z"
+updated_at: "2026-11-15T21:27:06Z"
 ---
 ## Requirements
 
