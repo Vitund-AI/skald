@@ -458,15 +458,63 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   }
 
   // ---- Toasts ----------------------------------------------------------
-  function toast(msg, kind) {
+  // A toast, optionally with one action button (Undo). One with an action stays longer, so there
+  // is time to read it and decide. Returns the element so a caller can dismiss related toasts.
+  function toast(msg, kind, action) {
     const el = document.createElement('div');
     const colour = kind === 'error' ? 'bg-danger text-white' : kind === 'warn' ? 'bg-warning text-black' : kind === 'info' ? 'bg-info text-white' : 'bg-chip text-ink border border-strong';
     el.className = `${colour} text-sm rounded px-3 py-2 shadow-lg max-w-sm whitespace-pre-wrap`;
-    el.textContent = msg;
+    if (action) {
+      el.classList.add('flex', 'items-start', 'gap-3');
+      const text = document.createElement('span'); text.className = 'grow'; text.textContent = msg;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'shrink-0 font-semibold underline underline-offset-2 hover:no-underline';
+      btn.textContent = action.label;
+      btn.addEventListener('click', () => { el.remove(); action.run(); });
+      el.append(text, btn);
+    } else el.textContent = msg;
     $('toasts').appendChild(el);
-    setTimeout(() => el.remove(), 6000);
+    setTimeout(() => el.remove(), action ? 12000 : 6000);
+    return el;
   }
-  function showWarnings(ws) { (ws || []).forEach(w => toast(w, 'warn')); }
+  // Warnings, once each. With undo, the last one carries an Undo button that dismisses them all.
+  function showWarnings(ws, undo) {
+    const list = [...new Set(ws || [])];
+    const els = [];
+    list.forEach((w, i) => els.push(toast(w, 'warn', undo && i === list.length - 1
+      ? { label: 'Undo', run: () => { els.forEach(e => e.remove()); undo(); } } : null)));
+  }
+  // What a move changes, captured before it: each story's column, tags (a lane drop retags) and
+  // the order of the column it leaves, so Undo puts it back where it was, not at the bottom.
+  function moveSnapshot(ids) {
+    const byId = new Map(state.stories.map(s => [s.id, s]));
+    const orders = {};
+    return ids.map(id => byId.get(id)).filter(Boolean).map(s => {
+      if (!orders[s.status]) orders[s.status] = state.stories.filter(x => x.status === s.status).map(x => x.id);
+      return { id: s.id, status: s.status, rank: s.rank, tags: s.tags.slice(), order: orders[s.status] };
+    });
+  }
+  async function undoMove(snap) {
+    const warnings = [];
+    try {
+      for (const m of snap) {
+        // Its old rank too: the column it left was not renumbered, so the old slot is still free.
+        const res = await api('PATCH', `${P()}/stories/${m.id}`, { status: m.status, rank: m.rank, tags: m.tags });
+        warnings.push(...(res.warnings || []));
+      }
+      // Then each column's old order, in case it changed meanwhile; it writes nothing when it already holds.
+      const done = new Set();
+      for (const m of snap) {
+        if (done.has(m.status)) continue;
+        done.add(m.status);
+        await api('PATCH', `${P()}/stories/${m.id}`, { order: m.order });
+      }
+      toast(snap.length === 1 ? `Moved ${snap[0].id} back to ${snap[0].status}` : `Moved ${snap.length} stories back`);
+    } catch (err) { toast(`Undo failed: ${err.message}`, 'error'); }
+    showWarnings(warnings);
+    if (state.modal && snap.some(m => m.id === state.modal)) await openModal(state.modal);
+    await refresh(true);
+  }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function ago(iso) {
     if (!iso) return '';
@@ -822,7 +870,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   async function bulkMove(status, order, facet) {
     const ids = [...state.sel.ids];
     if (!ids.length || !status) return;
-    const warnings = [];
+    const warnings = [], snap = moveSnapshot(ids);
+    let moved = false;
     try {
       for (const id of ids) {
         const body = { status };
@@ -832,9 +881,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         warnings.push(...(res.warnings || []));
       }
       if (order) { const res = await api('PATCH', `${P()}/stories/${ids[0]}`, { order }); warnings.push(...(res.warnings || [])); }
-      toast(`Moved ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'} to ${status}`);
+      moved = true;
     } catch (err) { toast(err.message, 'error'); }
-    showWarnings([...new Set(warnings)]);
+    if (moved) {
+      const undo = () => undoMove(snap);
+      if (warnings.length) { toast(`Moved ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'} to ${status}`); showWarnings(warnings, undo); }
+      else toast(`Moved ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'} to ${status}`, null, { label: 'Undo', run: undo });
+    }
     clearSelection();
     await refresh(true);
   }
@@ -973,10 +1026,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 sm:overflow-y-auto';
         if (col.key !== null && !state.readonly) {
           list.dataset.status = col.key;
+          if (isTerminalRole(col.role)) list.dataset.terminal = '1';
           if (lane) { list.dataset.laneKey = lane.key; list.dataset.laneValue = lane.value; }
           list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop);
         }
-        shown.forEach(s => list.appendChild(cardEl(s)));
+        // Done and closed list the most recently finished first: there rank is finish order (a story
+        // entering a column takes its bottom rank), so reading it in reverse puts new work on top.
+        (isTerminalRole(col.role) ? shown.slice().reverse() : shown).forEach(s => list.appendChild(cardEl(s)));
         section.appendChild(list);
       }
       container.appendChild(section);
@@ -1131,6 +1187,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const list = e.currentTarget;
     if (!placeholder) { placeholder = document.createElement('div'); placeholder.className = 'placeholder'; }
     const batch = new Set(state.dragBatch.length ? state.dragBatch : [state.dragging]);
+    // A done or closed column takes cards on top, as the newest; position there is finish order.
+    if (list.dataset.terminal) { list.prepend(placeholder); return; }
     const cards = [...list.querySelectorAll('.card')].filter(c => !batch.has(c.dataset.id));
     let before = null;
     for (const c of cards) {
@@ -1175,6 +1233,29 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const fromValue = state.dragFromLane, toValue = list.dataset.laneValue;
     const batch = state.dragBatch.length ? state.dragBatch : [id];
     const inBatch = new Set(batch);
+    if (list.dataset.terminal) {
+      // No order: entering the column gives each story its bottom rank, which the column shows on top.
+      // Cards already in it stay where they are; a drag within done or closed changes nothing.
+      const entering = batch.filter(i => { const s = state.stories.find(x => x.id === i); return s && s.status !== status; });
+      removePlaceholder();
+      state.dragging = null; state.dragBatch = []; state.dragFromLane = null;
+      if (!entering.length) { await refresh(true); return; }
+      if (entering.length > 1 || batch.length > 1) {
+        state.sel.ids = new Set(entering);
+        await bulkMove(status, null, { key: laneKey, from: fromValue, to: toValue });
+        return;
+      }
+      const snap = moveSnapshot(entering);
+      try {
+        const body = { status };
+        const tags = laneKey ? retagForLane(state.stories.find(s => s.id === id), laneKey, fromValue, toValue) : null;
+        if (tags) body.tags = tags;
+        const res = await api('PATCH', `${P()}/stories/${id}`, body);
+        showWarnings(res.warnings, () => undoMove(snap));
+      } catch (err) { toast(err.message, 'error'); }
+      await refresh(true);
+      return;
+    }
     const order = [];
     for (const child of list.children) {
       if (child === placeholder) order.push(...batch);
@@ -1184,12 +1265,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     removePlaceholder();
     state.dragging = null; state.dragBatch = []; state.dragFromLane = null;
     if (batch.length > 1) { await bulkMove(status, full, { key: laneKey, from: fromValue, to: toValue }); return; }
+    const snap = moveSnapshot([id]);
     try {
       const body = { status, order: full };
       const tags = laneKey ? retagForLane(state.stories.find(s => s.id === id), laneKey, fromValue, toValue) : null;
       if (tags) body.tags = tags;
       const res = await api('PATCH', `${P()}/stories/${id}`, body);
-      showWarnings(res.warnings);
+      showWarnings(res.warnings, () => undoMove(snap));
     } catch (err) { toast(err.message, 'error'); }
     await refresh(true);
   }
@@ -1899,7 +1981,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('m-cancel').addEventListener('click', () => { if (state.modal === 'new') hideModal(); else openModal(state.modal); });
   $('m-status-quick').addEventListener('change', async (e) => {
     if (!state.loaded || e.target.value === state.loaded.status) return;
-    try { const res = await api('PATCH', `${P()}/stories/${state.loaded.id}`, { status: e.target.value }); showWarnings(res.warnings); await openModal(state.loaded.id); }
+    const snap = moveSnapshot([state.loaded.id]);
+    try { const res = await api('PATCH', `${P()}/stories/${state.loaded.id}`, { status: e.target.value }); showWarnings(res.warnings, () => undoMove(snap)); await openModal(state.loaded.id); }
     catch (err) { toast(err.message, 'error'); e.target.value = state.loaded.status; }
   });
   $('m-note').addEventListener('input', keepNoteDraft);

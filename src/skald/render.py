@@ -82,7 +82,10 @@ class Rendering:
         self.archived = [s for s in stories if s.archived]
 
     def in_column(self, key: str) -> list[Story]:
-        return [s for s in self.stories if s.status == key and not s.archived]
+        """The column's stories in board order: by rank, and newest first in done and closed columns,
+        where rank is the order stories finished (a story entering a column takes its bottom rank)."""
+        stories = [s for s in self.stories if s.status == key and not s.archived]
+        return stories[::-1] if self.store.config.is_terminal(key) else stories
 
     def open_count(self) -> int:
         return sum(1 for s in self.stories if not s.archived and not self.store.config.is_terminal(s.status))
