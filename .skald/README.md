@@ -1,7 +1,7 @@
-<!-- skald-render 3ae3a64c0b8b444a -->
+<!-- skald-render 9a29a46676a56e51 -->
 # skald backlog
 
-**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 2
+**8 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 2
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -53,9 +53,11 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [07b76d](stories/07b76d-board-undo-on-the-toast-a-move-raises-warnings-and.md) | Board: Undo on the toast a move raises (warnings, and the bulk-move confirmation) | `area:board` | claude |  | 4/4 |
 
 <details><summary><strong>Done (2)</strong></summary>
 
