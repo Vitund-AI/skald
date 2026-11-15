@@ -1026,10 +1026,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 sm:overflow-y-auto';
         if (col.key !== null && !state.readonly) {
           list.dataset.status = col.key;
+          if (isTerminalRole(col.role)) list.dataset.terminal = '1';
           if (lane) { list.dataset.laneKey = lane.key; list.dataset.laneValue = lane.value; }
           list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop);
         }
-        shown.forEach(s => list.appendChild(cardEl(s)));
+        // Done and closed list the most recently finished first: there rank is finish order (a story
+        // entering a column takes its bottom rank), so reading it in reverse puts new work on top.
+        (isTerminalRole(col.role) ? shown.slice().reverse() : shown).forEach(s => list.appendChild(cardEl(s)));
         section.appendChild(list);
       }
       container.appendChild(section);
@@ -1184,6 +1187,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const list = e.currentTarget;
     if (!placeholder) { placeholder = document.createElement('div'); placeholder.className = 'placeholder'; }
     const batch = new Set(state.dragBatch.length ? state.dragBatch : [state.dragging]);
+    // A done or closed column takes cards on top, as the newest; position there is finish order.
+    if (list.dataset.terminal) { list.prepend(placeholder); return; }
     const cards = [...list.querySelectorAll('.card')].filter(c => !batch.has(c.dataset.id));
     let before = null;
     for (const c of cards) {
@@ -1228,6 +1233,29 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const fromValue = state.dragFromLane, toValue = list.dataset.laneValue;
     const batch = state.dragBatch.length ? state.dragBatch : [id];
     const inBatch = new Set(batch);
+    if (list.dataset.terminal) {
+      // No order: entering the column gives each story its bottom rank, which the column shows on top.
+      // Cards already in it stay where they are; a drag within done or closed changes nothing.
+      const entering = batch.filter(i => { const s = state.stories.find(x => x.id === i); return s && s.status !== status; });
+      removePlaceholder();
+      state.dragging = null; state.dragBatch = []; state.dragFromLane = null;
+      if (!entering.length) { await refresh(true); return; }
+      if (entering.length > 1 || batch.length > 1) {
+        state.sel.ids = new Set(entering);
+        await bulkMove(status, null, { key: laneKey, from: fromValue, to: toValue });
+        return;
+      }
+      const snap = moveSnapshot(entering);
+      try {
+        const body = { status };
+        const tags = laneKey ? retagForLane(state.stories.find(s => s.id === id), laneKey, fromValue, toValue) : null;
+        if (tags) body.tags = tags;
+        const res = await api('PATCH', `${P()}/stories/${id}`, body);
+        showWarnings(res.warnings, () => undoMove(snap));
+      } catch (err) { toast(err.message, 'error'); }
+      await refresh(true);
+      return;
+    }
     const order = [];
     for (const child of list.children) {
       if (child === placeholder) order.push(...batch);

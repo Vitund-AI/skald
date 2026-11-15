@@ -1,12 +1,12 @@
 ---
 title: "Board: Undo on the toast a move raises (warnings, and the bulk-move confirmation)"
-status: "review"
-rank: 10
+status: "done"
+rank: 40
 tags: ["area:board"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-15T21:30:05Z"
-updated_at: "2026-11-15T21:30:05Z"
+updated_at: "2026-11-15T21:42:28Z"
 ---
 ## Requirements
 

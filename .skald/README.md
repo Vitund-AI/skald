@@ -1,7 +1,7 @@
-<!-- skald-render 9a29a46676a56e51 -->
+<!-- skald-render 815159b7d2c1efd6 -->
 # skald backlog
 
-**8 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 2
+**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 4
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -53,18 +53,18 @@ _none_
 
 _none_
 
-## Review (1)
+## Review (0)
+
+_none_
+
+<details><summary><strong>Done (4)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [07b76d](stories/07b76d-board-undo-on-the-toast-a-move-raises-warnings-and.md) | Board: Undo on the toast a move raises (warnings, and the bulk-move confirmation) | `area:board` | claude |  | 4/4 |
-
-<details><summary><strong>Done (2)</strong></summary>
-
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [749174](stories/749174-story-dialog-a-wide-mode-tables-that-scroll-in-the.md) | Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put | `area:board` | claude |  | 5/5 |
+| [35ef54](stories/35ef54-done-and-closed-columns-show-the-most-recent-first.md) | Done and closed columns show the most recent first | `area:board` | claude |  | 4/4 |
 | [2ef4ed](stories/2ef4ed-release-script-finish-unattended-resume-a-stopped.md) | Release script: finish unattended, resume a stopped release, refuse when main is ahead of dev | `area:release` | claude |  | 6/6 |
+| [749174](stories/749174-story-dialog-a-wide-mode-tables-that-scroll-in-the.md) | Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put | `area:board` | claude |  | 5/5 |
 
 </details>
 

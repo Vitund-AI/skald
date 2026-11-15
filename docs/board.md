@@ -229,6 +229,11 @@ Markers:
 Drag a card to move it between columns or reorder it within one. Tab
 reaches cards and Enter opens them. Clicking a card opens it.
 
+Done and closed columns list the most recently finished story first, so
+the one you just moved is on top. A card dropped there always lands on top,
+and dragging within those columns changes nothing: there, the order is the
+order stories finished, which `skald release` also uses for the changelog.
+
 A move can trip a check: unchecked acceptance criteria, open questions,
 unmet dependencies, a busy lane, a full column. The move still happens,
 and a warning says what it tripped, with an **Undo** button that puts the
