@@ -32,6 +32,18 @@ class TestRender(SkaldTestCase):
         code, again, _ = self.run_cli("render", "--stdout")
         self.assertEqual(out, again)
 
+    def test_done_lists_the_most_recently_finished_first(self):
+        # Entering a column takes its bottom rank, so in done, rank is finish order; show it reversed.
+        first = self.new("Finished first", "--status", "done")
+        second = self.new("Finished second")
+        self.run_cli("move", second, "done")
+        backlog_a, backlog_b = self.new("Backlog one"), self.new("Backlog two")
+        for fmt in ("md", "html"):
+            code, out, err = self.run_cli("render", "--format", fmt, "--stdout")
+            self.assertEqual(code, 0, err)
+            self.assertLess(out.index(second), out.index(first), fmt)          # newest done on top
+            self.assertLess(out.index(backlog_a), out.index(backlog_b), fmt)   # other columns by rank
+
     def test_open_questions_section(self):
         a, b, c = self.seed()
         # no questions yet: no section

@@ -93,6 +93,20 @@
   .md .ref:hover { text-decoration: underline; }
   .md blockquote { border-left: 3px solid var(--line-strong); padding-left: .8em; color: var(--muted); }
   .md input[type=checkbox] { margin-right: .4em; }
+  /* Wide content scrolls in its own box, so a table never widens the notes below it. */
+  .md { overflow-wrap: break-word; }
+  .md table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: .6em 0; font-size: .95em; }
+  .md th, .md td { border: 1px solid var(--line); padding: .3em .6em; vertical-align: top; }
+  .md th { background: var(--chip); font-weight: 600; }
+  .md th:not([align]) { text-align: left; }
+  /* On a phone the table scrolls anyway: a minimum column width beats one word per line. */
+  @media (max-width: 640px) { .md th, .md td { min-width: 6rem; } }
+  /* The dialog's panes are single-column grids: minmax(0, 1fr) stops a wide child from widening them. */
+  #pane-story, #pane-edit { grid-template-columns: minmax(0, 1fr); }
+  #modal-card.wide { max-width: 100rem; }
+  #modal-head { transition: box-shadow .15s; }
+  #modal-card.scrolled #modal-head { box-shadow: 0 6px 12px -8px rgb(0 0 0 / .35); }
+  #modal-card.scrolled #m-heading { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .tab.active { border-bottom: 2px solid var(--accent); color: var(--ink); }
   .toggle[aria-pressed="true"] { background: var(--accent-tint); color: var(--accent-text); border-color: var(--accent); }
   /* The swimlane control before any facet exists: shown, so the feature can be found, but inert. */
@@ -183,21 +197,20 @@
 <div id="toasts" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
 
 <div id="modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-2 sm:p-4 z-40">
-  <div class="bg-surface rounded-lg border border-line shadow-xl w-full max-w-3xl max-h-full overflow-y-auto">
-    <div class="flex items-start gap-3 px-6 py-4 border-b border-line">
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-3 min-w-0">
-          <button id="m-id" class="font-mono text-base font-medium text-ink rounded-sm px-1.5 -mx-1.5 hover:bg-hover" title="Click to copy the id; shift-click copies project:id"></button>
-          <span id="m-meta" class="text-xs text-faint truncate"></span>
-        </div>
-        <h2 id="m-heading" class="mt-1 text-lg font-semibold leading-snug"></h2>
+  <div id="modal-card" class="bg-surface rounded-lg border border-line shadow-xl w-full max-w-3xl max-h-full overflow-y-auto">
+    <div id="modal-head" class="sticky top-0 z-10 bg-surface rounded-t-lg flex flex-wrap items-center gap-x-3 gap-y-1 px-6 py-3 sm:py-4 border-b border-line">
+      <div class="min-w-0 flex-1 flex items-center gap-3">
+        <button id="m-id" class="font-mono text-base font-medium text-ink rounded-sm px-1.5 -mx-1.5 hover:bg-hover" title="Click to copy the id; shift-click copies project:id"></button>
+        <span id="m-meta" class="text-xs text-faint truncate"></span>
       </div>
       <div class="flex items-center gap-2 shrink-0 text-sm">
         <button class="tab py-1 text-muted" data-tab="story">Story</button>
         <button id="tab-history" class="tab py-1 text-muted" data-tab="history">History</button>
         <button id="m-edit-btn" class="ml-2 rounded border border-strong px-3 py-1 hover:bg-hover" title="Edit the fields and the body (e)">Edit</button>
+        <button id="m-wide" type="button" class="hidden lg:inline-flex items-center justify-center ml-1 w-7 h-7 rounded text-faint hover:text-ink hover:bg-hover" aria-pressed="false" title="Widen the dialog (w)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M3 12h18"></path></svg></button>
         <button id="m-close" class="ml-1 text-faint hover:text-ink text-xl leading-none" title="Close (Esc)">&times;</button>
       </div>
+      <h2 id="m-heading" class="basis-full text-lg font-semibold leading-snug"></h2>
     </div>
 
     <div id="pane-story" class="px-6 py-4 grid gap-4 text-sm">
@@ -293,6 +306,7 @@
         <div><kbd>Enter</kbd> Open the focused card</div>
         <div><kbd>Esc</kbd> Close a dialog or popover; in the story dialog, leave edit mode first</div>
         <div><kbd>e</kbd> Edit the open story</div>
+        <div><kbd>w</kbd> Widen or narrow the story dialog (large screens)</div>
         <div>Click the id at the top of a story to copy it; shift-click copies <code>project:id</code></div>
         <div>Drag a card to move or reorder it</div>
         <div class="font-semibold text-muted sm:col-span-2 mt-3">Selecting several cards</div>
@@ -444,15 +458,63 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   }
 
   // ---- Toasts ----------------------------------------------------------
-  function toast(msg, kind) {
+  // A toast, optionally with one action button (Undo). One with an action stays longer, so there
+  // is time to read it and decide. Returns the element so a caller can dismiss related toasts.
+  function toast(msg, kind, action) {
     const el = document.createElement('div');
     const colour = kind === 'error' ? 'bg-danger text-white' : kind === 'warn' ? 'bg-warning text-black' : kind === 'info' ? 'bg-info text-white' : 'bg-chip text-ink border border-strong';
     el.className = `${colour} text-sm rounded px-3 py-2 shadow-lg max-w-sm whitespace-pre-wrap`;
-    el.textContent = msg;
+    if (action) {
+      el.classList.add('flex', 'items-start', 'gap-3');
+      const text = document.createElement('span'); text.className = 'grow'; text.textContent = msg;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'shrink-0 font-semibold underline underline-offset-2 hover:no-underline';
+      btn.textContent = action.label;
+      btn.addEventListener('click', () => { el.remove(); action.run(); });
+      el.append(text, btn);
+    } else el.textContent = msg;
     $('toasts').appendChild(el);
-    setTimeout(() => el.remove(), 6000);
+    setTimeout(() => el.remove(), action ? 12000 : 6000);
+    return el;
   }
-  function showWarnings(ws) { (ws || []).forEach(w => toast(w, 'warn')); }
+  // Warnings, once each. With undo, the last one carries an Undo button that dismisses them all.
+  function showWarnings(ws, undo) {
+    const list = [...new Set(ws || [])];
+    const els = [];
+    list.forEach((w, i) => els.push(toast(w, 'warn', undo && i === list.length - 1
+      ? { label: 'Undo', run: () => { els.forEach(e => e.remove()); undo(); } } : null)));
+  }
+  // What a move changes, captured before it: each story's column, tags (a lane drop retags) and
+  // the order of the column it leaves, so Undo puts it back where it was, not at the bottom.
+  function moveSnapshot(ids) {
+    const byId = new Map(state.stories.map(s => [s.id, s]));
+    const orders = {};
+    return ids.map(id => byId.get(id)).filter(Boolean).map(s => {
+      if (!orders[s.status]) orders[s.status] = state.stories.filter(x => x.status === s.status).map(x => x.id);
+      return { id: s.id, status: s.status, rank: s.rank, tags: s.tags.slice(), order: orders[s.status] };
+    });
+  }
+  async function undoMove(snap) {
+    const warnings = [];
+    try {
+      for (const m of snap) {
+        // Its old rank too: the column it left was not renumbered, so the old slot is still free.
+        const res = await api('PATCH', `${P()}/stories/${m.id}`, { status: m.status, rank: m.rank, tags: m.tags });
+        warnings.push(...(res.warnings || []));
+      }
+      // Then each column's old order, in case it changed meanwhile; it writes nothing when it already holds.
+      const done = new Set();
+      for (const m of snap) {
+        if (done.has(m.status)) continue;
+        done.add(m.status);
+        await api('PATCH', `${P()}/stories/${m.id}`, { order: m.order });
+      }
+      toast(snap.length === 1 ? `Moved ${snap[0].id} back to ${snap[0].status}` : `Moved ${snap.length} stories back`);
+    } catch (err) { toast(`Undo failed: ${err.message}`, 'error'); }
+    showWarnings(warnings);
+    if (state.modal && snap.some(m => m.id === state.modal)) await openModal(state.modal);
+    await refresh(true);
+  }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function ago(iso) {
     if (!iso) return '';
@@ -808,7 +870,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   async function bulkMove(status, order, facet) {
     const ids = [...state.sel.ids];
     if (!ids.length || !status) return;
-    const warnings = [];
+    const warnings = [], snap = moveSnapshot(ids);
+    let moved = false;
     try {
       for (const id of ids) {
         const body = { status };
@@ -818,9 +881,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         warnings.push(...(res.warnings || []));
       }
       if (order) { const res = await api('PATCH', `${P()}/stories/${ids[0]}`, { order }); warnings.push(...(res.warnings || [])); }
-      toast(`Moved ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'} to ${status}`);
+      moved = true;
     } catch (err) { toast(err.message, 'error'); }
-    showWarnings([...new Set(warnings)]);
+    if (moved) {
+      const undo = () => undoMove(snap);
+      if (warnings.length) { toast(`Moved ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'} to ${status}`); showWarnings(warnings, undo); }
+      else toast(`Moved ${ids.length} stor${ids.length === 1 ? 'y' : 'ies'} to ${status}`, null, { label: 'Undo', run: undo });
+    }
     clearSelection();
     await refresh(true);
   }
@@ -959,10 +1026,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         list.className = 'col-list flex-1 flex flex-col gap-2 px-2 pb-2 sm:overflow-y-auto';
         if (col.key !== null && !state.readonly) {
           list.dataset.status = col.key;
+          if (isTerminalRole(col.role)) list.dataset.terminal = '1';
           if (lane) { list.dataset.laneKey = lane.key; list.dataset.laneValue = lane.value; }
           list.addEventListener('dragover', onDragOver); list.addEventListener('drop', onDrop);
         }
-        shown.forEach(s => list.appendChild(cardEl(s)));
+        // Done and closed list the most recently finished first: there rank is finish order (a story
+        // entering a column takes its bottom rank), so reading it in reverse puts new work on top.
+        (isTerminalRole(col.role) ? shown.slice().reverse() : shown).forEach(s => list.appendChild(cardEl(s)));
         section.appendChild(list);
       }
       container.appendChild(section);
@@ -1117,6 +1187,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const list = e.currentTarget;
     if (!placeholder) { placeholder = document.createElement('div'); placeholder.className = 'placeholder'; }
     const batch = new Set(state.dragBatch.length ? state.dragBatch : [state.dragging]);
+    // A done or closed column takes cards on top, as the newest; position there is finish order.
+    if (list.dataset.terminal) { list.prepend(placeholder); return; }
     const cards = [...list.querySelectorAll('.card')].filter(c => !batch.has(c.dataset.id));
     let before = null;
     for (const c of cards) {
@@ -1161,6 +1233,29 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     const fromValue = state.dragFromLane, toValue = list.dataset.laneValue;
     const batch = state.dragBatch.length ? state.dragBatch : [id];
     const inBatch = new Set(batch);
+    if (list.dataset.terminal) {
+      // No order: entering the column gives each story its bottom rank, which the column shows on top.
+      // Cards already in it stay where they are; a drag within done or closed changes nothing.
+      const entering = batch.filter(i => { const s = state.stories.find(x => x.id === i); return s && s.status !== status; });
+      removePlaceholder();
+      state.dragging = null; state.dragBatch = []; state.dragFromLane = null;
+      if (!entering.length) { await refresh(true); return; }
+      if (entering.length > 1 || batch.length > 1) {
+        state.sel.ids = new Set(entering);
+        await bulkMove(status, null, { key: laneKey, from: fromValue, to: toValue });
+        return;
+      }
+      const snap = moveSnapshot(entering);
+      try {
+        const body = { status };
+        const tags = laneKey ? retagForLane(state.stories.find(s => s.id === id), laneKey, fromValue, toValue) : null;
+        if (tags) body.tags = tags;
+        const res = await api('PATCH', `${P()}/stories/${id}`, body);
+        showWarnings(res.warnings, () => undoMove(snap));
+      } catch (err) { toast(err.message, 'error'); }
+      await refresh(true);
+      return;
+    }
     const order = [];
     for (const child of list.children) {
       if (child === placeholder) order.push(...batch);
@@ -1170,12 +1265,13 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     removePlaceholder();
     state.dragging = null; state.dragBatch = []; state.dragFromLane = null;
     if (batch.length > 1) { await bulkMove(status, full, { key: laneKey, from: fromValue, to: toValue }); return; }
+    const snap = moveSnapshot([id]);
     try {
       const body = { status, order: full };
       const tags = laneKey ? retagForLane(state.stories.find(s => s.id === id), laneKey, fromValue, toValue) : null;
       if (tags) body.tags = tags;
       const res = await api('PATCH', `${P()}/stories/${id}`, body);
-      showWarnings(res.warnings);
+      showWarnings(res.warnings, () => undoMove(snap));
     } catch (err) { toast(err.message, 'error'); }
     await refresh(true);
   }
@@ -1231,7 +1327,21 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
     showTab('story');
     if (on) $('m-title').focus();
   }
-  function showModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); showTab('story'); }
+  function showModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); showTab('story'); markScrolled(); }
+  // Wide mode: the reading width, or most of the window for tables and logs. Remembered per browser.
+  const modalCard = $('modal-card');
+  function setWide(on, remember = true) {
+    modalCard.classList.toggle('wide', on);
+    const b = $('m-wide');
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.title = on ? 'Narrow the dialog (w)' : 'Widen the dialog (w)';
+    b.classList.toggle('text-accent-text', on);
+    if (remember) { try { localStorage.setItem('skald.modalWide', on ? '1' : '0'); } catch (e) {} }
+  }
+  { let wide = false; try { wide = localStorage.getItem('skald.modalWide') === '1'; } catch (e) {} setWide(wide, false); }
+  // The header stays pinned; once the body scrolls under it, it gets a shadow and a two-line title.
+  function markScrolled() { modalCard.classList.toggle('scrolled', modalCard.scrollTop > 4); }
+  modalCard.addEventListener('scroll', markScrolled, { passive: true });
   function hideModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); state.modal = null; state.loaded = null; state.editing = false; setStoryHash(null); refresh(true); }
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
@@ -1303,7 +1413,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   }
   // The view: chips for the fields, the body and notes rendered.
   function renderView(s) {
-    $('m-heading').textContent = s.title;
+    $('m-heading').textContent = s.title; $('m-heading').title = s.title;
     $('m-status-quick').value = s.status;
     $('m-status-quick').disabled = state.readonly || s.archived;
     $('m-view-assignee').textContent = s.assignee ? `@${s.assignee}` : 'unassigned';
@@ -1871,7 +1981,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   $('m-cancel').addEventListener('click', () => { if (state.modal === 'new') hideModal(); else openModal(state.modal); });
   $('m-status-quick').addEventListener('change', async (e) => {
     if (!state.loaded || e.target.value === state.loaded.status) return;
-    try { const res = await api('PATCH', `${P()}/stories/${state.loaded.id}`, { status: e.target.value }); showWarnings(res.warnings); await openModal(state.loaded.id); }
+    const snap = moveSnapshot([state.loaded.id]);
+    try { const res = await api('PATCH', `${P()}/stories/${state.loaded.id}`, { status: e.target.value }); showWarnings(res.warnings, () => undoMove(snap)); await openModal(state.loaded.id); }
     catch (err) { toast(err.message, 'error'); e.target.value = state.loaded.status; }
   });
   $('m-note').addEventListener('input', keepNoteDraft);
@@ -1887,6 +1998,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
   });
   modal.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
   modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
+  $('m-wide').addEventListener('click', () => setWide(!modalCard.classList.contains('wide')));
   document.addEventListener('keydown', (e) => {
     const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
     if (e.key === 'Escape') {
@@ -1899,6 +2011,7 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
       return;
     }
     if (state.modal && !typing && e.key === 'e' && !state.editing && state.modal !== 'new' && !state.readonly && !(state.loaded && state.loaded.archived) && modalTab === 'story') { e.preventDefault(); setEditing(true); return; }
+    if (state.modal && !typing && e.key === 'w' && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); setWide(!modalCard.classList.contains('wide')); return; }
     if (typing || state.modal) return;
     if (e.key === '?') { e.preventDefault(); if (state.help) hideHelp(); else showHelp(); return; }
     if (state.help) return;

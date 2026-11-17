@@ -25,8 +25,8 @@ flowchart LR
     n_2fa664 --> n_f2c74c
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_06d503,n_2fa664,n_b24938,n_f2c74c backlog
     class n_b56d9e unknown
+    class n_06d503,n_2fa664,n_b24938,n_f2c74c backlog
 ```
 
 ## Idea (7)
@@ -64,6 +64,17 @@ _none_
 </details>
 
 ## Releases
+
+<details><summary><strong>1.3.3 (4)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [07b76d](archive/07b76d-board-undo-on-the-toast-a-move-raises-warnings-and.md) | Board: Undo on the toast a move raises (warnings, and the bulk-move confirmation) | `area:board` | claude |  | 4/4 |
+| [35ef54](archive/35ef54-done-and-closed-columns-show-the-most-recent-first.md) | Done and closed columns show the most recent first | `area:board` | claude |  | 4/4 |
+| [2ef4ed](archive/2ef4ed-release-script-finish-unattended-resume-a-stopped.md) | Release script: finish unattended, resume a stopped release, refuse when main is ahead of dev | `area:release` | claude |  | 6/6 |
+| [749174](archive/749174-story-dialog-a-wide-mode-tables-that-scroll-in-the.md) | Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put | `area:board` | claude |  | 5/5 |
+
+</details>
 
 <details><summary><strong>1.3.2 (3)</strong></summary>
 

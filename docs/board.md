@@ -229,6 +229,17 @@ Markers:
 Drag a card to move it between columns or reorder it within one. Tab
 reaches cards and Enter opens them. Clicking a card opens it.
 
+Done and closed columns list the most recently finished story first, so
+the one you just moved is on top. A card dropped there always lands on top,
+and dragging within those columns changes nothing: there, the order is the
+order stories finished, which `skald release` also uses for the changelog.
+
+A move can trip a check: unchecked acceptance criteria, open questions,
+unmet dependencies, a busy lane, a full column. The move still happens,
+and a warning says what it tripped, with an **Undo** button that puts the
+story back in its old column at its old place. The same Undo follows a
+move from the story dialog's status select and a bulk move.
+
 ## The story dialog
 
 The header shows the id, the created and updated dates, and the title.
@@ -236,6 +247,15 @@ Click the id to copy it; shift-click copies `project:id`, the form that
 works from any project on the board. The dialog's address is kept in the
 URL as `#story=ID`, so the link in the address bar opens straight to the
 story for anyone with access to the board.
+
+The header (id, dates, title, the Story and History tabs, Edit and close)
+stays at the top while the story scrolls under it; once scrolled, a long
+title is cut to two lines, with the full title on hover. On a large screen
+the ↔ button (or `w`) widens the dialog to most of the window for
+stories with tables, logs or code, and the browser remembers the choice;
+the default is the narrower reading width. A table wider than the dialog
+scrolls sideways in its own box, so the notes below it still wrap at the
+dialog's width.
 
 A story opens in **view mode**: a status select for a quick move, the
 assignee, tag chips, a Claim button, dependency chips showing each
@@ -359,6 +379,7 @@ branch. Columns keep their scroll position across updates.
 | `x` | Start or toggle selection on the focused card |
 | `Tab`, `Enter` | Move between cards, open the focused one |
 | `e` | Edit the open story |
+| `w` | Widen or narrow the story dialog (large screens) |
 | `Esc` | Leave edit mode, close a dialog, end a selection |
 
 ## Settings
