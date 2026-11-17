@@ -1,12 +1,12 @@
 ---
 title: "Release script: let through main commits that change no file"
-status: "review"
+status: "done"
 rank: 10
 tags: ["area:release"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-17T05:26:37Z"
-updated_at: "2026-11-17T05:26:38Z"
+updated_at: "2026-11-17T05:42:51Z"
 ---
 ## Requirements
 

@@ -1,7 +1,7 @@
-<!-- skald-render a3e13cb434119431 -->
+<!-- skald-render 28eecd0b7a16c104 -->
 # skald backlog
 
-**8 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 4
+**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 1
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -53,24 +53,30 @@ _none_
 
 _none_
 
-## Review (1)
+## Review (0)
+
+_none_
+
+<details><summary><strong>Done (1)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [098c41](stories/098c41-release-script-let-through-main-commits-that-chang.md) | Release script: let through main commits that change no file | `area:release` | claude |  | 4/4 |
 
-<details><summary><strong>Done (4)</strong></summary>
-
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [07b76d](stories/07b76d-board-undo-on-the-toast-a-move-raises-warnings-and.md) | Board: Undo on the toast a move raises (warnings, and the bulk-move confirmation) | `area:board` | claude |  | 4/4 |
-| [35ef54](stories/35ef54-done-and-closed-columns-show-the-most-recent-first.md) | Done and closed columns show the most recent first | `area:board` | claude |  | 4/4 |
-| [2ef4ed](stories/2ef4ed-release-script-finish-unattended-resume-a-stopped.md) | Release script: finish unattended, resume a stopped release, refuse when main is ahead of dev | `area:release` | claude |  | 6/6 |
-| [749174](stories/749174-story-dialog-a-wide-mode-tables-that-scroll-in-the.md) | Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put | `area:board` | claude |  | 5/5 |
-
 </details>
 
 ## Releases
+
+<details><summary><strong>1.3.3 (4)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [07b76d](archive/07b76d-board-undo-on-the-toast-a-move-raises-warnings-and.md) | Board: Undo on the toast a move raises (warnings, and the bulk-move confirmation) | `area:board` | claude |  | 4/4 |
+| [35ef54](archive/35ef54-done-and-closed-columns-show-the-most-recent-first.md) | Done and closed columns show the most recent first | `area:board` | claude |  | 4/4 |
+| [2ef4ed](archive/2ef4ed-release-script-finish-unattended-resume-a-stopped.md) | Release script: finish unattended, resume a stopped release, refuse when main is ahead of dev | `area:release` | claude |  | 6/6 |
+| [749174](archive/749174-story-dialog-a-wide-mode-tables-that-scroll-in-the.md) | Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put | `area:board` | claude |  | 5/5 |
+
+</details>
 
 <details><summary><strong>1.3.2 (3)</strong></summary>
 

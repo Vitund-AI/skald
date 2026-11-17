@@ -2,10 +2,21 @@
 
 ## Unreleased
 
+- `scripts/release.sh` no longer refuses to start when the only commits `main` has that `dev` lacks change no file, such as the merge of the last release pull request; the release merges them back at the end. It still refuses when `main` holds a change `dev` lacks. (098c41)
+
+## 1.3.3 (2026-11-16)
+
 - Done and closed columns on the board, and in the rendered board, now list the most recently finished story first, so a story you just moved is at the top instead of the bottom of a long column. A card dropped into Done lands on top, and dragging within Done no longer reorders it. Nothing in the story files changes, and `skald release` still lists stories in the order they finished. (35ef54)
 - On the board, the warning a move raises (unchecked acceptance criteria, open questions, unmet dependencies, a busy lane or full column) now has an Undo button. It puts the story back in the column it came from, at the same place, not at the bottom. It works for a dragged card, the status select in the story dialog, and moving several selected stories at once, which also offers Undo when nothing warned. (07b76d)
-- `scripts/release.sh` now finishes a release on its own. It asks one question, at the release preview, then runs the tests, merges the pull request to `main` once its checks pass, tags, merges `main` back into `dev`, and watches the publish run to the end (`--ask` restores the stop before the merge). It refuses to start while `main` has changes that `dev` lacks, naming the commits, instead of opening a pull request that conflicts; commits that change no file, such as the merge of the last release, are let through. `--resume` finishes a release that stopped partway, from the step it reached. The publish workflow no longer waits for a person: it publishes only a tag whose commit is on `main`, matches the version file, and passes the tests. (2ef4ed)
+- `scripts/release.sh` now finishes a release on its own. It asks one question, at the release preview, then runs the tests, merges the pull request to `main` once its checks pass, tags, merges `main` back into `dev`, and watches the publish run to the end (`--ask` restores the stop before the merge). It refuses to start while `main` has commits that `dev` lacks, naming them, instead of opening a pull request that conflicts. `--resume` finishes a release that stopped partway, from the step it reached. The publish workflow no longer waits for a person: it publishes only a tag whose commit is on `main`, matches the version file, and passes the tests. (2ef4ed)
 - The board's story dialog has a wide mode for large screens: the ↔ button in the header, or `w`, widens it to most of the window, and the browser remembers the choice. A Markdown table wider than the dialog now scrolls in its own box instead of widening the whole story, which used to leave every note below it running past the edge. Tables also get borders and padding, and long paths and URLs wrap. The dialog's header (id, title, tabs, Edit and close) now stays at the top while the story scrolls. (749174)
+
+### Stories
+
+- Story dialog: a wide mode, tables that scroll in their own box, and a header that stays put (749174)
+- Release script: finish unattended, resume a stopped release, refuse when main is ahead of dev (2ef4ed)
+- Done and closed columns show the most recent first (35ef54)
+- Board: Undo on the toast a move raises (warnings, and the bulk-move confirmation) (07b76d)
 
 ## 1.3.2 (2026-11-13)
 
