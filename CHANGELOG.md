@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `scripts/release.sh` no longer refuses to start when the only commits `main` has that `dev` lacks change no file, such as the merge of the last release pull request; the release merges them back at the end. It still refuses when `main` holds a change `dev` lacks. (098c41)
+
 ## 1.3.3 (2026-11-16)
 
 - Done and closed columns on the board, and in the rendered board, now list the most recently finished story first, so a story you just moved is at the top instead of the bottom of a long column. A card dropped into Done lands on top, and dragging within Done no longer reorders it. Nothing in the story files changes, and `skald release` still lists stories in the order they finished. (35ef54)
