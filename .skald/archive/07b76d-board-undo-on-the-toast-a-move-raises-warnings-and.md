@@ -5,8 +5,9 @@ rank: 40
 tags: ["area:board"]
 blocked_by: []
 assignee: "claude"
+released: "1.3.3"
 created_at: "2026-11-15T21:30:05Z"
-updated_at: "2026-11-15T21:42:28Z"
+updated_at: "2026-11-17T05:25:13Z"
 ---
 ## Requirements
 
