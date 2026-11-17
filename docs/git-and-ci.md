@@ -183,10 +183,12 @@ With a `dev` branch for day-to-day work and `main` as the release line:
 
    The script stops at the first thing that is not as expected, before it
    has changed anything: it must be on `dev`, clean, and in step with
-   `origin/dev`; `main` must hold no commit that `dev` lacks (a render
+   `origin/dev`; `main` must hold no change that `dev` lacks (a render
    commit never merged back, a hotfix), or the pull request could
    conflict, and the script names the commits and the merge that fixes
-   it; the version must be `1.2.0` (the `v` belongs to the tag),
+   it. Commits on `main` that change no file, such as the merge of the
+   last release pull request, are let through, since the release merges
+   them back; the version must be `1.2.0` (the `v` belongs to the tag),
    newer than the one in the version file, and not yet tagged locally or
    on origin; `skald` and a logged-in `gh` must be on the path. Then, in
    order, and each step visible:

@@ -1,7 +1,7 @@
-<!-- skald-render 815159b7d2c1efd6 -->
+<!-- skald-render a3e13cb434119431 -->
 # skald backlog
 
-**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 4
+**8 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 4
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -53,9 +53,11 @@ _none_
 
 _none_
 
-## Review (0)
+## Review (1)
 
-_none_
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [098c41](stories/098c41-release-script-let-through-main-commits-that-chang.md) | Release script: let through main commits that change no file | `area:release` | claude |  | 4/4 |
 
 <details><summary><strong>Done (4)</strong></summary>
 

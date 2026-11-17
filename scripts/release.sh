@@ -105,15 +105,22 @@ else
   esac
 fi
 
-# main must hold nothing dev lacks, or the pull request to main can conflict (the render job's
-# commits on main, a hotfix): merge it into dev first. Not needed once the release is merged.
+# main must hold no change dev lacks, or the pull request to main can conflict (the render job's
+# commits on main, a hotfix): merge it into dev first. Commits that change nothing, such as the
+# merge of the last release pull request, are let through: merging main would leave dev's files
+# exactly as they are, and step 6 merges them back. Not needed once the release is merged.
 if [ "$STAGE" = start ] || [ "$STAGE" = pr ]; then
   AHEAD="$(git log --oneline HEAD..origin/main)"
-  if [ -n "$AHEAD" ]; then
-    printf 'main has commits that dev lacks:\n%s\n' "$AHEAD" >&2
+  if [ -z "$AHEAD" ]; then
+    echo "main: nothing that dev lacks"
+  elif MERGED="$(git merge-tree --write-tree HEAD origin/main 2>/dev/null | head -1)" \
+       && [ "$MERGED" = "$(git rev-parse 'HEAD^{tree}')" ]; then
+    # merge-tree (git 2.38+) exits non-zero on a conflict or on an older git: both refuse below.
+    echo "main: $(printf '%s\n' "$AHEAD" | wc -l | tr -d ' ') commit(s) that dev lacks, none changing a file; the release merges them back"
+  else
+    printf 'main has changes that dev lacks:\n%s\n' "$AHEAD" >&2
     fail "merge them into dev first: git merge origin/main && git push origin dev (if .skald/README.md conflicts, run skald render and add it)"
   fi
-  echo "main: nothing that dev lacks"
 fi
 
 command -v "$SKALD" >/dev/null || fail "$SKALD is not on PATH (pip install -e .)"
