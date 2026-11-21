@@ -1,12 +1,12 @@
 ---
 title: "Archived blockers count as missing: released stories make their dependents look blocked"
-status: "review"
-rank: 10
+status: "done"
+rank: 20
 tags: ["area:core"]
 blocked_by: []
 assignee: "claude"
 created_at: "2026-11-21T19:36:20Z"
-updated_at: "2026-11-21T19:39:19Z"
+updated_at: "2026-11-21T19:49:26Z"
 ---
 ## Requirements
 

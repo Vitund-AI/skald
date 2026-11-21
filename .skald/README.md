@@ -1,7 +1,7 @@
-<!-- skald-render 26bf08cfb9d66369 -->
+<!-- skald-render 7876d52e58f78794 -->
 # skald backlog
 
-**8 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 1 · Done 1
+**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 2
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -53,16 +53,15 @@ _none_
 
 _none_
 
-## Review (1)
+## Review (0)
+
+_none_
+
+<details><summary><strong>Done (2)</strong></summary>
 
 | ID | Title | Tags | Assignee | Blocked by | Progress |
 | --- | --- | --- | --- | --- | --- |
 | [69e6bd](stories/69e6bd-archived-blockers-count-as-missing-released-storie.md) | Archived blockers count as missing: released stories make their dependents look blocked | `area:core` | claude |  | 4/4 |
-
-<details><summary><strong>Done (1)</strong></summary>
-
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
 | [098c41](stories/098c41-release-script-let-through-main-commits-that-chang.md) | Release script: let through main commits that change no file | `area:release` | claude |  | 4/4 |
 
 </details>
