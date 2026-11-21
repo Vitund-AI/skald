@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Stories blocked by a story that a release has archived no longer look blocked. `skald ls`, `next`, `context` and `status`, the MCP tools, the board and the dependency graph looked blockers up among active stories only, so a released blocker read as missing and unmet: its dependents were shown as blocked, and agents were never offered them. Only `skald show` had it right. They now count an archived blocker as done, and the graph shows it as "archived" with its title. Dependency entries in the JSON and HTTP output gain the blocker's `title`. (69e6bd)
 - `scripts/release.sh` no longer refuses to start when the only commits `main` has that `dev` lacks change no file, such as the merge of the last release pull request; the release merges them back at the end. It still refuses when `main` holds a change `dev` lacks. (098c41)
 
 ## 1.3.3 (2026-11-16)

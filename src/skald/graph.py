@@ -6,6 +6,12 @@ import json
 from .store import Story, split_ref
 
 
+def _lookup(store, sid: str):
+    """A story of this project that ``stories`` left out, such as one archived by a release."""
+    get = getattr(store, "get_or_none", None)
+    return get(sid) if get else None
+
+
 def build_graph(store, stories: list[Story], include_isolated: bool = False) -> dict:
     """Nodes and edges for the dependency graph of ``stories``.
 
@@ -21,12 +27,14 @@ def build_graph(store, stories: list[Story], include_isolated: bool = False) -> 
             project, sid = split_ref(ref)
             local = project is None or project == store.name
             key = sid if local else ref
-            target = idx.get(sid) if local else None
+            target = (idx.get(sid) or _lookup(store, sid)) if local else None
             if local:
-                state = target.status if target else "missing"
+                # An archived blocker (a release took it off the board) is done: show it as archived.
+                state = ("archived" if target.archived else target.status) if target else "missing"
                 if key not in nodes:
                     nodes[key] = {"id": key, "title": target.title if target else "(missing)", "status": state,
-                                  "role": cfg.role(state) or "unknown", "external": False, "archived": bool(target and target.archived)}
+                                  "role": (cfg.role(target.status) if target else None) or "unknown",
+                                  "external": False, "archived": bool(target and target.archived)}
             else:
                 other = store.workspace.open(project) if getattr(store, "workspace", None) else None
                 t = other.get_or_none(sid) if other else None
