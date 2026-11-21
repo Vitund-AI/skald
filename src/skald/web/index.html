@@ -1075,6 +1075,8 @@ Dated notes are appended by <code>skald note</code> or the Add a note box.</code
         const key = ext ? d.ref : d.ref.split(':').pop();
         add(key, ext ? null : byId[key], ext);
         if (ext) { nodes[key].status = d.state; nodes[key].role = d.satisfied ? 'done' : (d.state === 'unavailable' ? 'unknown' : 'active'); }
+        // A blocker a release archived is not on the board, but it is done, not missing.
+        else if (!byId[key] && d.state === 'archived') Object.assign(nodes[key], { title: d.title || '(archived)', status: 'archived', role: d.closed ? 'closed' : 'done' });
         add(s.id, s, false);
         edges.push({ from: key, to: s.id, satisfied: d.satisfied, external: ext });
       }

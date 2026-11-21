@@ -94,7 +94,8 @@ A story object is the same record `skald show --json` and the MCP tools
 return, pinned by the same contract. It carries the frontmatter fields plus `id`, `filename`,
 `archived`, `checklist` (`{done, total}`), `acceptance` when a
 `## Acceptance` section exists, `deps` (one entry per blocker with its
-`state` and whether it is `satisfied`), `blocked`, `stale`, and `role` (the
+`state`, whether it is `satisfied`, and its `title` when the blocker was
+found; a blocker a release archived reads `archived` and satisfied), `blocked`, `stale`, and `role` (the
 column's role).
 
 Board edits send whole values (a `tags` list, say), so an edit made from a

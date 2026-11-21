@@ -616,16 +616,18 @@ def id_from_filename(name: str) -> Optional[str]:
 class DepState:
     """How one ``blocked_by`` entry resolved."""
 
-    __slots__ = ("ref", "state", "satisfied", "closed")
+    __slots__ = ("ref", "state", "satisfied", "closed", "title")
 
-    def __init__(self, ref: str, state: str, satisfied: bool, closed: bool = False):
+    def __init__(self, ref: str, state: str, satisfied: bool, closed: bool = False, title: Optional[str] = None):
         self.ref = ref          # the entry as written, e.g. "abc123" or "other:abc123"
         self.state = state      # a column key, or "missing", "unavailable", "archived"
         self.satisfied = satisfied
         self.closed = closed    # satisfied by a closed (won't do) story
+        self.title = title      # the blocker's title, when it was found
 
     def to_dict(self) -> dict:
-        return {"ref": self.ref, "state": self.state, "satisfied": self.satisfied, "closed": self.closed}
+        return {"ref": self.ref, "state": self.state, "satisfied": self.satisfied, "closed": self.closed,
+                "title": self.title}
 
 
 # --------------------------------------------------------------------------
@@ -753,7 +755,9 @@ class Store:
         for ref in story.blocked_by:
             project, sid = split_ref(ref)
             if project is None or project == self.name:
-                target = idx.get(sid)
+                # Callers often index only active stories; a blocker a release archived is still
+                # this project's story, and done, so look in the archive before calling it missing.
+                target = idx.get(sid) or self.get_or_none(sid)
                 cfg = self.config
             else:
                 other = self.workspace.open(project) if self.workspace else None
@@ -765,10 +769,10 @@ class Store:
             if target is None:
                 out.append(DepState(ref, "missing", False))
             elif target.archived:
-                out.append(DepState(ref, "archived", True, cfg.is_closed(target.status)))
+                out.append(DepState(ref, "archived", True, cfg.is_closed(target.status), target.title))
             else:
                 terminal = cfg.is_terminal(target.status)
-                out.append(DepState(ref, target.status, terminal, terminal and cfg.is_closed(target.status)))
+                out.append(DepState(ref, target.status, terminal, terminal and cfg.is_closed(target.status), target.title))
         return out
 
     def unmet(self, story: Story, idx: Optional[dict[str, Story]] = None) -> list[str]:
@@ -1639,6 +1643,9 @@ class Snapshot:
     def index(self, include_archived: bool = True) -> dict[str, Story]:
         return {s.id: s for s in self._stories if include_archived or not s.archived}
 
+    def get_or_none(self, story_id: str) -> Optional[Story]:
+        return next((s for s in self._stories if s.id == story_id), None)
+
     def get(self, ref: str) -> Story:
         ref = (ref or "").strip().lower()
         matches = [s for s in self._stories if s.id.startswith(ref)] if ref else []
@@ -1656,14 +1663,15 @@ class Snapshot:
             if project is not None and project != self.name:
                 out.append(DepState(ref, "unavailable", False))
                 continue
-            target = idx.get(sid)
+            target = idx.get(sid) or self.get_or_none(sid)  # archived blockers too, as in Store
             if target is None:
                 out.append(DepState(ref, "missing", False))
             elif target.archived:
-                out.append(DepState(ref, "archived", True, self.config.is_closed(target.status)))
+                out.append(DepState(ref, "archived", True, self.config.is_closed(target.status), target.title))
             else:
                 terminal = self.config.is_terminal(target.status)
-                out.append(DepState(ref, target.status, terminal, terminal and self.config.is_closed(target.status)))
+                out.append(DepState(ref, target.status, terminal, terminal and self.config.is_closed(target.status),
+                                    target.title))
         return out
 
     def unmet(self, story: Story, idx: Optional[dict[str, Story]] = None) -> list[str]:
