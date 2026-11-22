@@ -167,7 +167,7 @@ class TestReleaseScript(unittest.TestCase):
         self.git("checkout", "-q", "dev")
         r = self.release("1.1.0", "--dry-run")
         self.assertEqual(r.returncode, 1)
-        self.assertIn("main has commits that dev lacks", r.stderr)
+        self.assertIn("main has changes that dev lacks", r.stderr)
         self.assertIn("refresh rendered board", r.stderr)
         self.assertIn("git merge origin/main", r.stderr)
         self.git("merge", "-q", "origin/main", "-m", "merge main")
@@ -175,6 +175,16 @@ class TestReleaseScript(unittest.TestCase):
         r = self.release("1.1.0", "--dry-run")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("main: nothing that dev lacks", r.stdout)
+
+    def test_lets_through_main_commits_that_change_nothing(self):
+        # The merge of the last release pull request, never merged back: history only, no files.
+        self.git("checkout", "-q", "main")
+        self.git("merge", "-q", "--no-ff", "dev", "-m", "Merge pull request #88 from o/dev")
+        self.git("push", "-q", "origin", "main")
+        self.git("checkout", "-q", "dev")
+        r = self.release("1.1.0", "--dry-run")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("main: 1 commit(s) that dev lacks, none changing a file", r.stdout)
 
     def fake_github(self):
         """A gh that plays GitHub against the local origin: the pull request merges dev into main,

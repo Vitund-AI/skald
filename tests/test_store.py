@@ -228,6 +228,34 @@ class TestDependencies(SkaldTestCase):
         with self.assertRaises(NotFoundError):
             s.create("x", blocked_by=["123456"])
 
+    def test_an_archived_blocker_is_satisfied_wherever_it_is_looked_up(self):
+        # A release archives done stories; what they blocked must not look blocked again (69e6bd).
+        s = self.store()
+        a, _ = s.create("Shipped", status="done")
+        b, _ = s.create("Next up", status="ready", blocked_by=[a.id])
+        s.archive(ids=[a.id])
+        active, _ = s.load_all()                       # what listings index: active stories only
+        idx = {x.id: x for x in active}
+        self.assertNotIn(a.id, idx)
+        self.assertEqual(s.unmet(b, idx), [])
+        [dep] = s.dep_states(b, idx)
+        self.assertEqual((dep.state, dep.satisfied, dep.title), ("archived", True, "Shipped"))
+        code, out, _ = self.run_cli("next", "--json")
+        self.assertEqual(code, 0)
+        self.assertIn(b.id, out)
+        code, out, _ = self.run_cli("ls")
+        row = next(line for line in out.splitlines() if line.startswith(b.id))
+        self.assertNotIn(a.id, row)                    # the BLOCKED column is empty
+        from skald.graph import build_graph
+        g = build_graph(s, active)
+        node = next(n for n in g["nodes"] if n["id"] == a.id)
+        self.assertEqual((node["status"], node["role"], node["title"], node["archived"]), ("archived", "done", "Shipped", True))
+        self.assertTrue(g["edges"][0]["satisfied"])
+        # A blocker that exists nowhere is still missing and unmet.
+        self.write_raw("ffffff-ghost.md", '---\ntitle: "g"\nstatus: "ready"\nblocked_by: ["000000"]\n---\n')
+        ghost = s.get("ffffff")
+        self.assertEqual(s.unmet(ghost, idx), ["000000"])
+
     def test_warns_on_ready_active_done_only_when_changed(self):
         s = self.store()
         a, _ = s.create("a")

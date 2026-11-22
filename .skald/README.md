@@ -25,8 +25,8 @@ flowchart LR
     n_2fa664 --> n_f2c74c
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
     classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
-    class n_06d503,n_2fa664,n_b24938,n_f2c74c backlog
     class n_b56d9e unknown
+    class n_06d503,n_2fa664,n_b24938,n_f2c74c backlog
 ```
 
 ## Idea (7)
@@ -64,6 +64,15 @@ _none_
 </details>
 
 ## Releases
+
+<details><summary><strong>1.3.4 (2)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [69e6bd](archive/69e6bd-archived-blockers-count-as-missing-released-storie.md) | Archived blockers count as missing: released stories make their dependents look blocked | `area:core` | claude |  | 4/4 |
+| [098c41](archive/098c41-release-script-let-through-main-commits-that-chang.md) | Release script: let through main commits that change no file | `area:release` | claude |  | 4/4 |
+
+</details>
 
 <details><summary><strong>1.3.3 (4)</strong></summary>
 
