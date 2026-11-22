@@ -1,7 +1,7 @@
-<!-- skald-render 7876d52e58f78794 -->
+<!-- skald-render 791dd9c400d65b03 -->
 # skald backlog
 
-**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 2
+**7 open** · Idea 7 · Plan 0 · Ready 0 · In progress 0 · Review 0 · Done 0
 
 Rendered by [Skald](https://github.com/Vitund-AI/skald) from the story files in this directory. Regenerate with `skald render`.
 
@@ -18,15 +18,15 @@ flowchart LR
     n_06d503["06d503<br/>Deliver human answers to an active agen…"]
     n_2fa664["2fa664<br/>Agent presence: know which stories have…"]
     n_b24938["b24938<br/>Close the linked GitHub issue when its …"]
-    n_b56d9e["b56d9e<br/>Example: re-runnable one-way sync from …"]
+    n_b56d9e["b56d9e<br/>(missing)"]
     n_f2c74c["f2c74c<br/>Browser notification when a Claude Code…"]
     n_b56d9e --> n_b24938
     n_2fa664 --> n_06d503
     n_2fa664 --> n_f2c74c
     classDef backlog fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
-    classDef done fill:#d1fae5,stroke:#34d399,color:#475569
+    classDef unknown fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    class n_b56d9e unknown
     class n_06d503,n_2fa664,n_b24938,n_f2c74c backlog
-    class n_b56d9e done
 ```
 
 ## Idea (7)
@@ -35,7 +35,7 @@ flowchart LR
 | --- | --- | --- | --- | --- | --- |
 | [05e3b1](stories/05e3b1-optional-enforced-guarded-column-transitions-workf.md) | Optional enforced/guarded column transitions (workflow rules) | `roadmap` |  |  |  |
 | [ef0aed](stories/ef0aed-wire-skald-into-aider-context-on-launch-skald-hook.md) | Wire Skald into Aider (context on launch; skald hooks aider) | `epic:integrations` `roadmap` |  |  |  |
-| [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | `b56d9e` |  |
+| [b24938](stories/b24938-close-the-linked-github-issue-when-its-story-ships.md) | Close the linked GitHub issue when its story ships | `epic:integrations` `examples` `roadmap` |  | 🔒 `b56d9e` |  |
 | [a73397](stories/a73397-run-local-agent-sessions-from-the-board-launch-cla.md) | Run local agent sessions from the board: launch Claude Code (or any agent CLI) on a story in a terminal streamed to the browser | `area:board` `epic:integrations` `roadmap` |  |  |  |
 | [2fa664](stories/2fa664-agent-presence-know-which-stories-have-a-live-agen.md) | Agent presence: know which stories have a live agent session (Claude Code hooks, skald mcp, CLI activity) | `area:board` `epic:integrations` `roadmap` |  |  | 0/5 |
 | [06d503](stories/06d503-deliver-human-answers-to-an-active-agent-a-notice.md) | Deliver human answers to an active agent: a notice on its next skald tool call | `epic:integrations` `roadmap` |  | 🔒 `2fa664` | 0/4 |
@@ -57,16 +57,22 @@ _none_
 
 _none_
 
-<details><summary><strong>Done (2)</strong></summary>
+<details><summary><strong>Done (0)</strong></summary>
 
-| ID | Title | Tags | Assignee | Blocked by | Progress |
-| --- | --- | --- | --- | --- | --- |
-| [69e6bd](stories/69e6bd-archived-blockers-count-as-missing-released-storie.md) | Archived blockers count as missing: released stories make their dependents look blocked | `area:core` | claude |  | 4/4 |
-| [098c41](stories/098c41-release-script-let-through-main-commits-that-chang.md) | Release script: let through main commits that change no file | `area:release` | claude |  | 4/4 |
+_none_
 
 </details>
 
 ## Releases
+
+<details><summary><strong>1.3.4 (2)</strong></summary>
+
+| ID | Title | Tags | Assignee | Blocked by | Progress |
+| --- | --- | --- | --- | --- | --- |
+| [69e6bd](archive/69e6bd-archived-blockers-count-as-missing-released-storie.md) | Archived blockers count as missing: released stories make their dependents look blocked | `area:core` | claude |  | 4/4 |
+| [098c41](archive/098c41-release-script-let-through-main-commits-that-chang.md) | Release script: let through main commits that change no file | `area:release` | claude |  | 4/4 |
+
+</details>
 
 <details><summary><strong>1.3.3 (4)</strong></summary>
 
@@ -146,7 +152,7 @@ _none_
 | --- | --- | --- | --- | --- | --- |
 | [0a2011](archive/0a2011-declare-the-v1-schema-freeze-guarantee-and-a-forma.md) | 1.0 compatibility promise: declare the stable surface, pin the --json fields, add skald migrate | `area:release` `release:1.0.0` `roadmap` | claude |  | 7/7 |
 | [c9e05f](archive/c9e05f-document-every-board-http-api-route-and-test-that.md) | Document every board HTTP API route, and test that docs/api.md stays complete | `area:docs` `release:1.0.0` | claude |  | 5/5 |
-| [04e801](archive/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` | claude | `0a2011`, `80c968`, `c9e05f` | 4/4 |
+| [04e801](archive/04e801-release-1-0-0-production-stable-classifier-a-1-x-s.md) | Release 1.0.0: Production/Stable classifier, a 1.x support policy, examples off the internals | `area:release` `release:1.0.0` | claude | 🔒 `0a2011`, `80c968`, `c9e05f` | 4/4 |
 | [80c968](archive/80c968-serialize-concurrent-mutations-for-multi-agent-saf.md) | Serialize concurrent mutations for multi-agent safety (advisory file lock) | `area:store` `release:1.0.0` `roadmap` | claude |  | 6/6 |
 
 </details>
@@ -158,7 +164,7 @@ _none_
 | [164b96](archive/164b96-add-skald-export-format-json-csv-for-portability-a.md) | Add skald export --format json\|csv for portability and analytics | `roadmap` | agent |  |  |
 | [bf771b](archive/bf771b-board-reset-the-card-modal-scroll-to-the-top-when.md) | Board: reset the card modal scroll to the top when a story is opened | `area:board` | claude |  |  |
 | [5bce0a](archive/5bce0a-document-attaching-skald-s-mcp-server-skald-mcp-to.md) | Document attaching Skald's MCP server (skald mcp) to Cursor and other MCP clients | `area:docs` `epic:integrations` `roadmap` | agent |  |  |
-| [b56d9e](archive/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` | claude | `668824` | 6/6 |
+| [b56d9e](archive/b56d9e-example-one-way-import-from-github-issues.md) | Example: re-runnable one-way sync from GitHub issues | `examples` `release:0.9.0` `roadmap` | claude | 🔒 `668824` | 6/6 |
 | [668824](archive/668824-exclude-tag-keys-from-facets-with-a-facets-exclude.md) | Exclude tag keys from facets with a facets.exclude config key | `area:config` `release:0.9.0` | claude |  | 5/5 |
 | [f0e40d](archive/f0e40d-icebox-column-in-the-lifecycle-preset-plus-a-confi.md) | Icebox column in the lifecycle preset, plus a configurable default_status for new stories | `roadmap` | agent |  |  |
 | [2565dc](archive/2565dc-make-columns-collapsible-via-a-config-flag-ship-th.md) | Make columns collapsible via a config flag; ship the lifecycle icebox collapsible | `roadmap` | agent |  |  |
@@ -183,11 +189,11 @@ _none_
 | [ce8ab1](archive/ce8ab1-completion-and-api-tests-pick-a-unique-id-prefix-n.md) | Completion and API tests pick a unique id prefix, not a fixed slice | `tests` | claude |  | 1/1 |
 | [716fe0](archive/716fe0-machine-local-feature-flag-config-layer.md) | Machine-local feature-flag config layer | `area:config` `epic:feature-flags` | claude |  | 7/7 |
 | [938c9c](archive/938c9c-make-the-screenshot-harness-extensible-and-showcas.md) | Make the screenshot harness extensible and showcase the new features | `area:docs` | claude |  | 7/7 |
-| [f9e295](archive/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
+| [f9e295](archive/f9e295-open-story-in-claude-code-from-the-card-detail-vie.md) | Open story in Claude Code from the card detail view | `area:board` `epic:feature-flags` | claude | 🔒 `716fe0` | 8/8 |
 | [3eea32](archive/3eea32-opt-in-update-check-show-an-update-available-icon.md) | Opt-in update check: show an update-available icon on the board | `area:board` `epic:feature-flags` | claude |  | 10/10 |
 | [947089](archive/947089-release-sh-tags-the-merge-commit-not-a-skip-ci-ren.md) | release.sh tags the merge commit, not a [skip ci] render HEAD | `area:release` | claude |  | 4/4 |
-| [0341fc](archive/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` | claude | `716fe0` | 8/8 |
-| [a29da4](archive/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` | claude | `50b992` | 6/6 |
+| [0341fc](archive/0341fc-settings-modal-and-api-for-defaults-and-per-projec.md) | Settings modal and API for defaults and per-project options | `area:board` `epic:feature-flags` | claude | 🔒 `716fe0` | 8/8 |
+| [a29da4](archive/a29da4-show-claim-provenance-as-author-branch-on-the-boar.md) | Show claim provenance as author@branch on the board and in ls | `area:board` `area:cli` | claude | 🔒 `50b992` | 6/6 |
 | [50b992](archive/50b992-warn-when-claiming-a-story-already-active-in-anoth.md) | Warn when claiming a story already active in another local worktree, same author included | `area:cli` | claude |  | 7/7 |
 
 </details>
@@ -328,7 +334,7 @@ _none_
 | [5c4f0c](archive/5c4f0c-link-commits-to-stories-with-a-skald-story-trailer.md) | Link commits to stories with a Skald-Story trailer | `git` | claude |  |  |
 | [189d1b](archive/189d1b-machine-local-project-index-with-auto-registration.md) | Machine-local project index with auto-registration | `core` |  |  |  |
 | [862dae](archive/862dae-mcp-server-mode.md) | MCP server mode | `agents` |  |  |  |
-| [bae374](archive/bae374-offer-a-pipx-installable-package-with-a-global-ska.md) | Offer a pipx-installable package with a global skald command | `packaging` |  | `9a1da4` |  |
+| [bae374](archive/bae374-offer-a-pipx-installable-package-with-a-global-ska.md) | Offer a pipx-installable package with a global skald command | `packaging` |  | 🔒 `9a1da4` |  |
 | [63898e](archive/63898e-per-project-config-json-with-name-and-format-versi.md) | Per-project config.json with name and format version | `core` |  |  |  |
 | [8ffede](archive/8ffede-promote-a-surviving-checkout-when-the-primary-s-di.md) | Promote a surviving checkout when the primary's directory has gone | `core` | claude |  | 4/4 |
 | [92086e](archive/92086e-publish-a-pre-commit-hook-recipe-that-runs-skald-c.md) | Publish a pre-commit hook recipe that runs skald check | `docs` |  |  |  |
@@ -342,7 +348,7 @@ _none_
 | [f4fa85](archive/f4fa85-skald-activity-backlog-transitions-from-git-histor.md) | skald activity: backlog transitions from git history | `git` | claude |  |  |
 | [610eef](archive/610eef-skald-diff-between-refs-and-a-pr-comment-from-the.md) | skald diff between refs and a PR comment from the workflow | `docs` `git` | claude |  |  |
 | [95e3a5](archive/95e3a5-skald-release-changelog-section-from-the-done-colu.md) | skald release: changelog section from the done column, then archive with a version stamp | `cli` `git` | claude |  | 6/6 |
-| [46b5d3](archive/46b5d3-skald-render-committed-board-snapshot-pre-commit-h.md) | skald render: committed board snapshot, pre-commit hook, GitHub Action | `cli` `docs` | claude | `cbb58e` | 0/7 |
+| [46b5d3](archive/46b5d3-skald-render-committed-board-snapshot-pre-commit-h.md) | skald render: committed board snapshot, pre-commit hook, GitHub Action | `cli` `docs` | claude | 🔒 `cbb58e` | 0/7 |
 | [9e4f8e](archive/9e4f8e-story-templates.md) | Story templates | `cli` |  |  |  |
 | [71f880](archive/71f880-user-docs-guides-under-docs-and-a-generated-cli-re.md) | User docs: guides under docs/ and a generated CLI reference | `docs` | claude |  | 4/4 |
 | [f7674b](archive/f7674b-verify-the-board-with-tailwind-loaded-in-a-real-br.md) | Verify the board with Tailwind loaded in a real browser | `ui` |  |  |  |
